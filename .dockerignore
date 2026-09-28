@@ -1,0 +1,7 @@
+**/bin/
+**/obj/
+**/TestResults/
+.ai-work/
+.git/
+*.pfx
+.env

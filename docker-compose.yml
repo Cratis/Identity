@@ -1,0 +1,32 @@
+# Local development: Identity on http://localhost:5100 with MongoDB.
+# Requires a GitHub OAuth app whose callback URL is http://localhost:5100/signin-github, and a .env file with
+# GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET and GITHUB_USER_ID (your numeric GitHub id: gh api user -q .id).
+# Development mode uses ephemeral signing keys (tokens die with the container) and allows plain HTTP.
+services:
+  mongo:
+    # Pinned: later 8.0 patch releases refuse to start on Linux kernels 6.19+ (SERVER-121912).
+    image: mongo:8.0.14
+    volumes:
+      - identity-mongo:/data/db
+
+  identity:
+    image: cratis/identity:local
+    build:
+      context: .
+      dockerfile: Docker/Dockerfile
+    depends_on:
+      - mongo
+    ports:
+      - "5100:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Identity__Issuer: http://localhost:5100/
+      Identity__MongoDB__ConnectionString: mongodb://mongo:27017
+      Identity__GitHub__ClientId: ${GITHUB_CLIENT_ID}
+      Identity__GitHub__ClientSecret: ${GITHUB_CLIENT_SECRET}
+      Identity__Resources__0__Tenants__0__Id: local
+      Identity__Resources__0__Tenants__0__Name: Local development
+      Identity__Resources__0__Tenants__0__Members__0: ${GITHUB_USER_ID}
+
+volumes:
+  identity-mongo:
