@@ -85,10 +85,14 @@ public static class ConsentPage
         }
 
         var tenants = consent.Tenants.ToArray();
+        var hints = consent.Parameters.Where(_ => string.Equals(_.Key, "tenant", StringComparison.Ordinal)).Select(_ => _.Value).ToArray();
+        var hintedTenant = hints.Length == 1 && tenants.Any(_ => string.Equals(_.Id, hints[0], StringComparison.Ordinal)) ? hints[0] : null;
+        var selectedTenant = hintedTenant ?? (tenants.Length == 1 ? tenants[0].Id : null);
         foreach (var tenant in tenants)
         {
             html.Append("<label><input type=\"radio\" name=\"").Append(ConsentForm.Tenant)
-                .Append("\" value=\"").Append(E(tenant.Id)).Append('"').Append(tenants.Length == 1 ? " checked" : string.Empty)
+                .Append("\" value=\"").Append(E(tenant.Id)).Append('"')
+                .Append(string.Equals(tenant.Id, selectedTenant, StringComparison.Ordinal) ? " checked" : string.Empty)
                 .Append(" required> ").Append(E(tenant.Name)).Append("</label><br>");
         }
 

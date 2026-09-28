@@ -40,7 +40,7 @@ public static class IdentityServiceCollectionExtensions
         services.AddSingleton<IValidateOptions<IdentityOptions>, IdentityOptionsValidation>();
         services.AddSingleton(TimeProvider.System);
 
-        services.AddStorage();
+        services.AddStorage(startupOptions);
         services.AddDomain();
         services.AddSessionAndUpstreamLogin();
         services.AddAuthorizationServer(startupOptions, environment);
@@ -48,13 +48,19 @@ public static class IdentityServiceCollectionExtensions
         return services;
     }
 
-    static void AddStorage(this IServiceCollection services)
+    static void AddStorage(this IServiceCollection services, IdentityOptions startupOptions)
     {
         services.AddSingleton<IMongoClient>(sp => new MongoClient(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.ConnectionString));
         services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.Database));
         services.AddSingleton<StorageIndexes>();
 
-        services.AddDataProtection().SetApplicationName("Cratis.Identity");
+        var dataProtection = services.AddDataProtection().SetApplicationName("Cratis.Identity");
+        if (startupOptions.EncryptionCertificate.IsConfigured)
+        {
+            // Without a certificate (development) the key ring is stored unencrypted in MongoDB.
+            dataProtection.ProtectKeysWithCertificate(Load(startupOptions.EncryptionCertificate));
+        }
+
         services.AddOptions<KeyManagementOptions>().Configure<IMongoDatabase>((options, database) => options.XmlRepository = new MongoXmlRepository(database));
 
         services.AddHostedService<ClientRegistrations>();
@@ -160,6 +166,8 @@ public static class IdentityServiceCollectionExtensions
         server.AuthorizationCodeLifetime = options.Tokens.AuthorizationCodeLifetime;
         server.RefreshTokenLifetime = options.Tokens.RefreshTokenLifetime;
 
+        // OAuth only: no OpenID Connect sign-in is offered to clients yet, so identity tokens are not advertised.
+        server.Scopes.Remove(Scopes.OpenId);
         server.Scopes.UnionWith(ProtocolScopes.All);
         server.Scopes.UnionWith(resources.All.SelectMany(_ => _.Scopes).Select(_ => _.Name));
         server.Resources.UnionWith(resources.All.SelectMany(_ => _.Indicators).Select(_ => new Uri(_, UriKind.Absolute)));

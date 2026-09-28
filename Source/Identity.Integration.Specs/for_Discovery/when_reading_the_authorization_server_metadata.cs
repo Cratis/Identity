@@ -21,11 +21,13 @@ public class when_reading_the_authorization_server_metadata(IdentityHost host) :
     [Fact] void should_name_the_configured_issuer() => _metadata.GetProperty("issuer").GetString().ShouldEqual(IdentityHost.Issuer);
     [Fact] void should_publish_the_authorization_endpoint() => _metadata.GetProperty("authorization_endpoint").GetString().ShouldEqual($"{IdentityHost.Issuer}connect/authorize");
     [Fact] void should_publish_the_token_endpoint() => _metadata.GetProperty("token_endpoint").GetString().ShouldEqual($"{IdentityHost.Issuer}connect/token");
+    [Fact] void should_advertise_the_issuer_in_authorization_responses() => _metadata.GetProperty("authorization_response_iss_parameter_supported").GetBoolean().ShouldBeTrue();
     [Fact] void should_publish_the_revocation_endpoint() => _metadata.GetProperty("revocation_endpoint").GetString().ShouldEqual($"{IdentityHost.Issuer}connect/revocation");
     [Fact] void should_publish_the_introspection_endpoint() => _metadata.GetProperty("introspection_endpoint").GetString().ShouldEqual($"{IdentityHost.Issuer}connect/introspect");
     [Fact] void should_only_support_s256_pkce() => Strings("code_challenge_methods_supported").ShouldContainOnly("S256");
     [Fact] void should_only_support_code_and_refresh_grants() => Strings("grant_types_supported").ShouldContainOnly("authorization_code", "refresh_token");
     [Fact] void should_list_the_resource_scopes() => Strings("scopes_supported").ShouldContain("direct:read");
+    [Fact] void should_not_offer_openid_connect_sign_in() => Strings("scopes_supported").ShouldNotContain("openid");
     [Fact] void should_publish_a_public_signing_key() => _jwks.GetProperty("keys").EnumerateArray().Any(key => key.GetProperty("use").GetString() == "sig").ShouldBeTrue();
     [Fact] void should_not_publish_private_key_material() => _jwks.GetProperty("keys").EnumerateArray().Any(key => key.TryGetProperty("d", out _) || key.TryGetProperty("p", out _)).ShouldBeFalse();
 

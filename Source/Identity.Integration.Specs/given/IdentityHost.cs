@@ -30,6 +30,7 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     public const string IntrospectionClientId = "direct-api";
     public const string IntrospectionClientSecret = "introspection-secret-for-specs";
     public const string MemberTenant = "cratis";
+    public const string OtherMemberTenant = "second";
 
     /// <summary>
     /// The MongoDB container. Pinned to 8.0.14: later 8.0 patch releases refuse to start on Linux kernels 6.19+
@@ -103,6 +104,9 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         ["Identity:Resources:0:Tenants:0:Id"] = MemberTenant,
         ["Identity:Resources:0:Tenants:0:Name"] = "Cratis",
         ["Identity:Resources:0:Tenants:0:Members:0"] = FakeUpstream.DefaultUserId.ToString(CultureInfo.InvariantCulture),
+        ["Identity:Resources:0:Tenants:1:Id"] = OtherMemberTenant,
+        ["Identity:Resources:0:Tenants:1:Name"] = "Second tenant",
+        ["Identity:Resources:0:Tenants:1:Members:0"] = FakeUpstream.DefaultUserId.ToString(CultureInfo.InvariantCulture),
         ["Identity:Resources:1:Audience"] = "studio-api",
         ["Identity:Resources:1:DisplayName"] = "Cratis Studio",
         ["Identity:Resources:1:Indicators:0"] = StudioMcp,

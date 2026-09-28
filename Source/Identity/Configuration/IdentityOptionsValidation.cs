@@ -17,9 +17,17 @@ public class IdentityOptionsValidation : IValidateOptions<IdentityOptions>
     {
         var failures = new List<string>();
 
-        if (!string.IsNullOrWhiteSpace(options.Issuer) && !Uri.TryCreate(options.Issuer, UriKind.Absolute, out _))
+        if (!string.IsNullOrWhiteSpace(options.Issuer))
         {
-            failures.Add($"Issuer \"{options.Issuer}\" is not an absolute URI.");
+            if (!Uri.TryCreate(options.Issuer, UriKind.Absolute, out var issuer) || issuer.Scheme is not ("http" or "https"))
+            {
+                failures.Add($"Issuer \"{options.Issuer}\" is not an absolute HTTP URI.");
+            }
+            else if (!string.Equals(options.Issuer, $"{issuer.GetLeftPart(UriPartial.Authority)}/", StringComparison.Ordinal))
+            {
+                // Discovery is served at the root of the public origin, not under an issuer path prefix.
+                failures.Add($"Issuer \"{options.Issuer}\" must be the root of its origin and end with a slash.");
+            }
         }
 
         failures.AddRange(Duplicates(options.Resources.Select(_ => _.Audience), "audience"));
