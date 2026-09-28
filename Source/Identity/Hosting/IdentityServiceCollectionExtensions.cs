@@ -97,7 +97,7 @@ public static class IdentityServiceCollectionExtensions
                 options.Cookie.Name = "cratis-identity-session";
                 options.Cookie.HttpOnly = true;
                 options.Cookie.SameSite = SameSiteMode.Lax;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+                options.Cookie.SecurePolicy = environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
                 options.SlidingExpiration = false;
                 options.Events.OnRedirectToLogin = context =>
                 {
