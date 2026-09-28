@@ -1,0 +1,28 @@
+## Build and output directories
+bin/
+obj/
+out/
+
+## IDE files
+.vs/
+.idea/
+*.user
+*.suo
+
+## NuGet
+packages/
+*.nupkg
+
+## OS files
+.DS_Store
+Thumbs.db
+
+## Test run artifacts
+TestResults/
+
+## Local AI work artifacts (never commit)
+.ai-work/
+
+## Local secrets
+*.pfx
+.env
