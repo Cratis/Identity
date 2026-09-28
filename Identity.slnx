@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/Source/">
+    <Project Path="Source/Identity.Integration.Specs/Identity.Integration.Specs.csproj" />
     <Project Path="Source/Identity.Specs/Identity.Specs.csproj" />
     <Project Path="Source/Identity/Identity.csproj" />
   </Folder>

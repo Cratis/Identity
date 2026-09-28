@@ -17,7 +17,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Cratis.Identity.Specs" />
-    <InternalsVisibleTo Include="Cratis.Identity.Integration" />
+    <InternalsVisibleTo Include="Cratis.Identity.Integration.Specs" />
   </ItemGroup>
 
 </Project>
