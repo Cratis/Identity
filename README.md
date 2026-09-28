@@ -29,7 +29,7 @@ It is built on [OpenIddict](https://documentation.openiddict.com/) 7 as an embed
 | Native clients | Pre-registered public client `cratis-cli` (no secret). Redirect URIs `http://127.0.0.1:<ephemeral-port>/callback` and `http://[::1]:<ephemeral-port>/callback` (RFC 8252). The path and IP literal must match; `localhost` is refused. |
 | Resource indicators (RFC 8707) | `https://cratis.direct/mcp` and `https://cratis.direct/v1` both map to audience `direct-api`. Every grant is bound to exactly one resource server. Without a `resource` parameter the resource is inferred from the scopes, but only when they belong to a single resource server. |
 | Scopes | `direct:read`, `direct:content.write`, `direct:work`, plus `offline_access` for a refresh token. Requested scopes that belong to another resource server are dropped. There is no approve or admin scope: approval is a domain action in Direct, never a token capability. |
-| Refresh tokens | Rotated on every use. Reuse of a redeemed refresh token, with zero leeway, revokes every token of that grant. The family has an absolute lifetime (30 days by default) that rotation does not extend. |
+| Refresh tokens | Rotated on every use. Concurrent redemption has a single winner; a failed redemption revokes the grant authorization and its tokens, so even the winner's successor is unusable. Reuse has zero leeway. The family has an absolute lifetime (30 days by default) that rotation does not extend. |
 | Revocation (RFC 7009) | `POST /connect/revocation`. Revoking a refresh token revokes the whole grant, including its access tokens for introspection. |
 | Introspection (RFC 7662) | `POST /connect/introspect` for configured confidential resource-server clients only. |
 | Metadata | `/.well-known/oauth-authorization-server` (RFC 8414), `/.well-known/openid-configuration`, and JWKS at `/.well-known/jwks`. |
@@ -67,6 +67,7 @@ A resource server must validate `iss`, the signature against the JWKS, `aud`, `e
 | `GET /.well-known/openid-configuration` | OpenIddict's discovery fallback. This server does **not** offer the `openid` scope or issue ID tokens in v1. |
 | `GET /.well-known/jwks` | Public signing keys. |
 | `GET /signin-github` | GitHub OAuth callback. Register it on the GitHub OAuth app. |
+| `GET/POST /logout` | Identity site cookie sign-out: GET serves an antiforgery-protected form; POST clears the session cookie. This does not revoke CLI grants. |
 | `GET /healthz` | Liveness. |
 
 ## Configuration
@@ -113,7 +114,7 @@ In development (`ASPNETCORE_ENVIRONMENT=Development`) Identity uses ephemeral si
 
 To run from source instead, start MongoDB on `localhost:27017` and set `Identity__Issuer=http://localhost:5100/`, `Identity__GitHub__ClientId`, `Identity__GitHub__ClientSecret`, `Identity__Resources__0__Tenants__0__Id=local` and `Identity__Resources__0__Tenants__0__Members__0` (your numeric GitHub id). Then run `ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5100 dotnet run --project Source/Identity`. Your GitHub OAuth app must have the matching callback URL.
 
-The compose file configures one tenant, `local`, for your GitHub user. The Dockerfile builds the app in the .NET 10 SDK and runs it as a non-root user in the .NET 10 chiseled image; compose is **development only**, not a production deployment recipe.
+The compose file configures one tenant, `local`, for your GitHub user and binds the HTTP port to loopback only. The Dockerfile builds the app in the .NET 10 SDK and runs it as a non-root user in the .NET 10 chiseled image; compose is **development only**, not a production deployment recipe.
 
 ## CLI protocol contract
 
@@ -137,11 +138,12 @@ The integration specs host the real pipeline (OpenIddict, MongoDB, consent, anti
 - **Consent is the gate.** It is shown every time. Remembered consent and a "connected apps" page come later.
 - **Tenancy is chosen here but enforced by the product.** `tid` is what the user selected from `ITenantDirectory`. Resource servers must check membership and must never fall back to a default tenant.
 - **Access tokens are self-contained.** Revocation reaches refresh tokens immediately and access tokens only through introspection. Otherwise a revoked access token works until it expires (15 minutes by default).
-- **Refresh reuse is strict.** There is no reuse leeway. A client that retries a refresh after a lost response loses the grant and must sign in again. The CLI must serialize refreshes (Cratis/cli#205).
+- **Refresh reuse is strict.** There is no reuse leeway. Even two requests that passed token validation before redemption cannot both receive successors: MongoDB's atomic token update picks at most one winner. A concurrent loser revokes the shared authorization and all existing tokens; a successor created later under that authorization also fails validation. A sequential reuse is rejected by OpenIddict, which revokes the grant's existing tokens. A client that retries a refresh after a lost response loses the grant and must sign in again. The CLI must serialize refreshes (Cratis/cli#205).
 - **Token pruning keeps redeemed refresh tokens for the full refresh lifetime,** so a replayed stolen token is still detected as reuse.
 - **Issuer and keys are explicit in production.** The issuer is never derived from the request host, and ephemeral keys are refused. The public origin must agree with the configured issuer and the discovery endpoint URLs; do not configure a path prefix. Behind a TLS-terminating ingress, configure forwarded headers only from known proxies and verify discovery returns public HTTPS URLs (for example `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` only when the ingress is the only route in). Otherwise OpenIddict may refuse non-HTTPS requests or discovery may publish internal URLs.
 - **Upstream re-authentication is limited.** `prompt=login` repeats the GitHub OAuth round trip, but GitHub may complete it without asking again. Real step-up needs a stronger authenticator (see the roadmap).
-- **GitHub tokens are not kept.** The GitHub access token is used once to read the user and then discarded.
+- **GitHub tokens are not kept.** The GitHub access token is used once to read the user and then discarded. OpenIddict logging stays at Warning even in development: its Information messages can include raw OAuth requests with codes or tokens.
+- **Browser cookies are protected.** The Identity session cookie is HttpOnly and SameSite=Lax; the antiforgery cookie is HttpOnly and SameSite=Strict. Both are Secure outside development, even behind an HTTP-to-HTTPS ingress. Sign out of the site with `/logout`; CLI grants must be revoked separately.
 - **Personal data.** Accounts store the GitHub id, login and display name.
 
 ## Roadmap

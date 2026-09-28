@@ -2,6 +2,7 @@
 # Requires a GitHub OAuth app whose callback URL is http://localhost:5100/signin-github, and a .env file with
 # GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET and GITHUB_USER_ID (your numeric GitHub id: gh api user -q .id).
 # Development mode uses ephemeral signing keys (tokens die with the container) and allows plain HTTP.
+# Never deploy this file: it runs in Development, with an unauthenticated MongoDB and no persistent keys.
 services:
   mongo:
     # Pinned: later 8.0 patch releases refuse to start on Linux kernels 6.19+ (SERVER-121912).
@@ -17,16 +18,16 @@ services:
     depends_on:
       - mongo
     ports:
-      - "5100:8080"
+      - "127.0.0.1:5100:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       Identity__Issuer: http://localhost:5100/
       Identity__MongoDB__ConnectionString: mongodb://mongo:27017
-      Identity__GitHub__ClientId: ${GITHUB_CLIENT_ID}
-      Identity__GitHub__ClientSecret: ${GITHUB_CLIENT_SECRET}
+      Identity__GitHub__ClientId: ${GITHUB_CLIENT_ID:?set GITHUB_CLIENT_ID in .env}
+      Identity__GitHub__ClientSecret: ${GITHUB_CLIENT_SECRET:?set GITHUB_CLIENT_SECRET in .env}
       Identity__Resources__0__Tenants__0__Id: local
       Identity__Resources__0__Tenants__0__Name: Local development
-      Identity__Resources__0__Tenants__0__Members__0: ${GITHUB_USER_ID}
+      Identity__Resources__0__Tenants__0__Members__0: ${GITHUB_USER_ID:?set GITHUB_USER_ID in .env}
 
 volumes:
   identity-mongo:

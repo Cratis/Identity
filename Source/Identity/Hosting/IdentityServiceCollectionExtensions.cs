@@ -42,7 +42,7 @@ public static class IdentityServiceCollectionExtensions
 
         services.AddStorage(startupOptions);
         services.AddDomain();
-        services.AddSessionAndUpstreamLogin();
+        services.AddSessionAndUpstreamLogin(environment);
         services.AddAuthorizationServer(startupOptions, environment);
 
         return services;
@@ -80,14 +80,16 @@ public static class IdentityServiceCollectionExtensions
         services.AddScoped<TokenEndpoint>();
     }
 
-    static void AddSessionAndUpstreamLogin(this IServiceCollection services)
+    static void AddSessionAndUpstreamLogin(this IServiceCollection services, IHostEnvironment environment)
     {
         services.AddOptions<UpstreamLoginOptions>();
         services.AddAntiforgery(options =>
         {
             options.FormFieldName = ConsentForm.AntiforgeryField;
             options.Cookie.Name = "cratis-identity-antiforgery";
-            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SameSite = SameSiteMode.Strict;
+            options.Cookie.SecurePolicy = environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
         });
 
         services
@@ -145,7 +147,8 @@ public static class IdentityServiceCollectionExtensions
                     aspNetCore.DisableTransportSecurityRequirement();
                 }
 
-                options.AddEventHandler(RevokeGrantOnRefreshTokenRevocation.Descriptor);
+                options.AddEventHandler(RedeemRefreshTokenOnce.Descriptor)
+                    .AddEventHandler(RevokeGrantOnRefreshTokenRevocation.Descriptor);
             });
 
         services.AddOptions<OpenIddictServerOptions>().Configure<IOptions<IdentityOptions>, IResourceCatalog>(ConfigureServer);

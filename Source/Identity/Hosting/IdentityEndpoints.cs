@@ -1,7 +1,10 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Net;
 using Cratis.Identity.Authorization;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Authentication;
 
 namespace Cratis.Identity.Hosting;
 
@@ -26,6 +29,24 @@ public static class IdentityEndpoints
             .DisableAntiforgery();
         app.MapPost("/connect/token", (HttpContext context, TokenEndpoint endpoint) => endpoint.Handle(context))
             .DisableAntiforgery();
+        app.MapGet("/logout", (HttpContext context, IAntiforgery antiforgery) =>
+        {
+            var token = antiforgery.GetAndStoreTokens(context);
+            context.Response.Headers.CacheControl = "no-store";
+            context.Response.Headers.ContentSecurityPolicy = "default-src 'none'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'";
+            return Results.Content($"<!doctype html><html lang=\"en\"><title>Sign out</title><form method=\"post\" action=\"/logout\"><input type=\"hidden\" name=\"{WebUtility.HtmlEncode(token.FormFieldName)}\" value=\"{WebUtility.HtmlEncode(token.RequestToken)}\"><button type=\"submit\">Sign out</button></form></html>", "text/html; charset=utf-8");
+        });
+        app.MapPost("/logout", async (HttpContext context, IAntiforgery antiforgery) =>
+        {
+            if (!await antiforgery.IsRequestValidAsync(context))
+            {
+                return Results.BadRequest("The sign-out form expired or did not come from this browser session.");
+            }
+
+            await context.SignOutAsync(IdentitySchemes.Session);
+            context.Response.Headers.CacheControl = "no-store";
+            return Results.Text("Signed out.");
+        }).DisableAntiforgery();
         app.MapGet("/healthz", () => Results.Text("ok"));
         app.MapGet("/", () => Results.Text("Cratis Identity - OAuth 2.1 authorization server. Metadata: /.well-known/oauth-authorization-server"));
 
