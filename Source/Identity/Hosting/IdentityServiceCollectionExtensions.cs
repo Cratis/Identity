@@ -48,6 +48,44 @@ public static class IdentityServiceCollectionExtensions
         return services;
     }
 
+    /// <summary>
+    /// Adds the Identity session cookie, antiforgery and the upstream login.
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/>.</param>
+    /// <param name="environment">The <see cref="IHostEnvironment"/>.</param>
+    internal static void AddSessionAndUpstreamLogin(this IServiceCollection services, IHostEnvironment environment)
+    {
+        services.AddOptions<UpstreamLoginOptions>();
+        services.AddAntiforgery(options =>
+        {
+            options.FormFieldName = ConsentForm.AntiforgeryField;
+            options.Cookie.Name = "cratis-identity-antiforgery";
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SameSite = SameSiteMode.Strict;
+            options.Cookie.SecurePolicy = environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+        });
+
+        services
+            .AddAuthentication(IdentitySchemes.Session)
+            .AddCookie(IdentitySchemes.Session, options =>
+            {
+                options.Cookie.Name = "cratis-identity-session";
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SameSite = SameSiteMode.Lax;
+                options.Cookie.SecurePolicy = environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+                options.SlidingExpiration = false;
+                options.Events.OnRedirectToLogin = context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    return Task.CompletedTask;
+                };
+            })
+            .AddGitHubUpstream();
+
+        services.AddOptions<Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions>(IdentitySchemes.Session)
+            .Configure<IOptions<IdentityOptions>>((cookie, identity) => cookie.ExpireTimeSpan = identity.Value.SessionLifetime);
+    }
+
     static void AddStorage(this IServiceCollection services, IdentityOptions startupOptions)
     {
         services.AddSingleton<IMongoClient>(sp => new MongoClient(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.ConnectionString));
@@ -79,39 +117,6 @@ public static class IdentityServiceCollectionExtensions
         services.AddScoped<AuthorizationEndpoint>();
         services.AddScoped<TokenEndpoint>();
         services.AddScoped<GrantRevocation>();
-    }
-
-    static void AddSessionAndUpstreamLogin(this IServiceCollection services, IHostEnvironment environment)
-    {
-        services.AddOptions<UpstreamLoginOptions>();
-        services.AddAntiforgery(options =>
-        {
-            options.FormFieldName = ConsentForm.AntiforgeryField;
-            options.Cookie.Name = "cratis-identity-antiforgery";
-            options.Cookie.HttpOnly = true;
-            options.Cookie.SameSite = SameSiteMode.Strict;
-            options.Cookie.SecurePolicy = environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
-        });
-
-        services
-            .AddAuthentication(IdentitySchemes.Session)
-            .AddCookie(IdentitySchemes.Session, options =>
-            {
-                options.Cookie.Name = "cratis-identity-session";
-                options.Cookie.HttpOnly = true;
-                options.Cookie.SameSite = SameSiteMode.Lax;
-                options.Cookie.SecurePolicy = environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
-                options.SlidingExpiration = false;
-                options.Events.OnRedirectToLogin = context =>
-                {
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    return Task.CompletedTask;
-                };
-            })
-            .AddGitHubUpstream();
-
-        services.AddOptions<Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions>(IdentitySchemes.Session)
-            .Configure<IOptions<IdentityOptions>>((cookie, identity) => cookie.ExpireTimeSpan = identity.Value.SessionLifetime);
     }
 
     static void AddAuthorizationServer(this IServiceCollection services, IdentityOptions startupOptions, IHostEnvironment environment)
