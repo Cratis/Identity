@@ -78,6 +78,7 @@ public static class IdentityServiceCollectionExtensions
         services.AddScoped<ConsentPages>();
         services.AddScoped<AuthorizationEndpoint>();
         services.AddScoped<TokenEndpoint>();
+        services.AddScoped<GrantRevocation>();
     }
 
     static void AddSessionAndUpstreamLogin(this IServiceCollection services, IHostEnvironment environment)
@@ -147,7 +148,8 @@ public static class IdentityServiceCollectionExtensions
                     aspNetCore.DisableTransportSecurityRequirement();
                 }
 
-                options.AddEventHandler(RedeemRefreshTokenOnce.Descriptor)
+                options.AddEventHandler(RevokeGrantOnRefreshTokenReuse.Descriptor)
+                    .AddEventHandler(RedeemRefreshTokenOnce.Descriptor)
                     .AddEventHandler(RevokeGrantOnRefreshTokenRevocation.Descriptor);
             });
 

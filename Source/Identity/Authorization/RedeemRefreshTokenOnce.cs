@@ -21,11 +21,9 @@ namespace Cratis.Identity.Authorization;
 /// fails validation. Concurrent use of a refresh token is therefore treated exactly like reuse.
 /// </remarks>
 /// <param name="tokens">The <see cref="IOpenIddictTokenManager"/>.</param>
-/// <param name="authorizations">The <see cref="IOpenIddictAuthorizationManager"/>.</param>
-public class RedeemRefreshTokenOnce(IOpenIddictTokenManager tokens, IOpenIddictAuthorizationManager authorizations) : IOpenIddictServerHandler<ProcessSignInContext>
+/// <param name="grants">The <see cref="GrantRevocation"/>.</param>
+public class RedeemRefreshTokenOnce(IOpenIddictTokenManager tokens, GrantRevocation grants) : IOpenIddictServerHandler<ProcessSignInContext>
 {
-    const int RevocationAttempts = 3;
-
     /// <summary>
     /// Gets the descriptor. It runs just before OpenIddict's redemption handler, whose later attempt to redeem the
     /// already redeemed token is harmless; this handler alone decides whether a refresh request may issue tokens.
@@ -64,31 +62,7 @@ public class RedeemRefreshTokenOnce(IOpenIddictTokenManager tokens, IOpenIddictA
             return;
         }
 
-        await RevokeGrant(authorizationId, context.CancellationToken);
+        await grants.RevokeAfterReuse(authorizationId, context.CancellationToken);
         context.Reject(error: Errors.InvalidGrant, description: "The refresh token was already used.");
-    }
-
-    async Task RevokeGrant(string authorizationId, CancellationToken cancellationToken)
-    {
-        // The authorization first: a successor created by a winning request after this point belongs to it and
-        // cannot be refreshed or introspected on any replica. A false return is an optimistic-concurrency loss;
-        // refetch and retry, and never let the request succeed without the revocation.
-        for (var attempt = 1; ; attempt++)
-        {
-            var authorization = await authorizations.FindByIdAsync(authorizationId, cancellationToken);
-            if (authorization is null ||
-                await authorizations.HasStatusAsync(authorization, Statuses.Revoked, cancellationToken) ||
-                await authorizations.TryRevokeAsync(authorization, cancellationToken))
-            {
-                break;
-            }
-
-            if (attempt == RevocationAttempts)
-            {
-                throw new AuthorizationRevocationFailed(authorizationId);
-            }
-        }
-
-        await tokens.RevokeByAuthorizationIdAsync(authorizationId, cancellationToken);
     }
 }

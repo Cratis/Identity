@@ -27,7 +27,7 @@ public class a_refresh_token_request : Specification
     {
         _tokens = Substitute.For<IOpenIddictTokenManager>();
         _authorizations = Substitute.For<IOpenIddictAuthorizationManager>();
-        _handler = new RedeemRefreshTokenOnce(_tokens, _authorizations);
+        _handler = new RedeemRefreshTokenOnce(_tokens, new GrantRevocation(_tokens, _authorizations));
         _token = new object();
         _authorization = new object();
 

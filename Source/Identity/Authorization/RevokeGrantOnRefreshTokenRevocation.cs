@@ -15,7 +15,8 @@ namespace Cratis.Identity.Authorization;
 /// </summary>
 /// <remarks>
 /// OpenIddict itself only revokes the presented token. Refresh-token reuse is guarded by
-/// <see cref="RedeemRefreshTokenOnce"/> at redemption time, including concurrent reuse.
+/// <see cref="RevokeGrantOnRefreshTokenReuse"/> at validation time and by <see cref="RedeemRefreshTokenOnce"/> at
+/// redemption time, including concurrent reuse.
 /// </remarks>
 /// <param name="tokens">The <see cref="IOpenIddictTokenManager"/>.</param>
 /// <param name="authorizations">The <see cref="IOpenIddictAuthorizationManager"/>.</param>
