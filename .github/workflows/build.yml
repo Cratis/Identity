@@ -1,0 +1,34 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and specs
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Build (Release, zero warnings)
+        run: dotnet build Identity.slnx --configuration Release
+
+      - name: Unit specs
+        run: dotnet test Source/Identity.Specs/Identity.Specs.csproj --configuration Release --no-build
+
+      - name: Integration specs
+        run: dotnet test Source/Identity.Integration.Specs/Identity.Integration.Specs.csproj --configuration Release --no-build
