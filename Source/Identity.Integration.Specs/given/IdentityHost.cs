@@ -38,6 +38,11 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     /// </summary>
     readonly MongoDbContainer _mongo = new MongoDbBuilder("mongo:8.0.14").Build();
 
+    /// <summary>
+    /// Gets the test-only pause points in the refresh-token pipeline.
+    /// </summary>
+    public RefreshGates RefreshGates { get; } = new();
+
     /// <inheritdoc/>
     public async Task InitializeAsync()
     {
@@ -91,6 +96,9 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
             {
                 services.AddAuthentication().AddScheme<AuthenticationSchemeOptions, FakeUpstream>(FakeUpstream.Scheme, _ => { });
                 services.Configure<UpstreamLoginOptions>(_ => _.Scheme = FakeUpstream.Scheme);
+                services.AddOpenIddict().AddServer(server => server
+                    .AddEventHandler(RefreshGates.BarrierDescriptor)
+                    .AddEventHandler(RefreshGates.HoldDescriptor));
             });
     }
 
