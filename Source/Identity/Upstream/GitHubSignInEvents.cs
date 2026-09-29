@@ -28,6 +28,7 @@ public class GitHubSignInEvents(IAccounts accounts, ILogger<GitHubSignInEvents> 
     /// <inheritdoc/>
     public override Task RemoteFailure(RemoteFailureContext context)
     {
+        logger.SignInFailed(context.Failure);
         context.HandleResponse();
         return Fail(context.HttpContext, context.Properties);
     }
