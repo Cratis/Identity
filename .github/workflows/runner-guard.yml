@@ -48,3 +48,17 @@ jobs:
             exit 1
           fi
           echo "OK: all runners resolve to cratis-arc."
+      - name: Every artifact upload sets retention-days
+        shell: bash
+        run: |
+          set -euo pipefail
+          offenders=""
+          for f in $(grep -rl --include='*.yml' 'actions/upload-artifact' .github/workflows/ 2>/dev/null); do
+            grep -q 'retention-days' "$f" || offenders="${offenders} ${f}"
+          done
+          if [ -n "$offenders" ]; then
+            echo "::error::Artifact uploads without retention-days found - the default is 90 days and bills storage"
+            for f in $offenders; do echo "  $f"; done
+            exit 1
+          fi
+          echo "OK: all artifact uploads set retention-days."

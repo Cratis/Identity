@@ -26,3 +26,11 @@ When writing or touching workflows here:
    is private.
 4. The `Runner Guard` workflow fails any pull request that reintroduces a
    hosted-runner reference, and audits the repository daily.
+
+## Artifact retention - explicit and short
+
+Every `actions/upload-artifact` step must set `retention-days`: 1 day for
+publish/build intermediates, 3 days for reports, 7 days for benchmarks,
+baselines and evidence. The silent default is 90 days - that default is what
+exhausted the Actions storage quota in October 2026. Runner Guard fails any
+pull request that uploads artifacts without it.
