@@ -13,7 +13,7 @@ concurrency:
 jobs:
   build:
     name: Build and specs
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}
     timeout-minutes: 30
     steps:
       - name: Checkout code
