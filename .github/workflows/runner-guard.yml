@@ -1,0 +1,50 @@
+name: Runner Guard
+
+# Private repositories must never schedule work on GitHub-hosted runners.
+# Every hosted job bills Actions minutes (one-minute minimum per job, Windows 2x,
+# macOS 10x) against the organization's fixed monthly quota. In October 2026
+# overlooked hosted jobs drained the entire quota in four days.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - "**"
+    paths:
+      - ".github/workflows/**"
+  schedule:
+    - cron: "17 4 * * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  no-hosted-runners:
+    name: No GitHub-hosted runners
+    runs-on: ${{ vars.RUNNER_GATE || 'cratis-arc' }}
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Every runs-on resolves to cratis-arc
+        shell: bash
+        run: |
+          set -euo pipefail
+          offenders=$(grep -rn --include='*.yml' --include='*.yaml' -E 'runs-on:.*((ubuntu|windows|macos)-[a-z0-9.]+)' .github/workflows/ \
+            | grep -vE ':[0-9]+:[[:space:]]*#' || true)
+          if [ -n "$offenders" ]; then
+            echo "::error::Hosted-runner references found - private repos must resolve to cratis-arc"
+            echo "$offenders"
+            echo ""
+            echo "Use: runs-on: \${{ vars.RUNNER_FORCE || 'cratis-arc' }} (heavy jobs)"
+            echo " or: runs-on: \${{ vars.RUNNER_GATE || 'cratis-arc' }} (guards)"
+            echo "If cratis-arc is down, set the repo variable - do not edit workflows."
+            exit 1
+          fi
+          echo "OK: all runners resolve to cratis-arc."
