@@ -25,7 +25,8 @@ permissions:
 jobs:
   no-hosted-runners:
     name: No GitHub-hosted runners
-    runs-on: ${{ vars.RUNNER_GATE || 'cratis-arc' }}
+    # jobWeight: light
+    runs-on: ${{ vars.RUNNER_GATE || 'cratis-arc-small' }}
     timeout-minutes: 5
 
     steps:
@@ -43,7 +44,7 @@ jobs:
             echo "$offenders"
             echo ""
             echo "Use: runs-on: \${{ vars.RUNNER_FORCE || 'cratis-arc' }} (heavy jobs)"
-            echo " or: runs-on: \${{ vars.RUNNER_GATE || 'cratis-arc' }} (guards)"
+            echo " or: runs-on: \${{ vars.RUNNER_GATE || 'cratis-arc-small' }} (light guards - script and API checks, no Docker or real build)"
             echo "If cratis-arc is down, set the repo variable - do not edit workflows."
             exit 1
           fi

@@ -12,7 +12,7 @@ When writing or touching workflows here:
 
 1. Default every job to the self-hosted `cratis-arc` scale set:
    - build/test/publish jobs: `runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}`
-   - short guard/gate jobs: `runs-on: ${{ vars.RUNNER_GATE || 'cratis-arc' }}`
+   - short guard/gate jobs (`jobWeight: light` - release-note and work-record checks, runner guards and other script or API guards that need no Docker and no real build): `runs-on: ${{ vars.RUNNER_GATE || 'cratis-arc-small' }}`, tagged with a `# jobWeight: light` comment. Builds, specs, audits and deployments stay `jobWeight: heavy` on `cratis-arc`. Where the weight is decided per run, call `Cratis/Infrastructure/.github/workflows/determine-runner.yml` with `jobWeight`
    Never write a hosted label - not even as the fallback default inside an
    expression. If cratis-arc is down, flip the repo variable instead of editing
    workflows: `gh variable set RUNNER_FORCE -R Cratis/<repo> --body ubuntu-latest`
