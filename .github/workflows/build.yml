@@ -25,8 +25,11 @@ jobs:
         shell: bash
         run: echo "NUGET_PACKAGES=$(dirname "$GITHUB_WORKSPACE")/.nuget-packages" >> "$GITHUB_ENV"
 
+      # The runner cannot write the default /usr/share/dotnet, so install the SDK into the job's temp.
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
         with:
           global-json-file: global.json
 
