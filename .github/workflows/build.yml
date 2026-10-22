@@ -19,8 +19,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Keep NuGet packages on the runner's scratch volume beside the checkout, not on the node's small
+      # ephemeral storage, where the kubelet evicts the runner under disk pressure.
+      - name: Keep NuGet packages on the scratch volume
+        shell: bash
+        run: echo "NUGET_PACKAGES=$(dirname "$GITHUB_WORKSPACE")/.nuget-packages" >> "$GITHUB_ENV"
+
+      # The runner cannot write the default /usr/share/dotnet, so install the SDK into the job's temp.
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
         with:
           global-json-file: global.json
 
