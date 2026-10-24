@@ -13,7 +13,7 @@ public class when_the_plain_pkce_method_is_requested(IdentityHost host) : IAsync
     HttpResponseMessage _response;
     string _body;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
         var (_, challenge) = Browser.Pkce();
@@ -24,10 +24,10 @@ public class when_the_plain_pkce_method_is_requested(IdentityHost host) : IAsync
         _body = await _response.Content.ReadAsStringAsync();
     }
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         _response.Dispose();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     [Fact] void should_refuse_the_request() => _response.StatusCode.ShouldEqual(HttpStatusCode.BadRequest);

@@ -14,7 +14,7 @@ public class when_a_rotated_refresh_token_is_reused(IdentityHost host) : IAsyncL
     HttpStatusCode _successorStatus;
     JsonElement _successorIntrospection;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
         var (verifier, challenge) = Browser.Pkce();
@@ -30,7 +30,7 @@ public class when_a_rotated_refresh_token_is_reused(IdentityHost host) : IAsyncL
         (_, _successorIntrospection) = await browser.Introspect(secondAccessToken);
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact] void should_rotate_on_refresh() => _rotationStatus.ShouldEqual(HttpStatusCode.OK);
     [Fact] void should_issue_a_new_refresh_token() => _second.ShouldNotEqual(_first);

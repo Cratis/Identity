@@ -17,7 +17,7 @@ public class when_github_sign_in_is_cancelled(IdentityHost host) : IAsyncLifetim
     HttpStatusCode _missingStateStatus;
     string _missingStateBody = string.Empty;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await using var factory = host.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
             services.PostConfigure<UpstreamLoginOptions>(options => options.Scheme = IdentitySchemes.GitHub)));
@@ -44,7 +44,7 @@ public class when_github_sign_in_is_cancelled(IdentityHost host) : IAsyncLifetim
         _missingStateBody = await missingState.Content.ReadAsStringAsync();
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact] void should_return_access_denied_to_the_validated_client() => _redirects.All(_ => QueryHelpers.ParseQuery(_.Query)["error"].ToString() == "access_denied").ShouldBeTrue();
     [Fact] void should_not_issue_a_code() => _redirects.All(_ => !QueryHelpers.ParseQuery(_.Query).ContainsKey("code")).ShouldBeTrue();

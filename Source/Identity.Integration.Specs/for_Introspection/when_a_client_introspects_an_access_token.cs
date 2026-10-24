@@ -11,7 +11,7 @@ public class when_a_client_introspects_an_access_token(IdentityHost host) : IAsy
     (HttpStatusCode Status, JsonElement Body) _anonymous;
     (HttpStatusCode Status, JsonElement Body) _wrongSecret;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
         var (verifier, challenge) = Browser.Pkce();
@@ -23,7 +23,7 @@ public class when_a_client_introspects_an_access_token(IdentityHost host) : IAsy
         _wrongSecret = await browser.PostForm("/connect/introspect", [new("token", accessToken)], (IdentityHost.IntrospectionClientId, "incorrect-secret"));
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact] void should_let_the_authenticated_resource_server_introspect() => _confidential.Body.GetProperty("active").GetBoolean().ShouldBeTrue();
     [Fact] void should_not_let_a_public_client_introspect() => (_public.Status != HttpStatusCode.OK).ShouldBeTrue();

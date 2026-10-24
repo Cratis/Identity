@@ -8,7 +8,7 @@ public class when_an_unselectable_tenant_is_hinted(IdentityHost host) : IAsyncLi
 {
     string _page;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
         var (_, challenge) = Browser.Pkce();
@@ -19,7 +19,7 @@ public class when_an_unselectable_tenant_is_hinted(IdentityHost host) : IAsyncLi
         _page = await page.Content.ReadAsStringAsync();
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact] void should_not_select_a_tenant_without_membership() => _page.Contains(" checked required", StringComparison.Ordinal).ShouldBeFalse();
     [Fact] void should_still_offer_selectable_tenants() => _page.Contains($"value=\"{IdentityHost.MemberTenant}\" required", StringComparison.Ordinal).ShouldBeTrue();

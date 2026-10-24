@@ -12,7 +12,7 @@ public class when_logging_in_on_an_ipv6_loopback_port(IdentityHost host) : IAsyn
     Uri _callback;
     HttpStatusCode _tokenStatus;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
         var (verifier, challenge) = Browser.Pkce();
@@ -35,7 +35,7 @@ public class when_logging_in_on_an_ipv6_loopback_port(IdentityHost host) : IAsyn
         ]);
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact] void should_return_to_the_ipv6_loopback_port() => _callback.GetLeftPart(UriPartial.Path).ShouldEqual(RedirectUri);
     [Fact] void should_redeem_the_code_with_the_exact_redirect_uri() => _tokenStatus.ShouldEqual(HttpStatusCode.OK);

@@ -15,7 +15,7 @@ public partial class when_signing_out(IdentityHost host) : IAsyncLifetime
     string _sessionCookie = string.Empty;
     string _antiforgeryCookie = string.Empty;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
         var (_, challenge) = Browser.Pkce();
@@ -37,7 +37,7 @@ public partial class when_signing_out(IdentityHost host) : IAsyncLifetime
         _authorizationError = QueryHelpers.ParseQuery(response.Headers.Location!.Query)["error"].ToString();
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact] void should_reject_a_cross_site_post() => _withoutAntiforgery.ShouldEqual(HttpStatusCode.BadRequest);
     [Fact] void should_sign_out_with_the_antiforgery_token() => _signOut.ShouldEqual(HttpStatusCode.OK);

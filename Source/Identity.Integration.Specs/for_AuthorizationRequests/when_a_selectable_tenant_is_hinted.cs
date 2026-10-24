@@ -11,7 +11,7 @@ public class when_a_selectable_tenant_is_hinted(IdentityHost host) : IAsyncLifet
     string _page;
     string _selectedTenant;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
         var (verifier, challenge) = Browser.Pkce();
@@ -27,7 +27,7 @@ public class when_a_selectable_tenant_is_hinted(IdentityHost host) : IAsyncLifet
         _selectedTenant = (string)token.Claims["tid"];
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact] void should_preselect_the_hinted_tenant() => _page.Contains($"value=\"{IdentityHost.OtherMemberTenant}\" checked", StringComparison.Ordinal).ShouldBeTrue();
     [Fact] void should_still_show_the_other_selectable_tenant() => _page.Contains($"value=\"{IdentityHost.MemberTenant}\" required", StringComparison.Ordinal).ShouldBeTrue();

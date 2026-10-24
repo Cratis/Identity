@@ -16,7 +16,7 @@ public class when_logging_in_with_pkce_on_an_arbitrary_loopback_port(IdentityHos
     TokenValidationResult _accessToken;
     JsonElement _introspection;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
         var (verifier, challenge) = Browser.Pkce();
@@ -33,7 +33,7 @@ public class when_logging_in_with_pkce_on_an_arbitrary_loopback_port(IdentityHos
         (_, _introspection) = await browser.Introspect(_tokens.GetProperty("access_token").GetString()!);
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact] void should_ask_for_consent_naming_the_client() => _consentPage.Contains("Authorize Cratis CLI?", StringComparison.Ordinal).ShouldBeTrue();
     [Fact] void should_ask_for_consent_naming_the_local_redirect() => _consentPage.Contains("a program on this computer (127.0.0.1:53123)", StringComparison.Ordinal).ShouldBeTrue();
