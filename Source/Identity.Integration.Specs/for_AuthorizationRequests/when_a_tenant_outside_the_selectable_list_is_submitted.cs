@@ -9,7 +9,7 @@ public class when_a_tenant_outside_the_selectable_list_is_submitted(IdentityHost
     HttpResponseMessage _response;
     string _page;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
         var (_, challenge) = Browser.Pkce();
@@ -18,10 +18,10 @@ public class when_a_tenant_outside_the_selectable_list_is_submitted(IdentityHost
         _page = await _response.Content.ReadAsStringAsync();
     }
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         _response.Dispose();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     [Fact] void should_not_redirect_with_a_code() => _response.Headers.Location.ShouldBeNull();

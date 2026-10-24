@@ -9,7 +9,7 @@ public class when_redeeming_a_code_with_the_wrong_verifier(IdentityHost host) : 
     HttpStatusCode _status;
     JsonElement _body;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
         var (_, challenge) = Browser.Pkce();
@@ -17,7 +17,7 @@ public class when_redeeming_a_code_with_the_wrong_verifier(IdentityHost host) : 
         (_status, _body) = await browser.RedeemCode(await browser.LoginForCode(challenge), otherVerifier);
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact] void should_refuse_it() => _status.ShouldEqual(HttpStatusCode.BadRequest);
     [Fact] void should_refuse_it_as_an_invalid_grant() => _body.GetProperty("error").GetString().ShouldEqual("invalid_grant");

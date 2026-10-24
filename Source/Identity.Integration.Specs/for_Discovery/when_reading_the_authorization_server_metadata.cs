@@ -9,14 +9,14 @@ public class when_reading_the_authorization_server_metadata(IdentityHost host) :
     JsonElement _metadata;
     JsonElement _jwks;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
         _metadata = JsonDocument.Parse(await browser.Client.GetStringAsync("/.well-known/oauth-authorization-server")).RootElement.Clone();
         _jwks = JsonDocument.Parse(await browser.Client.GetStringAsync(_metadata.GetProperty("jwks_uri").GetString())).RootElement.Clone();
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact] void should_name_the_configured_issuer() => _metadata.GetProperty("issuer").GetString().ShouldEqual(IdentityHost.Issuer);
     [Fact] void should_publish_the_authorization_endpoint() => _metadata.GetProperty("authorization_endpoint").GetString().ShouldEqual($"{IdentityHost.Issuer}connect/authorize");

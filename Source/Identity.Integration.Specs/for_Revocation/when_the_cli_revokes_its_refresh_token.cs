@@ -11,7 +11,7 @@ public class when_the_cli_revokes_its_refresh_token(IdentityHost host) : IAsyncL
     JsonElement _refresh;
     JsonElement _introspection;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
         var (verifier, challenge) = Browser.Pkce();
@@ -22,7 +22,7 @@ public class when_the_cli_revokes_its_refresh_token(IdentityHost host) : IAsyncL
         (_, _introspection) = await browser.Introspect(tokens.GetProperty("access_token").GetString()!);
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact] void should_accept_the_revocation() => _revocationStatus.ShouldEqual(HttpStatusCode.OK);
     [Fact] void should_refuse_to_refresh() => _refreshStatus.ShouldEqual(HttpStatusCode.BadRequest);

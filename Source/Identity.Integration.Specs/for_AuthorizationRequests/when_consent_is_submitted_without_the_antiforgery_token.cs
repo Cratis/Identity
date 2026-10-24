@@ -8,7 +8,7 @@ public class when_consent_is_submitted_without_the_antiforgery_token(IdentityHos
 {
     HttpResponseMessage _response;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
         var (_, challenge) = Browser.Pkce();
@@ -16,10 +16,10 @@ public class when_consent_is_submitted_without_the_antiforgery_token(IdentityHos
         _response = await browser.Consent(await page.Content.ReadAsStringAsync(), includeAntiforgery: false);
     }
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         _response.Dispose();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     [Fact] void should_refuse_the_submission() => _response.StatusCode.ShouldEqual(HttpStatusCode.BadRequest);

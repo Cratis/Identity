@@ -17,7 +17,7 @@ public class when_a_redeemed_refresh_token_is_reused_before_its_successor_is_iss
     (HttpStatusCode Status, JsonElement Body) _successorRefresh;
     JsonElement _successorIntrospection;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
         var (verifier, challenge) = Browser.Pkce();
@@ -44,7 +44,7 @@ public class when_a_redeemed_refresh_token_is_reused_before_its_successor_is_iss
         }
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact] void should_reject_the_reuse_as_an_invalid_grant() => _reuse.Body.GetProperty("error").GetString().ShouldEqual("invalid_grant");
     [Fact] void should_let_the_winner_finish() => _winner.Status.ShouldEqual(HttpStatusCode.OK);

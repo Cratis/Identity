@@ -9,14 +9,14 @@ public class when_redeeming_a_code_for_another_resource(IdentityHost host) : IAs
     HttpStatusCode _status;
     JsonElement _body;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
         var (verifier, challenge) = Browser.Pkce();
         (_status, _body) = await browser.RedeemCode(await browser.LoginForCode(challenge), verifier, IdentityHost.StudioMcp);
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact] void should_refuse_it() => _status.ShouldEqual(HttpStatusCode.BadRequest);
     [Fact] void should_refuse_it_as_an_invalid_target() => _body.GetProperty("error").GetString().ShouldEqual("invalid_target");

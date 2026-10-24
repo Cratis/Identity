@@ -44,7 +44,7 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     public RefreshGates RefreshGates { get; } = new();
 
     /// <inheritdoc/>
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _mongo.StartAsync();
 
@@ -53,9 +53,9 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     }
 
     /// <inheritdoc/>
-    async Task IAsyncLifetime.DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
-        await DisposeAsync();
+        await base.DisposeAsync();
         await _mongo.DisposeAsync();
     }
 

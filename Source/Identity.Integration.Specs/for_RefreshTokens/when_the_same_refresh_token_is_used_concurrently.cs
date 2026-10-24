@@ -13,7 +13,7 @@ public class when_the_same_refresh_token_is_used_concurrently(IdentityHost host)
 
     (HttpStatusCode Status, JsonElement Body) Winner => _results.Single(_ => _.Status == HttpStatusCode.OK);
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
         var (verifier, challenge) = Browser.Pkce();
@@ -38,7 +38,7 @@ public class when_the_same_refresh_token_is_used_concurrently(IdentityHost host)
         }
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact] void should_issue_tokens_to_exactly_one_request() => _results.Count(_ => _.Status == HttpStatusCode.OK).ShouldEqual(1);
     [Fact] void should_reject_the_other_request() => _results.Count(_ => _.Status == HttpStatusCode.BadRequest).ShouldEqual(1);

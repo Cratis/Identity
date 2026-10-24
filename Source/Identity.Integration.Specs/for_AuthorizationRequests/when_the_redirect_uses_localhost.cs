@@ -8,7 +8,7 @@ public class when_the_redirect_uses_localhost(IdentityHost host) : IAsyncLifetim
 {
     HttpResponseMessage _response;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
         var (_, challenge) = Browser.Pkce();
@@ -18,10 +18,10 @@ public class when_the_redirect_uses_localhost(IdentityHost host) : IAsyncLifetim
         _response = await browser.Authorize(parameters);
     }
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         _response.Dispose();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     [Fact] void should_refuse_the_request() => _response.StatusCode.ShouldEqual(HttpStatusCode.BadRequest);

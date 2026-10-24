@@ -37,7 +37,7 @@ jobs:
         run: dotnet build Identity.slnx --configuration Release
 
       - name: Unit specs
-        run: dotnet test Source/Identity.Specs/Identity.Specs.csproj --configuration Release --no-build
+        run: ./Source/Identity.Specs/bin/Release/net10.0/Cratis.Identity.Specs
 
       - name: Integration specs
-        run: dotnet test Source/Identity.Integration.Specs/Identity.Integration.Specs.csproj --configuration Release --no-build
+        run: ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs
