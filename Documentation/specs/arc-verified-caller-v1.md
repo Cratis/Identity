@@ -47,14 +47,20 @@ The logical field mappings below extend identity-contract-v1 §6 and remain subj
 | `scopes` | MUST preserve the verified ceiling and be intersected with live roles and policy. Empty scopes MUST NOT mean unrestricted person access. |
 | `permissions` | MUST preserve explicit service-principal operation permissions where applicable; MUST NOT confer person roles. |
 | `assurance` | MUST retain `idp`, integer NumericDate `auth_time`, `acr` (`basic` if unknown), and optional mapped `amr` for person calls. A workload MUST NOT fabricate human assurance. |
-| `senderBinding` | MUST contain either no binding or the verified DPoP result (`jkt`, accepted proof `jti`). Raw proofs MUST NOT be forwarded as evidence. A token with `cnf.jkt` MUST NOT be accepted as a plain bearer. Missing DPoP header, wrong proof key thumbprint, or replayed proof `jti` MUST cause 401 and MUST NOT produce a caller. DPoP optionality applies only to unbound tokens. |
+| `senderBinding` | MUST contain either no binding or the verified DPoP result (`jkt`, accepted proof `jti`). Raw proofs MUST NOT be forwarded as evidence. A token with `cnf.jkt` MUST NOT be accepted as a plain bearer. The verifier MUST validate the proof per RFC 9449 §4.3, including `typ=dpop+jwt`, signature, `htm` and `htu` matching the request, `ath` equal to the presented token's hash, and `iat` within a configured window. A missing, non-positive or unbounded `iat` window MUST cause refusal of sender-bound tokens; the window MUST be finite (recommended at most 5 minutes). The `jti` replay cache MUST retain entries at least for that window. Missing DPoP header, wrong proof key thumbprint, replayed proof `jti`, or any invalid proof MUST cause 401 and MUST NOT produce a caller. DPoP optionality applies only to unbound tokens. |
 | `policyEpoch` | MUST be a nonnegative integer when organisation policy applies. A stale epoch MUST force current-policy re-evaluation; it MUST NOT independently authorize. An unavailable required policy check MUST cause refusal. |
 
 Arc MUST construct exactly one caller for UI, REST, and MCP from a verified AuthProxy envelope, locally verified PAT after dispatch, native OAuth where enabled, or allowlisted verified workload. Unsigned identity headers MUST NOT authenticate a caller. Authorization MUST intersect product policy, scopes or service permissions, tenant, environment, grant bounds, assurance requirements, and current fences.
 
-A request with more than one credential, or a credential in the URI query, MUST be refused before caller construction (RFC 6750 §2 and OAuth 2.1). The verifier MUST NOT select one of multiple credentials silently.
+Credentials are the Authorization header value, a session cookie, an AuthProxy identity envelope, and any credential in the URI query. A session cookie plus an Authorization bearer counts as two credentials. An AuthProxy identity envelope plus Authorization MUST count as one credential only when the verified envelope cryptographically covers that exact Authorization value (forwarded identity v2 signs its SHA-256 hash, Cratis/Arc#3698); otherwise they MUST count as two. A DPoP proof accompanying its token is not an additional credential. A request with more than one credential, or a credential in the URI query, MUST be refused before caller construction (RFC 6750 §2 and OAuth 2.1). The verifier MUST NOT select one of multiple credentials silently. AuthProxy MUST NOT attach a person envelope (an envelope whose credential kind is not `pat`) to a request it forwards with a PAT. A PAT-namespace value under any non-Bearer Authorization scheme, including DPoP, MUST be refused in the [PAT branch](arc-pat-format-v1.md), never passed to OAuth verification or introspection.
 
-For delegated calls, the grant record's `accountKey`, current `actor` (`iss`, `sub`), `resource` and catalog audience, `tenant`, and `environment` MUST equal the verified token's corresponding values and trusted installation binding. A mismatch MUST cause refusal. A request-supplied grant reference MUST be ignored or refused, never used to select a record.
+For delegated calls, the grant record's `accountKey`, current `actor` (`iss`, `sub`), `resource` and catalog audience, `tenant`, and `environment` MUST equal the verified token's corresponding values and trusted installation binding. A mismatch MUST cause refusal. A request-supplied grant reference MUST be ignored or refused, never used to select a record. If the verified credential maps to `grant-a` and the request supplies `grant-b`, authorization MUST use only `grant-a` or refuse the request; `grant-b` bounds MUST NOT be read.
+
+### Envelope and bearer together
+
+When a verified AuthProxy identity envelope covers the exact Authorization value and therefore counts with it as one credential, the caller MUST be built only from that bearer's own verification path: the application PAT verifier for a PAT-namespace value, the OAuth verifier otherwise. The envelope MUST NOT substitute for bearer verification; it only binds the forwarded bearer to the hop. The envelope's signed subject/account key MUST equal the verified bearer's; otherwise the request MUST be refused.
+
+An envelope covering a PAT-namespace value under any Authorization scheme MUST be refused unless its credential kind is `pat`, as defined by forwarded identity v2 (Cratis/Arc#3698). Even a `pat`-kind envelope MUST NOT replace local PAT verification, including revocation, scope ceiling, and policy epoch checks.
 
 ### Credential matrix
 
@@ -106,6 +112,18 @@ Fixtures use resource `https://work.example.test/api`, audience `work-api`, tena
 | `cnf.jkt`-bound token without a DPoP header | 401; no caller constructed, no plain-bearer downgrade. |
 | `cnf.jkt`-bound token with wrong proof key thumbprint | 401; no caller constructed. |
 | `cnf.jkt`-bound token with replayed proof `jti` | 401; no caller constructed. |
+| `cnf.jkt`-bound token with proof `htu` mismatch | 401; no caller constructed. |
+| `cnf.jkt`-bound token with proof `ath` mismatch | 401; no caller constructed. |
+| `cnf.jkt`-bound token with stale proof `iat` | 401; no caller constructed. |
+| `cnf.jkt`-bound token with proof `htm` mismatch | 401; no caller constructed. |
+| Verified credential maps to `grant-a`; request supplies `grant-b` | Refused; request reference unused, `grant-b` bounds never read. |
+| `DPoP` Authorization scheme with a `direct_pat_v1_` value | PAT branch refusal; no OAuth verification or introspection, no caller constructed. |
+| Session cookie plus Authorization bearer | Two credentials; refused before caller construction. |
+| AuthProxy identity envelope plus bearer not cryptographically covered by it | Two credentials; refused before caller construction. |
+| Verified `oauth-grant` AuthProxy envelope covering the exact OAuth bearer, matching account key, all other checks pass | One credential; caller constructed only through OAuth verification. |
+| Verified non-`pat` envelope covering a `direct_pat_v1_` value | Refused; no caller constructed. |
+| Verified `pat`-kind envelope covering a revoked PAT | Refused after local PAT verification; no caller constructed. |
+| Verified envelope covering the exact OAuth bearer but with a different signed subject | Refused; no caller constructed. |
 | More than one credential, or a credential in the URI query | Refused before caller construction. |
 
 Machine-readable group: [principals and workload cache](../../Source/Identity.Specs/Vectors/arc-verified-caller-v1/principals-and-workload.json), repository path `Source/Identity.Specs/Vectors/arc-verified-caller-v1/principals-and-workload.json`. These are data vectors, not executed runtime conformance tests. `when.action` names a logical operation; outcomes and reasons are vector vocabulary, not public error messages.
