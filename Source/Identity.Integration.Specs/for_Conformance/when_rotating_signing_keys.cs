@@ -34,9 +34,9 @@ public class when_rotating_signing_keys(RotatingIdentityHost host) : IAsyncLifet
         _kidA = host.InitialSigningKid;
         _browser = host.CreateBrowser();
         var (verifier, challenge) = Browser.Pkce();
-        var (_, issued) = await _browser.RedeemCode(await _browser.LoginForCode(challenge), verifier);
-        var t1 = issued.GetProperty("access_token").GetString()!;
-        var r1 = issued.GetProperty("refresh_token").GetString()!;
+        var (issuedStatus, issued) = await _browser.RedeemCode(await _browser.LoginForCode(challenge), verifier);
+        var t1 = Required(issuedStatus, issued, "access_token");
+        var r1 = Required(issuedStatus, issued, "refresh_token");
         _t1Kid = KidOf(t1);
 
         // B and its encryption key are published ahead of time, which is also when they start to sign.
@@ -46,13 +46,13 @@ public class when_rotating_signing_keys(RotatingIdentityHost host) : IAsyncLifet
         _t1AcceptedAfterB = (await AccessTokens.Validate(_browser, t1)).IsValid;
         var (r1Status, second) = await _browser.Refresh(r1);
         _r1Status = r1Status;
-        _t2Kid = KidOf(second.GetProperty("access_token").GetString()!);
+        _t2Kid = KidOf(Required(r1Status, second, "access_token"));
 
         // C is published but not yet eligible: it must not sign.
         _kidC = host.Secrets.WriteKey("signing", "c", DateTimeOffset.UtcNow);
         _afterC = await WaitForKeys(_ => _.Contains(_kidC));
-        var (_, third) = await _browser.Refresh(second.GetProperty("refresh_token").GetString()!);
-        _t3Kid = KidOf(third.GetProperty("access_token").GetString()!);
+        var (thirdStatus, third) = await _browser.Refresh(Required(r1Status, second, "refresh_token"));
+        _t3Kid = KidOf(Required(thirdStatus, third, "access_token"));
 
         host.Secrets.RemoveKey("signing", "a");
         _afterRemovingA = await WaitForKeys(_ => !_.Contains(_kidA));
@@ -72,6 +72,11 @@ public class when_rotating_signing_keys(RotatingIdentityHost host) : IAsyncLifet
     [Fact] void should_publish_a_key_before_it_signs() => Conformance.Conformance.Expect(Requirements.KeyRotationOverlap, () => _afterC.ShouldContain(_kidC));
     [Fact] void should_not_sign_with_a_key_that_is_not_yet_eligible() => Conformance.Conformance.Expect(Requirements.KeyRotationOverlap, () => _t3Kid.ShouldEqual(_kidB));
     [Fact] void should_stop_publishing_a_retired_key() => Conformance.Conformance.Expect(Requirements.KeyRotationOverlap, () => _afterRemovingA.ShouldContainOnly(_kidB, _kidC));
+
+    static string Required(HttpStatusCode status, JsonElement body, string property) =>
+        body.TryGetProperty(property, out var value) && value.GetString() is { } text
+            ? text
+            : throw new InvalidOperationException($"The token endpoint answered {(int)status} without \"{property}\": {body.GetRawText()}");
 
     static string KidOf(string accessToken) => new JsonWebToken(accessToken).Kid;
 
