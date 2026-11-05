@@ -1,0 +1,38 @@
+{
+    "name": "member-of-both-tenants-no-cross-tenant-access",
+    "description": "Membership in both tenants does not widen a credential issued for t-alpha; AuthProxy refuses a t-beta target and a new credential needs tenant selection.",
+    "given": {
+        "person_memberships": [
+            { "tenant": "t-alpha", "role": "member" },
+            { "tenant": "t-beta", "role": "member" }
+        ],
+        "credential": {
+            "credential_kind": "oauth_access_token",
+            "aud": "direct-api",
+            "tid": "t-alpha",
+            "scope": "direct:read",
+            "verified_by": "authproxy"
+        },
+        "namespace_mapping": { "t-alpha": "ns-alpha", "t-beta": "ns-beta" }
+    },
+    "when": {
+        "action": "resolve_workspace_request",
+        "requested_target": {
+            "source": "tenancy_header",
+            "resource": "https://direct.example.test/mcp",
+            "installation": "direct-installation-a",
+            "environment": "production",
+            "tenant": "t-beta"
+        }
+    },
+    "then": {
+        "outcome": "refused",
+        "reason": "tenant_constraint_mismatch",
+        "checked_by": "authproxy",
+        "namespace_selected": null,
+        "downstream_called": false,
+        "membership_widens_credential": false,
+        "tid_rewritten": false,
+        "required_for_target": { "credential_tenant": "t-beta", "obtained_by": "tenant_selection" }
+    }
+}

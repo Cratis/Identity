@@ -1,0 +1,28 @@
+{
+    "name": "resource-or-environment-mismatch-refused",
+    "description": "A Direct production token for t-alpha is refused for a different resource or a different environment, with no namespace selection and no downstream call.",
+    "given": {
+        "credential": {
+            "credential_kind": "oauth_access_token",
+            "aud": "direct-api",
+            "tid": "t-alpha",
+            "resource": "https://direct.example.test/mcp",
+            "environment": "production",
+            "scope": "direct:read"
+        }
+    },
+    "when": {
+        "action": "resolve_workspace_request",
+        "requests": [
+            { "resource": "https://studio.example.test/mcp", "installation": "studio-installation-a", "environment": "production", "tenant": "t-alpha" },
+            { "resource": "https://direct.example.test/mcp", "installation": "direct-installation-a", "environment": "staging", "tenant": "t-alpha" }
+        ]
+    },
+    "then": {
+        "results": [
+            { "outcome": "refused", "reason": "resource_constraint_mismatch", "namespace_selected": null, "downstream_called": false },
+            { "outcome": "refused", "reason": "environment_constraint_mismatch", "namespace_selected": null, "downstream_called": false }
+        ],
+        "credential_constraints_unchanged": true
+    }
+}
