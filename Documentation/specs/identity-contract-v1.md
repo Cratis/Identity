@@ -154,7 +154,7 @@ Roles, membership, email, display name, login name and arbitrary upstream claims
 - It MUST NOT appear in access tokens unless the resource's catalog entry explicitly opts in. Even then it is display data only and is not part of the authorization context.
 - It is mutable, not unique and not verified as an identifier. It MUST NEVER be used as an authorization, matching, linking, migration or account-resolution key; `sub` (the account id) is the key. Consumers MUST NOT persist it as an identifier or join on it.
 - It is personal data. It follows the Account erasure boundary in [identity-events-v1 §5](identity-events-v1.md), and caches holding it MUST honour erasure.
-- Requesting it needs the OIDC `profile` scope, or the catalog opt-in for access tokens. It is never inferred from an unverified forwarded header.
+- Its value comes only from Identity's recorded display identifier, never from an unverified forwarded header or a client-supplied value.
 
 ## 6. Verified caller
 
