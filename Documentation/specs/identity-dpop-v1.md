@@ -3,7 +3,8 @@
 ```text
 Spec id: identity-dpop
 Version: 1
-Status: Draft
+Status: Locked
+Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
 Issue: https://github.com/Cratis/Identity/issues/29
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -11,9 +12,9 @@ Supersedes: None
 
 ## 1. Scope and authority
 
-Keywords follow [the specification conventions](README.md). The [Terms of identity-contract-v1](identity-contract-v1.md#terms) apply **verbatim**. This Draft defines Identity's issuance and AuthProxy's enforcing edge for RFC 9449 DPoP. Arc consumes the verified result through signed envelope v2; it does not re-validate the incoming proof on that path. Native OAuth verifiers MUST implement the same proof requirements themselves, without a fallback verifier after failure.
+Keywords follow [the specification conventions](README.md). The [Terms of identity-contract-v1](identity-contract-v1.md#terms) apply **verbatim**. This specification defines Identity's issuance and AuthProxy's enforcing edge for RFC 9449 DPoP. Arc consumes the verified result through signed envelope v2; it does not re-validate the incoming proof on that path. Native OAuth verifiers MUST implement the same proof requirements themselves, without a fallback verifier after failure.
 
-This is a proposed contract, not deployed behavior or sign-off. DPoP is sender constraint, not client authentication, body integrity, live membership or permission. PATs, browser cookies and workload service-account bearer credentials are not made DPoP credentials by this profile. Runners' registered-key session protocol is separate; their OAuth tokens follow this profile.
+This is a signed-off contract (Identity #14, 2026-11-05), not deployed behavior. DPoP is sender constraint, not client authentication, body integrity, live membership or permission. PATs, browser cookies and workload service-account bearer credentials are not made DPoP credentials by this profile. Runners' registered-key session protocol is separate; their OAuth tokens follow this profile.
 
 ## 2. Client selection and issuance
 
@@ -113,7 +114,7 @@ A future executable suite MUST supplement these vectors with real signing, hashi
 
 ## 8. Open points and required sign-off
 
-- **Owners/sign-off:** Identity, AuthProxy and Arc owners must review issuance, edge validation and envelope mapping; obtain required consumer reviews and Identity #14 acceptance before lock.
+- **Owners/sign-off:** signed off in Identity #14 (2026-11-05).
 - **Operations:** approve the proposed 300-second proof/nonce windows, 30-second future allowance and per-validator clock offset bound, 60-second maximum inter-validator difference, 390-second replay TTL and cache-loss quarantine (`300 + 30 + 60`), shared-cache durability/capacity and fail-closed recovery procedures; prove replica races/restarts, clock-offset refusal and key overlap.
 - **Nonce/envelope wire:** agree canonical HMAC nonce encoding, key distribution/rotation, and exact signed v2 bound/no-binding serialization in the envelope contract; logical `senderBinding` already includes accepted proof `jti`.
 - **Algorithm difference:** Design A/B mention ES256 and EdDSA; this narrower v1 intentionally permits ES256 only. Owners must accept this profile choice before lock; EdDSA needs a reviewed profile change.

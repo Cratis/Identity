@@ -3,7 +3,8 @@
 ```text
 Spec id: arc-scope-catalog
 Version: 1
-Status: Draft
+Status: Locked
+Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
 Issue: https://github.com/Cratis/Arc/issues/3700
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -14,7 +15,7 @@ Supersedes: None
 
 ## Purpose
 
-The catalog connects a resource, its token audience, and its scope vocabulary. It prevents a scope name from becoming authority outside the resource that owns it. This is a draft contract, not a statement of deployed registrations.
+The catalog connects a resource, its token audience, and its scope vocabulary. It prevents a scope name from becoming authority outside the resource that owns it. This specification is not a statement of deployed registrations.
 
 ## Terms
 
@@ -38,7 +39,7 @@ All URLs in this table are test fixtures, not production endpoints. Names are pr
 
 The scope catalog MUST map each registered RFC 8707 resource indicator URL to exactly one audience slug, and each audience slug to exactly one resource indicator URL. This one-to-one mapping MUST determine the token's `aud`: for example, `https://direct.example.test/mcp` maps to `direct-api`. `aud` MUST NOT be a URL. Each deployment MUST register its actual absolute resource indicator and audience slug. Each generated Stage app MUST have an application-specific registration and scope prefix; it MUST NOT reuse another app's authority by using a shared `stage:` scope. A token MUST target one resource. Verifiers MUST reject audiences not registered for the receiving resource and MUST NOT use URL similarity, hostname suffixes, or scope prefixes as audience verification.
 
-The catalog MUST map every exposed operation to its required scopes. `read` MUST cover only operations reviewed as non-mutating; `write` MUST cover only explicitly exposed mutations. New operations MUST remain unexposed until explicitly allowlisted. A scope name MUST NOT expose a new command automatically. `write` MUST NOT imply `read` unless an explicit reviewed catalog mapping says so; this draft instead uses bundles containing both.
+The catalog MUST map every exposed operation to its required scopes. `read` MUST cover only operations reviewed as non-mutating; `write` MUST cover only explicitly exposed mutations. New operations MUST remain unexposed until explicitly allowlisted. A scope name MUST NOT expose a new command automatically. `write` MUST NOT imply `read` unless an explicit reviewed catalog mapping says so; this specification instead uses bundles containing both.
 
 Unknown scopes and wildcard scopes MUST be refused. Scope prefix and operation syntax MUST match identity-contract-v1 §4. There MUST NOT be an `approve` or `admin` scope. A requested bundle MUST expand to its exact versioned scope list at consent time. A later bundle expansion MUST NOT widen an existing grant. Catalog changes affecting operation coverage MUST receive security review and MUST NOT silently widen existing permissions.
 
@@ -71,7 +72,7 @@ Machine-readable group: [catalog and policy](../../Source/Identity.Specs/Vectors
 
 - **q9 / N1:** approve production resource indicators, audiences, scope names, operation coverage, and bundle ownership. The small sets above are proposals, not final registrations.
 - **D7:** generated-app exposure remains an explicit allowlist; approval-related syntax depends on the approval contract and is not supplied by a write scope.
-- **(align with #24):** audience strings, scope syntax, immutable bindings, and one audience per access token follow #24. This draft corrected URL-shaped audiences to catalog strings. #24 delegates exact catalog registrations, operation coverage, bundle versioning, and exchange mappings to Arc; these proposed values still need consumer review.
+- **(align with #24):** audience strings, scope syntax, immutable bindings, and one audience per access token follow #24. This specification corrected URL-shaped audiences to catalog strings. #24 delegates exact catalog registrations, operation coverage, bundle versioning, and exchange mappings to Arc; these proposed values still need consumer review.
 
 ## Versioning
 

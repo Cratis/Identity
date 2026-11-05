@@ -3,7 +3,8 @@
 ```text
 Spec id: arc-pat-format
 Version: 1
-Status: Draft
+Status: Locked
+Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
 Issue: https://github.com/Cratis/Arc/issues/3699
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -14,7 +15,7 @@ Supersedes: None
 
 ## Purpose
 
-A resource prefix makes PAT dispatch deterministic. The application remains the PAT verifier; dispatch and checksum checks do not authenticate anyone. This is a draft specification, not a claim of shipped behavior.
+A resource prefix makes PAT dispatch deterministic. The application remains the PAT verifier; dispatch and checksum checks do not authenticate anyone. This specification is not a claim of shipped behavior.
 
 ## Terms
 
@@ -110,4 +111,4 @@ Machine-readable group: [dispatch and policy](../../Source/Identity.Specs/Vector
 
 ## Versioning
 
-A Locked spec MUST change only through a new version file. A verifier MUST accept only explicitly supported format versions and MUST NOT reinterpret an unsupported PAT version as OAuth. Prefix or checksum changes MUST use an explicitly versioned format and an announced compatibility lifecycle. This Draft is not yet a Locked contract.
+A Locked spec MUST change only through a new version file. A verifier MUST accept only explicitly supported format versions and MUST NOT reinterpret an unsupported PAT version as OAuth. Prefix or checksum changes MUST use an explicitly versioned format and an announced compatibility lifecycle.

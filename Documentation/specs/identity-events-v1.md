@@ -3,7 +3,8 @@
 ```text
 Spec id: identity-events
 Version: 1
-Status: Draft
+Status: Locked
+Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
 Issue: https://github.com/Cratis/Identity/issues/26
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -11,7 +12,7 @@ Supersedes: None
 
 ## 1. Scope and authority
 
-Keywords follow [the specification conventions](README.md). The [Terms of identity-contract-v1](identity-contract-v1.md#terms) apply **verbatim**; this document does not redefine them. Its identifier, linking, quarantine and tombstone rules remain prerequisites. This Draft proposes the initial event contract, not deployed behavior or sign-off. einari owns the event rules; numbered open points in §9 identify choices, with proposals used throughout pending review. Approval is recorded in Identity #14.
+Keywords follow [the specification conventions](README.md). The [Terms of identity-contract-v1](identity-contract-v1.md#terms) apply **verbatim**; this document does not redefine them. Its identifier, linking, quarantine and tombstone rules remain prerequisites. This specification defines the initial event contract, not deployed behavior. einari owns the event rules; numbered open points in §9 identify choices, with proposals used throughout pending review. Approval is recorded in Identity #14.
 
 Design A §§4.9–4.11 and D18, and Design B §§6.1 and 7.9, require past-tense facts, stable ids, generations, public/internal separation, first-release PII protection and no redeemable content. Chronicle mechanics below were checked against its .NET client source and event-modeling, event-type-migration and compliance skills. Identity-specific policy stricter than Chronicle is identified as a proposal, not attributed to Chronicle.
 
@@ -225,7 +226,7 @@ A field whose name triggers §6 (for example `KeyHash`, `PasskeyId`, `ClientSecr
 7. **Open for einari: approve revocation event vocabulary and separation from operational fences? (proposed: §8 names/fields aligned with identity-revocation-v1 before lock; no session/rotation/fence-transport events)**
 8. **Open for einari: approve D5-dependent Access ownership, binding identity and policy fields? (proposed: §8 Access writer with bilateral binding confirmation; organisation syntax/scope and connection ownership remain blocked on D5, membership remains product-owned)**
 
-Consumer/privacy reviews and einari's answers, plus sign-off in Identity #14, are required before Locked status. This Draft MUST NOT be treated as approval of D5, D20 or the still-to-come revocation contract.
+Signed off in Identity #14 (2026-11-05). This specification MUST NOT be treated as approval of D5, D20 or the still-to-come revocation contract.
 
 ## 10. Data vectors
 

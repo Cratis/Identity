@@ -3,7 +3,8 @@
 ```text
 Spec id: arc-mcp-authorization
 Version: 1
-Status: Draft
+Status: Locked
+Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
 Issue: https://github.com/Cratis/Arc/issues/3703
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -14,7 +15,7 @@ Supersedes: None
 
 ## Purpose
 
-An MCP client needs a machine-readable authentication challenge, not a browser sign-in page. This draft describes PAT-only, OAuth-only, and combined hosting profiles. It does not claim tested compatibility with any external connector.
+An MCP client needs a machine-readable authentication challenge, not a browser sign-in page. This specification describes PAT-only, OAuth-only, and combined hosting profiles. It does not claim tested compatibility with any external connector.
 
 The MCP authorization revision is pinned to **2026-07-28** (confirmed in Cratis/Identity#34). The reference is the [MCP authorization specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization), based on OAuth 2.1 [draft-ietf-oauth-v2-1-13](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-13). OAuth resource discovery follows [RFC 9728](https://www.rfc-editor.org/rfc/rfc9728); resource binding follows [RFC 8707](https://www.rfc-editor.org/rfc/rfc8707).
 

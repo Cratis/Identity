@@ -4,7 +4,8 @@
 Spec id: arc-forwarded-identity-v2
 Version: 3
 Source revision: Cratis/Arc@c1ce7d749
-Status: Draft
+Status: Locked
+Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
 Issue: Cratis/Arc#3698
 Sign-off issue: Cratis/Identity#14
 Supersedes: none — v1 remains
@@ -12,8 +13,6 @@ Supersedes: none — v1 remains
 
 <!-- Copyright (c) Cratis. All rights reserved. -->
 <!-- Licensed under the MIT license. See LICENSE file in the project root for full license information. -->
-
-> **Draft — contract not final until owner sign-off**
 
 Public reference: [Arc signed forwarded identity v2 (draft)](https://www.cratis.io/arc/backend/csharp/asp-net-core/signed-forwarded-identity-v2/). Normative dependencies: [Identity contract v1](identity-contract-v1.md) and [verified caller v1](arc-verified-caller-v1.md). This delivery does not supersede the published Arc v1 contract.
 
@@ -27,7 +26,7 @@ Sign every identity-bearing producer before switching a backend: YARP requests, 
 
 ## Normative vocabulary
 
-This draft depends on Identity's `identity-contract` version 1, Terms and §§2, 4–6. The relevant definitions below are reused verbatim; their presence does not claim that the Identity Draft is Locked.
+This specification depends on Identity's `identity-contract` version 1, Terms and §§2, 4–6. The relevant definitions below are reused verbatim; Identity contract version 1 is Locked.
 
 | Term | Definition |
 | --- | --- |
@@ -82,7 +81,7 @@ Unknown suffixes of either prefix are covered, and the edge strips them all befo
 
 `aud` is a canonical frame from the backend's trusted resource catalog configuration, not a header. In v2 it is exactly one 1–64-character ASCII slug matching `^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`. Compare it exactly without normalization. This narrows v2's audience value grammar; it does not alter v1's existing audience grammar. The synthetic vectors bind `https://api.example.test` to `example-api` in their trusted catalog. The resource indicator URL is never substituted into the `aud` frame.
 
-v2 additionally covers these exact header names. These names and value rules are draft choices requiring owner sign-off:
+v2 additionally covers these exact header names. These names and value rules are part of the locked contract:
 
 | Header | Meaning and representation |
 | --- | --- |
@@ -110,7 +109,7 @@ Trim only outer HTTP OWS (SP and HTAB) on covered values. Preserve internal prin
 
 ## Verified caller construction and requiredness
 
-These headers map to the exact logical field names in the Arc verified-caller v1 draft; they do not define new OAuth claims or rename its record. Recognized envelope wire version `v2` selects a reviewed local verification profile; the caller record's `contractVersion` is `"1"`, not `"2"`. Unknown profiles are refused. `credentialKind` and non-secret `credentialId` come from the verified credential record. The product resolves `person` from the confirmed `accountKey` mapping; it never manufactures a product person from a display name. A service caller instead uses an allowlisted `servicePrincipal`, not a fabricated person or Actor.
+These headers map to the exact logical field names in the Arc verified-caller v1 specification; they do not define new OAuth claims or rename its record. Recognized envelope wire version `v2` selects a reviewed local verification profile; the caller record's `contractVersion` is `"1"`, not `"2"`. Unknown profiles are refused. `credentialKind` and non-secret `credentialId` come from the verified credential record. The product resolves `person` from the confirmed `accountKey` mapping; it never manufactures a product person from a display name. A service caller instead uses an allowlisted `servicePrincipal`, not a fabricated person or Actor.
 
 | Verified credential kind | Signed person and assurance fields | Other required context |
 | --- | --- | --- |

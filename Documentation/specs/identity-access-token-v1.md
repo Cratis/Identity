@@ -3,7 +3,8 @@
 ```text
 Spec id: identity-access-token
 Version: 1
-Status: Draft
+Status: Locked
+Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
 Issue: https://github.com/Cratis/Identity/issues/28
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -11,9 +12,9 @@ Supersedes: None
 
 ## 1. Scope and authority
 
-Keywords follow [the specification conventions](README.md). The [Terms of identity-contract-v1](identity-contract-v1.md#terms) apply **verbatim**; this document does not redefine them. Its person, resource, tenant and claim rules remain prerequisites. This Draft proposes one validation profile for AuthProxy, Arc and products that validate Identity person OAuth access tokens natively. It does not cover PATs, workload credentials, ID-token validation or signed proxy envelopes. Credential dispatch MUST select the verifier once, with no fallback after failure (Design A D3/D11).
+Keywords follow [the specification conventions](README.md). The [Terms of identity-contract-v1](identity-contract-v1.md#terms) apply **verbatim**; this document does not redefine them. Its person, resource, tenant and claim rules remain prerequisites. This specification defines one validation profile for AuthProxy, Arc and products that validate Identity person OAuth access tokens natively. It does not cover PATs, workload credentials, ID-token validation or signed proxy envelopes. Credential dispatch MUST select the verifier once, with no fallback after failure (Design A D3/D11).
 
-This is a proposed contract, not deployed behavior or sign-off. Identity, AuthProxy and Arc owners, plus the contract's Direct/Studio consumer reviewers, MUST review it before acceptance in Identity #14. The [event contract](identity-events-v1.md) governs lifecycle facts; tokens, proofs and individual refresh rotations MUST NOT become event payloads.
+This is a signed-off contract (Identity #14, 2026-11-05), not deployed behavior. The [event contract](identity-events-v1.md) governs lifecycle facts; tokens, proofs and individual refresh rotations MUST NOT become event payloads.
 
 ## 2. Token shape and claims
 
@@ -160,7 +161,7 @@ Executable conformance coverage MUST verify the actual OpenIddict output, includ
 - **Lifetimes:** approve 300-second access-token default, 600-second ceiling and 30-second skew; refresh absolute **30 days** and idle **7 days** remain proposals pending lifecycle/revocation review.
 - **Additional claim:** `nbf` is not in contract v1 §5. This profile defines defensive time handling but does not authorize issuance or acceptance under the current allowlist. Adding it needs a separately reviewed contract change; otherwise omit it.
 - **Inherited decisions:** contract v1's consumer review, exact issuers/D1, actor namespaces, assurance vocabulary, tenant/`tid`, organisation/D5 and upstream/migration privacy decisions remain open; this profile does not resolve them.
-- **Dependent contracts/sign-off:** align identity-dpop-v1 and identity-revocation-v1 (including family reuse/concurrency and durable fences), obtain Identity/AuthProxy/Arc and Direct/Studio reviews, then record acceptance in Identity #14. No instant offline-JWT revocation or runtime conformance is claimed here.
+- **Dependent contracts/sign-off:** identity-dpop-v1 and identity-revocation-v1 (including family reuse/concurrency and durable fences) are aligned; signed off in Identity #14 (2026-11-05). No instant offline-JWT revocation or runtime conformance is claimed here.
 
 ## 10. Data vectors and references
 

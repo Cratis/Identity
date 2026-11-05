@@ -3,7 +3,8 @@
 ```text
 Spec id: identity-revocation
 Version: 1
-Status: Draft, under revision (see Cratis/Identity#32)
+Status: Locked
+Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
 Issue: https://github.com/Cratis/Identity/issues/32
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -11,7 +12,7 @@ Supersedes: None
 
 ## 1. Scope and authority
 
-Keywords follow [the specification conventions](README.md). The [Terms of identity-contract-v1](identity-contract-v1.md#terms) apply **verbatim**; this document does not redefine them. The [event catalogue](identity-events-v1.md) and [access-token profile](identity-access-token-v1.md) remain prerequisites. This Draft specifies a proposed protocol for Identity and participating product credential authorities, not an implemented storage guarantee or sign-off. Identity, Chronicle, AuthProxy, Arc, Access and Direct/Studio owners MUST review the open points before acceptance in Identity #14; #41 and #42 implement and prove the protocol.
+Keywords follow [the specification conventions](README.md). The [Terms of identity-contract-v1](identity-contract-v1.md#terms) apply **verbatim**; this document does not redefine them. The [event catalogue](identity-events-v1.md) and [access-token profile](identity-access-token-v1.md) remain prerequisites. This specification defines a protocol for Identity and participating product credential authorities, not an implemented storage guarantee. Signed off in Identity #14 (2026-11-05); #41 and #42 implement and prove the protocol.
 
 Revocation MUST NOT depend on an eventually consistent read model. A valid credential is not proof of live membership. **Unknown membership always denies**, including dependency failure, missing records and restore uncertainty. Revocation affects the next authorization decision; it cannot roll back work already committed or guarantee cancellation of an already executing distributed operation.
 
@@ -46,7 +47,7 @@ The fence and outbox transaction is a requirement on the operational adapter, **
 
 Use the catalogue names unchanged: `AccountDisabled`, `AuthorizationRevoked`, `RefreshTokenFamilyRevoked`, `RealmPolicyEpochAdvanced` and `RealmRecoveryEpochAdvanced` carry `FenceId`/`FenceSequence` and the catalogue's other fields. Each is Public, so the dispatcher appends its Internal source fact (events v1 §4.1), which carries the same fields; names below refer to the Public contract. `UpstreamKeyUnlinked` (source fact `UpstreamKeyUnlinkRecorded`) reports an unlink fence (§7); it keeps its catalogue fields, and the fence's FenceId/FenceSequence live in the fence log and its outbox intent, which recovery uses. `RealmPolicyEpochAdvanced` is a policy fact only; `RealmRecoveryEpochAdvanced` reports the independently durable recovery epoch (§6), and enforcement MUST NOT wait for its delivery. `RefreshTokenReuseDetected` is the non-secret compromise fact, not an individual rotation event. Its `DetectionId` and its associated family-revocation outbox intent MUST be stable under retry. `ConsentWithdrawn` MUST fence related grants before withdrawal is acknowledged; `AccountEnabled` MUST NOT restore old credentials.
 
-`OrganisationPolicyChanged` and `TenantBindingRemoved` remain Access-owned facts with `PolicyEpoch`; policy restrictions MUST publish the required epoch/Access sequence through the priority fence path before stale authority can continue. Products own membership, runner, PAT, delegation and approval facts; this Draft does not add those events to Identity's catalogue. Session continuations, individual rotations and fence transport MUST NOT become domain events. Catalogue coordination remains open (§10), with no proposed renames.
+`OrganisationPolicyChanged` and `TenantBindingRemoved` remain Access-owned facts with `PolicyEpoch`; policy restrictions MUST publish the required epoch/Access sequence through the priority fence path before stale authority can continue. Products own membership, runner, PAT, delegation and approval facts; this specification does not add those events to Identity's catalogue. Session continuations, individual rotations and fence transport MUST NOT become domain events. Catalogue coordination remains open (§10), with no proposed renames.
 
 ## 4. Redemption and concurrency
 
@@ -72,7 +73,7 @@ Both operations MUST contend on the same family/grant fence version in the opera
 
 ### 4.2 Double refresh and reuse
 
-The [access-token profile](identity-access-token-v1.md#4-lifetimes-and-refresh) requires rotation without a reuse grace window. Exactly one concurrent refresh of an unconsumed token can win the consume/replace CAS. The loser MUST re-read the token's consumed state, classify the repeated token as reuse and durably fence the **whole family** through §3, with `RefreshTokenReuseDetected` and `RefreshTokenFamilyRevoked` outbox facts. It MUST return no replacement. The winner's replacement is then unusable. A later network retry of a consumed token is also reuse; this Draft does not introduce a response-replay grace exception. Missing token state is denial, not proof of reuse.
+The [access-token profile](identity-access-token-v1.md#4-lifetimes-and-refresh) requires rotation without a reuse grace window. Exactly one concurrent refresh of an unconsumed token can win the consume/replace CAS. The loser MUST re-read the token's consumed state, classify the repeated token as reuse and durably fence the **whole family** through §3, with `RefreshTokenReuseDetected` and `RefreshTokenFamilyRevoked` outbox facts. It MUST return no replacement. The winner's replacement is then unusable. A later network retry of a consumed token is also reuse; this specification does not introduce a response-replay grace exception. Missing token state is denial, not proof of reuse.
 
 If durability is unavailable during reuse handling, the request MUST fail closed, the authority MUST quarantine affected family redemption until the pending restriction is durable, and MUST NOT claim completed family revocation. Unreachable replicas cannot serve this class from cached positive state.
 
@@ -171,4 +172,4 @@ Conformance MUST exercise crashes after operational commit, log append, acknowle
 5. **Status lookup and operation coupling:** specify authenticated lookup/correlation for existing JWT `jti` to grant/family/epoch without adding unreviewed claims; prove ancestor/parent-creation contention and approval-consumption/protected-operation coupling. Until available, sensitive operations MUST deny rather than rely on offline expiry.
 6. **Event and lifecycle alignment:** approve unchanged Identity catalogue vocabulary with einari, Access priority fence integration, product-owned revocation facts and required audit acceptance. Confirm tombstone/log retention against the longest grants/backups and the refresh profile's proposed 30-day absolute/7-day idle lifetime; no reuse grace window is added.
 7. **Decided restore model:** v1 mandates an independent, non-rollbackable recovery epoch after any restore, invalidation of every stateful credential including product-local PATs, recovery of all restriction facts, and independent key/client-secret retirement tombstones. No consumption-log alternative or PAT reopening is permitted. Prove the restore barrier, complete restriction recovery and verifier-wide enforcement before readiness; `RealmRecoveryEpochAdvanced` reports the fact, not its enforcement.
-8. **Acceptance:** obtain consumer/security/recovery review and sign-off in Identity #14. Q16's separate account-linking question is not resolved by the refresh-family answer. This Draft and its data vectors are not production conformance evidence.
+8. **Acceptance:** signed off in Identity #14 (2026-11-05). Q16's separate account-linking question is not resolved by the refresh-family answer. This specification and its data vectors are not production conformance evidence.

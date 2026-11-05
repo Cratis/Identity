@@ -3,7 +3,8 @@
 ```text
 Spec id: identity-contract
 Version: 1
-Status: Draft
+Status: Locked
+Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
 Issue: https://github.com/Cratis/Identity/issues/24
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -11,7 +12,7 @@ Supersedes: None
 
 ## Terms
 
-These definitions are normative within this Draft and MUST be reused verbatim by dependent W0 specifications. An identifier denotes identity, not authorization. “Detailed in” names the specification responsible for the remaining mechanics; it does not imply that specification is already Locked.
+These definitions are normative within this specification and MUST be reused verbatim by dependent W0 specifications. An identifier denotes identity, not authorization. “Detailed in” names the specification responsible for the remaining mechanics; it does not imply that specification is already Locked.
 
 | Term | Definition | Identifier format if any |
 |---|---|---|
@@ -40,7 +41,7 @@ These definitions are normative within this Draft and MUST be reused verbatim by
 
 This contract defines the person-facing identity shared by Identity, AuthProxy, Arc, Direct and Studio. Keywords follow [the specification conventions](README.md). It proposes the D4 person-id decision and related wire shapes; it does not claim deployment, owner review or sign-off. Implementation is [Identity #36](https://github.com/Cratis/Identity/issues/36).
 
-**Open: needs Direct/Studio owner review.** Both owners MUST review the account, resource, tenant, claim and verified-caller mappings before acceptance in #14. Every wire mapping below remains Draft; rows marked **Review** specifically require that review. Realm topology (D1) chooses issuer values and security boundaries; **D1 does not change the `(issuer, subject)` shape**. The recommendation of a shared products realm and separate customer-app realms is not a resolved D1 decision.
+**Signed off in Identity #14 (2026-11-05).** The account, resource, tenant, claim and verified-caller mappings were reviewed by the owners; rows marked **Review** specifically require that review. Realm topology (D1) chooses issuer values and security boundaries; **D1 does not change the `(issuer, subject)` shape**. The recommendation of a shared products realm and separate customer-app realms is not a resolved D1 decision.
 
 ## 2. Person, account and identifiers
 
@@ -192,7 +193,7 @@ This section describes inspected code, not additional normative claims about dep
 
 - `Source/Identity/Accounts/Account.cs` and `AccountDocument.cs` hold a string account id, numeric GitHub id, login and name. `Accounts.cs` allocates `Guid.NewGuid().ToString()` on insertion and matches sign-in by numeric GitHub id. The generalized realm/upstream-key model, tombstones and quarantine remain implementation work.
 - `Source/Identity/Upstream/GitHubUserResponse.cs` reads the positive numeric GitHub id separately from login. `GitHubSignInEvents.cs` replaces the upstream principal with the account session principal. `SessionPrincipal.cs` currently adds `sub`, name, GitHub id and GitHub login to the site session; that is not the target access-token allowlist.
-- `Source/Identity/Tenants/SelectableTenant.cs` documents `tid`. `ConfiguredTenantDirectory.cs` selects configured resource tenants using GitHub-id membership; `ITenantDirectory.cs` already exposes the product-owned directory seam. This Draft retains `tid` as the proposed wire name, pending consumer review.
+- `Source/Identity/Tenants/SelectableTenant.cs` documents `tid`. `ConfiguredTenantDirectory.cs` selects configured resource tenants using GitHub-id membership; `ITenantDirectory.cs` already exposes the product-owned directory seam. This specification retains `tid` as the proposed wire name, pending consumer review.
 - Direct currently consumes `sub`/`ClaimTypes.NameIdentifier`, GitHub/login-oriented identity claims and `x-ms-client-principal*` headers (e.g. `DirectIdentityDetailsProvider.cs`, `PersonalAccessTokens.cs`). Studio similarly consumes `sub`/`ClaimTypes.NameIdentifier` and forwarded principal ids (`TenantSelection.cs`, `OrganizationContext.cs`). Those compatibility paths do not establish agreement on the target `(iss, sub)` or verified-caller mappings.
 
 Migration MUST preserve valid account ids, add issuer scope and generic immutable links, and resolve product legacy keys only through §3. Consumers MUST NOT reinterpret an existing login name as a canonical subject. Existing incompatible identifiers require explicit audited mappings and conflict quarantine before cutover. Public-key/issuer choices, tenant aliases and legacy-claim retirement require owner review; this document changes no runtime behavior.
@@ -212,4 +213,4 @@ These are **data only**. They add no C# tests or project configuration and do no
 - **Token profile:** confirm RFC 9068/OpenIddict conformance, lifetime/skew policy, actor namespaces and assurance/method vocabulary with Identity, AuthProxy and Arc owners.
 - **Privacy/migration:** approve upstream-id exposure and retention, protected link evidence, GitHub migration audiences/retirement and erasure/tombstone handling.
 - **D20 / envelope:** confirm policy-epoch freshness and signed-context field mappings in their own versioned contracts; define any explicit environment wire claim there if needed.
-- **Lock:** obtain the required consumer reviews and sign-off in Identity #14. Until then this specification and its vectors remain Draft.
+- **Lock:** signed off in Identity #14 (2026-11-05).

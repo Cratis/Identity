@@ -3,7 +3,8 @@
 ```text
 Doc id: identity-package-and-storage
 Version: 1
-Status: Draft
+Status: Locked
+Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
 Issue: https://github.com/Cratis/Identity/issues/27
 Depends on: https://github.com/Cratis/Identity/issues/16 (D18)
 Linked from: https://github.com/Cratis/Identity/issues/11
@@ -13,7 +14,7 @@ Linked from: https://github.com/Cratis/Identity/issues/11
 
 This W0 design guides W2's package extraction and storage adapters. The headless module direction is decided; **D18 state and hosted-process details remain pending #16**. This note proposes recommendation A, not an approved storage technology or implemented consistency guarantee. Review with einari is outstanding. The header records the intended #11 linkage; linking and merge remain follow-up work.
 
-The [Terms of identity-contract-v1](../specs/identity-contract-v1.md#terms) apply unchanged. The [event rules and catalogue](../specs/identity-events-v1.md) determine which facts are events, their public/internal visibility, generations, privacy and secret exclusions. The [revocation protocol](../specs/identity-revocation-v1.md) owns fence durability, consumption concurrency, recovery and readiness; it takes precedence over this summary. All three specifications are Draft.
+The [Terms of identity-contract-v1](../specs/identity-contract-v1.md#terms) apply unchanged. The [event rules and catalogue](../specs/identity-events-v1.md) determine which facts are events, their public/internal visibility, generations, privacy and secret exclusions. The [revocation protocol](../specs/identity-revocation-v1.md) owns fence durability, consumption concurrency, recovery and readiness; it takes precedence over this summary. All three specifications are Locked.
 
 ## 2. Store inventory
 
@@ -114,7 +115,7 @@ Do not copy active codes, stale consumption records or key-ring XML into events.
 - **D18, pending #16:** confirm recommendation A's exact event/operational/secret boundary, materialization and hosted-process details before affected W2 persistence. D19 placement and blast-radius acceptance remain separate.
 - **Package names:** confirm module/contracts, adapter split, proxy/component names and reference-host ownership; signatures above are sketches.
 - **Store technologies:** choose/prove operational isolation, independent fence-log durability/retention, Chronicle keyed append/version compatibility and secret/KMS adapters. No database technology is selected here.
-- **Review:** agree consent-view-model/host conformance and privacy/retention boundaries with security and consumer owners; obtain einari's review of this note. #48 supplies executable consent evidence, not this Draft.
+- **Review:** agree consent-view-model/host conformance and privacy/retention boundaries with security and consumer owners; obtain einari's review of this note. #48 supplies executable consent evidence, not this document.
 
 ## 8. Reference
 

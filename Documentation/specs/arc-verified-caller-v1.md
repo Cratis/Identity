@@ -3,7 +3,8 @@
 ```text
 Spec id: arc-verified-caller
 Version: 1
-Status: Draft
+Status: Locked
+Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
 Issue: https://github.com/Cratis/Arc/issues/3701
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -14,7 +15,7 @@ Supersedes: None
 
 ## Purpose
 
-Verification paths produce one caller shape without confusing human, delegated, and machine authority. The caller supplies verified inputs to authorization; it is not authorization by itself. This is a draft logical record, not a shipped public API.
+Verification paths produce one caller shape without confusing human, delegated, and machine authority. The caller supplies verified inputs to authorization; it is not authorization by itself. This is a logical record, not a shipped public API.
 
 ## Terms
 
@@ -66,7 +67,7 @@ An envelope covering a PAT-namespace value under any Authorization scheme MUST b
 
 | Principal kind | Issuer | Audience | Authentication | Authorization owner | Tenant binding | Permitted exchanges |
 | --- | --- | --- | --- | --- | --- | --- |
-| Person | Realm Identity for OAuth; resource-local PAT issuance | One catalog audience, or fixed PAT resource | OAuth with PKCE; DPoP where bound; application PAT verification; verified browser/on-behalf context where applicable | Product membership and roles intersected with scopes | Fixed per credential | Delegation within consented grant; PAT exchange is not enabled by this draft |
+| Person | Realm Identity for OAuth; resource-local PAT issuance | One catalog audience, or fixed PAT resource | OAuth with PKCE; DPoP where bound; application PAT verification; verified browser/on-behalf context where applicable | Product membership and roles intersected with scopes | Fixed per credential | Delegation within consented grant; PAT exchange is not enabled by this specification |
 | Delegated actor | Realm Identity | One allowed destination audience | Authenticated agent and DPoP-bound exchanged token | Product intersected with server-side lineage | Inherited, no wider | Only named actors, destinations, depth, budgets |
 | Organisation automation | Realm Identity | One catalog audience | Confidential client credentials, `private_key_jwt`, DPoP | Product service-principal rules, never person roles | Fixed at registration | No exchange into person authority |
 | Cluster workload | Cluster issuer or workload CA | Receiving app, for example `work-api`; never API-server default | TokenReview with live bound pod, or workload mTLS | Receiving app allowlist and explicit permissions | Checked per-work grant for tenant work | None through the people authority |
@@ -130,9 +131,9 @@ Machine-readable group: [principals and workload cache](../../Source/Identity.Sp
 
 ## Open questions
 
-- **M10 / W0:** lock workload allowlist mapping and measured deletion latency. Thirty seconds is a placeholder; ten-minute tokens are proposed.
+- **M10 / W0:** the workload deletion latency value is provisional (30 s placeholder) until measured, and will change through a new version of this specification; the rest of the specification is locked. Ten-minute tokens are proposed.
 - **W0 / D20:** lock policy freshness and epoch re-evaluation mechanics, plus non-secret workload/runner credential identifiers.
-- **(align with #24):** #24 defines a string Contract version, account key separate from product Person, Credential kind categories, structured Client, Sender binding, assurance fields, and conditional integer Policy epoch. This draft has adopted those constraints. Exact camel-case serialization, `principalKind`, `servicePrincipal`, and `permissions` are additional Arc mechanics; machine-principal and runner credentials and enum spellings still need review. Actor remains person-representing, not the name for a bare service principal. Environment wire syntax and Actor namespaces remain open in #24.
+- **(align with #24):** #24 defines a string Contract version, account key separate from product Person, Credential kind categories, structured Client, Sender binding, assurance fields, and conditional integer Policy epoch. This specification has adopted those constraints. Exact camel-case serialization, `principalKind`, `servicePrincipal`, and `permissions` are additional Arc mechanics; machine-principal and runner credentials and enum spellings still need review. Actor remains person-representing, not the name for a bare service principal. Environment wire syntax and Actor namespaces remain open in #24.
 - **(align with #24):** `grantId` is a record reference, not an approved extra access-token claim. #24's claim allowlist requires explicit review before such a claim is added; `jti` is not a grant id.
 - **Runner contract:** registration, session expiry, rotation, and per-work revocation are outside this record. No new default is invented here.
 

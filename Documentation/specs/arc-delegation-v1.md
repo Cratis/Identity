@@ -3,7 +3,8 @@
 ```text
 Spec id: arc-delegation
 Version: 1
-Status: Draft
+Status: Locked
+Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
 Issue: https://github.com/Cratis/Arc/issues/3702
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -14,7 +15,7 @@ Supersedes: None
 
 ## Purpose
 
-Delegation lets an authenticated agent act for a person without inheriting unrestricted person authority. A server-side lineage bounds every descendant. This draft does not claim delegation or approval support is already shipped.
+Delegation lets an authenticated agent act for a person without inheriting unrestricted person authority. A server-side lineage bounds every descendant. This specification does not claim delegation or approval support is already shipped.
 
 ## Terms
 
