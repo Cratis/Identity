@@ -1,0 +1,40 @@
+{
+  "name": "migration-exact-github-id-links",
+  "description": "An Identity sign-in with an exact GitHub numeric id match to one trusted legacy record confirms the product mapping without separate legacy-account proof or a default hold.",
+  "given": {
+    "accounts": [{
+      "issuer": "https://identity.example",
+      "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+      "state": "active",
+      "linked_keys": [{ "idp": "https://github.com", "idp_sub": "12345" }]
+    }],
+    "product": "direct",
+    "legacy_people": [{ "person_id": "legacy-person-1", "github_id": "12345", "trusted": true }],
+    "confirmed_person_mappings": [],
+    "tombstones": [],
+    "realm_confirmation_hold_configured": false
+  },
+  "when": {
+    "action": "migrate_person_on_sign_in",
+    "account_key": { "issuer": "https://identity.example", "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32" },
+    "verified_identity_sign_in": {
+      "idp": "https://github.com",
+      "idp_sub": "12345",
+      "github_id": "12345",
+      "auth_time": 1800000000
+    },
+    "separate_legacy_account_control_proven_in_session": false
+  },
+  "then": {
+    "outcome": "linked",
+    "proposal_state": "confirmed",
+    "person_id": "legacy-person-1",
+    "account_key": { "issuer": "https://identity.example", "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32" },
+    "matching_legacy_candidate_count": 1,
+    "product_single_writer_uniqueness_enforced": true,
+    "tombstones_checked_atomically": true,
+    "audit_recorded": true,
+    "hold_required": false,
+    "accounts_unchanged": true
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "name": "migration-ambiguous-quarantined",
+  "description": "An Identity sign-in whose GitHub numeric id matches two trusted legacy candidates is quarantined and grants nothing until an authorized resolver records clearance.",
+  "given": {
+    "accounts": [{
+      "issuer": "https://identity.example",
+      "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+      "state": "active",
+      "linked_keys": [{ "idp": "https://github.com", "idp_sub": "12345" }]
+    }],
+    "product": "direct",
+    "legacy_people": [
+      { "person_id": "legacy-person-1", "github_id": "12345", "trusted": true },
+      { "person_id": "legacy-person-2", "github_id": "12345", "trusted": true }
+    ],
+    "confirmed_person_mappings": [],
+    "realm_confirmation_hold_configured": false
+  },
+  "when": {
+    "action": "migrate_person_on_sign_in",
+    "account_key": { "issuer": "https://identity.example", "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32" },
+    "verified_identity_sign_in": {
+      "idp": "https://github.com",
+      "idp_sub": "12345",
+      "github_id": "12345",
+      "auth_time": 1800000000
+    }
+  },
+  "then": {
+    "outcome": "binding_refused",
+    "proposal_state": "quarantined",
+    "reason": "ambiguous_legacy_match",
+    "matching_legacy_candidate_count": 2,
+    "confirmed_person_mappings_unchanged": true,
+    "accounts_unchanged": true,
+    "authority_from_proposed_link": false,
+    "resolver": "product_identity_administrator",
+    "recorded_clearance_required": true,
+    "time_alone_can_confirm": false,
+    "automatic_merge": false
+  }
+}

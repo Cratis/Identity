@@ -1,6 +1,6 @@
 {
-  "name": "link-cannot-confirm-before-quarantine-hold",
-  "description": "A non-conflicting proposal with valid control proofs still cannot grant access before the 24-hour minimum hold.",
+  "name": "link-cannot-confirm-before-realm-configured-hold",
+  "description": "A non-conflicting proposal waits only because this realm explicitly configured a 24-hour confirmation hold; the default is no hold.",
   "given": {
     "accounts": [{
       "issuer": "https://identity.example",
@@ -12,14 +12,17 @@
       "flow_id": "link-flow-2",
       "target_account": { "issuer": "https://identity.example", "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32" },
       "candidate_key": { "idp": "https://login.example/directory-a", "idp_sub": "user-7" },
-      "state": "quarantined",
+      "state": "pending_proof",
       "complete_proof_recorded_at": 1800000000,
       "authenticated_intent": true,
       "account_control_proven_in_session": true,
       "upstream_control_proven_in_same_session": true,
       "conflict": false
     },
-    "minimum_hold_seconds": 86400
+    "realm_policy": {
+      "issuer": "https://identity.example",
+      "confirmation_hold_seconds": 86400
+    }
   },
   "when": {
     "action": "confirm_link",
@@ -29,8 +32,8 @@
   },
   "then": {
     "outcome": "refused",
-    "reason": "quarantine_hold_not_elapsed",
-    "proposal_state": "quarantined",
+    "reason": "realm_configured_hold_not_elapsed",
+    "proposal_state": "pending_proof",
     "accounts_unchanged": true,
     "authority_from_proposed_link": false
   }
