@@ -17,6 +17,7 @@ Specifications define contracts shared by Identity and its consumers. RFC 2119 k
 | arc-verified-caller | 1 | Draft | [Verified caller and credential matrix](arc-verified-caller-v1.md) |
 | arc-delegation | 1 | Draft | [Delegation](arc-delegation-v1.md) |
 | arc-mcp-authorization | 1 | Draft | [MCP authorization](arc-mcp-authorization-v1.md) |
+| arc-forwarded-identity | 2 | Draft | [Forwarded identity v2](arc-forwarded-identity-v2.md) |
 
 ## Conventions
 
