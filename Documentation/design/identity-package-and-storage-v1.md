@@ -3,7 +3,8 @@
 ```text
 Doc id: identity-package-and-storage
 Version: 1
-Status: Draft
+Status: Locked
+Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
 Issue: https://github.com/Cratis/Identity/issues/27
 Depends on: https://github.com/Cratis/Identity/issues/16 (D18)
 Linked from: https://github.com/Cratis/Identity/issues/11
@@ -11,9 +12,9 @@ Linked from: https://github.com/Cratis/Identity/issues/11
 
 ## 1. Scope and authority
 
-This W0 design guides W2's package extraction and storage adapters. The headless module direction is decided; **D18 state and hosted-process details remain pending #16**. This note proposes recommendation A, not an approved storage technology or implemented consistency guarantee. Review with einari is outstanding. The header records the intended #11 linkage; linking and merge remain follow-up work.
+This W0 design guides W2's package extraction and storage adapters. The headless module direction is decided; **D18 was decided as option A in #16**. This note records that decision, not an approved storage technology or implemented consistency guarantee. The note was signed off in Identity #14 (2026-11-05). The header records the intended #11 linkage; linking and merge remain follow-up work.
 
-The [Terms of identity-contract-v1](../specs/identity-contract-v1.md#terms) apply unchanged. The [event rules and catalogue](../specs/identity-events-v1.md) determine which facts are events, their public/internal visibility, generations, privacy and secret exclusions. The [revocation protocol](../specs/identity-revocation-v1.md) owns fence durability, consumption concurrency, recovery and readiness; it takes precedence over this summary. All three specifications are Draft.
+The [Terms of identity-contract-v1](../specs/identity-contract-v1.md#terms) apply unchanged. The [event rules and catalogue](../specs/identity-events-v1.md) determine which facts are events, their public/internal visibility, generations, privacy and secret exclusions. The [revocation protocol](../specs/identity-revocation-v1.md) owns fence durability, consumption concurrency, recovery and readiness; it takes precedence over this summary. All three specifications are Locked.
 
 ## 2. Store inventory
 
@@ -49,7 +50,7 @@ credential use       -> authoritative operational status + consume/replace CAS
 
 ## 4. Packages and host surface
 
-Proposed names and boundaries follow Usher's backend-module-plus-contracts shape, not a new standalone server product.
+Names and boundaries follow Usher's backend-module-plus-contracts shape, not a new standalone server product.
 
 | Package | Responsibility |
 |---|---|
@@ -81,11 +82,11 @@ The application-facing surface is **only commands, queries and events**: registe
 | UI pages | Login, consent and enabled device/link/account interactions on the issuer's own origin; render package view models, submit package commands, and pass §5 conformance. |
 | Product callbacks and operation | Authenticated product tenant/live-membership integration, no configured membership authority outside development fixtures; monitoring, backup/restore and key drills. |
 
-Embedding is not a trust boundary against the host process. Proposed hosted Stage identity runs outside untrusted customer application code; the products realm is not embedded in Direct or Studio. Compact/self-hosted embedding remains an operator choice. D18 details are pending #16; D19 chooses hosted placement and requires separate shared-host risk acceptance.
+Embedding is not a trust boundary against the host process. Proposed hosted Stage identity runs outside untrusted customer application code; the products realm is not embedded in Direct or Studio. Compact/self-hosted embedding remains an operator choice. D18 is decided as option A (#16); D19 (Identity #17, still open) chooses hosted placement and requires separate shared-host risk acceptance.
 
 ## 5. Consent contract: checks for #48
 
-These are proposed observable checks for every host UI, including optional components. The **package owns the consent decision**. The host renders the package's validated request and returns the person's approve/deny intent; it cannot create authorization merely by asserting approval. #48 must exercise both the UI response and the resulting package state, including concurrent submissions.
+These are observable checks for every host UI, including optional components. The **package owns the consent decision**. The host renders the package's validated request and returns the person's approve/deny intent; it cannot create authorization merely by asserting approval. #48 must exercise both the UI response and the resulting package state, including concurrent submissions.
 
 1. **Package authority.** A host-created approval without a package-issued pending request fails and produces no grant or token. Every valid decision is revalidated by the package before any grant is committed.
 2. **Immutable binding.** The package creates a short-lived single-use request bound to the exact browser session, client, scope set, resource and PKCE challenge/method (and validated redirect URI). Tampering with any binding, including omitting PKCE, fails without granting anything. Sensitive bindings are resolved server-side, not trusted from hidden fields.
@@ -109,12 +110,12 @@ W2 extracts the module/contracts and thin reference host, replaces bundled pages
 
 Do not copy active codes, stale consumption records or key-ring XML into events. If existing installations need cutover, reconcile accounts/configuration and deny uncertain credentials, requiring fresh authentication/consent rather than replay-minting tokens. Preserve non-development key checks; prove protocol, consent, multi-replica and restore conformance before deployment. This note changes no current API, configuration or runtime behavior.
 
-## 7. Open points for einari
+## 7. Decisions recorded at sign-off
 
-- **D18, pending #16:** confirm recommendation A's exact event/operational/secret boundary, materialization and hosted-process details before affected W2 persistence. D19 placement and blast-radius acceptance remain separate.
-- **Package names:** confirm module/contracts, adapter split, proxy/component names and reference-host ownership; signatures above are sketches.
-- **Store technologies:** choose/prove operational isolation, independent fence-log durability/retention, Chronicle keyed append/version compatibility and secret/KMS adapters. No database technology is selected here.
-- **Review:** agree consent-view-model/host conformance and privacy/retention boundaries with security and consumer owners; obtain einari's review of this note. #48 supplies executable consent evidence, not this Draft.
+- **D18 (#16):** decided as option A: the event/operational/secret boundary, materialization and hosted-process details as described above. D19 placement and blast-radius acceptance (Identity #17) remain separate and open.
+- **Package names:** module/contracts, adapter split, proxy/component names and reference-host ownership were signed off in Identity #14; signatures above are sketches.
+- **Store technologies:** W2 must prove independent fence-log durability/retention, Chronicle keyed append/version compatibility and secret/KMS adapters. No database technology is selected here.
+- **Review:** consent-view-model/host conformance and privacy/retention boundaries were signed off in Identity #14. #48 supplies executable consent evidence, not this document.
 
 ## 8. Reference
 

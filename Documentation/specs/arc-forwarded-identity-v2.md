@@ -4,7 +4,8 @@
 Spec id: arc-forwarded-identity-v2
 Version: 3
 Source revision: Cratis/Arc@c1ce7d749
-Status: Draft
+Status: Locked
+Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
 Issue: Cratis/Arc#3698
 Sign-off issue: Cratis/Identity#14
 Supersedes: none — v1 remains
@@ -13,13 +14,11 @@ Supersedes: none — v1 remains
 <!-- Copyright (c) Cratis. All rights reserved. -->
 <!-- Licensed under the MIT license. See LICENSE file in the project root for full license information. -->
 
-> **Draft — contract not final until owner sign-off**
-
 Public reference: [Arc signed forwarded identity v2 (draft)](https://www.cratis.io/arc/backend/csharp/asp-net-core/signed-forwarded-identity-v2/). Normative dependencies: [Identity contract v1](identity-contract-v1.md) and [verified caller v1](arc-verified-caller-v1.md). This delivery does not supersede the published Arc v1 contract.
 
 ## Concept and compatibility
 
-AuthProxy signs the identity facts it forwards; Arc verifies them with an app-specific public key. This reference specifies v2, not an already released configuration API. Signer and verifier owners must approve the contract before implementing it.
+AuthProxy signs the identity facts it forwards; Arc verifies them with an app-specific public key. This reference specifies v2, not an already released configuration API. The signer and verifier owners approved the contract in the Identity #14 sign-off.
 
 Published v1 remains unchanged: `v1.<kid>.<ts>.<nonce>.<mac>`, HMAC-SHA256, with a 32-byte nonce and process-local replay detection. Existing opt-in integrations and explicitly named local-development profiles may retain v1. The production target is v2-only. A v2-only backend rejects v1 and unsigned forwarding; it never retries another version or falls back to native authentication after a failed forwarded credential. This fail-closed request policy is intentionally stricter than v1's authentication-scheme composition.
 
@@ -27,7 +26,7 @@ Sign every identity-bearing producer before switching a backend: YARP requests, 
 
 ## Normative vocabulary
 
-This draft depends on Identity's `identity-contract` version 1, Terms and §§2, 4–6. The relevant definitions below are reused verbatim; their presence does not claim that the Identity Draft is Locked.
+This specification depends on Identity's `identity-contract` version 1, Terms and §§2, 4–6. The relevant definitions below are reused verbatim; Identity contract version 1 is Locked.
 
 | Term | Definition |
 | --- | --- |
@@ -82,7 +81,7 @@ Unknown suffixes of either prefix are covered, and the edge strips them all befo
 
 `aud` is a canonical frame from the backend's trusted resource catalog configuration, not a header. In v2 it is exactly one 1–64-character ASCII slug matching `^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`. Compare it exactly without normalization. This narrows v2's audience value grammar; it does not alter v1's existing audience grammar. The synthetic vectors bind `https://api.example.test` to `example-api` in their trusted catalog. The resource indicator URL is never substituted into the `aud` frame.
 
-v2 additionally covers these exact header names. These names and value rules are draft choices requiring owner sign-off:
+v2 additionally covers these exact header names. These names and value rules are part of the locked contract:
 
 | Header | Meaning and representation |
 | --- | --- |
@@ -92,7 +91,7 @@ v2 additionally covers these exact header names. These names and value rules are
 | `x-cratis-subject` | Required for a person, absent for a service caller. Exact lowercase UUID-v4 `accountKey.subject`, following Identity §2.1; must equal the legacy tuple's decoded subject, without normalization. |
 | `x-cratis-idp` | Required `assurance.idp` for a person. Exact upstream issuer/authority from the trusted connection or verified credential-creation evidence, not a provider display name or the realm issuer by assumption. |
 | `x-cratis-auth-time` | Required `assurance.auth_time` for a person. Actual verified person-authentication time, preserved through refresh/exchange, encoded as canonical integer NumericDate (Unix seconds, signed 64-bit decimal, no `+`, leading zeros or `-0`). No fractional value. Not `ts`, token `iat`, refresh time or current time. |
-| `x-cratis-acr` | Required `assurance.acr` for a person. Connection-mapped `acr` string; unknown or unmapped evidence MUST be `basic`, never elevated from an untrusted label. Vocabulary beyond `basic` requires review. |
+| `x-cratis-acr` | Required `assurance.acr` for a person. Connection-mapped `acr` string; unknown or unmapped evidence MUST be `basic`, never elevated from an untrusted label. Vocabulary beyond `basic` requires a new version of this specification. |
 | `x-cratis-amr` | Optional `assurance.amr`: standard-base64-encoded UTF-8 JSON array of verified, connection-mapped `amr` strings. Omit when unknown; an empty array conveys no method evidence. |
 | `x-cratis-act` | Required when acting for another. Standard-base64-encoded UTF-8 JSON object with current actor's registered `iss` and `sub`, and optional nested `act` for earlier actors (maximum eight nested prior actors in this wire profile). Top-level person subject stays unchanged; prior actors are informational. |
 | `x-cratis-grant-id` | Required with `act`; otherwise optional when a bounded per-work grant applies. Nonempty, non-secret reference to the authoritative bounded grant/support record, distinct from the credential id and token/proof `jti`. Grant lineage and revocation stay server-side. |
@@ -110,7 +109,7 @@ Trim only outer HTTP OWS (SP and HTAB) on covered values. Preserve internal prin
 
 ## Verified caller construction and requiredness
 
-These headers map to the exact logical field names in the Arc verified-caller v1 draft; they do not define new OAuth claims or rename its record. Recognized envelope wire version `v2` selects a reviewed local verification profile; the caller record's `contractVersion` is `"1"`, not `"2"`. Unknown profiles are refused. `credentialKind` and non-secret `credentialId` come from the verified credential record. The product resolves `person` from the confirmed `accountKey` mapping; it never manufactures a product person from a display name. A service caller instead uses an allowlisted `servicePrincipal`, not a fabricated person or Actor.
+These headers map to the exact logical field names in the Arc verified-caller v1 specification; they do not define new OAuth claims or rename its record. Recognized envelope wire version `v2` selects a reviewed local verification profile; the caller record's `contractVersion` is `"1"`, not `"2"`. Unknown profiles are refused. `credentialKind` and non-secret `credentialId` come from the verified credential record. The product resolves `person` from the confirmed `accountKey` mapping; it never manufactures a product person from a display name. A service caller instead uses an allowlisted `servicePrincipal`, not a fabricated person or Actor.
 
 | Verified credential kind | Signed person and assurance fields | Other required context |
 | --- | --- | --- |
@@ -215,4 +214,4 @@ Tooling remains in [Arc's generator folder](https://github.com/Cratis/Arc/tree/m
 
 Arc verification prints the case count and `0 mismatches` and exits zero. The signer uses its own header selection, raw-name validation, OWS trimming, sorting, request validation, bounds and string framing; the consumer independently implements the same rules with its own coverage set and streaming frames. Neither calls the other's canonicalization or shares its header-selection helpers. Every case compares their canonical bytes or rejection reason using identical frame metadata, including invalid-name, duplicate, control, size and path cases. Accepted cases additionally compare consumer bytes to the actual `signingInput`. Consumers must run all expected outcomes; positive normalization cases isolate replay state so they do not accidentally become replay tests.
 
-The Identity layout permits data/specs, not tooling. Regeneration and fixed TEST-ONLY private keys remain in the Arc source fixture; the delivery contains public verification keys only. This package is not a claim of an integrated Identity runner, authenticated TLS/MongoDB behavior, or owner sign-off.
+The Identity layout permits data/specs, not tooling. Regeneration and fixed TEST-ONLY private keys remain in the Arc source fixture; the delivery contains public verification keys only. This package is not a claim of an integrated Identity runner, or authenticated TLS/MongoDB behavior.
