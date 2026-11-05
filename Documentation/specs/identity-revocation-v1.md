@@ -119,8 +119,6 @@ Recovery epochs and credential invalidation do not cover signing keys or client 
 
 Before readiness, recovery MUST reconcile these independent tombstones with restored key/secret state and prove enforcement by every issuer, client authenticator and signing-key verifier. Superseded secrets MUST be rejected by their recorded deadline; retired signing keys MUST NOT resume signing or verification beyond their recorded retirement policy. Missing or inconsistent retirement evidence MUST deny affected issuance/authentication/verification, not trust restored activation facts or caches. Enforcement MUST NOT wait on event delivery. Tombstone retention MUST cover the longest relevant backup and acceptance windows.
 
-For the products realm, emergency key rejection surviving a restore (this section) and grant and session invalidation after key rejection (§4) are D13 issuance gates (Identity #15): both MUST be tested end to end before production issuance. D19 (option B with option C, Identity #17) keeps the products realm on a separate host from the shared customer Stage host; a host compromise there is recovered across all realms the host runs (#18 runbooks).
-
 This section specifies restore safety, not the emergency compromise procedure. Emergency key/secret compromise response belongs to the [#18 security runbooks](../security/runbooks/) and the [access-token profile](identity-access-token-v1.md#6-metadata-jwks-and-rotation).
 
 ## 7. Revocation targets and verifier bounds
