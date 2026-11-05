@@ -1,17 +1,16 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Security.Cryptography.X509Certificates;
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Clients;
 using Cratis.Identity.Configuration;
+using Cratis.Identity.Keys;
 using Cratis.Identity.Resources;
 using Cratis.Identity.Storage;
 using Cratis.Identity.Tenants;
 using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using OpenIddict.Server;
@@ -24,6 +23,8 @@ namespace Cratis.Identity.Hosting;
 /// </summary>
 internal static class IdentityServiceCollectionExtensions
 {
+    static readonly string[] _keySettings = ["SigningCertificate", "EncryptionCertificate"];
+
     /// <summary>
     /// Adds Cratis Identity: storage, upstream login, the OpenIddict authorization server and the endpoints.
     /// </summary>
@@ -31,16 +32,30 @@ internal static class IdentityServiceCollectionExtensions
     /// <param name="configuration">The <see cref="IConfiguration"/>.</param>
     /// <param name="environment">The <see cref="IHostEnvironment"/>.</param>
     /// <returns>The <see cref="IServiceCollection"/> for continuation.</returns>
+    /// <exception cref="KeysInConfiguration">Thrown when a signing or encryption certificate is still configured.</exception>
+    /// <exception cref="SecretStoreNotConfigured">Thrown outside development without a secret store.</exception>
     internal static IServiceCollection AddCratisIdentity(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         var section = configuration.GetSection(IdentityOptions.SectionName);
         var startupOptions = section.Get<IdentityOptions>() ?? new IdentityOptions();
 
+        // Keys are custodied by the secret store only. Binding would silently ignore a stale certificate setting.
+        foreach (var setting in _keySettings.Where(_ => section.GetSection(_).Exists()))
+        {
+            throw new KeysInConfiguration($"{IdentityOptions.SectionName}:{setting}");
+        }
+
+        if (!environment.IsDevelopment() && !startupOptions.SecretStore.IsConfigured)
+        {
+            throw new SecretStoreNotConfigured();
+        }
+
         services.AddOptions<IdentityOptions>().Bind(section).ValidateOnStart();
         services.AddSingleton<IValidateOptions<IdentityOptions>, IdentityOptionsValidation>();
         services.AddSingleton(TimeProvider.System);
 
-        services.AddStorage(startupOptions);
+        services.AddStorage();
+        services.AddSecretStoreKeys(startupOptions);
         services.AddDomain();
         if (startupOptions.Accounts.EventSourced)
         {
@@ -91,23 +106,40 @@ internal static class IdentityServiceCollectionExtensions
             .Configure<IOptions<IdentityOptions>>((cookie, identity) => cookie.ExpireTimeSpan = identity.Value.SessionLifetime);
     }
 
-    static void AddStorage(this IServiceCollection services, IdentityOptions startupOptions)
+    static void AddStorage(this IServiceCollection services)
     {
         services.AddSingleton<IMongoClient>(sp => new MongoClient(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.ConnectionString));
         services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.Database));
         services.AddSingleton<StorageIndexes>();
 
-        var dataProtection = services.AddDataProtection().SetApplicationName("Cratis.Identity");
-        if (startupOptions.EncryptionCertificate.IsConfigured)
-        {
-            // Without a certificate (development) the key ring is stored unencrypted in MongoDB.
-            dataProtection.ProtectKeysWithCertificate(Load(startupOptions.EncryptionCertificate));
-        }
-
-        services.AddOptions<KeyManagementOptions>().Configure<IMongoDatabase>((options, database) => options.XmlRepository = new MongoXmlRepository(database));
-
         services.AddHostedService<ClientRegistrations>();
         services.AddHostedService<TokenPruning>();
+    }
+
+    static void AddSecretStoreKeys(this IServiceCollection services, IdentityOptions startupOptions)
+    {
+        var dataProtection = services.AddDataProtection().SetApplicationName("Cratis.Identity");
+        if (!startupOptions.SecretStore.IsConfigured)
+        {
+            // Development only: ephemeral realm keys and the default Data Protection ring.
+            return;
+        }
+
+        // The secret store is the custody of the ring, so keys are neither generated nor wrapped by Identity.
+        dataProtection.DisableAutomaticKeyGeneration();
+        services.AddSingleton(sp =>
+        {
+            var keys = new SecretStoreKeys(
+                sp.GetRequiredService<IOptions<IdentityOptions>>().Value.SecretStore,
+                sp.GetRequiredService<TimeProvider>(),
+                sp.GetRequiredService<ILogger<SecretStoreKeys>>());
+
+            // The first read validates the store, so an invalid one stops the host when the service is first resolved.
+            _ = keys.Current;
+            return keys;
+        });
+        services.AddSecretStoreKeyRing();
+        services.AddHostedService<KeyRingReloading>();
     }
 
     static void AddDomain(this IServiceCollection services)
@@ -152,7 +184,7 @@ internal static class IdentityServiceCollectionExtensions
                     .SetRefreshTokenReuseLeeway(null)
                     .DisableAccessTokenEncryption();
 
-                AddCredentials(options, startupOptions, environment);
+                AddEphemeralCredentialsInDevelopment(options, startupOptions);
 
                 var aspNetCore = options.UseAspNetCore()
                     .EnableAuthorizationEndpointPassthrough()
@@ -163,12 +195,27 @@ internal static class IdentityServiceCollectionExtensions
                     aspNetCore.DisableTransportSecurityRequirement();
                 }
 
-                options.AddEventHandler(RevokeGrantOnRefreshTokenReuse.Descriptor)
+                if (startupOptions.SecretStore.IsConfigured)
+                {
+                    options.AddEventHandler(RefuseIssuanceWithoutUsableKey.Descriptor);
+                }
+
+                options.AddEventHandler(RejectExpiredTokenEntries.Descriptor)
+                    .AddEventHandler(RevokeGrantOnRefreshTokenReuse.Descriptor)
                     .AddEventHandler(RedeemRefreshTokenOnce.Descriptor)
                     .AddEventHandler(RevokeGrantOnRefreshTokenRevocation.Descriptor);
             });
 
         services.AddOptions<OpenIddictServerOptions>().Configure<IOptions<IdentityOptions>, IResourceCatalog>(ConfigureServer);
+
+        if (startupOptions.SecretStore.IsConfigured)
+        {
+            // Registered after AddOpenIddict(), so the key order is set after OpenIddict has sorted its credentials.
+            services.AddSingleton<ConfigureServerKeys>();
+            services.AddSingleton<IConfigureOptions<OpenIddictServerOptions>>(sp => sp.GetRequiredService<ConfigureServerKeys>());
+            services.AddSingleton<IPostConfigureOptions<OpenIddictServerOptions>>(sp => sp.GetRequiredService<ConfigureServerKeys>());
+            services.AddSingleton<IOptionsChangeTokenSource<OpenIddictServerOptions>, SecretStoreKeysChangeTokenSource>();
+        }
     }
 
     static void ConfigureServer(OpenIddictServerOptions server, IOptions<IdentityOptions> identity, IResourceCatalog resources)
@@ -193,24 +240,12 @@ internal static class IdentityServiceCollectionExtensions
         server.Resources.UnionWith(resources.All.SelectMany(_ => _.Indicators).Select(_ => new Uri(_, UriKind.Absolute)));
     }
 
-    static void AddCredentials(OpenIddictServerBuilder server, IdentityOptions options, IHostEnvironment environment)
+    static void AddEphemeralCredentialsInDevelopment(OpenIddictServerBuilder server, IdentityOptions options)
     {
-        if (options.SigningCertificate.IsConfigured && options.EncryptionCertificate.IsConfigured)
+        if (!options.SecretStore.IsConfigured)
         {
-            server
-                .AddSigningCertificate(Load(options.SigningCertificate))
-                .AddEncryptionCertificate(Load(options.EncryptionCertificate));
-            return;
+            // Development only: AddCratisIdentity refuses to start outside it without a secret store.
+            server.AddEphemeralSigningKey().AddEphemeralEncryptionKey();
         }
-
-        if (!environment.IsDevelopment())
-        {
-            throw new CertificatesNotConfigured();
-        }
-
-        server.AddEphemeralSigningKey().AddEphemeralEncryptionKey();
     }
-
-    static X509Certificate2 Load(CertificateOptions certificate) =>
-        X509CertificateLoader.LoadPkcs12FromFile(certificate.Path, certificate.Password);
 }

@@ -103,10 +103,10 @@ Everything is under the `Identity` section (environment variables use `Identity_
 | --- | --- | --- |
 | `Issuer` | — | Absolute public URI, normally `https://auth.example/` (including trailing `/`, no path). **Required outside development**; the service refuses to start without it. Its scheme and host must match the public authorization/discovery origin. |
 | `MongoDB:ConnectionString` | `mongodb://localhost:27017` | |
-| `MongoDB:Database` | `cratis-identity` | Holds OpenIddict applications, authorizations and tokens, `accounts`, and `data-protection-keys`. |
+| `MongoDB:Database` | `cratis-identity` | Holds OpenIddict applications, authorizations and tokens, and `accounts`. Tokens have a TTL index on their expiry; keys are never stored here. |
 | `GitHub:ClientId`, `GitHub:ClientSecret` | — | GitHub OAuth app. Callback URL: `<issuer>signin-github`. |
-| `SigningCertificate:Path`, `:Password` | — | PKCS#12 file that signs tokens. **Required outside development.** |
-| `EncryptionCertificate:Path`, `:Password` | — | PKCS#12 file that encrypts codes and refresh tokens and protects the Data Protection key ring. **Required outside development.** |
+| `SecretStore:Path` | — | Directory the platform mounts from its secret store, holding realm signing keys, encryption keys and the Data Protection key ring (see [Keys and the secret store](#keys-and-the-secret-store)). **Required outside development.** The old `SigningCertificate` and `EncryptionCertificate` settings are refused at startup. |
+| `SecretStore:ReloadInterval` | `00:01:00` | How often the directory is read again; between one second and five minutes. |
 | `Tokens:AccessTokenLifetime` | `00:15:00` | Also the longest a revoked grant keeps working at a resource server that does not introspect. |
 | `Tokens:AuthorizationCodeLifetime` | `00:02:00` | |
 | `Tokens:RefreshTokenLifetime` | `30.00:00:00` | Absolute lifetime of a refresh-token family. |
@@ -116,7 +116,57 @@ Everything is under the `Identity` section (environment variables use `Identity_
 
 Clients are declared in code (`ClientDescriptors`) and configuration (introspection clients). The client store is reconciled at startup: undeclared clients are deleted.
 
-In development (`ASPNETCORE_ENVIRONMENT=Development`) Identity uses ephemeral signing and encryption keys, so tokens stop validating when it restarts, and it allows plain HTTP.
+In development (`ASPNETCORE_ENVIRONMENT=Development`) without a `SecretStore:Path`, Identity uses ephemeral signing and encryption keys and the default Data Protection ring, so tokens stop validating when it restarts, and it allows plain HTTP.
+
+### Keys and the secret store
+
+Realm signing keys, encryption keys and the Data Protection key ring are read only from `SecretStore:Path`, a directory mounted by the platform (a Kubernetes Secret volume or a CSI secrets-store mount). Keys never live in configuration files, MongoDB or events. **Breaking change before 1.0:** `SigningCertificate` and `EncryptionCertificate` are no longer read; Identity refuses to start if either is still configured.
+
+| File | Content |
+| --- | --- |
+| `signing.<name>.crt` and `.key` | PEM certificate and unencrypted PKCS#8 PEM private key. RSA of at least 2048 bits, or ECDSA P-256 (ES256). |
+| `encryption.<name>.crt` and `.key` | Same, RSA of at least 2048 bits. Encrypts authorization codes and refresh tokens. |
+| `data-protection.<name>.xml` | One Data Protection key element (template below). |
+
+Identity validates the whole directory at startup and fails closed on anything invalid: a missing pair, a key that does not match its certificate, an encrypted or malformed key, a weak key, the same key used twice or for both purposes, a file name it does not recognise, no key valid now, or no active Data Protection key. A later reload that finds invalid material keeps the previous keys and logs the file name and reason, never key bytes. Dot entries (Kubernetes `..data`) and sub-directories are ignored.
+
+Generate a pair (the name is yours; never reuse a name for different material):
+
+```sh
+openssl req -x509 -newkey rsa:3072 -nodes -keyout signing.2026a.key -out signing.2026a.crt -subj "/CN=Cratis Identity" -days 400
+```
+
+`openssl` writes an unencrypted PKCS#8 key. The certificate's validity start is when the key becomes usable, so set it to the intended start (for example with `-not_before` where your OpenSSL supports it).
+
+Data Protection key template. Fill `id` with a new GUID, the three dates (ISO 8601 UTC) and `value` with 64 random bytes, base64:
+
+```xml
+<key id="{GUID}" version="1">
+  <creationDate>{CREATION}</creationDate>
+  <activationDate>{ACTIVATION}</activationDate>
+  <expirationDate>{EXPIRATION}</expirationDate>
+  <descriptor deserializerType="Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel.AuthenticatedEncryptorDescriptorDeserializer, Microsoft.AspNetCore.DataProtection, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
+    <descriptor>
+      <encryption algorithm="AES_256_CBC" />
+      <validation algorithm="HMACSHA256" />
+      <masterKey enc:requiresEncryption="true" xmlns:enc="http://schemas.asp.net/2015/03/dataProtection">
+        <value>{64 RANDOM BYTES, BASE64}</value>
+      </masterKey>
+    </descriptor>
+  </descriptor>
+</key>
+```
+
+The ring is read-only for Identity: it never generates or writes keys, so operators rotate Data Protection keys through the secret store at least every 90 days. Identity logs a warning 14 days before the active key expires, and refuses to start when no key is active.
+
+**Rotation runbook.** A key signs or encrypts once its certificate has been valid for 600 seconds; until then it is only published, so every resource server's JWKS cache can learn it first. Every key stays published (and usable for decryption) until it is removed from the directory. The kid is the certificate thumbprint, so it is stable and never reused.
+
+1. Publish the successor at least 10 minutes before you want it to sign, with its certificate `NotBefore` at the intended start. It takes effect 600 seconds after `NotBefore`, within `ReloadInterval`.
+2. Keep a retired signing key for at least the longer of 630 seconds and the access token lifetime after its successor started signing, so tokens it signed still validate.
+3. Keep a retired encryption key for at least the refresh token lifetime, so refresh tokens it protected still redeem.
+4. Remove the retired files. Identity cannot stop a premature removal; independent retirement tombstones are tracked in [#42](https://github.com/Cratis/Identity/issues/42).
+
+Short-lived state (authorization codes, refresh-token rotations) lives only in MongoDB with a TTL index on its expiry. An entry past its expiry is refused at redemption even before MongoDB deletes it.
 
 ### Tenants callback (internal, unstable until contract v1)
 
@@ -205,7 +255,7 @@ In rough order, following the long-term architecture:
 8. **Token exchange (RFC 8693) with `act`** so agents, including Direct's own workers, act for a user with attributable, narrowed tokens.
 9. **More upstream providers and customer SSO per tenant** (Microsoft, Google, Apple; OIDC/SAML per customer), with account linking.
 10. **Direct browser login through Identity**: AuthProxy becomes an OIDC client of Identity, giving single sign-on across Cratis products. This is when `openid` and identity tokens get turned on.
-11. **Operations**: signing-key rotation without downtime, rate limiting on the authorization and token endpoints, and metrics.
+11. **Operations**: rate limiting on the authorization and token endpoints, and metrics.
 
 ## License
 

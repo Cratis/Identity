@@ -35,14 +35,9 @@ public class IdentityOptions
     public GitHubOptions GitHub { get; set; } = new();
 
     /// <summary>
-    /// Gets or sets the certificate that signs issued tokens and is published through JWKS.
+    /// Gets or sets the secret store the realm signing and encryption keys and the Data Protection key ring are read from.
     /// </summary>
-    public CertificateOptions SigningCertificate { get; set; } = new();
-
-    /// <summary>
-    /// Gets or sets the certificate that encrypts authorization codes and refresh tokens.
-    /// </summary>
-    public CertificateOptions EncryptionCertificate { get; set; } = new();
+    public SecretStoreOptions SecretStore { get; set; } = new();
 
     /// <summary>
     /// Gets or sets token lifetimes.

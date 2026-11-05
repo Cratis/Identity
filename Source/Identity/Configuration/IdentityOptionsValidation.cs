@@ -31,6 +31,11 @@ public class IdentityOptionsValidation(IHostEnvironment environment) : IValidate
             }
         }
 
+        if (options.SecretStore.ReloadInterval < TimeSpan.FromSeconds(1) || options.SecretStore.ReloadInterval > TimeSpan.FromMinutes(5))
+        {
+            failures.Add("The secret store reload interval must be between one second and five minutes.");
+        }
+
         failures.AddRange(Duplicates(options.Resources.Select(_ => _.Audience), "audience"));
         failures.AddRange(Duplicates(options.Resources.SelectMany(_ => _.Indicators.Select(i => ResourceIndicator.Normalize(i) ?? i)), "resource indicator"));
         failures.AddRange(Duplicates(options.Resources.SelectMany(_ => _.Scopes.Select(s => s.Name)), "scope"));

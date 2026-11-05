@@ -68,7 +68,13 @@ public class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddictM
                         .Ascending(_ => _.ApplicationId)
                         .Ascending(_ => _.Status)
                         .Ascending(_ => _.Subject)
-                        .Ascending(_ => _.Type))
+                        .Ascending(_ => _.Type)),
+
+                // Authorization codes, refresh-token rotations and any other short-lived entry leave the store when they
+                // expire. The TTL monitor lags by up to about a minute, so expiry is also enforced at redemption.
+                new CreateIndexModel<OpenIddictMongoDbToken>(
+                    Builders<OpenIddictMongoDbToken>.IndexKeys.Ascending(_ => _.ExpirationDate),
+                    new CreateIndexOptions { ExpireAfter = TimeSpan.Zero })
             ],
             cancellationToken);
     }

@@ -22,7 +22,8 @@ namespace Cratis.Identity.Authorization;
 /// </remarks>
 /// <param name="tokens">The <see cref="IOpenIddictTokenManager"/>.</param>
 /// <param name="grants">The <see cref="GrantRevocation"/>.</param>
-public class RedeemRefreshTokenOnce(IOpenIddictTokenManager tokens, GrantRevocation grants) : IOpenIddictServerHandler<ProcessSignInContext>
+/// <param name="timeProvider">The <see cref="TimeProvider"/>.</param>
+public class RedeemRefreshTokenOnce(IOpenIddictTokenManager tokens, GrantRevocation grants, TimeProvider timeProvider) : IOpenIddictServerHandler<ProcessSignInContext>
 {
     /// <summary>
     /// Gets the descriptor. It runs just before OpenIddict's redemption handler, whose later attempt to redeem the
@@ -51,6 +52,13 @@ public class RedeemRefreshTokenOnce(IOpenIddictTokenManager tokens, GrantRevocat
             await tokens.FindByIdAsync(tokenId, context.CancellationToken) is not { } token)
         {
             context.Reject(error: Errors.InvalidGrant, description: "The refresh token is no longer valid.");
+            return;
+        }
+
+        // The entry has the last word on expiry: it may have expired since validation. Expiry is not reuse, so the grant stays.
+        if (await tokens.GetExpirationDateAsync(token, context.CancellationToken) is not { } expiration || expiration <= timeProvider.GetUtcNow())
+        {
+            context.Reject(error: Errors.InvalidGrant, description: "The refresh token has expired.");
             return;
         }
 

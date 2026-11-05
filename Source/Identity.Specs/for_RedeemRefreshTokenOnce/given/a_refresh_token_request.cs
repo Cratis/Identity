@@ -3,6 +3,7 @@
 
 using System.Security.Claims;
 using Cratis.Identity.Authorization;
+using Cratis.Identity.given;
 using Microsoft.Extensions.Logging.Abstractions;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;
@@ -19,6 +20,7 @@ public class a_refresh_token_request : Specification
     protected IOpenIddictTokenManager _tokens;
     protected IOpenIddictAuthorizationManager _authorizations;
     protected RedeemRefreshTokenOnce _handler;
+    protected FixedTimeProvider _time;
     protected ProcessSignInContext _context;
     protected object _token;
     protected object _authorization;
@@ -27,11 +29,13 @@ public class a_refresh_token_request : Specification
     {
         _tokens = Substitute.For<IOpenIddictTokenManager>();
         _authorizations = Substitute.For<IOpenIddictAuthorizationManager>();
-        _handler = new RedeemRefreshTokenOnce(_tokens, new GrantRevocation(_tokens, _authorizations));
+        _time = new FixedTimeProvider(KeyMaterial.Now);
+        _handler = new RedeemRefreshTokenOnce(_tokens, new GrantRevocation(_tokens, _authorizations), _time);
         _token = new object();
         _authorization = new object();
 
         _tokens.FindByIdAsync(TokenId, Arg.Any<CancellationToken>()).Returns(_token);
+        _tokens.GetExpirationDateAsync(_token, Arg.Any<CancellationToken>()).Returns(KeyMaterial.Now.AddDays(1));
         _authorizations.FindByIdAsync(AuthorizationId, Arg.Any<CancellationToken>()).Returns(_authorization);
         _authorizations.HasStatusAsync(_authorization, Statuses.Revoked, Arg.Any<CancellationToken>()).Returns(false);
         _authorizations.TryRevokeAsync(_authorization, Arg.Any<CancellationToken>()).Returns(true);

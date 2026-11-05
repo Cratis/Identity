@@ -28,6 +28,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="Keys/data-protection-key.template.xml" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Identity/Identity.csproj" />
     <None Include="Vectors/**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
