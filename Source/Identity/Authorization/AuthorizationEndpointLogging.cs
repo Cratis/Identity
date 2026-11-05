@@ -8,6 +8,9 @@ namespace Cratis.Identity.Authorization;
 /// </summary>
 internal static partial class AuthorizationEndpointLogging
 {
+    [LoggerMessage(LogLevel.Warning, "Tenant selection unavailable for account {AccountId} for {Audience}")]
+    internal static partial void TenantsUnavailable(this ILogger<AuthorizationEndpoint> logger, string accountId, string audience);
+
     [LoggerMessage(LogLevel.Information, "Account {AccountId} has no tenant it can select for {Audience}")]
     internal static partial void NoSelectableTenant(this ILogger<AuthorizationEndpoint> logger, string accountId, string audience);
 

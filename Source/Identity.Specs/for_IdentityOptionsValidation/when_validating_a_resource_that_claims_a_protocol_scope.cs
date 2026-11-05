@@ -15,7 +15,7 @@ public class when_validating_a_resource_that_claims_a_protocol_scope : Specifica
     {
         var options = Configurations.TwoResourceServers();
         options.Resources[0].Scopes.Add(new ScopeOptions { Name = "offline_access" });
-        _result = new IdentityOptionsValidation().Validate(null, options);
+        _result = new IdentityOptionsValidation(new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = "Development" }).Validate(null, options);
     }
 
     [Fact] void should_fail() => _result.Failed.ShouldBeTrue();

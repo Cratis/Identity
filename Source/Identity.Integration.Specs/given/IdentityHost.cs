@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Globalization;
+using Cratis.Identity.Tenants;
 using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
@@ -14,7 +15,7 @@ using Testcontainers.MongoDb;
 namespace Cratis.Identity.Integration.given;
 
 /// <summary>
-/// A running Identity against a real MongoDB, with upstream login replaced by <see cref="FakeUpstream"/>.
+/// A running Identity host against a real MongoDB, with upstream login replaced by <see cref="FakeUpstream"/>.
 /// </summary>
 /// <remarks>
 /// Everything else is the production pipeline: OpenIddict, the MongoDB stores, the consent page, antiforgery and
@@ -42,6 +43,11 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     /// Gets the test-only pause points in the refresh-token pipeline.
     /// </summary>
     public RefreshGates RefreshGates { get; } = new();
+
+    /// <summary>
+    /// Gets the product callback double, independently mutable per GitHub user.
+    /// </summary>
+    public TenantsCallbackStub TenantsCallback { get; } = new();
 
     /// <inheritdoc/>
     public async ValueTask InitializeAsync()
@@ -96,6 +102,7 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
             {
                 services.AddAuthentication().AddScheme<AuthenticationSchemeOptions, FakeUpstream>(FakeUpstream.Scheme, _ => { });
                 services.Configure<UpstreamLoginOptions>(_ => _.Scheme = FakeUpstream.Scheme);
+                services.AddHttpClient(TenantsCallbackHttpClient.Name).ConfigurePrimaryHttpMessageHandler(() => TenantsCallback);
                 services.AddOpenIddict().AddServer(server => server
                     .AddEventHandler(RefreshGates.BarrierDescriptor)
                     .AddEventHandler(RefreshGates.HoldDescriptor));
@@ -122,6 +129,12 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         ["Identity:Resources:1:Scopes:0:Description"] = "Read Studio",
         ["Identity:Resources:1:Tenants:0:Id"] = "studio",
         ["Identity:Resources:1:Tenants:0:AllowAllAccounts"] = "true",
+        ["Identity:Resources:2:Audience"] = "stage-api",
+        ["Identity:Resources:2:DisplayName"] = "Stage",
+        ["Identity:Resources:2:Indicators:0"] = "https://stage.example/api",
+        ["Identity:Resources:2:Scopes:0:Name"] = "stage:read",
+        ["Identity:Resources:2:Scopes:0:Description"] = "Read Stage",
+        ["Identity:Resources:2:TenantsCallback:Url"] = "https://products.example/tenants",
         ["Identity:IntrospectionClients:0:ClientId"] = IntrospectionClientId,
         ["Identity:IntrospectionClients:0:ClientSecret"] = IntrospectionClientSecret
     };

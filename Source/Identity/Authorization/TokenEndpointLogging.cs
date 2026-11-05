@@ -8,6 +8,9 @@ namespace Cratis.Identity.Authorization;
 /// </summary>
 internal static partial class TokenEndpointLogging
 {
+    [LoggerMessage(LogLevel.Warning, "Tenant selection unavailable for authorization {AuthorizationId}, account {AccountId} for {Audience}")]
+    internal static partial void TenantsUnavailable(this ILogger<TokenEndpoint> logger, string? authorizationId, string accountId, string audience);
+
     [LoggerMessage(LogLevel.Warning, "Token request for authorization {AuthorizationId} refused: account {AccountId} no longer exists")]
     internal static partial void AccountMissing(this ILogger<TokenEndpoint> logger, string? authorizationId, string? accountId);
 

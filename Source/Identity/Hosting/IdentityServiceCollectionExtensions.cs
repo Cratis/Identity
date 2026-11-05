@@ -22,7 +22,7 @@ namespace Cratis.Identity.Hosting;
 /// <summary>
 /// Extension methods for registering Cratis Identity.
 /// </summary>
-public static class IdentityServiceCollectionExtensions
+internal static class IdentityServiceCollectionExtensions
 {
     /// <summary>
     /// Adds Cratis Identity: storage, upstream login, the OpenIddict authorization server and the endpoints.
@@ -31,7 +31,7 @@ public static class IdentityServiceCollectionExtensions
     /// <param name="configuration">The <see cref="IConfiguration"/>.</param>
     /// <param name="environment">The <see cref="IHostEnvironment"/>.</param>
     /// <returns>The <see cref="IServiceCollection"/> for continuation.</returns>
-    public static IServiceCollection AddCratisIdentity(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
+    internal static IServiceCollection AddCratisIdentity(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         var section = configuration.GetSection(IdentityOptions.SectionName);
         var startupOptions = section.Get<IdentityOptions>() ?? new IdentityOptions();
@@ -110,7 +110,12 @@ public static class IdentityServiceCollectionExtensions
         services.AddSingleton<IAccounts, Accounts.Accounts>();
         services.AddSingleton<IResourceCatalog, ResourceCatalog>();
         services.AddSingleton<IGrantPolicy, GrantPolicy>();
-        services.AddSingleton<ITenantDirectory, ConfiguredTenantDirectory>();
+        services.AddSingleton<ConfiguredTenantDirectory>();
+        services.AddSingleton<ProductTenantsCallback>();
+        services.AddSingleton<ITenantDirectory, TenantDirectory>();
+        services.AddHttpClient(TenantsCallbackHttpClient.Name, client => client.Timeout = TimeSpan.FromSeconds(10))
+            .ConfigurePrimaryHttpMessageHandler(TenantsCallbackHttpClient.CreateHandler)
+            .RemoveAllLoggers();
         services.AddSingleton<ClientDescriptors>();
         services.AddScoped<SignedInAccounts>();
         services.AddScoped<ConsentPages>();

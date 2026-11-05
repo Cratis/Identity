@@ -11,14 +11,14 @@ namespace Cratis.Identity.Tenants;
 
 /// <summary>
 /// Represents an implementation of <see cref="ITenantDirectory"/> backed by the tenants configured per resource
-/// server. It fails closed: an account that is not a listed member of a tenant cannot select it unless the
+/// server. Development fixtures only. It fails closed: an account that is not a listed member of a tenant cannot select it unless the
 /// tenant explicitly allows all accounts.
 /// </summary>
 /// <param name="options">The <see cref="IdentityOptions"/>.</param>
 public class ConfiguredTenantDirectory(IOptionsMonitor<IdentityOptions> options) : ITenantDirectory
 {
     /// <inheritdoc/>
-    public Task<IEnumerable<SelectableTenant>> SelectableTenants(Account account, ResourceServer resource, CancellationToken cancellationToken = default)
+    public Task<TenantLookup> SelectableTenants(Account account, ResourceServer resource, CancellationToken cancellationToken = default)
     {
         var gitHubId = account.GitHubId.ToString(CultureInfo.InvariantCulture);
         var tenants = options.CurrentValue.Resources
@@ -28,6 +28,6 @@ public class ConfiguredTenantDirectory(IOptionsMonitor<IdentityOptions> options)
             .Select(_ => new SelectableTenant(_.Id, string.IsNullOrWhiteSpace(_.Name) ? _.Id : _.Name))
             .ToArray();
 
-        return Task.FromResult<IEnumerable<SelectableTenant>>(tenants);
+        return Task.FromResult<TenantLookup>(new TenantsListed(tenants));
     }
 }

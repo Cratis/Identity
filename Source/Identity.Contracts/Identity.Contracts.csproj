@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- AssemblyName must match PackageId: type discovery resolves a referenced project by the library name in deps.json. -->
+    <AssemblyName>Cratis.Identity.Contracts</AssemblyName>
+    <RootNamespace>Cratis.Identity.Contracts</RootNamespace>
+    <PackageId>Cratis.Identity.Contracts</PackageId>
+    <Description>The contracts of Cratis Identity: the claim types its access tokens carry.</Description>
+    <PackageTags>cratis;identity;oauth;contracts</PackageTags>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+</Project>

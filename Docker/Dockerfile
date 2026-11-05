@@ -10,10 +10,14 @@ WORKDIR /src
 
 COPY global.json Directory.Build.props Directory.Packages.props .editorconfig .globalconfig ./
 COPY Source/Identity/Identity.csproj Source/Identity/
-RUN dotnet restore Source/Identity/Identity.csproj
+COPY Source/Identity.Contracts/Identity.Contracts.csproj Source/Identity.Contracts/
+COPY Source/Identity.Host/Identity.Host.csproj Source/Identity.Host/
+RUN dotnet restore Source/Identity.Host/Identity.Host.csproj
 
 COPY Source/Identity/ Source/Identity/
-RUN dotnet publish Source/Identity/Identity.csproj -c Release -o /app --no-restore
+COPY Source/Identity.Contracts/ Source/Identity.Contracts/
+COPY Source/Identity.Host/ Source/Identity.Host/
+RUN dotnet publish Source/Identity.Host/Identity.Host.csproj -c Release -o /app --no-restore -p:CratisProxiesOutputPath=
 
 # Chiseled: no shell or package manager, runs as a non-root user by default.
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled
@@ -23,4 +27,4 @@ COPY --from=build /app ./
 ENV ASPNETCORE_HTTP_PORTS=8080
 EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "/app/Cratis.Identity.dll"]
+ENTRYPOINT ["dotnet", "/app/Cratis.Identity.Host.dll"]
