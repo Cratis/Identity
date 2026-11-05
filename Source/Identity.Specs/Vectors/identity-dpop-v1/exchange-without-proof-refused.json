@@ -1,0 +1,27 @@
+{
+    "name": "exchange-without-proof-refused",
+    "description": "Delegated-actor token exchange requires proof of the actor's DPoP key even when registration and organisation policy otherwise permit unbound tokens.",
+    "given": {
+        "registered_client": {
+            "client_id": "delegated-actor-test",
+            "dpop_bound_access_tokens": false
+        },
+        "confirmed_organisation_policy": { "requires_dpop": false },
+        "authenticated_actor": "delegated-actor-test",
+        "grant_and_other_checks": "authorized",
+        "token_request": {
+            "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+            "resource": "https://direct.cratis.io",
+            "dpop_header": null
+        }
+    },
+    "when": { "action": "issue_tokens_at_identity" },
+    "then": {
+        "outcome": "refused",
+        "http_status": 400,
+        "error": "invalid_dpop_proof",
+        "access_token_issued": false,
+        "refresh_token_issued": false,
+        "bearer_fallback": false
+    }
+}

@@ -35,6 +35,6 @@
             "jti": "3582ed7c-78cc-44a4-a14a-3e2cd16572bc"
         },
         "raw_proof_forwarded": false,
-        "proof_cache_reservation_ttl_seconds": 330
+        "proof_cache_reservation_ttl_seconds": 390
     }
 }

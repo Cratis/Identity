@@ -11,7 +11,7 @@
             "jti": "3582ed7c-78cc-44a4-a14a-3e2cd16572bc",
             "accepted_by": "edge-a",
             "accepted_at": 1999999999,
-            "expires_at": 2000000329
+            "expires_at": 2000000389
         }],
         "proof": { "header": {}, "payload": {}, "signature": "valid" }
     },

@@ -1,0 +1,49 @@
+{
+    "name": "fast-replica-accept-slow-replica-replay-rejected",
+    "description": "At UTC T, edge-a at T+15 accepts iat T+30 and a nonce issued T+15. At UTC T+331, edge-b at T+316 still passes proof and nonce age checks, but the 390-second reservation rejects the replay.",
+    "given": {
+        "authorization_scheme": "DPoP",
+        "fleet_time_source_utc": 2000000331,
+        "now": 2000000316,
+        "replica": "edge-b",
+        "validator_clock_offsets_seconds": { "edge-a": 15, "edge-b": -15 },
+        "maximum_validator_clock_offset_seconds": 30,
+        "maximum_inter_validator_clock_difference_seconds": 60,
+        "shared_cache_reservations": [{
+            "domain": "resource",
+            "public_origin": "https://direct.cratis.io",
+            "jkt": "xx0BcA-wMohw8atYDJOe6peGModklG2wRHBlXHMvl0M",
+            "jti": "3582ed7c-78cc-44a4-a14a-3e2cd16572bc",
+            "accepted_by": "edge-a",
+            "accepted_at": 2000000000,
+            "accepted_validator_time": 2000000015,
+            "expires_at": 2000000390,
+            "ttl_seconds": 390,
+            "timestamp_basis": "fleet_time_source_utc"
+        }],
+        "nonce": {
+            "label": "nonce-fast-replica",
+            "issued_at": 2000000015,
+            "mac_and_domain_origin_key_binding": "valid"
+        },
+        "proof": {
+            "header": {},
+            "payload": { "iat": 2000000030, "nonce": "nonce-fast-replica" },
+            "signature": "valid"
+        }
+    },
+    "when": { "action": "validate_at_authproxy_and_forward_v2" },
+    "then": {
+        "outcome": "reject",
+        "reason": "replayed_jti",
+        "proof_age_seconds": 286,
+        "nonce_age_seconds": 301,
+        "shared_cache_reservation_present": true,
+        "http_status": 401,
+        "challenge_scheme": "DPoP",
+        "error": "invalid_dpop_proof",
+        "algs": "ES256",
+        "forwarded": false,
+        "caller_constructed": false
+    }
+}

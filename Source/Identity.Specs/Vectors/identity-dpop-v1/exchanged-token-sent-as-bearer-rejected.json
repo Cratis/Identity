@@ -1,0 +1,26 @@
+{
+    "name": "exchanged-token-sent-as-bearer-rejected",
+    "description": "A delegated actor's exchanged token bound to its proven key cannot be used as Bearer, even with a valid proof.",
+    "given": {
+        "access_token_issuance": {
+            "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+            "principal_kind": "delegated_actor",
+            "actor_key_proven_at_token_endpoint": true,
+            "token_type": "DPoP",
+            "cnf": { "jkt": "xx0BcA-wMohw8atYDJOe6peGModklG2wRHBlXHMvl0M" }
+        },
+        "authorization_scheme": "Bearer",
+        "proof": { "header": {}, "payload": {}, "signature": "valid" }
+    },
+    "when": { "action": "validate_at_authproxy_and_forward_v2" },
+    "then": {
+        "outcome": "reject",
+        "reason": "bound_token_as_bearer",
+        "http_status": 401,
+        "challenge_scheme": "DPoP",
+        "error": "invalid_dpop_proof",
+        "algs": "ES256",
+        "forwarded": false,
+        "caller_constructed": false
+    }
+}

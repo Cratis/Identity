@@ -20,6 +20,8 @@ This is a proposed contract, not deployed behavior or sign-off. DPoP is sender c
 | Client or policy | Issuer requirement |
 |---|---|
 | Cratis CLI, Cratis agents and runners using OAuth | Registration MUST require DPoP via `dpop_bound_access_tokens=true`. |
+| Delegated-actor token exchange (RFC 8693) | Exchanged tokens MUST be DPoP-bound to the actor's key proven at the token endpoint. Exchange without a valid DPoP proof MUST be refused; Bearer issuance is forbidden. |
+| Confidential organisation-automation clients using `client_credentials` | Registration MUST set `dpop_bound_access_tokens=true`; clients MUST authenticate with `private_key_jwt` and prove the DPoP key at the token endpoint. Unbound issuance MUST be refused. |
 | MCP client with verified DPoP capability, opting in | Registration MUST set `dpop_bound_access_tokens=true`; subsequent issuance MUST NOT silently downgrade. |
 | MCP client without established DPoP support | DPoP MUST remain optional unless organisation policy requires it. An unbound grant MAY issue Bearer tokens only when policy permits. |
 | Any client in an organisation requiring sender-constrained tokens | Identity MUST require DPoP regardless of a false/absent registration flag. A client unable to supply a valid proof MUST receive no access or refresh token. |
@@ -64,9 +66,9 @@ Public-path mapping MUST be deterministic trusted route configuration shared by 
 
 AuthProxy replicas MUST use one authoritative shared cache per deployment security domain, not per-replica memory. Identity MUST likewise share its token-endpoint replay cache across AS replicas. Cache keys MUST scope `(validation domain, public origin, jkt, proof jti)`; a resource request MUST NOT key by replica, method, path or token id, since that would permit reuse of one proof id elsewhere in the domain. AS and resource domains MUST be distinct.
 
-Reservation MUST be atomic insert-if-absent with TTL **330 seconds** from acceptance: the 300-second `iat` window plus 30-second future skew. This covers the last possible acceptance of even a future-dated proof. Nonce validation precedes insertion so that an unsuccessful nonce challenge does not consume the proof id; clients MUST nevertheless sign a new proof for every retry. Concurrent identical proofs MUST have at most one winner. Access-token `jti` is not a proof id and MUST NOT be single-use cached as a substitute.
+Reservation MUST be atomic insert-if-absent with TTL **390 seconds** from acceptance. The retention formula is `maximum proof age + future-iat allowance + maximum inter-validator clock difference = 300 + 30 + (2 × 30) = 390 seconds`. Each validator MUST remain within ±30 seconds of the fleet time source aligned to UTC, so any two validator clocks can differ by at most 60 seconds. Validators MUST refuse service when their clock offset exceeds that bound or cannot be established. This covers the last possible acceptance of even a future-dated proof by a slower replica. The nonce lifetime in §5 is an additional acceptance constraint, not a replacement for proof-age validation; it MUST NOT shorten this retention. Both checks apply, so their lifetimes do not add serially. Nonce validation precedes insertion so that an unsuccessful nonce challenge does not consume the proof id; clients MUST nevertheless sign a new proof for every retry. Concurrent identical proofs MUST have at most one winner. Access-token `jti` is not a proof id and MUST NOT be single-use cached as a substitute.
 
-Restarts, failover and replica changes MUST preserve reservations until TTL expiry. No early eviction is allowed. An unavailable cache, ambiguous insert result or loss of reservation coverage MUST deny forwarding/issuance; after cache data loss, serving MUST wait at least 330 seconds after the last possible pre-loss acceptance, with healthy shared state, before resuming. A process-local fallback is forbidden.
+Restarts, failover and replica changes MUST preserve reservations until TTL expiry. No early eviction is allowed. An unavailable cache, ambiguous insert result or loss of reservation coverage MUST deny forwarding/issuance; after cache data loss, serving MUST wait at least 390 seconds (the same retention formula above) after the last possible pre-loss acceptance, with healthy shared state, before resuming. A process-local fallback is forbidden.
 
 ## 5. Nonces and challenges
 
@@ -74,7 +76,7 @@ This profile chooses **stateless HMAC-SHA-256 nonces with fleet-shared keys**, a
 
 A nonce MUST authenticate a version, key id, validation domain, configured public origin, `jkt`, integer issuance time and at least 128 random bits, using an unambiguous encoding. Validators MUST verify the MAC in constant time and match domain/origin/key binding, require `issued_at <= now + 30` and `now < issued_at + 300 + 30`. No nonce secret or real proof belongs in logs/events. Nonces MAY be reused within that interval with distinct proofs; the shared `jti` cache, not the nonce, enforces single use.
 
-Identity and AuthProxy MUST issue a fresh `DPoP-Nonce` on nonce challenges and SHOULD rotate it on successful DPoP responses. Clients MUST keep AS and resource nonces separately and sign the most recently received nonce into the next proof. Validators MUST accept still-valid older nonces to support concurrent requests. Key rotation MUST retain verification keys until all issued nonces expire; replicas missing a required key MUST fail closed. Clock monitoring MUST prevent serving outside the stated skew bound. HMAC parameter encoding/distribution requires review before lock (§8).
+Identity and AuthProxy MUST issue a fresh `DPoP-Nonce` on nonce challenges and SHOULD rotate it on successful DPoP responses. Clients MUST keep AS and resource nonces separately and sign the most recently received nonce into the next proof. Validators MUST accept still-valid older nonces to support concurrent requests. Key rotation MUST retain verification keys until all issued nonces expire; replicas missing a required key MUST fail closed. Clock monitoring MUST enforce §4's ±30-second offset bound against the fleet time source and refuse service outside it. HMAC parameter encoding/distribution requires review before lock (§8).
 
 For resource failures, AuthProxy MUST return HTTP 401 without a caller or downstream dispatch:
 
@@ -112,11 +114,11 @@ A future executable suite MUST supplement these vectors with real signing, hashi
 ## 8. Open points and required sign-off
 
 - **Owners/sign-off:** Identity, AuthProxy and Arc owners must review issuance, edge validation and envelope mapping; obtain required consumer reviews and Identity #14 acceptance before lock.
-- **Operations:** approve the proposed 300-second proof/nonce windows, 30-second skew, 330-second replay TTL, shared-cache durability/capacity and fail-closed recovery procedures; prove replica races/restarts and key overlap.
+- **Operations:** approve the proposed 300-second proof/nonce windows, 30-second future allowance and per-validator clock offset bound, 60-second maximum inter-validator difference, 390-second replay TTL and cache-loss quarantine (`300 + 30 + 60`), shared-cache durability/capacity and fail-closed recovery procedures; prove replica races/restarts, clock-offset refusal and key overlap.
 - **Nonce/envelope wire:** agree canonical HMAC nonce encoding, key distribution/rotation, and exact signed v2 bound/no-binding serialization in the envelope contract; logical `senderBinding` already includes accepted proof `jti`.
 - **Algorithm difference:** Design A/B mention ES256 and EdDSA; this narrower v1 intentionally permits ES256 only. Owners must accept this profile choice before lock; EdDSA needs a reviewed profile change.
 - **MCP capability:** verify named clients and registration/capability UX with #34; do not infer support or make DPoP universal meanwhile.
-- **Inherited contracts:** registration and current-policy resolution/freshness, refresh-family durability and native-verifier rollout require implementation proof. `cnf` is already in contract v1; no allowlist change is needed. No contradiction with the Arc Drafts was identified.
+- **Inherited contracts:** registration and current-policy resolution/freshness, refresh-family durability and native-verifier rollout require implementation proof. `cnf` is already in contract v1; no allowlist change is needed. Section 2 explicitly requires DPoP-bound delegated-actor exchange and confidential organisation-automation issuance with `private_key_jwt`, matching [verified-caller v1's principal requirements](arc-verified-caller-v1.md#credential-matrix); optional MCP support does not relax those requirements.
 
 ## 9. References
 
