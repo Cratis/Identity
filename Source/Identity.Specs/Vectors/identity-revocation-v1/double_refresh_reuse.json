@@ -1,0 +1,16 @@
+{
+  "name": "double_refresh_reuse",
+  "description": "Concurrent consumption has one winner, and the losing reuse durably revokes the entire family without grace.",
+  "given": { "target": "family-1", "family_version": 7, "refresh_token_state": "unconsumed", "reuse_grace_seconds": 0 },
+  "when": [
+    { "order": 1, "t": 0, "action": "replicas_a_and_b_read_same_unconsumed_token", "expected_version": 7 },
+    { "order": 2, "t": 0, "action": "replica_a_commits_consume_and_replace_cas", "family_version": 8 },
+    { "order": 3, "t": 0, "action": "replica_a_releases_replacement" },
+    { "order": 4, "t": 0, "action": "replica_b_cas_loses_and_rereads_consumed_state" },
+    { "order": 5, "t": 0, "action": "replica_b_commits_family_fence_and_two_outbox_facts", "fence_sequence": 41, "detection_id": "reuse-1", "event_types": ["RefreshTokenReuseDetected", "RefreshTokenFamilyRevoked"] },
+    { "order": 6, "t": 0, "action": "durably_log_restriction_then_return_no_replacement_to_b" },
+    { "order": 7, "t": 1, "action": "redeem_winners_replacement_on_replica_c", "expected": "deny" },
+    { "order": 8, "t": 2, "action": "dispatch_outbox_twice_with_stable_per_fact_keys" }
+  ],
+  "then": { "consume_cas_winners": 1, "replacements_issued_before_reuse_fence": 1, "replica_b_replacements": 0, "family_state": "revoked", "fence_count": 1, "chronicle_reuse_fact_count": 1, "chronicle_family_revoked_fact_count": 1, "family_redemption": "deny" }
+}

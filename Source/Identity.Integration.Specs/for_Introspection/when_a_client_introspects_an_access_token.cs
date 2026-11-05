@@ -3,6 +3,7 @@
 
 namespace Cratis.Identity.Integration.for_Introspection;
 
+[Requirement(Requirements.IntrospectionAuthenticated)]
 [Collection(IdentityCollection.Name)]
 public class when_a_client_introspects_an_access_token(IdentityHost host) : IAsyncLifetime
 {

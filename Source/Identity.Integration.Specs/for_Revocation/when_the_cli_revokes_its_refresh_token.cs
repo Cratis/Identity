@@ -3,6 +3,7 @@
 
 namespace Cratis.Identity.Integration.for_Revocation;
 
+[Requirement(Requirements.RevocationRevokesGrant), Requirement(Requirements.IntrospectionInactiveAfterRevoke)]
 [Collection(IdentityCollection.Name)]
 public class when_the_cli_revokes_its_refresh_token(IdentityHost host) : IAsyncLifetime
 {

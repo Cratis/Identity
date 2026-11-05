@@ -1,0 +1,20 @@
+{
+    "name": "missing-required-nonce",
+    "description": "A missing resource nonce yields a nonce challenge without consuming the proof id.",
+    "given": {
+        "authorization_scheme": "DPoP",
+        "proof": { "header": {}, "payload": { "nonce": null }, "signature": "valid" }
+    },
+    "when": { "action": "validate_at_authproxy_and_forward_v2" },
+    "then": {
+        "outcome": "reject",
+        "reason": "use_dpop_nonce",
+        "http_status": 401,
+        "challenge_scheme": "DPoP",
+        "error": "use_dpop_nonce",
+        "algs": "ES256",
+        "dpop_nonce": "fresh_valid_resource_nonce",
+        "proof_id_reserved": false,
+        "forwarded": false
+    }
+}

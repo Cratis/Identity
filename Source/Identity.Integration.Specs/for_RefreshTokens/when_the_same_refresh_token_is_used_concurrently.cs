@@ -3,6 +3,7 @@
 
 namespace Cratis.Identity.Integration.for_RefreshTokens;
 
+[Requirement(Requirements.RefreshReuseRevokes)]
 [Collection(IdentityCollection.Name)]
 public class when_the_same_refresh_token_is_used_concurrently(IdentityHost host) : IAsyncLifetime
 {

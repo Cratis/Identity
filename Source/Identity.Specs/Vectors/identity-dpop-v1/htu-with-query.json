@@ -1,0 +1,23 @@
+{
+    "name": "htu-with-query",
+    "description": "The proof htu MUST omit the query even when the external request includes it.",
+    "given": {
+        "authorization_scheme": "DPoP",
+        "request_query": "?page=2",
+        "proof": {
+            "header": {},
+            "payload": { "htu": "https://direct.cratis.io/mcp?page=2" },
+            "signature": "valid"
+        }
+    },
+    "when": { "action": "validate_at_authproxy_and_forward_v2" },
+    "then": {
+        "outcome": "reject",
+        "reason": "invalid_htu",
+        "http_status": 401,
+        "challenge_scheme": "DPoP",
+        "error": "invalid_dpop_proof",
+        "algs": "ES256",
+        "forwarded": false
+    }
+}

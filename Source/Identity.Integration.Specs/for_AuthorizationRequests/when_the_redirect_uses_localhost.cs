@@ -3,6 +3,7 @@
 
 namespace Cratis.Identity.Integration.for_AuthorizationRequests;
 
+[Requirement(Requirements.RedirectExactLoopback)]
 [Collection(IdentityCollection.Name)]
 public class when_the_redirect_uses_localhost(IdentityHost host) : IAsyncLifetime
 {

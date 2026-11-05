@@ -1,0 +1,40 @@
+{
+    "name": "restore-operational-store-consumed-refresh",
+    "description": "Fence replay alone cannot recover a post-snapshot rotation; epoch invalidation prevents either old or replacement refresh tokens from resurrecting.",
+    "given": {
+        "target": "family-1",
+        "realm_epoch": 7,
+        "family_version": 7,
+        "refresh_token": "refresh-old",
+        "refresh_token_state": "unconsumed",
+        "operational_snapshot_watermark": 40,
+        "log_watermark": 40,
+        "chronicle_watermark": 40,
+        "independent_consumption_logging": false,
+        "monotonic_epoch_authority": "healthy_outside_restored_snapshots"
+    },
+    "when": [
+        { "order": 1, "t": 0, "action": "snapshot_operational_store", "watermark": 40, "family_state": "active", "refresh_token_state": "unconsumed" },
+        { "order": 2, "t": 1, "action": "commit_consume_and_replace_cas", "consumed": "refresh-old", "replacement": "refresh-new", "family_version": 8 },
+        { "order": 3, "t": 1, "action": "release_replacement", "refresh_token": "refresh-new", "log_watermark": 40 },
+        { "order": 4, "t": 2, "action": "restore_operational_snapshot", "watermark": 40, "expected_ready": false },
+        { "order": 5, "t": 3, "action": "present_old_refresh_before_recovery", "expected": "deny" },
+        { "order": 6, "t": 4, "action": "prove_fence_log_coverage", "barrier": 40, "expected_ready": false },
+        { "order": 7, "t": 5, "action": "durably_epoch_invalidate_affected_families_outside_restored_snapshots", "realm_epoch": 8, "fence_sequence": 41, "includes_family": "family-1" },
+        { "order": 8, "t": 6, "action": "enforce_epoch_on_all_replicas_and_persist_recovery_readiness", "realm_epoch": 8 },
+        { "order": 9, "t": 7, "action": "present_old_refresh_after_recovery_on_another_replica", "expected": "deny" },
+        { "order": 10, "t": 8, "action": "present_replacement_after_recovery", "expected": "deny" }
+    ],
+    "then": {
+        "ready": true,
+        "family_state": "epoch_invalidated",
+        "family_redemption": "deny",
+        "old_refresh_redemption": "deny",
+        "replacement_refresh_redemption": "deny",
+        "new_tokens_after_restore": 0,
+        "reauthentication_required": true,
+        "fence_coverage_alone_reopens_refresh": false,
+        "epoch_durable_outside_restored_snapshots": true,
+        "all_affected_verifiers_enforce_epoch_before_readiness": true
+    }
+}

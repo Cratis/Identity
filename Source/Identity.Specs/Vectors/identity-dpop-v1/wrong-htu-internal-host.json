@@ -1,0 +1,23 @@
+{
+    "name": "wrong-htu-internal-host",
+    "description": "The internal upstream address is not the configured public request URI.",
+    "given": {
+        "authorization_scheme": "DPoP",
+        "request_headers": { "Host": "authproxy.internal:8080", "X-Forwarded-Host": "authproxy.internal:8080" },
+        "proof": {
+            "header": {},
+            "payload": { "htu": "http://authproxy.internal:8080/mcp" },
+            "signature": "valid"
+        }
+    },
+    "when": { "action": "validate_at_authproxy_and_forward_v2" },
+    "then": {
+        "outcome": "reject",
+        "reason": "invalid_htu",
+        "http_status": 401,
+        "challenge_scheme": "DPoP",
+        "error": "invalid_dpop_proof",
+        "algs": "ES256",
+        "forwarded": false
+    }
+}

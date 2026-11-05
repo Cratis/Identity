@@ -1,0 +1,14 @@
+{
+  "name": "outbox_duplicate_append",
+  "description": "A lost append result and a crash before outbox completion repeat delivery but not the domain fact.",
+  "given": { "target": "family-1", "fence_sequence": 41, "log_watermark": 41, "outbox_id": "fact-41", "outbox_state": "pending", "event_type": "RefreshTokenFamilyRevoked" },
+  "when": [
+    { "order": 1, "t": 0, "action": "chronicle_commits_keyed_append_but_response_is_lost", "idempotency_key": "fact-41", "content": "immutable-original-intent" },
+    { "order": 2, "t": 0, "action": "crash_before_marking_outbox_delivered" },
+    { "order": 3, "t": 1, "action": "restart_and_resend_identical_key_and_content", "idempotency_key": "fact-41", "content": "immutable-original-intent", "expected": "verified_prior_append" },
+    { "order": 4, "t": 1, "action": "mark_outbox_delivered_and_checkpoint_fence", "chronicle_watermark": 41 },
+    { "order": 5, "t": 2, "action": "deliver_reactor_fact_twice_and_replay_projection" },
+    { "order": 6, "t": 3, "action": "attempt_same_key_with_changed_content", "idempotency_key": "fact-41", "content": "different-intent", "expected": "conflict_stop_and_alert" }
+  ],
+  "then": { "chronicle_fact_count": 1, "outbox_state": "delivered", "revoked_target": "deny", "new_credentials_from_replay": 0, "external_side_effects_from_replay": 0, "content_conflict_silently_accepted": false }
+}

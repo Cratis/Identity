@@ -1,0 +1,24 @@
+{
+    "name": "org-requires-dpop-client-unsupported",
+    "description": "Organisation policy refuses issuance to an MCP client unable to supply a proof, regardless of optional registration metadata.",
+    "given": {
+        "registered_client": {
+            "client_id": "mcp-test",
+            "dpop_bound_access_tokens": false,
+            "supports_dpop": false
+        },
+        "confirmed_organisation_policy": { "requires_dpop": true },
+        "grant_and_other_checks": "authorized",
+        "token_request": { "resource": "https://direct.cratis.io", "dpop_header": null }
+    },
+    "when": { "action": "issue_tokens_at_identity" },
+    "then": {
+        "outcome": "refused",
+        "http_status": 400,
+        "error": "invalid_dpop_proof",
+        "error_description": "Organisation policy requires DPoP; use a DPoP-capable client.",
+        "access_token_issued": false,
+        "refresh_token_issued": false,
+        "bearer_fallback": false
+    }
+}

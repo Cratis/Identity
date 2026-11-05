@@ -1,0 +1,19 @@
+{
+    "name": "bound-token-as-bearer",
+    "description": "Even an accompanying valid proof cannot downgrade a bound token to Bearer.",
+    "given": {
+        "authorization_scheme": "Bearer",
+        "proof": { "header": {}, "payload": {}, "signature": "valid" }
+    },
+    "when": { "action": "validate_at_authproxy_and_forward_v2" },
+    "then": {
+        "outcome": "reject",
+        "reason": "bound_token_as_bearer",
+        "http_status": 401,
+        "challenge_scheme": "DPoP",
+        "error": "invalid_dpop_proof",
+        "algs": "ES256",
+        "forwarded": false,
+        "caller_constructed": false
+    }
+}

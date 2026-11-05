@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.WebUtilities;
 
 namespace Cratis.Identity.Integration.for_CliLogin;
 
+[Requirement(Requirements.RedirectExactLoopback)]
 [Collection(IdentityCollection.Name)]
 public class when_logging_in_on_an_ipv6_loopback_port(IdentityHost host) : IAsyncLifetime
 {

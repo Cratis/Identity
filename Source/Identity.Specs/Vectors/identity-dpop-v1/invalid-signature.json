@@ -1,0 +1,18 @@
+{
+    "name": "invalid-signature",
+    "description": "Decoded proof claims are not trusted when signature verification fails.",
+    "given": {
+        "authorization_scheme": "DPoP",
+        "proof": { "header": {}, "payload": {}, "signature": "invalid" }
+    },
+    "when": { "action": "validate_at_authproxy_and_forward_v2" },
+    "then": {
+        "outcome": "reject",
+        "reason": "invalid_signature",
+        "http_status": 401,
+        "challenge_scheme": "DPoP",
+        "error": "invalid_dpop_proof",
+        "algs": "ES256",
+        "forwarded": false
+    }
+}

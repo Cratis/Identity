@@ -1,0 +1,16 @@
+{
+  "name": "refresh_wins_before_revoke",
+  "description": "A winning refresh may issue once, but later revocation fences its replacement; offline AT expiry remains distinct.",
+  "given": { "target": "family-1", "family_version": 7, "refresh_token_state": "unconsumed", "access_token_lifetime_seconds": 300, "verifier_skew_seconds": 30 },
+  "when": [
+    { "order": 1, "t": 0, "action": "replica_a_commits_consume_and_replace_cas", "expected_version": 7, "family_version": 8 },
+    { "order": 2, "t": 0, "action": "replica_a_releases_replacement_and_access_token", "access_token_iat": 0, "access_token_exp": 300 },
+    { "order": 3, "t": 1, "action": "replica_b_commits_family_fence_and_outbox", "family_version": 9, "fence_sequence": 41 },
+    { "order": 4, "t": 1, "action": "replica_b_durably_logs_and_acknowledges_revoke" },
+    { "order": 5, "t": 2, "action": "redeem_replacement_on_replica_c", "expected": "deny" },
+    { "order": 6, "t": 2, "action": "sensitive_action_with_live_family_status", "expected": "deny" },
+    { "order": 7, "t": 2, "action": "validate_access_token_offline_only", "expected": "token_valid_not_operation_authorized" },
+    { "order": 8, "t": 330, "action": "validate_access_token_offline_only", "expected": "deny_expired" }
+  ],
+  "then": { "replacements_issued_before_fence": 1, "subsequent_family_redemptions": "deny", "instant_offline_jwt_revocation_claimed": false }
+}
