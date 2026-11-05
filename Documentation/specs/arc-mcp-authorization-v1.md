@@ -1,0 +1,162 @@
+# MCP authorization
+
+```text
+Spec id: arc-mcp-authorization
+Version: 1
+Status: Draft
+Issue: https://github.com/Cratis/Arc/issues/3703
+Sign-off issue: https://github.com/Cratis/Identity/issues/14
+Supersedes: None
+```
+
+<!-- Copyright (c) Cratis. All rights reserved. -->
+<!-- Licensed under the MIT license. See LICENSE file in the project root for full license information. -->
+
+## Purpose
+
+An MCP client needs a machine-readable authentication challenge, not a browser sign-in page. This draft describes PAT-only, OAuth-only, and combined hosting profiles. It does not claim tested compatibility with any external connector.
+
+The MCP authorization revision is pinned to **2026-07-28; confirmation pending in Cratis/Identity#34**. The reference is the [MCP authorization specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization), based on OAuth 2.1 [draft-ietf-oauth-v2-1-13](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-13). OAuth resource discovery follows [RFC 9728](https://www.rfc-editor.org/rfc/rfc9728); resource binding follows [RFC 8707](https://www.rfc-editor.org/rfc/rfc8707).
+
+## Terms
+
+Person, Account, Realm, Issuer, Subject, Linked key, Resource, Resource indicator, Audience, Tenant, Organisation, Environment, Actor, Credential kind, Assurance, Policy epoch, Access token, ID token, Refresh token, and PAT have exactly the meanings in the Terms table of [identity-contract-v1.md](identity-contract-v1.md), Cratis/Identity#24. Shared meanings are not redefined here.
+
+A **PAT-only profile** enables only application PAT verification. An **OAuth-only profile** enables only OAuth resource access. A **combined profile** enables both on the same MCP path. **Protected-resource metadata** is the RFC 9728 document identifying this resource and its OAuth authorization servers. A **machine route** is an MCP API, challenge, discovery, or error route, not the authorization server's interactive sign-in page.
+
+## Normative contract
+
+MUST, MUST NOT, and SHOULD use [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) meanings. Requirements apply after sign-off.
+
+### Profiles and challenges
+
+| Profile | Missing or invalid credential | Discovery | Verification |
+| --- | --- | --- | --- |
+| PAT-only | MUST return 401 and a Bearer challenge without OAuth metadata | MUST NOT advertise an issuer or OAuth protected-resource metadata; an OAuth metadata request MUST return a machine-readable not-found response | Application PAT verifier only |
+| OAuth-only | MUST return 401 and `WWW-Authenticate` pointing to RFC 9728 metadata | MUST publish resource metadata and configured authorization-server discovery | OAuth verifier only; PATs MUST be refused |
+| Combined | MUST return 401 and the OAuth-capable metadata challenge | MUST publish OAuth metadata; PAT support MUST NOT be misrepresented as an OAuth issuer | Deterministic PAT dispatch plus OAuth verification on the same path |
+
+Machine routes MUST NOT redirect to interactive login or return HTML, even when a browser identity provider is configured. A 401 MUST NOT be converted to a 302. Authentication failures MUST NOT disclose whether a specific PAT record exists. A valid authenticated caller lacking required authority MUST receive a machine-readable 403. In OAuth-capable profiles, an OAuth request lacking required scopes MUST receive `WWW-Authenticate: Bearer error="insufficient_scope", scope="...", resource_metadata="..."` on that 403. Clients SHOULD step up by requesting the union of previously granted and newly required scopes, with a finite retry limit. They MUST NOT retry indefinitely. Product-role denial MUST NOT be represented as resolvable solely by gaining scopes.
+
+A request with more than one credential, or a credential in the URI query, MUST be refused with a machine-readable 400 before dispatch or caller construction (RFC 6750 §2 and OAuth 2.1). The server MUST NOT select a credential silently from multiple values. A DPoP proof accompanying its sender-bound token is not an additional access credential.
+
+PAT-only is a static-header/minimal profile, not an assertion of OAuth interoperability with remote MCP connectors. It MUST NOT invent OAuth metadata to satisfy an OAuth-only client.
+
+### OAuth discovery and resource binding
+
+OAuth-capable MCP servers MUST implement RFC 9728 protected-resource metadata, and OAuth MCP clients MUST use it for discovery. The 401 challenge MUST include `resource_metadata` with the protected-resource metadata URL. That document MUST use the registered resource indicator in `resource`, the configured issuer in `authorization_servers`, and the [catalog](arc-scope-catalog-v1.md) scope names in `scopes_supported`. Resource metadata MUST NOT be confused with authorization-server metadata. Clients MUST verify that the protected-resource metadata `resource` equals the requested resource URL and MUST refuse a mismatch (RFC 9728 §3.3).
+
+The client MUST send RFC 8707 `resource` with the intended resource indicator on both authorization and token requests. The authorization server MUST refuse unregistered resource indicators and MUST use the scope catalog's one-to-one mapping from the RFC 8707 resource indicator URL to its audience slug when binding the resulting access token. For example, `resource=https://direct.example.test/mcp` maps to `aud=direct-api`. Each audience slug MUST map back to exactly one resource indicator URL; `aud` MUST NOT be a URL. The resource verifier MUST validate issuer, the single catalog audience string (for example `direct-api`, not the resource URL), signature, expiry, `typ=at+jwt`, required access-token claims, applicable `tid` tenant binding, and sender binding where required, as defined in identity-contract-v1. It MUST NOT accept an ID token as an access token or forward an access token to a different resource.
+
+The authorization server MUST require PKCE S256 and MUST reject `plain` and missing PKCE. Clients MUST use S256 and MUST refuse authorization when PKCE metadata is missing. Redirect URIs MUST match exactly. The only proposed native loopback exception follows RFC 8252 for IP literals and variable ports, not `localhost` or wildcard hosts. Resource servers MUST NOT compensate for invalid tokens by falling back to forwarded browser identity. Successful credential verification MUST produce the same [caller contract](arc-verified-caller-v1.md) before product authorization.
+
+Pre-registered first-party clients remain supported. Client ID Metadata Documents SHOULD be supported, pinned to [draft-ietf-oauth-client-id-metadata-document-03](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document-03). Dynamic Client Registration is optional (MAY), for backwards compatibility only, subject to the registration security contract and tested connector needs. Connector compatibility MUST remain unverified until tested against supported versions.
+
+DPoP is optional for MCP clients using unbound tokens; this contract MUST NOT impose it on every client. Client support is unverified. A sender-bound token carrying `cnf.jkt` MUST NOT be accepted as a plain bearer. Its verifier MUST require a valid matching DPoP header and MUST refuse a missing header, a proof with the wrong key thumbprint, or a replayed proof `jti` with 401. Optional client support MUST NOT disable an existing token binding.
+
+### Combined dispatch
+
+The combined profile MUST follow [PAT dispatch](arc-pat-format-v1.md). A recognized PAT prefix MUST select application verification; an invalid checksum, resource mismatch, or revoked PAT MUST NOT trigger OAuth fallback. Other bearer values MUST receive full OAuth verification rather than acceptance based on JWT shape. Both paths MUST preserve resource-local authority and apply current product policy.
+
+## Test vectors
+
+All hosts and token markers are synthetic. `PAT_FIXTURE` and `OAUTH_FIXTURE` below mean test fixtures verified under the named path; they are not literal credentials.
+
+### PAT-only
+
+```http
+GET /mcp HTTP/1.1
+Host: direct.example.test
+Accept: application/json
+
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer realm="direct"
+Content-Type: application/json
+
+{"error":"unauthorized"}
+```
+
+No `resource_metadata`, issuer, or OAuth authorization-server metadata is advertised. A request to `/.well-known/oauth-protected-resource/mcp` receives `404` with JSON rather than HTML.
+
+### OAuth-only and combined challenge
+
+```http
+GET /mcp HTTP/1.1
+Host: direct.example.test
+Accept: application/json
+
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer resource_metadata="https://direct.example.test/.well-known/oauth-protected-resource/mcp"
+Content-Type: application/json
+
+{"error":"unauthorized"}
+```
+
+The referenced metadata request succeeds in both OAuth-capable profiles:
+
+```http
+GET /.well-known/oauth-protected-resource/mcp HTTP/1.1
+Host: direct.example.test
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{"resource":"https://direct.example.test/mcp","authorization_servers":["https://login.example.test"],"scopes_supported":["direct:read","direct:write"]}
+```
+
+The corresponding synthetic authorization request contains `resource=https%3A%2F%2Fdirect.example.test%2Fmcp`, `code_challenge_method=S256`, and an actual S256 challenge. The token request contains the same encoded `resource` and matching verifier. These are required fields, not complete runnable requests.
+
+| Request / configuration | Expected response or result |
+| --- | --- |
+| PAT-only, no Authorization | 401 JSON; Bearer realm only, no OAuth metadata. |
+| PAT-only, valid `PAT_FIXTURE` with required role | Authentication and authorization pass; MCP handler runs. |
+| PAT-only, `OAUTH_FIXTURE` | 401 JSON; no OAuth verifier. |
+| OAuth-only, no Authorization | 401 JSON with `resource_metadata`; metadata GET returns the document above. |
+| OAuth-only, valid `OAUTH_FIXTURE`, correct audience and role | Authentication and authorization pass; MCP handler runs. |
+| OAuth-only, `PAT_FIXTURE` | 401 JSON; no PAT dispatch. |
+| Combined, valid `PAT_FIXTURE` | Application PAT branch; same product checks. |
+| Combined, valid `OAUTH_FIXTURE` | OAuth branch; same product checks. |
+| Combined, missing credential | 401 JSON with OAuth resource metadata. |
+| Combined, bad-checksum PAT | 401 JSON; no OAuth fallback. |
+| OAuth token for Studio presented to Direct | 401 JSON for wrong audience. |
+| Resource parameter missing or different at either OAuth request | No usable Direct access token; request refused under this contract. |
+| OAuth-only, valid `direct:read` token, allowed role, operation also requires `direct:write` | 403 JSON with the insufficient-scope challenge below; client requests union `direct:read direct:write`, subject to retry limit. |
+| Combined, OAuth branch, same missing write scope | Same 403 and challenge; no PAT fallback; bounded union-scope step-up. |
+| PKCE metadata absent | Client refuses authorization. |
+| S256 capability advertised | Client uses S256. |
+| MCP client without DPoP, credential not sender-bound | Not refused solely for lack of DPoP. |
+| `cnf.jkt`-bound token without DPoP header | 401; no plain-bearer downgrade. |
+| `cnf.jkt`-bound token with wrong proof key thumbprint | 401. |
+| `cnf.jkt`-bound token with replayed proof `jti` | 401. |
+| Protected-resource metadata `resource=https://studio.example.test/mcp` when Direct was requested | Client refuses discovery for resource mismatch. |
+| Authorization request uses an unregistered resource indicator | Authorization server refuses; no access token. |
+| Authorization request uses `code_challenge_method=plain`, or omits PKCE | Authorization server refuses; no access token. |
+| More than one credential, or a credential in the URI query | 400 machine-readable refusal before dispatch. |
+| Valid authentication but role denies operation | 403 machine-readable refusal; no scope-based role elevation. |
+| Any profile, browser login redirect or HTML error | Nonconforming; expected machine response without `Location`. |
+
+For the two OAuth insufficient-scope vectors, the response is:
+
+```http
+HTTP/1.1 403 Forbidden
+WWW-Authenticate: Bearer error="insufficient_scope", scope="direct:write", resource_metadata="https://direct.example.test/.well-known/oauth-protected-resource/mcp"
+Content-Type: application/json
+
+{"error":"insufficient_scope"}
+```
+
+For example, a fixture retry limit of 2 allows no third step-up attempt. This value is a test setting, not a locked production default. A PAT request in the combined profile remains an application PAT flow and MUST NOT be sent through OAuth step-up automatically.
+
+Machine-readable group: [profiles and discovery](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/profiles-and-discovery.json), repository path `Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/profiles-and-discovery.json`. Successful fixture requests assert handler admission, not a particular MCP method's response payload. The group has `name`, `description`, `given`, `when.action`, and `then`; `given.vectors` contains individual cases. These data vectors do not demonstrate runtime conformance. Outcomes and reasons are vector vocabulary, not public error messages.
+
+## Open questions
+
+- **Cratis/Identity#34:** MCP authorization revision is pinned to 2026-07-28; confirmation pending in Cratis/Identity#34. External connector behavior, including DPoP support, remains unverified. Agree supported versions and a finite production step-up retry limit.
+- **D9:** registration mechanisms follow tested connector needs; the independent registration security contract remains required.
+- **D11 / q11:** approve PAT prefix and checksum encoding; no fallback on invalid PATs is part of this contract.
+- **q9 / N1:** lock production resource indicators, audiences, issuer names, and scope names. Test URLs are not production registrations.
+- **(align with #24):** token type, single catalog audience string, `tid`, assurance, and caller mappings follow #24. This spec needs additional profile/discovery behavior, PKCE metadata handling, registration draft pins, and scope-step-up retry policy; #24 does not define those protocol mechanics. No additional environment claim or arbitrary token claims are introduced.
+
+## Versioning
+
+A Locked spec MUST change only through a new version file. Changing the pinned MCP revision MUST receive explicit compatibility review and connector tests. Adding OAuth to a PAT-only deployment MUST be an explicit profile change; it MUST NOT silently invalidate active PATs outside their separately announced lifecycle.

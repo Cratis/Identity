@@ -1,0 +1,35 @@
+{
+  "name": "verified-caller-principals-and-workload",
+  "description": "Grouped principal construction, allowlist and deleted-pod cache-bound cases.",
+  "given": {
+  "fixtureDefaults": {"tenant": "tenant-fixture", "environment": "test", "expectedWorkloadAudience": "work-api", "deletedPodRejectionLatencySeconds": 30},
+  "vectors": [
+    {"given": {"validPat": true, "person": "person-fixture", "productPolicyAllows": true}, "when": {"endpointKind": "person"}, "then": {"authorized": true, "principalKind": "person", "credentialKind": "PAT", "accountKey": {"issuer": "https://login.example.test", "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32"}, "person": "person-fixture", "actor": null}},
+    {"given": {"validDelegatedOAuth": true, "iss": "https://login.example.test", "sub": "8b167ad2-0f89-4c78-9d42-6d4580495d32", "currentAct": {"iss": "https://agents.example.test", "sub": "agent-fixture"}, "activeLineage": true}, "when": {"operation": "build-caller"}, "then": {"principalKind": "delegated-actor", "person": "person-fixture", "actor": {"iss": "https://agents.example.test", "sub": "agent-fixture"}, "credentialKind": "OAuth grant"}},
+    {"given": {"validClientCredentials": true, "clientAuthentication": "private_key_jwt", "dpopValid": true, "servicePermissions": ["fixture:read"]}, "when": {"operation": "build-caller"}, "then": {"principalKind": "organization-automation", "credentialKind": "machine principal", "person": null, "actor": null, "permissions": ["fixture:read"]}},
+    {"given": {"validPodToken": true, "boundPodLive": true, "issuerValid": true, "receivingAudienceReturned": true, "serviceAccountAllowlisted": true}, "when": {"operation": "verify-workload"}, "then": {"accepted": true, "principalKind": "cluster-workload", "credentialKind": "workload", "person": null}},
+    {"given": {"runnerKeyProofValid": true, "matchingPerWorkGrant": true}, "when": {"endpointKind": "runner", "operationWithinGrant": true}, "then": {"authorized": true, "principalKind": "runner", "person": null}},
+    {"given": {"validPodToken": true, "receivingAudienceReturned": true, "serviceAccountAllowlisted": false, "serviceAccount": "customer-fixture"}, "when": {"endpointKind": "platform-workload"}, "then": {"accepted": false, "reason": "not-allowlisted"}},
+    {"given": {"tokenReviewAuthenticated": true, "returnedAudiences": []}, "when": {"operation": "verify-workload"}, "then": {"accepted": false, "reason": "audience-mismatch"}},
+    {"given": {"tokenReviewAuthenticated": true, "returnedAudiences": ["https://kubernetes.default.svc"]}, "when": {"operation": "verify-workload"}, "then": {"accepted": false, "reason": "api-server-audience-is-not-app-audience"}},
+    {"given": {"workloadMtlsChainValid": true, "certificateUnexpired": true, "sanAllowlisted": false}, "when": {"operation": "verify-workload"}, "then": {"accepted": false}},
+    {"given": {"perWorkGrantActor": "service-a", "authenticatedActor": "service-b"}, "when": {"operation": "perform-work"}, "then": {"authorized": false, "reason": "grant-actor-mismatch"}},
+    {"given": {"validatedAtSeconds": 0, "podDeletedAtSeconds": 1, "tokenExpiresAtSeconds": 600, "cacheMaximumSeconds": 30}, "when": {"requestAtSeconds": 31}, "then": {"accepted": false, "cacheUsable": false, "latestCacheExpirySeconds": 30, "deletedPodRejectionDelayAtMostSeconds": 30}},
+    {"given": {"validatedAtSeconds": 0, "tokenExpiresAtSeconds": 10, "cacheMaximumSeconds": 30}, "when": {"requestAtSeconds": 11}, "then": {"accepted": false, "latestCacheExpirySeconds": 10}},
+    {"given": {"cacheExpired": true, "tokenReviewUnavailable": true}, "when": {"operation": "verify-workload"}, "then": {"accepted": false, "staleSuccessAllowed": false}},
+    {"given": {"verifiedPrincipalKind": "cluster-workload"}, "when": {"endpointKind": "person-only"}, "then": {"authorized": false}},
+    {"given": {"verifiedPrincipalKind": "person"}, "when": {"endpointKind": "workload-only"}, "then": {"authorized": false}},
+    {"given": {"contractVersion": "2"}, "when": {"operation": "consume-caller-v1"}, "then": {"accepted": false, "reason": "unsupported-version"}},
+    {"given": {"validPat": true, "patLabel": "privileged-agent-fixture", "authenticatedActor": null}, "when": {"operation": "build-caller"}, "then": {"actor": null, "client": {"id": "privileged-agent-fixture", "authentication": "declared"}, "actorAuthorityGranted": false}},
+    {"given": {"verifiedTokenActor": {"iss": "https://agents.example.test", "sub": "agent-B"}, "grantActor": {"iss": "https://agents.example.test", "sub": "agent-A"}, "otherCredentialBindingsMatch": true}, "when": {"operation": "build-caller"}, "then": {"accepted": false, "callerConstructed": false}},
+    {"given": {"verifiedCredentialGrantReference": null, "credentialIdMapping": null}, "when": {"operation": "build-caller", "requestSuppliedGrantReference": "grant-request-fixture", "requestSources": ["header", "body", "query"]}, "then": {"accepted": false, "requestReferenceUsed": false, "callerConstructed": false}},
+    {"given": {"cnf": {"jkt": "synthetic-key-a"}, "dpopHeaderPresent": false}, "when": {"operation": "build-caller", "authorizationScheme": "Bearer"}, "then": {"status": 401, "callerConstructed": false, "plainBearerAccepted": false}},
+    {"given": {"cnf": {"jkt": "synthetic-key-a"}, "dpopHeaderPresent": true, "proofKeyThumbprint": "synthetic-key-b"}, "when": {"operation": "build-caller"}, "then": {"status": 401, "callerConstructed": false}},
+    {"given": {"cnf": {"jkt": "synthetic-key-a"}, "dpopHeaderPresent": true, "proofKeyThumbprint": "synthetic-key-a", "proofJti": "proof-replay-fixture", "proofJtiAlreadyAccepted": true}, "when": {"operation": "build-caller"}, "then": {"status": 401, "callerConstructed": false}},
+    {"given": {"credentialCount": 2}, "when": {"operation": "build-caller"}, "then": {"accepted": false, "callerConstructed": false}},
+    {"given": {"credentialInUriQuery": true}, "when": {"operation": "build-caller"}, "then": {"accepted": false, "callerConstructed": false}}
+  ]
+  },
+  "when": {"action": "evaluate-principal-and-workload-cache-cases"},
+  "then": {"allCaseAssertionsRequired": true}
+}
