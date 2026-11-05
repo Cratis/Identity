@@ -25,15 +25,15 @@ A **PAT prefix** is the registered resource key and format marker before a token
 
 ## Normative contract
 
-MUST, MUST NOT, and SHOULD have their [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) meanings. Requirements apply after sign-off. The precise wire format below is a **q11 proposal**, not an already-decided encoding.
+MUST, MUST NOT, and SHOULD have their [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) meanings. Requirements apply after sign-off. The precise wire format below is the q11 encoding decided at the Identity #14 sign-off.
 
-### Proposed wire format
+### Wire format
 
 ```text
 <resource-key>_pat_v1_<secret>_<checksum>
 ```
 
-- `resource-key` MUST be an exact registered ASCII key: proposed `direct`, `studio`, or `stage-<app-key>`. An `app-key` MUST contain 1–48 lowercase ASCII letters, digits, or internal hyphens and MUST start and end with a letter or digit. Keys MUST be unique within the dispatch domain; shared keys MUST denote the same logical resource and verification boundary.
+- `resource-key` MUST be an exact registered ASCII key: `direct`, `studio`, or `stage-<app-key>`. An `app-key` MUST contain 1–48 lowercase ASCII letters, digits, or internal hyphens and MUST start and end with a letter or digit. Keys MUST be unique within the dispatch domain; shared keys MUST denote the same logical resource and verification boundary.
 - `secret` MUST be 32 cryptographically random bytes encoded as exactly 64 lowercase hexadecimal characters. Issuance MUST NOT use the fixed test payload below.
 - `checksum` MUST be the first eight lowercase hexadecimal characters of SHA-256 over the ASCII bytes preceding the final underscore. The hashed body includes the resource key, `_pat_v1_`, and encoded secret. It excludes the underscore immediately before the checksum.
 - Parsing MUST reject incorrect lengths, extra segments, unsupported versions, noncanonical casing, whitespace, and malformed encodings. It MUST NOT normalize invalid input into an accepted credential.
@@ -100,13 +100,15 @@ The bad-checksum vector is the Direct fixture with checksum `000eb749`.
 
 Machine-readable group: [dispatch and policy](../../Source/Identity.Specs/Vectors/arc-pat-format-v1/dispatch-and-policy.json), repository path `Source/Identity.Specs/Vectors/arc-pat-format-v1/dispatch-and-policy.json`. Each JSON group has `name`, `description`, `given`, `when.action`, and `then`; `given.vectors` contains its individual cases. These data vectors do not demonstrate runtime conformance. Outcomes and reasons are vector vocabulary, not public error messages.
 
-## Open questions
+## Decisions recorded at sign-off
 
-- **q11 / D11:** approve resource-key registration, uniqueness boundaries, checksum algorithm, and version grammar. Per-resource prefixes are decided; exact bytes are proposed.
-- **D3:** lifecycle for previously issued PATs pending owner decision.
-- **D12:** confirm SSO policy inputs, freshness, and invalidation integration. Assured, capped creation is the recommended default; organisations can forbid PATs.
-- **W0 revocation contract:** lock revocation timing and policy-epoch enforcement.
-- **(align with #24):** #24 defines shared identity, assurance (`idp`, `auth_time`, `acr`, optional `amr`), nonnegative policy epochs, and immutable resource/tenant/environment constraints. This spec additionally needs the PAT creation-record field names, one-way verifier scheme, prefix registry, and credential-id allocation; #24 leaves those mechanics to Arc. Consumer review of the shared mappings remains required.
+Decided in Identity #14 (2026-11-05) with the recommended answers from the sign-off package:
+
+- **q11 / D11:** resource-key registration, uniqueness boundaries, checksum algorithm, and version grammar as specified above; per-resource prefixes and exact bytes are decided.
+- **D3:** lifecycle for previously issued PATs follows the separately defined announced lifecycle below.
+- **D12:** SSO policy inputs, freshness, and invalidation integration as decided at sign-off. Assured, capped creation is the recommended default; organisations can forbid PATs.
+- **W0 revocation contract:** revocation timing and policy-epoch enforcement are specified in [identity-revocation-v1](identity-revocation-v1.md).
+- **(align with #24):** #24 defines shared identity, assurance (`idp`, `auth_time`, `acr`, optional `amr`), nonnegative policy epochs, and immutable resource/tenant/environment constraints. This spec additionally needs the PAT creation-record field names, one-way verifier scheme, prefix registry, and credential-id allocation; #24 leaves those mechanics to Arc. Consumer review of the shared mappings was covered by the Identity #14 sign-off.
 - Legacy tokens follow an announced lifecycle defined separately. This spec does not prescribe that migration.
 
 ## Versioning

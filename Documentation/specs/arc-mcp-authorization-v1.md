@@ -49,7 +49,7 @@ OAuth-capable MCP servers MUST implement RFC 9728 protected-resource metadata, a
 
 The client MUST send RFC 8707 `resource` with the intended resource indicator on both authorization and token requests. The authorization server MUST refuse unregistered resource indicators and MUST use the scope catalog's one-to-one mapping from the RFC 8707 resource indicator URL to its audience slug when binding the resulting access token. For example, `resource=https://direct.example.test/mcp` maps to `aud=direct-api`. Each audience slug MUST map back to exactly one resource indicator URL; `aud` MUST NOT be a URL. The resource verifier MUST validate issuer, the single catalog audience string (for example `direct-api`, not the resource URL), signature, expiry, `typ=at+jwt`, required access-token claims, applicable `tid` tenant binding, and sender binding where required, as defined in identity-contract-v1. It MUST NOT accept an ID token as an access token or forward an access token to a different resource.
 
-The authorization server MUST require PKCE S256 and MUST reject `plain` and missing PKCE. Clients MUST use S256 and MUST refuse authorization when PKCE metadata is missing. Redirect URIs MUST match exactly. The only proposed native loopback exception follows RFC 8252 for IP literals and variable ports, not `localhost` or wildcard hosts. Resource servers MUST NOT compensate for invalid tokens by falling back to forwarded browser identity. Successful credential verification MUST produce the same [caller contract](arc-verified-caller-v1.md) before product authorization.
+The authorization server MUST require PKCE S256 and MUST reject `plain` and missing PKCE. Clients MUST use S256 and MUST refuse authorization when PKCE metadata is missing. Redirect URIs MUST match exactly. The only native loopback exception follows RFC 8252 for IP literals and variable ports, not `localhost` or wildcard hosts. Resource servers MUST NOT compensate for invalid tokens by falling back to forwarded browser identity. Successful credential verification MUST produce the same [caller contract](arc-verified-caller-v1.md) before product authorization.
 
 Pre-registered first-party clients remain supported. Client ID Metadata Documents SHOULD be supported, pinned to [draft-ietf-oauth-client-id-metadata-document-03](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document-03). Dynamic Client Registration is optional (MAY), for backwards compatibility only, subject to the registration security contract and tested connector needs. Connector compatibility MUST remain unverified until tested against supported versions.
 
@@ -163,12 +163,14 @@ For example, a fixture retry limit of 2 allows no third step-up attempt. This va
 
 Machine-readable group: [profiles and discovery](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/profiles-and-discovery.json), repository path `Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/profiles-and-discovery.json`. Successful fixture requests assert handler admission, not a particular MCP method's response payload. The group has `name`, `description`, `given`, `when.action`, and `then`; `given.vectors` contains individual cases. These data vectors do not demonstrate runtime conformance. Outcomes and reasons are vector vocabulary, not public error messages.
 
-## Open questions
+## Decisions recorded at sign-off
 
-- **Cratis/Identity#34:** the 2026-07-28 pin is confirmed. External connector behavior, including DPoP support, remains unverified. Agree supported versions and a finite production step-up retry limit.
+Decided in Identity #14 (2026-11-05) with the recommended answers from the sign-off package:
+
+- **Cratis/Identity#34:** the 2026-07-28 pin is confirmed. The supported versions and the finite production step-up retry limit are decided at sign-off. Verifying external connector behavior, including DPoP support, is implementation evidence and remains unverified.
 - **D9:** registration mechanisms follow tested connector needs; the independent registration security contract remains required.
-- **D11 / q11:** approve PAT prefix and checksum encoding; no fallback on invalid PATs is part of this contract.
-- **q9 / N1:** lock production resource indicators, audiences, issuer names, and scope names. Test URLs are not production registrations.
+- **D11 / q11:** PAT prefix and checksum encoding follow [arc-pat-format-v1](arc-pat-format-v1.md); no fallback on invalid PATs is part of this contract.
+- **q9 / N1:** production resource indicators, audiences, issuer names, and scope names are decided at sign-off. Test URLs are not production registrations.
 - **(align with #24):** token type, single catalog audience string, `tid`, assurance, and caller mappings follow #24. This spec needs additional profile/discovery behavior, PKCE metadata handling, registration draft pins, and scope-step-up retry policy; #24 does not define those protocol mechanics. No additional environment claim or arbitrary token claims are introduced.
 
 ## Versioning

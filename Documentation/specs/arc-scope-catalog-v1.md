@@ -27,9 +27,9 @@ A **catalog entry** binds one resource indicator to its audience and permitted s
 
 MUST, MUST NOT, and SHOULD use [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) meanings. Requirements apply after sign-off.
 
-### Proposed N1 catalog
+### N1 catalog
 
-All URLs in this table are test fixtures, not production endpoints. Names are proposed under q9. Resource indicators and audience strings are distinct, as defined in identity-contract-v1 §4. Audience strings MUST follow that contract's 1–64-character catalog syntax, not use resource URLs.
+All URLs in this table are test fixtures, not production endpoints. Names are decided under q9 at the Identity #14 sign-off. Resource indicators and audience strings are distinct, as defined in identity-contract-v1 §4. Audience strings MUST follow that contract's 1–64-character catalog syntax, not use resource URLs.
 
 | Resource | Resource indicator | Audience | Scope prefix | Stable scope set |
 | --- | --- | --- | --- | --- |
@@ -45,7 +45,7 @@ Unknown scopes and wildcard scopes MUST be refused. Scope prefix and operation s
 
 ### Reviewed bundles and runtime checks
 
-Proposed bundle `reader-v1` contains the resource's `read` scope. Proposed `editor-v1` contains its `read` and `write` scopes. Bundle publication MUST include owner review, the exact scope list, version, and operation coverage. These proposed bundles MUST NOT be represented as already reviewed or approved.
+Bundle `reader-v1` contains the resource's `read` scope. `editor-v1` contains its `read` and `write` scopes. Bundle publication MUST include owner review, the exact scope list, version, and operation coverage. These bundles were approved at the Identity #14 sign-off.
 
 An operation MUST satisfy all applicable checks: current product membership and roles, required token scopes, tenant and environment binding, applicable grant bounds, assurance, and current policy fences. Scopes MUST act only as a ceiling. Neither a scope nor consent MUST create membership or override product authorization.
 
@@ -68,11 +68,13 @@ Synthetic person `person-fixture` is a member of tenant `tenant-fixture` with a 
 
 Machine-readable group: [catalog and policy](../../Source/Identity.Specs/Vectors/arc-scope-catalog-v1/catalog-and-policy.json), repository path `Source/Identity.Specs/Vectors/arc-scope-catalog-v1/catalog-and-policy.json`. The group has `name`, `description`, `given`, `when.action`, and `then`; `given.vectors` contains individual cases. These are data vectors, not executed runtime conformance tests. Outcomes and reasons are vector vocabulary, not public error messages.
 
-## Open questions
+## Decisions recorded at sign-off
 
-- **q9 / N1:** approve production resource indicators, audiences, scope names, operation coverage, and bundle ownership. The small sets above are proposals, not final registrations.
+Decided in Identity #14 (2026-11-05) with the recommended answers from the sign-off package:
+
+- **q9 / N1:** production resource indicators, audiences, scope names, operation coverage, and bundle ownership are decided as the sets above; test URLs remain fixtures.
 - **D7:** generated-app exposure remains an explicit allowlist; approval-related syntax depends on the approval contract and is not supplied by a write scope.
-- **(align with #24):** audience strings, scope syntax, immutable bindings, and one audience per access token follow #24. This specification corrected URL-shaped audiences to catalog strings. #24 delegates exact catalog registrations, operation coverage, bundle versioning, and exchange mappings to Arc; these proposed values still need consumer review.
+- **(align with #24):** audience strings, scope syntax, immutable bindings, and one audience per access token follow #24. This specification corrected URL-shaped audiences to catalog strings. #24 delegates exact catalog registrations, operation coverage, bundle versioning, and exchange mappings to Arc; consumer review of these values was covered by the Identity #14 sign-off.
 
 ## Versioning
 

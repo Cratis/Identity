@@ -48,9 +48,9 @@ An agent acting for a person MUST have a person-bound grant. An organisation aut
 
 Each child MUST satisfy `child.allowedDestinations ⊆ parent.allowedDestinations ⊆ root.allowedDestinations`; its selected destination MUST be in those sets. Root consent MUST NOT restore a destination removed by a parent. For a same-resource child, its scopes MUST be a subset of the parent's scopes. Cross-resource scope attenuation MUST use explicit [catalog mappings](arc-scope-catalog-v1.md), never string subsets. Tenant, environment, and assurance MUST be no wider than the parent and root. Carried assurance MUST NOT be refreshed merely by exchanging a token. `auth_time` MUST remain the verified original NumericDate; unknown assurance MUST remain `acr=basic`, not become stronger evidence. Child expiry MUST be no later than either the parent's expiry or `rootExpiresAt`.
 
-The authenticated actor MUST be in the parent's `authorizedExchangeActors` before exchange; any other actor MUST be refused. Depth MUST be capped; the proposed cap is two edges, root person grant at depth 0, first agent at 1, downstream agent at 2. Depth 3 MUST be refused under this proposal. Products MUST configure explicit finite call, write, and lifetime bounds before enabling agent work; q15 leaves the numeric defaults open.
+The authenticated actor MUST be in the parent's `authorizedExchangeActors` before exchange; any other actor MUST be refused. Depth MUST be capped; the decided cap is two edges, root person grant at depth 0, first agent at 1, downstream agent at 2. Depth 3 MUST be refused. Products MUST configure explicit finite call, write, and lifetime bounds before enabling agent work; q15 leaves the numeric defaults to per-product configuration.
 
-Revoking any ancestor MUST close all descendants under the agreed revocation protocol. Every resource MUST refuse a descendant within the revocation bound of the open W0 revocation contract, Cratis/Identity#32; this spec MUST NOT imply immediate fleet-wide propagation. Exchange MUST check every ancestor's fence. Resources retaining long-lived grants MUST check the chain. An unavailable required lineage or fence check MUST cause refusal, not trust in nested token history.
+Revoking any ancestor MUST close all descendants under the agreed revocation protocol. Every resource MUST refuse a descendant within the revocation bound of the W0 revocation contract ([identity-revocation-v1](identity-revocation-v1.md), Cratis/Identity#32); this spec MUST NOT imply immediate fleet-wide propagation. Exchange MUST check every ancestor's fence. Resources retaining long-lived grants MUST check the chain. An unavailable required lineage or fence check MUST cause refusal, not trust in nested token history.
 
 ### B5/C4: budget atomicity and retries
 
@@ -79,7 +79,7 @@ Synthetic root `root-fixture` permits Direct and Studio, tenant `tenant-fixture`
 | Verified credential maps to `grant-a`; request supplies `grant-b` | Refused; request reference unused, `grant-b` bounds never read. |
 | Root permits Direct and Studio; parent narrows destinations to Studio; child requests Direct | Refused; root consent does not restore a removed destination. |
 | Same-resource parent has `studio:read`; child requests `studio:write` | Refused; child scopes must be a subset. |
-| Depth-2 agent exchanges to a depth-3 child | Refused under proposed cap 2. |
+| Depth-2 agent exchanges to a depth-3 child | Refused under cap 2. |
 | Parent has 10 calls; child A reserves 7, child B requests 4 | B refused; root total cannot reach 11. |
 | Parent has 5 calls; two concurrent child requests each reserve 4 with different keys | Exactly one succeeds; remaining parent budget is 1. |
 | Allocation key `alloc-fixture` repeated with identical 4-call request | Same child and outcome; debit occurs once. |
@@ -95,14 +95,16 @@ Synthetic root `root-fixture` permits Direct and Studio, tenant `tenant-fixture`
 
 Machine-readable group: [lineage and budgets](../../Source/Identity.Specs/Vectors/arc-delegation-v1/lineage-and-budgets.json), repository path `Source/Identity.Specs/Vectors/arc-delegation-v1/lineage-and-budgets.json`. The group has `name`, `description`, `given`, `when.action`, and `then`; `given.vectors` contains individual cases. These are data vectors, not executed runtime conformance tests. Outcomes and reasons are vector vocabulary, not public error messages.
 
-## Open questions
+## Decisions recorded at sign-off
 
-- **q15:** numeric default call, write, and lifetime bounds per product remain open. No unlimited fallback is proposed.
-- **B3:** approve the proposed depth cap of 2 and the grant persistence/revocation implementation.
-- **W0 / Cratis/Identity#32:** lock the revocation bound; descendant refusal and lifecycle enforcement depend on that contract.
-- **N1 / q9:** lock cross-resource mappings with resource owners; similar names are not mappings.
+Decided in Identity #14 (2026-11-05) with the recommended answers from the sign-off package:
+
+- **q15:** numeric default call, write, and lifetime bounds are per-product configuration and are not specified here. No unlimited fallback is permitted.
+- **B3:** the depth cap of 2 and the grant persistence/revocation design are decided.
+- **W0 / Cratis/Identity#32:** the revocation bound is specified in [identity-revocation-v1](identity-revocation-v1.md); descendant refusal and lifecycle enforcement follow that contract.
+- **N1 / q9:** cross-resource mappings are locked with the resource owners; similar names are not mappings.
 - **D6:** person-requested agent work requires delegation; organisation automation remains separate. Which interim tools meet read-only containment is q12 and is outside this contract.
-- **(align with #24):** #24 fixes person UUID subjects, `act` object shape, assurance fields, and nonnegative policy epochs, but leaves actor registration namespaces open. The grant-record schema, root/parent references, budgets, and depth are additional Arc mechanics. A signed `grantId` token claim is not in #24's access-token allowlist and MUST NOT be added without coordinated claim-profile review/versioning; the proposed record reference needs that decision. `jti` MUST NOT be treated as a grant id.
+- **(align with #24):** #24 fixes person UUID subjects, `act` object shape, assurance fields, and nonnegative policy epochs, but leaves actor registration namespaces open. The grant-record schema, root/parent references, budgets, and depth are additional Arc mechanics. A signed `grantId` token claim is not in #24's access-token allowlist and MUST NOT be added without coordinated claim-profile review/versioning; the record reference stays a record reference, not a token claim. `jti` MUST NOT be treated as a grant id.
 
 ## Versioning
 

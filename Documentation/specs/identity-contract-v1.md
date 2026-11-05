@@ -26,7 +26,7 @@ These definitions are normative within this specification and MUST be reused ver
 | Resource indicator | The absolute URL identifying the intended protected resource in an OAuth request, not a permission or an issuer. | Registered HTTPS URL (§4). |
 | Audience | The resource identifier a token verifier MUST match to its own catalog entry; this profile permits one audience per access token. | Catalog string, 1–64 characters (§4). |
 | Tenant | A product-owned workspace with product-owned live membership and roles; not an organisation or storage namespace. | Product/installation-scoped string, 1–64 characters (§4). |
-| Organisation | Access's commercial and administrative unit for cross-product policy and confirmed tenant bindings, not workspace membership. | Opaque Access id; syntax open under D5. |
+| Organisation | Access's commercial and administrative unit for cross-product policy and confirmed tenant bindings, not workspace membership. | Opaque Access id; scope and ownership decided in D5 (Identity #23). |
 | Environment | A registered deployment context constraining a credential and tenant binding; never inferred from a caller-supplied label; detailed in Arc verified-caller spec. | Trusted installation reference; wire syntax open. |
 | Actor | The current agent or supporter acting for the person, without replacing the person's subject; detailed in Arc delegation spec. | Registered actor `(iss, sub)` in `act`; namespaces open. |
 | Credential kind | The verified credential classification determining validation and caller construction, not a role; detailed in Arc verified-caller spec. | Browser session, OAuth grant, PAT, on-behalf session, machine principal or workload. |
@@ -39,9 +39,9 @@ These definitions are normative within this specification and MUST be reused ver
 
 ## 1. Scope and status
 
-This contract defines the person-facing identity shared by Identity, AuthProxy, Arc, Direct and Studio. Keywords follow [the specification conventions](README.md). It proposes the D4 person-id decision and related wire shapes; it does not claim deployment, owner review or sign-off. Implementation is [Identity #36](https://github.com/Cratis/Identity/issues/36).
+This contract defines the person-facing identity shared by Identity, AuthProxy, Arc, Direct and Studio. Keywords follow [the specification conventions](README.md). It specifies the D4 person-id decision and related wire shapes; it does not claim deployment. Implementation is [Identity #36](https://github.com/Cratis/Identity/issues/36).
 
-**Signed off in Identity #14 (2026-11-05).** The account, resource, tenant, claim and verified-caller mappings were reviewed by the owners; rows marked **Review** specifically require that review. Realm topology (D1) chooses issuer values and security boundaries; **D1 does not change the `(issuer, subject)` shape**. The recommendation of a shared products realm and separate customer-app realms is not a resolved D1 decision.
+**Signed off in Identity #14 (2026-11-05).** The account, resource, tenant, claim and verified-caller mappings were reviewed by the owners, including the rows marked **Review**. Realm topology (D1) chooses issuer values and security boundaries and was decided as option B in Identity #21; **D1 does not change the `(issuer, subject)` shape**.
 
 ## 2. Person, account and identifiers
 
@@ -95,7 +95,7 @@ This state machine concerns adding a link to an existing account or migrating a 
 | `confirmed` | The link or mapping is committed atomically after uniqueness and tombstone checks, and audited. | Identity commits the account link; the product's single writer commits its person mapping. |
 | `rejected` | Terminal for cancellation, invalid/expired control proof or resolver refusal. A new attempt MUST use a new flow; it MUST NOT reuse proofs. | Identity, or the authorized resolver for quarantined proposals. |
 
-Each realm MUST configure proof expiry and MAY configure a confirmation hold; the default is no hold, and the hold policy remains open for owner approval (see open points). A non-conflicting proposal awaiting a configured hold remains `pending_proof`, not `quarantined`, and grants nothing. The hold starts when complete required evidence is recorded. If evidence expires during the hold, fresh proof is required; time alone or lack of proof MUST NOT cause confirmation. Quarantine is reserved for ambiguous, conflicting or untrusted-evidence cases, not routine linking or exact-match migration.
+Each realm MUST configure proof expiry and MAY configure a confirmation hold; the default is no hold, and the hold policy was decided at sign-off (see §10). A non-conflicting proposal awaiting a configured hold remains `pending_proof`, not `quarantined`, and grants nothing. The hold starts when complete required evidence is recorded. If evidence expires during the hold, fresh proof is required; time alone or lack of proof MUST NOT cause confirmation. Quarantine is reserved for ambiguous, conflicting or untrusted-evidence cases, not routine linking or exact-match migration.
 
 A collision with an already confirmed key MUST refuse the proposed binding and place the conflicting proposal in `quarantined`. The existing link MUST remain unchanged; no automatic account merge or key transfer is permitted. Concurrent claims MUST have at most one winner; any loser enters conflict quarantine. Ambiguous legacy matches and untrusted legacy evidence MUST also be quarantined and grant nothing through the proposed mapping.
 
@@ -110,9 +110,9 @@ Only a designated realm identity administrator may resolve an Identity link conf
 | Scope | Catalog-assigned `<prefix>:<operation>`, e.g. `direct:read`, `direct:write`, `direct:work`. Prefix and operation each match `^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`. There MUST NOT be an approve or admin scope. Scopes are ceilings, not roles or membership. |
 | Tenant id | Product-assigned opaque ASCII string of 1–64 characters matching `^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$`, e.g. `t-1234`. Stable and never reassigned within the product installation. MUST NOT encode PII. Its identity is scoped by resource and installation, not globally inferred from the string. |
 
-**Review:** these formats, catalog values and mappings need Direct/Studio owner review. A product whose existing tenant ids fall outside this syntax MUST map each such id to a stable alias that matches the syntax and record that mapping; it MUST NOT normalize ids silently (for example, by trimming a trailing hyphen). Mappings MUST be one-to-one: one existing id maps to one alias, and one alias maps to one existing id. Before use, an alias MUST be checked for collision with every existing valid tenant id and alias in that product installation; a collision MUST be refused. Aliases MUST remain permanently reserved after deletion and MUST never be reassigned.
+**Review:** these formats, catalog values and mappings were reviewed and accepted by the Direct/Studio owners in the Identity #14 sign-off. A product whose existing tenant ids fall outside this syntax MUST map each such id to a stable alias that matches the syntax and record that mapping; it MUST NOT normalize ids silently (for example, by trimming a trailing hyphen). Mappings MUST be one-to-one: one existing id maps to one alias, and one alias maps to one existing id. Before use, an alias MUST be checked for collision with every existing valid tenant id and alias in that product installation; a collision MUST be refused. Aliases MUST remain permanently reserved after deletion and MUST never be reassigned.
 
-An **organisation** is Access's commercial/administrative unit for cross-product policy and confirmed tenant bindings, not workspace membership. A **workspace** is a product **tenant**; its product owns membership and roles. A Chronicle **namespace** is storage, resolved through a registered installation and tenant binding, never directly from a caller-controlled string. Product UI may currently call a workspace an organisation; that label does not conflate the identifiers. Whether organisations are global remains D5.
+An **organisation** is Access's commercial/administrative unit for cross-product policy and confirmed tenant bindings, not workspace membership. A **workspace** is a product **tenant**; its product owns membership and roles. A Chronicle **namespace** is storage, resolved through a registered installation and tenant binding, never directly from a caller-controlled string. Product UI may currently call a workspace an organisation; that label does not conflate the identifiers. Whether organisations are global was decided in D5 (Identity #23).
 
 Identity and AuthProxy MUST obtain selectable tenants from the product's authenticated account-key callback. A selection or cached answer is not authorization: the product MUST recheck live membership on every request. Configuration-only directories are development fixtures.
 
@@ -122,7 +122,7 @@ Tenant, resource and environment are immutable credential constraints. AuthProxy
 
 This table defines person OAuth access tokens, not ID tokens, refresh-token internals, PAT secrets or workload tokens. Access tokens MUST be signed JWTs with `typ=at+jwt` and follow the RFC 9068 profile. Verifiers MUST check trusted issuer, signature/algorithm, expiry, token type, resource audience and required claims; an ID token MUST NOT be accepted as an access token. Refresh MUST NOT invent a new authentication time or increase authority.
 
-`R` means required; `C` means required under the stated condition; `O` means optional. NumericDate values are integer UTC seconds since the Unix epoch. **Review** means **Open: needs Direct/Studio owner review**, not an accepted wire mapping.
+`R` means required; `C` means required under the stated condition; `O` means optional. NumericDate values are integer UTC seconds since the Unix epoch. **Review** marks a mapping that Direct/Studio owners reviewed and accepted in the Identity #14 sign-off.
 
 | Claim | JSON type | Presence | Source and meaning | Review |
 |---|---|---|---|---|
@@ -161,7 +161,7 @@ Roles, membership, email, display name, login name and arbitrary upstream claims
 
 Arc MUST build exactly one verified caller for UI, REST and MCP from a verified AuthProxy envelope, a locally verified PAT after proxy dispatch, natively validated OAuth where enabled, or an allowlisted verified workload credential. Unsigned identity headers MUST NOT authenticate a caller. PATs resolve the account key and constraints recorded at creation; they are not JWTs and do not inherit JWT claim parsing.
 
-All field mappings below are **Open: needs Direct/Studio owner review**. These are logical fields, not a new AuthProxy envelope serialization. Envelope versioning and cryptographic framing remain the separate AuthProxy/Arc contract.
+All field mappings below were reviewed and accepted by the Direct/Studio owners in the Identity #14 sign-off. These are logical fields, not a new AuthProxy envelope serialization. Envelope versioning and cryptographic framing remain the separate AuthProxy/Arc contract.
 
 | Field | Logical type | Presence | Trusted source |
 |---|---|---|---|
@@ -193,10 +193,10 @@ This section describes inspected code, not additional normative claims about dep
 
 - `Source/Identity/Accounts/Account.cs` and `AccountDocument.cs` hold a string account id, numeric GitHub id, login and name. `Accounts.cs` allocates `Guid.NewGuid().ToString()` on insertion and matches sign-in by numeric GitHub id. The generalized realm/upstream-key model, tombstones and quarantine remain implementation work.
 - `Source/Identity/Upstream/GitHubUserResponse.cs` reads the positive numeric GitHub id separately from login. `GitHubSignInEvents.cs` replaces the upstream principal with the account session principal. `SessionPrincipal.cs` currently adds `sub`, name, GitHub id and GitHub login to the site session; that is not the target access-token allowlist.
-- `Source/Identity/Tenants/SelectableTenant.cs` documents `tid`. `ConfiguredTenantDirectory.cs` selects configured resource tenants using GitHub-id membership; `ITenantDirectory.cs` already exposes the product-owned directory seam. This specification retains `tid` as the proposed wire name, pending consumer review.
+- `Source/Identity/Tenants/SelectableTenant.cs` documents `tid`. `ConfiguredTenantDirectory.cs` selects configured resource tenants using GitHub-id membership; `ITenantDirectory.cs` already exposes the product-owned directory seam. This specification retains `tid` as the wire name, accepted in the Identity #14 sign-off.
 - Direct currently consumes `sub`/`ClaimTypes.NameIdentifier`, GitHub/login-oriented identity claims and `x-ms-client-principal*` headers (e.g. `DirectIdentityDetailsProvider.cs`, `PersonalAccessTokens.cs`). Studio similarly consumes `sub`/`ClaimTypes.NameIdentifier` and forwarded principal ids (`TenantSelection.cs`, `OrganizationContext.cs`). Those compatibility paths do not establish agreement on the target `(iss, sub)` or verified-caller mappings.
 
-Migration MUST preserve valid account ids, add issuer scope and generic immutable links, and resolve product legacy keys only through §3. Consumers MUST NOT reinterpret an existing login name as a canonical subject. Existing incompatible identifiers require explicit audited mappings and conflict quarantine before cutover. Public-key/issuer choices, tenant aliases and legacy-claim retirement require owner review; this document changes no runtime behavior.
+Migration MUST preserve valid account ids, add issuer scope and generic immutable links, and resolve product legacy keys only through §3. Consumers MUST NOT reinterpret an existing login name as a canonical subject. Existing incompatible identifiers require explicit audited mappings and conflict quarantine before cutover. Public-key/issuer choices, tenant aliases and legacy-claim retirement were reviewed in the Identity #14 sign-off; this document changes no runtime behavior.
 
 ## 9. Machine-readable vectors
 
@@ -204,13 +204,13 @@ Migration MUST preserve valid account ids, add issuer scope and generic immutabl
 
 These are **data only**. They add no C# tests or project configuration and do not demonstrate runtime conformance. Implementation #36 MUST consume them in executable specs, including atomic uniqueness and tombstone enforcement. Token and proxy conformance need additional executable coverage in their respective implementations.
 
-## 10. Open points and required sign-off
+## 10. Decisions recorded at sign-off
 
-- **D1:** select realm topology and exact issuer URLs; it does not change the `(issuer, subject)` shape. D13 separately needs explicit acceptance of any shared issuer-key risk.
-- **Direct/Studio review:** both owners must review account resolution, resource/audience catalog, tenant format/`tid` mapping and every Review claim/caller mapping before acceptance; that review has not happened here.
-- **D5:** confirm organisation scope, ownership and organisation-id syntax; organisation is not a product tenant or membership authority.
-- **Link lifecycle:** approve optional realm confirmation-hold policy (default none), proof freshness/expiry policy, resolver authorization and recorded-clearance requirements, and documented issuer-migration procedure; no time-based automatic approval.
-- **Token profile:** confirm RFC 9068/OpenIddict conformance, lifetime/skew policy, actor namespaces and assurance/method vocabulary with Identity, AuthProxy and Arc owners.
-- **Privacy/migration:** approve upstream-id exposure and retention, protected link evidence, GitHub migration audiences/retirement and erasure/tombstone handling.
-- **D20 / envelope:** confirm policy-epoch freshness and signed-context field mappings in their own versioned contracts; define any explicit environment wire claim there if needed.
+- **D1:** decided as option B (Identity #21); it does not change the `(issuer, subject)` shape. D13 (production issuance for the products realm, Identity #15) remains open and separately needs explicit acceptance of any shared issuer-key risk.
+- **Direct/Studio review:** both owners reviewed account resolution, resource/audience catalog, tenant format/`tid` mapping and every Review claim/caller mapping, including the tenant alias mapping, `preferred_username` and the link lifecycle; row 1 was locked in Identity #14.
+- **D5:** decided as option A (Identity #23); organisation is not a product tenant or membership authority.
+- **Link lifecycle:** the optional realm confirmation-hold policy (default none), proof freshness/expiry policy, resolver authorization and recorded-clearance requirements, and documented issuer-migration procedure are decided as written in §3; no time-based automatic approval.
+- **Token profile:** RFC 9068/OpenIddict conformance, lifetime/skew policy, actor namespaces and assurance/method vocabulary are decided as written here and in identity-access-token-v1.
+- **Privacy/migration:** upstream-id exposure and retention, protected link evidence, GitHub migration audiences/retirement and erasure/tombstone handling are decided as written in §5, §7 and §8.
+- **D20 / envelope:** decided as option C (Identity #69); policy-epoch freshness and signed-context field mappings live in their own versioned contracts, which define any explicit environment wire claim.
 - **Lock:** signed off in Identity #14 (2026-11-05).

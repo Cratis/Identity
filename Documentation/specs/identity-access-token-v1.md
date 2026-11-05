@@ -32,7 +32,7 @@ ES256 gives asymmetric verification without distributing a signing secret to res
 
 ### 2.2 Claim contract
 
-The [contract v1 §5 claim table](identity-contract-v1.md#5-token-claims) is reused verbatim below, including its requiredness and review status. `R` means required; `C` means required under the stated condition; `O` means optional. NumericDate values are integer UTC seconds since the Unix epoch. **Review** means **Open: needs Direct/Studio owner review**, not an accepted wire mapping.
+The [contract v1 §5 claim table](identity-contract-v1.md#5-token-claims) is reused verbatim below, including its requiredness and review status. `R` means required; `C` means required under the stated condition; `O` means optional. NumericDate values are integer UTC seconds since the Unix epoch. **Review** marks a mapping that Direct/Studio owners reviewed and accepted in the Identity #14 sign-off.
 
 | Claim | JSON type | Presence | Source and meaning | Review |
 |---|---|---|---|---|
@@ -67,13 +67,13 @@ A client needing several resources MUST obtain and store a separate token per re
 
 ## 4. Lifetimes and refresh
 
-| Setting | Proposed v1 rule |
+| Setting | v1 rule |
 |---|---|
 | Access-token lifetime | Default **300 seconds**; issuer MUST enforce `0 < exp - iat <= 600` seconds, shortened by grant/root expiry and policy. |
 | Clock skew | Verifiers MUST use **30 seconds** uniformly for time comparisons (§5), not extend the minted lifetime. No additional library-default tolerance may be stacked on it. |
-| Refresh rotation | Every successful refresh MUST atomically consume the old refresh token and issue its replacement. Reuse MUST revoke the whole refresh family; there is no reuse grace window in this proposal. |
-| Refresh absolute lifetime | **Open proposal: 30 days** from family creation; rotation MUST NOT reset it. |
-| Refresh idle lifetime | **Open proposal: 7 days** since last successful redemption, capped by the absolute deadline. |
+| Refresh rotation | Every successful refresh MUST atomically consume the old refresh token and issue its replacement. Reuse MUST revoke the whole refresh family; there is no reuse grace window in v1. |
+| Refresh absolute lifetime | **30 days** (decided at sign-off) from family creation; rotation MUST NOT reset it. |
+| Refresh idle lifetime | **7 days** (decided at sign-off) since last successful redemption, capped by the absolute deadline. |
 
 Refresh MUST preserve actual `auth_time` and MUST NOT widen resource, tenant, scope, assurance or grant authority. Policy MAY shorten lifetimes, never extend these ceilings. Family revocation, concurrent redemption, durable fences and recovery are **detailed in identity-revocation-v1**. Refresh-family revocation alone does not instantly invalidate offline-validated JWTs: they remain bounded by expiry plus skew unless a separate revocation check refuses them. Sensitive actions need the separately specified live grant/policy checks.
 
@@ -96,7 +96,7 @@ All failures in this table produce **401 `invalid_token`**, with the challenge i
 | 9 | Require `sub` in the exact lowercase UUID-v4 format of contract v1 §2.1. Never trim, lowercase or repair it. | `invalid_subject` |
 | 10 | Require a nonempty string `client_id`. It identifies the registered OAuth client, not proof that a public client authenticated. | `missing_client_id` or `invalid_client_id` |
 | 11 | Require a nonempty string `jti`. Issuer MUST generate unique opaque identifiers; Guid identifiers are acceptable. | `missing_jti` or `invalid_jti` |
-| 12 | Enforce every remaining type, required/conditional presence, format and allowlist rule in contract v1 §5 for the trusted resource/grant context, including `scope`, `tid`, upstream evidence and person assurance. Claims outside that allowlist, including `nbf` pending review, fail. | `invalid_claims` |
+| 12 | Enforce every remaining type, required/conditional presence, format and allowlist rule in contract v1 §5 for the trusted resource/grant context, including `scope`, `tid`, upstream evidence and person assurance. Claims outside that allowlist, including `nbf` (not in the contract v1 §5 allowlist), fail. | `invalid_claims` |
 | 13 | If `cnf` is present, require matching sender binding and the proof-validation/replay rules of identity-dpop-v1. A DPoP-bound token MUST NOT be accepted as plain bearer, or when proof support is unavailable. | Binding/proof errors and DPoP challenges are detailed in identity-dpop-v1, not the bearer challenge below. |
 
 Only after these checks may the server construct a verified caller and apply request target/tenant, live membership, grant, assurance and scope authorization. A missing scope needed for an operation on an otherwise valid credential is `insufficient_scope` (§7), not a token-format error.
@@ -109,7 +109,7 @@ Bearer access tokens are intentionally usable on multiple requests until expiry.
 
 A resource server MUST obtain `jwks_uri` from its trusted issuer's OIDC/OAuth metadata over authenticated HTTPS and verify the metadata's issuer exactly. It MUST NOT discover an arbitrary issuer or key URL from a token. Metadata and key fetches MUST have bounded timeouts and sizes; unavailable trusted configuration MUST fail closed, without token-kind or algorithm fallback.
 
-Proposed v1 cache/rotation policy:
+v1 cache/rotation policy:
 
 - Cache successful metadata/JWKS responses for at most **300 seconds**, honoring shorter HTTP freshness or `no-cache`/`no-store`. Revalidate proactively at expiry; do not use an expired cache if revalidation fails.
 - An unknown `kid` permits **one** refresh attempt for that validation, then one lookup and rejection if unresolved. Coalesce concurrent fetches and rate-limit unknown-key-triggered refreshes to **one per issuer per 30 seconds**, including negative results. A request arriving during the limit uses the fresh cache or fails; it does not queue unbounded fetches. Never retry a bad signature with other keys.
@@ -154,13 +154,13 @@ WWW-Authenticate: Bearer error="insufficient_scope", scope="direct:write", resou
 
 Executable conformance coverage MUST verify the actual OpenIddict output, including catalog mapping, unknown-resource `invalid_target`, required client id on every issuance path, single-string audience serialization, no JWE, and rotation/reuse behavior. A setter call alone is not evidence that the final handler emits this profile.
 
-## 9. Open points and required review
+## 9. Decisions recorded at sign-off
 
-- **Audience representation:** aud as catalog slug vs resource-indicator URI (MCP 2026-07-28 requires only that the server validates tokens were issued for it; slug chosen by design N1). Proposal preserves contract v1: one exact catalog slug; owners must confirm the mapping and OpenIddict handler ordering before lock.
-- **Algorithm/operations:** approve ES256-only, the 300-second cache bounds, 30-second refetch rate limit, 600-second prepublication and 630-second minimum old-key retention; confirm KMS/library support across consumers and emergency invalidation policy.
-- **Lifetimes:** approve 300-second access-token default, 600-second ceiling and 30-second skew; refresh absolute **30 days** and idle **7 days** remain proposals pending lifecycle/revocation review.
-- **Additional claim:** `nbf` is not in contract v1 §5. This profile defines defensive time handling but does not authorize issuance or acceptance under the current allowlist. Adding it needs a separately reviewed contract change; otherwise omit it.
-- **Inherited decisions:** contract v1's consumer review, exact issuers/D1, actor namespaces, assurance vocabulary, tenant/`tid`, organisation/D5 and upstream/migration privacy decisions remain open; this profile does not resolve them.
+- **Audience representation:** aud as catalog slug vs resource-indicator URI (MCP 2026-07-28 requires only that the server validates tokens were issued for it; slug chosen by design N1). Decided in Identity #14: one exact catalog slug, preserving contract v1, with the mapping and OpenIddict handler ordering as specified here.
+- **Algorithm/operations:** decided in Identity #14: ES256-only, the 300-second cache bounds, 30-second refetch rate limit, 600-second prepublication and 630-second minimum old-key retention; KMS/library support across consumers and emergency invalidation policy are implementation evidence for W2.
+- **Lifetimes:** decided in Identity #14: 300-second access-token default, 600-second ceiling and 30-second skew; refresh absolute **30 days** and idle **7 days**.
+- **Additional claim:** `nbf` is not in contract v1 §5. This profile defines defensive time handling but does not authorize issuance or acceptance under the current allowlist. Adding it needs a separately reviewed contract change; otherwise omit it. This was settled at the Identity #14 sign-off.
+- **Inherited decisions:** contract v1's consumer review, actor namespaces, assurance vocabulary, tenant/`tid` and upstream/migration privacy decisions were signed off in Identity #14, with exact issuers per D1 (option B, Identity #21) and organisation per D5 (option A, Identity #23); this profile does not itself restate them.
 - **Dependent contracts/sign-off:** identity-dpop-v1 and identity-revocation-v1 (including family reuse/concurrency and durable fences) are aligned; signed off in Identity #14 (2026-11-05). No instant offline-JWT revocation or runtime conformance is claimed here.
 
 ## 10. Data vectors and references
