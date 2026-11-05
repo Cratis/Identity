@@ -22,7 +22,7 @@
             },
             {
                 "name": "wrong-domain",
-                "description": "An authorization-server nonce (domain 0x01) presented to the resource validator.",
+                "description": "An authorization-server nonce (domain 0x01) presented to the resource validator. Real authorization-server nonces use Identity's own key set; this one reuses the test key only for illustration, because the domain check rejects it before any key lookup.",
                 "nonce": "AQFuay10ZXN0MQAAAAB3NZP2AAECAwQFBgcICQoLDA0OD1pN8Igp4Mp2cBK5UACxmvh8yxCs2MKMhu7uVqqgrXRb",
                 "decoded": { "ver": 1, "domain": 1, "kid": "nk-test1", "issued_at": 1999999990 },
                 "outcome": "reject",
