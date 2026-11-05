@@ -11,6 +11,11 @@
     <!-- OpenIddict -->
     <PackageVersion Include="OpenIddict.AspNetCore" Version="7.8.0" />
     <PackageVersion Include="OpenIddict.MongoDb" Version="7.8.0" />
+    <!-- Cratis Chronicle -->
+    <PackageVersion Include="Cratis.Chronicle" Version="19.111.0" />
+    <PackageVersion Include="Cratis.Chronicle.Testing" Version="19.111.0" />
+    <PackageVersion Include="Cratis.Arc.Chronicle" Version="22.146.0" />
+    <PackageVersion Include="Cratis.Arc.Chronicle.Testing" Version="22.146.0" />
     <!-- Cratis Arc -->
     <PackageVersion Include="Cratis.Arc" Version="22.146.0" />
     <PackageVersion Include="Cratis.Arc.ProxyGenerator.Build" Version="22.146.0" />

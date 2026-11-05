@@ -9,6 +9,8 @@
     <PackageTags>cratis;identity;oauth;openiddict;authorization-server</PackageTags>
     <IsPackable>true</IsPackable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- The Arc proxy generator resolves referenced assemblies from the library output. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 
     <!-- The TypeScript proxies for Identity's commands and queries are generated into the @cratis/identity npm package.
          Release builds of the host image clear CratisProxiesOutputPath (-p:CratisProxiesOutputPath=). -->
@@ -36,6 +38,7 @@
 
   <ItemGroup>
     <PackageReference Include="Cratis.Arc" />
+    <PackageReference Include="Cratis.Arc.Chronicle" />
     <PackageReference Include="MongoDB.Driver" />
     <PackageReference Include="OpenIddict.AspNetCore" />
     <PackageReference Include="OpenIddict.MongoDb" />
