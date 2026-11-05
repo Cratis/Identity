@@ -42,13 +42,13 @@ The application MUST store a one-way verifier rather than a recoverable token. V
 
 ### Dispatch
 
-The PAT namespace MUST include any bearer value beginning with `<key>_pat_`, where `key` is one or more ASCII characters from `[a-z0-9-]`, matched case-insensitively and containing no `.`. Namespace recognition MUST precede OAuth verification and MUST NOT imply canonical format validity. Every value in that namespace MUST be handled only by the PAT branch. Unregistered keys, unsupported versions, wrong casing, and malformed values MUST be refused there; they MUST NOT reach an OAuth verifier or introspection endpoint.
+The PAT namespace MUST include any credential value beginning with `<key>_pat_` under any Authorization scheme, including Bearer and DPoP. The whole prefix, including `_pat_`, MUST be matched ASCII case-insensitively (`^[a-z0-9-]+_pat_`, case-insensitive); `key` contains no `.`. Namespace recognition MUST precede OAuth verification and MUST NOT imply canonical format validity. Every value in that namespace MUST be handled only by the PAT branch. PAT-namespace values under a non-Bearer scheme, unregistered keys, unsupported versions, wrong casing, and malformed values MUST be refused there; they MUST NOT reach an OAuth verifier or introspection endpoint.
 
-A request carrying more than one credential, or any credential in the URI query, MUST be refused before dispatch, following RFC 6750 §2 and OAuth 2.1. The dispatcher MUST NOT choose one credential and ignore the others.
+Credentials are the Authorization header value, a session cookie, an AuthProxy identity envelope, and any credential in the URI query. A session cookie plus an Authorization bearer counts as two credentials. An AuthProxy identity envelope plus Authorization MUST count as one credential only when the verified envelope cryptographically covers that exact Authorization value (forwarded identity v2 signs its SHA-256 hash, Cratis/Arc#3698); otherwise they MUST count as two. A DPoP proof accompanying its token is not an additional credential. A request carrying more than one credential, or any credential in the URI query, MUST be refused before dispatch, following RFC 6750 §2 and OAuth 2.1. The dispatcher MUST NOT choose one credential and ignore the others.
 
 Other bearer values MUST go only to the configured OAuth verifier, if enabled. JWT-like shape MUST NOT establish validity: the OAuth branch MUST check signature, issuer, audience, expiry, and applicable sender binding. Values valid in neither branch MUST be refused. The [MCP contract](arc-mcp-authorization-v1.md) specifies the machine response.
 
-AuthProxy MUST route PATs to the application without asserting a verified PAT identity. Only successful application verification MUST produce a [verified caller](arc-verified-caller-v1.md). Both paths MUST apply the same product authorization rules. Forwarded browser identity MUST NOT substitute for PAT verification.
+AuthProxy MUST route PATs to the application without asserting a verified PAT identity. AuthProxy MUST NOT attach a person envelope (an envelope whose credential kind is not `pat`) to a request it forwards with a PAT. Caller construction when an envelope accompanies a bearer MUST follow [Envelope and bearer together](arc-verified-caller-v1.md#envelope-and-bearer-together). Both paths MUST apply the same product authorization rules.
 
 ### Creation and policy
 
@@ -86,6 +86,13 @@ The bad-checksum vector is the Direct fixture with checksum `000eb749`.
 | Stale policy epoch; current policy refuses after re-evaluation | Refused; old epoch provides no authority. |
 | Stale policy epoch; current policy permits after re-evaluation, all other checks pass | Accepted; old epoch is never used as authority. |
 | `DIRECT_PAT_v1_` namespace marker, unsupported `direct_pat_v2_`, or malformed `direct_pat_` value | PAT branch only; refused without OAuth verification or introspection. |
+| `DPoP` Authorization scheme with a `direct_pat_v1_` value | PAT branch only; refused without OAuth verification or introspection. |
+| Session cookie plus Authorization bearer | Two credentials; refused before dispatch. |
+| AuthProxy identity envelope plus bearer not cryptographically covered by it | Two credentials; refused before dispatch. |
+| Verified `oauth-grant` AuthProxy envelope covering the exact OAuth bearer, matching account key, all other checks pass | One credential; caller constructed only through OAuth verification. |
+| Verified non-`pat` envelope covering a `direct_pat_v1_` value | Refused; no caller constructed. |
+| Verified `pat`-kind envelope covering a revoked PAT | Refused after local PAT verification; no caller constructed. |
+| Verified envelope covering the exact OAuth bearer but with a different signed subject | Refused; no caller constructed. |
 | Two credentials on one request, or a credential in the URI query | Refused before dispatch; neither verifier is selected. |
 
 Machine-readable group: [dispatch and policy](../../Source/Identity.Specs/Vectors/arc-pat-format-v1/dispatch-and-policy.json), repository path `Source/Identity.Specs/Vectors/arc-pat-format-v1/dispatch-and-policy.json`. Each JSON group has `name`, `description`, `given`, `when.action`, and `then`; `given.vectors` contains its individual cases. These data vectors do not demonstrate runtime conformance. Outcomes and reasons are vector vocabulary, not public error messages.
