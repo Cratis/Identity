@@ -37,11 +37,16 @@
     },
     "devDependencies": {
         "@cratis/arc": "22.155.0",
+        "@cratis/arc.react": "22.155.0",
         "@cratis/fundamentals": "7.27.0",
+        "@types/react": "19.3.0",
+        "react": "19.3.1",
         "typescript": "6.0.3"
     },
     "peerDependencies": {
         "@cratis/arc": "^22.155.0",
-        "@cratis/fundamentals": "^7.27.0"
+        "@cratis/arc.react": "^22.155.0",
+        "@cratis/fundamentals": "^7.27.0",
+        "react": "^18.0.0 || ^19.0.0"
     }
 }
