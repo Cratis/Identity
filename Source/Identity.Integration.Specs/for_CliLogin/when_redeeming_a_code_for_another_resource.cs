@@ -3,6 +3,7 @@
 
 namespace Cratis.Identity.Integration.for_CliLogin;
 
+[Requirement(Requirements.ResourceSingleAudience)]
 [Collection(IdentityCollection.Name)]
 public class when_redeeming_a_code_for_another_resource(IdentityHost host) : IAsyncLifetime
 {

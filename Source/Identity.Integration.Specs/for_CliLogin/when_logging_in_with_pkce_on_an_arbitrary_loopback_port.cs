@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Cratis.Identity.Integration.for_CliLogin;
 
+[Requirement(Requirements.RedirectExactLoopback), Requirement(Requirements.StateAndIssInResponse), Requirement(Requirements.AccessTokenAudience)]
 [Collection(IdentityCollection.Name)]
 public class when_logging_in_with_pkce_on_an_arbitrary_loopback_port(IdentityHost host) : IAsyncLifetime
 {

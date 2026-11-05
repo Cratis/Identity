@@ -1,0 +1,13 @@
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: monthly
+    allow:
+      - dependency-name: "OpenIddict*"
+    groups:
+      openiddict:
+        patterns:
+          - "OpenIddict*"
+    open-pull-requests-limit: 1

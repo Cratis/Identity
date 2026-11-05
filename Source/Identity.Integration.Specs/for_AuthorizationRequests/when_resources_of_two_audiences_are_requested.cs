@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.WebUtilities;
 
 namespace Cratis.Identity.Integration.for_AuthorizationRequests;
 
+[Requirement(Requirements.ResourceSingleAudience)]
 [Collection(IdentityCollection.Name)]
 public class when_resources_of_two_audiences_are_requested(IdentityHost host) : IAsyncLifetime
 {

@@ -7,6 +7,7 @@ namespace Cratis.Identity.Integration.for_AuthorizationRequests;
 /// OpenIddict rejects this before redirecting, so the error is shown by Identity rather than sent to the client.
 /// </summary>
 /// <param name="host">The <see cref="IdentityHost"/>.</param>
+[Requirement(Requirements.PkceRequired)]
 [Collection(IdentityCollection.Name)]
 public class when_pkce_is_missing(IdentityHost host) : IAsyncLifetime
 {

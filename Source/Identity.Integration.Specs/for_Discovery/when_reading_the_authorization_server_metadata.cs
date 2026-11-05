@@ -3,6 +3,7 @@
 
 namespace Cratis.Identity.Integration.for_Discovery;
 
+[Requirement(Requirements.PkceS256Only), Requirement(Requirements.AsMetadata), Requirement(Requirements.JwksPublicOnly)]
 [Collection(IdentityCollection.Name)]
 public class when_reading_the_authorization_server_metadata(IdentityHost host) : IAsyncLifetime
 {
@@ -30,6 +31,9 @@ public class when_reading_the_authorization_server_metadata(IdentityHost host) :
     [Fact] void should_not_offer_openid_connect_sign_in() => Strings("scopes_supported").ShouldNotContain("openid");
     [Fact] void should_publish_a_public_signing_key() => _jwks.GetProperty("keys").EnumerateArray().Any(key => key.GetProperty("use").GetString() == "sig").ShouldBeTrue();
     [Fact] void should_not_publish_private_key_material() => _jwks.GetProperty("keys").EnumerateArray().Any(key => key.TryGetProperty("d", out _) || key.TryGetProperty("p", out _)).ShouldBeFalse();
+
+    [Fact] void should_only_support_the_code_response_type() => Strings("response_types_supported").ShouldContainOnly("code");
+    [Fact] void should_not_publish_any_private_key_parameters() => _jwks.GetProperty("keys").EnumerateArray().SelectMany(_ => _.EnumerateObject()).Any(_ => new[] { "d", "p", "q", "dp", "dq", "qi", "oth", "k" }.Contains(_.Name, StringComparer.Ordinal)).ShouldBeFalse();
 
     IEnumerable<string> Strings(string property) => _metadata.GetProperty(property).EnumerateArray().Select(_ => _.GetString()!).ToArray();
 }
