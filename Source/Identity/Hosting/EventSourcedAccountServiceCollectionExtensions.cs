@@ -5,6 +5,7 @@ using Cratis.Identity.Accounts;
 using Cratis.Identity.Accounts.Linking;
 using Cratis.Identity.Accounts.Lookup;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using MongoDB.Driver;
 
 namespace Cratis.Identity.Hosting;
 
@@ -23,6 +24,7 @@ public static class EventSourcedAccountServiceCollectionExtensions
         services.AddScoped<UpstreamLookups>();
         services.AddScoped<EventSourcedAccounts>();
         services.AddScoped<UpstreamKeyLinking>();
+        services.TryAddSingleton(provider => provider.GetRequiredService<IMongoDatabase>().GetCollection<LookupRevision>("account_lookup_revisions"));
         services.AddHostedService<LookupRevisionGuard>();
         return services;
     }

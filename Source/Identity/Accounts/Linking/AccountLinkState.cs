@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Chronicle.Projections.ModelBound;
+using Cratis.Chronicle.ReadModels;
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Contracts.Accounts.Events;
 
@@ -9,6 +10,7 @@ namespace Cratis.Identity.Accounts.Linking;
 
 /// <summary>The guarded account decision state, never an HTTP query.</summary>
 /// <param name="Id">The account subject.</param>
+[Passive]
 public record AccountLinkState(string Id)
 {
     /// <summary>Gets whether the subject was allocated.</summary>

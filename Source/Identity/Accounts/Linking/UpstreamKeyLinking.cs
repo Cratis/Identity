@@ -67,7 +67,7 @@ public class UpstreamKeyLinking(AccountStore store, UpstreamLookups lookups, Ups
     }
 
     /// <summary>Clears quarantine only through a privileged resolver and fresh proof, never by elapsed time alone.</summary>
-    /// <param name="resolver">The authenticated resolver.</param>
+    /// <param name="resolver">The authenticated target owner with resolver permission.</param>
     /// <param name="account">The target account.</param>
     /// <param name="proposalId">The proposal.</param>
     /// <param name="authentication">Fresh proof of the proposed key.</param>
@@ -75,9 +75,10 @@ public class UpstreamKeyLinking(AccountStore store, UpstreamLookups lookups, Ups
     /// <exception cref="AccountOperationRefused">Resolver authorization, proof or hold policy refuses clearance.</exception>
     public async Task Clear(ClaimsPrincipal resolver, AccountSubject account, LinkProposalId proposalId, VerifiedAuthentication authentication)
     {
-        _ = AccountSession.Require(resolver, time);
+        var owner = AccountSession.Require(resolver, time);
         AccountOperationRefused.Require(resolver.HasClaim("permission", "identity:resolve-links"), "authorized_resolver_required");
-        RequireProof(authentication);
+        AccountOperationRefused.Require(owner.Account == account, "target_account_proof_required");
+        RequireProof(authentication, owner.SessionId);
         var read = await store.Read(account);
         RequireActive(read.State);
         var proposal = FindProposal(read.State, proposalId);
@@ -155,10 +156,14 @@ public class UpstreamKeyLinking(AccountStore store, UpstreamLookups lookups, Ups
         throw new AccountOperationRefused("upstream_key_already_reserved");
     }
 
-    void RequireProof(VerifiedAuthentication authentication, string? sessionId = null)
+    void RequireProof(VerifiedAuthentication authentication, string sessionId)
     {
+        if (authentication is null || authentication.SessionId != sessionId)
+        {
+            throw new AccountOperationRefused("fresh_session_bound_upstream_proof_required");
+        }
+
         var age = time.GetUtcNow() - authentication.AuthTime;
         AccountOperationRefused.Require(age >= TimeSpan.Zero && age <= TimeSpan.FromMinutes(5), "fresh_session_bound_upstream_proof_required");
-        AccountOperationRefused.Require(sessionId is null || authentication.SessionId == sessionId, "fresh_session_bound_upstream_proof_required");
     }
 }

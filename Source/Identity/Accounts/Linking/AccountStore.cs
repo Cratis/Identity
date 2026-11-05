@@ -65,11 +65,6 @@ public class AccountStore(IEventStore eventStore, IReadModels readModels, TimePr
     internal async Task<bool> TryAppend(AccountSubject account, GuardedAccountRead read, IEnumerable<object> events)
     {
         var batch = events.ToArray();
-        if (batch.Length == 0)
-        {
-            return true;
-        }
-
         var result = await eventStore.EventLog.AppendMany(batch.Select(@event => new EventForEventSourceId(account.Value, @event) { Occurred = time.GetUtcNow() }), [read.Guard]);
         if (!result.IsSuccess && !result.HasConstraintViolations)
         {
