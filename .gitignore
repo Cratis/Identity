@@ -23,6 +23,11 @@ TestResults/
 ## Local AI work artifacts (never commit)
 .ai-work/
 
+## JavaScript and package outputs
+node_modules/
+Source/JavaScript/**/dist/
+Artifacts/
+
 ## Local secrets
 *.pfx
 .env

@@ -3,6 +3,7 @@
 
 using System.Security.Claims;
 using Cratis.Identity.Authorization;
+using Cratis.Identity.Contracts;
 using Cratis.Identity.given;
 using Cratis.Identity.Tenants;
 using OpenIddict.Abstractions;

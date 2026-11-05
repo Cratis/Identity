@@ -14,7 +14,7 @@ using Testcontainers.MongoDb;
 namespace Cratis.Identity.Integration.given;
 
 /// <summary>
-/// A running Identity against a real MongoDB, with upstream login replaced by <see cref="FakeUpstream"/>.
+/// A running Identity host against a real MongoDB, with upstream login replaced by <see cref="FakeUpstream"/>.
 /// </summary>
 /// <remarks>
 /// Everything else is the production pipeline: OpenIddict, the MongoDB stores, the consent page, antiforgery and

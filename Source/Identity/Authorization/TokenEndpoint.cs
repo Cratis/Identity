@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Accounts;
+using Cratis.Identity.Contracts;
 using Cratis.Identity.Resources;
 using Cratis.Identity.Tenants;
 using Microsoft.AspNetCore;

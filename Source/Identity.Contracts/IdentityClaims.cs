@@ -1,10 +1,10 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Cratis.Identity.Authorization;
+namespace Cratis.Identity.Contracts;
 
 /// <summary>
-/// Holds the claim types Identity writes beyond the registered JWT claims.
+/// Holds the claim types Identity writes beyond the registered JWT claims. Provisional until the token contract (#24) is locked.
 /// </summary>
 public static class IdentityClaims
 {
