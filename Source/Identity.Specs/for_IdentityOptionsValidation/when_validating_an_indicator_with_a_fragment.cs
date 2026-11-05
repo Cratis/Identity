@@ -15,7 +15,7 @@ public class when_validating_an_indicator_with_a_fragment : Specification
     {
         var options = Configurations.TwoResourceServers();
         options.Resources[0].Indicators.Add("https://cratis.direct/mcp#fragment");
-        _result = new IdentityOptionsValidation().Validate(null, options);
+        _result = new IdentityOptionsValidation(new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = "Development" }).Validate(null, options);
     }
 
     [Fact] void should_fail() => _result.Failed.ShouldBeTrue();

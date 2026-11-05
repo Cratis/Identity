@@ -1,0 +1,117 @@
+{
+  "name": "first-generation-pii-rule",
+  "description": "Data-only effective PII and compliance-subject checks for identity-events-v1 section 6.",
+  "context": {
+    "assembly": "Cratis.Identity.Contracts",
+    "namespace": "Cratis.Identity.Contracts.Accounts",
+    "eventMarker": "EventType",
+    "typeId": "synthetic-vector-event",
+    "generation": 1,
+    "visibility": "Public",
+    "complianceSubject": "account-stream-subject"
+  },
+  "cases": [
+    {
+      "name": "upstream-idp-sub-without-pii-fails",
+      "given": {
+        "event": {
+          "name": "UpstreamKeyLinked",
+          "properties": [{ "name": "idp_sub", "type": "System.String", "pii": false }]
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "idp_sub", "reason": "missing_pii" }]
+      }
+    },
+    {
+      "name": "upstream-subject-concept-pii-passes",
+      "given": {
+        "event": {
+          "name": "UpstreamKeyLinked",
+          "properties": [{ "name": "IdpSub", "type": "UpstreamSubject" }]
+        },
+        "concepts": {
+          "UpstreamSubject": {
+            "underlyingType": "System.String",
+            "attributes": ["Cratis.Chronicle.Compliance.GDPR.PIIAttribute"],
+            "complianceDetails": "Immutable upstream identifier needed for verified linking."
+          }
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": { "outcome": "pass", "violations": [] }
+    },
+    {
+      "name": "email-without-pii-fails",
+      "given": {
+        "event": {
+          "name": "AccountEmailChanged",
+          "properties": [{ "name": "Email", "type": "System.String" }]
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "Email", "reason": "missing_pii" }]
+      }
+    },
+    {
+      "name": "personal-name-without-pii-fails",
+      "given": {
+        "event": {
+          "name": "AccountNameChanged",
+          "properties": [{ "name": "DisplayName", "type": "System.String" }]
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "DisplayName", "reason": "missing_pii" }]
+      }
+    },
+    {
+      "name": "property-pii-on-email-passes",
+      "given": {
+        "event": {
+          "name": "AccountEmailChanged",
+          "properties": [{ "name": "Email", "type": "System.String", "pii": true }]
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": { "outcome": "pass", "violations": [] }
+    },
+    {
+      "name": "protected-personal-data-needs-a-subject",
+      "given": {
+        "complianceSubject": null,
+        "event": {
+          "name": "ProfileObserved",
+          "properties": [{ "name": "Email", "type": "System.String", "pii": true }]
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "Email", "reason": "unresolved_compliance_subject" }]
+      }
+    },
+    {
+      "name": "internal-prior-generation-is-not-exempt",
+      "given": {
+        "eventMarker": "EventTypeGenerationFor<UpstreamKeyLinked>",
+        "visibility": "Internal",
+        "event": {
+          "name": "UpstreamKeyLinkedV1",
+          "properties": [{ "name": "IdpSub", "type": "System.String" }]
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "IdpSub", "reason": "missing_pii" }]
+      }
+    }
+  ]
+}

@@ -15,7 +15,7 @@ public class when_validating_an_issuer_with_a_path : Specification
     {
         var options = Configurations.TwoResourceServers();
         options.Issuer = "https://auth.example/identity/";
-        _result = new IdentityOptionsValidation().Validate(null, options);
+        _result = new IdentityOptionsValidation(new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = "Development" }).Validate(null, options);
     }
 
     [Fact] void should_refuse_an_issuer_whose_discovery_would_be_under_a_different_path() => _result.Failed.ShouldBeTrue();

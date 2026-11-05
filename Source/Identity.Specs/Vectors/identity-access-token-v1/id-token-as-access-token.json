@@ -1,0 +1,22 @@
+{
+    "name": "id_token_as_access_token",
+    "description": "An ID token with typ JWT and client audience fails at the type check, regardless of its valid signature.",
+    "given": {
+        "token": {
+            "serialization": "JWS",
+            "parts": 3,
+            "header": { "typ": "JWT", "alg": "ES256", "kid": "key-1" },
+            "payload": {
+                "iss": "https://identity.example.test",
+                "sub": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+                "aud": "cli-test",
+                "iat": 1999999900,
+                "exp": 2000000200,
+                "auth_time": 1999999800
+            },
+            "signature": "valid"
+        }
+    },
+    "when": { "action": "validate_access_token" },
+    "then": { "outcome": "reject", "reason": "invalid_typ", "status": 401, "error": "invalid_token" }
+}

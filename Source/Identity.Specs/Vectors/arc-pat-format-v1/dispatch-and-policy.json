@@ -1,0 +1,40 @@
+{
+  "name": "pat-dispatch-and-policy",
+  "description": "Synthetic grouped PAT dispatch and policy cases with computed fixture checksums.",
+  "given": {
+  "fixtureNotice": "Synthetic zero-byte payloads are not issuance examples. Fixture checksums: direct 000eb748, studio fa5d04f9, stage-atlas 38cf83ba (SHA-256 over the body, first 8 hex).",
+  "construction": {
+    "secretHex": "0000000000000000000000000000000000000000000000000000000000000000",
+    "body": "resourceKey + '_pat_v1_' + secretHex",
+    "checksum": "lowercase_hex(SHA256(ASCII(body)))[0:8]",
+    "token": "body + '_' + checksum",
+    "exactChecksumsVerified": true,
+    "expectedChecksums": {"direct": "000eb748", "studio": "fa5d04f9", "stage-atlas": "38cf83ba"},
+    "badChecksumFixture": {"resourceKey": "direct", "checksum": "000eb749"}
+  },
+  "vectors": [
+    {"given": {"resourceKey": "direct", "activeMatchingRecord": true}, "when": {"constructToken": true, "receiver": "direct"}, "then": {"branch": "pat", "checksumValid": true, "credentialVerified": true}},
+    {"given": {"resourceKey": "studio", "activeMatchingRecord": true}, "when": {"constructToken": true, "receiver": "studio"}, "then": {"branch": "pat", "checksumValid": true, "credentialVerified": true}},
+    {"given": {"resourceKey": "stage-atlas", "activeMatchingRecord": true}, "when": {"constructToken": true, "receiver": "stage-atlas"}, "then": {"branch": "pat", "checksumValid": true, "credentialVerified": true}},
+    {"given": {"resourceKey": "direct", "activeMatchingRecord": true}, "when": {"constructToken": true, "replaceChecksumWith": "000eb749"}, "then": {"accepted": false, "reason": "bad-checksum", "oauthFallback": false}},
+    {"given": {"resourceKey": "studio", "activeMatchingRecord": true}, "when": {"constructToken": true, "receiver": "direct"}, "then": {"accepted": false, "reason": "resource-mismatch", "oauthFallback": false}},
+    {"given": {"oauthEnabled": true}, "when": {"fixtureCredential": "unsigned-jwt-shaped-fixture"}, "then": {"branch": "oauth", "accepted": false, "reason": "unsigned-token", "patLookup": false}},
+    {"given": {"resourceKey": "unknown", "registered": false}, "when": {"constructToken": true}, "then": {"accepted": false, "reason": "unknown-resource-key", "oauthFallback": false}},
+    {"given": {"resourceKey": "direct", "activeMatchingRecord": false}, "when": {"constructToken": true}, "then": {"accepted": false}},
+    {"given": {"resourceKey": "direct", "revoked": true}, "when": {"constructToken": true}, "then": {"accepted": false}},
+    {"given": {"createdAt": "2030-01-01T00:00:00Z", "maximumLifetimeDays": 90}, "when": {"expiresAt": "2030-04-01T00:00:00Z"}, "then": {"lifetimeValid": true}},
+    {"given": {"createdAt": "2030-01-01T00:00:00Z", "maximumLifetimeDays": 90}, "when": {"expiresAt": "2030-04-01T00:00:01Z"}, "then": {"lifetimeValid": false}},
+    {"given": {"createdAt": "2030-01-01T00:00:00Z", "maximumLifetimeDays": 30}, "when": {"expiresAt": "2030-04-01T00:00:00Z"}, "then": {"lifetimeValid": false}},
+    {"given": {"ssoRequired": true, "verifiedAssurancePresent": false}, "when": {"operation": "create-pat"}, "then": {"accepted": false}},
+    {"given": {"policyEpochStale": true, "currentPolicyPermits": false}, "when": {"operation": "verify-pat", "reevaluateCurrentPolicy": true}, "then": {"accepted": false, "oldEpochUsedAsAuthority": false}},
+    {"given": {"policyEpochStale": true, "currentPolicyPermits": true, "allOtherChecksPass": true}, "when": {"operation": "verify-pat", "reevaluateCurrentPolicy": true}, "then": {"accepted": true, "currentPolicyReevaluated": true, "oldEpochUsedAsAuthority": false}},
+    {"given": {"oauthEnabled": true}, "when": {"bearerValuePrefix": "DIRECT_PAT_v1_"}, "then": {"branch": "pat", "accepted": false, "reason": "wrong-casing", "oauthVerifierInvoked": false, "introspectionInvoked": false}},
+    {"given": {"oauthEnabled": true}, "when": {"bearerValuePrefix": "direct_pat_v2_"}, "then": {"branch": "pat", "accepted": false, "reason": "unsupported-version", "oauthVerifierInvoked": false, "introspectionInvoked": false}},
+    {"given": {"oauthEnabled": true}, "when": {"bearerValue": "direct_pat_"}, "then": {"branch": "pat", "accepted": false, "reason": "malformed-pat", "oauthVerifierInvoked": false, "introspectionInvoked": false}},
+    {"given": {"credentialCount": 2}, "when": {"operation": "dispatch"}, "then": {"accepted": false, "verifierSelected": false}},
+    {"given": {"credentialInUriQuery": true}, "when": {"operation": "dispatch"}, "then": {"accepted": false, "verifierSelected": false}}
+  ]
+  },
+  "when": {"action": "evaluate-pat-dispatch-and-policy-cases"},
+  "then": {"allCaseAssertionsRequired": true, "exactChecksumVerificationComplete": true}
+}

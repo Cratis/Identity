@@ -1,0 +1,26 @@
+{
+  "name": "github-login-rename-keeps-account",
+  "description": "A verified GitHub numeric id resolves the same account after a login rename; login is only a profile attribute.",
+  "given": {
+    "accounts": [{
+      "issuer": "https://identity.example",
+      "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+      "state": "active",
+      "linked_keys": [{ "idp": "https://github.com", "idp_sub": "12345" }],
+      "profile": { "login": "old-login" }
+    }]
+  },
+  "when": {
+    "action": "sign_in",
+    "realm_issuer": "https://identity.example",
+    "verified_authentication": { "idp": "https://github.com", "idp_sub": "12345", "auth_time": 1800000000 },
+    "profile": { "login": "new-login" }
+  },
+  "then": {
+    "outcome": "authenticated",
+    "account_key": { "issuer": "https://identity.example", "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32" },
+    "account_count": 1,
+    "profile": { "login": "new-login" },
+    "linked_keys_unchanged": true
+  }
+}

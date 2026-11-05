@@ -1,0 +1,18 @@
+{
+  "name": "malformed-subject-is-not-normalized",
+  "description": "An uppercase UUID is not the canonical lowercase subject and must be rejected rather than repaired.",
+  "given": {
+    "trusted_issuer": "https://identity.example",
+    "subject_format": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+  },
+  "when": {
+    "action": "validate_person_key",
+    "account_key": { "issuer": "https://identity.example", "subject": "8B167AD2-0F89-4C78-9D42-6D4580495D32" }
+  },
+  "then": {
+    "outcome": "rejected",
+    "reason": "malformed_subject",
+    "subject_normalized": false,
+    "authenticated_caller_created": false
+  }
+}

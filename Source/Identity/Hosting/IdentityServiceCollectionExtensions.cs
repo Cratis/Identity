@@ -110,7 +110,12 @@ internal static class IdentityServiceCollectionExtensions
         services.AddSingleton<IAccounts, Accounts.Accounts>();
         services.AddSingleton<IResourceCatalog, ResourceCatalog>();
         services.AddSingleton<IGrantPolicy, GrantPolicy>();
-        services.AddSingleton<ITenantDirectory, ConfiguredTenantDirectory>();
+        services.AddSingleton<ConfiguredTenantDirectory>();
+        services.AddSingleton<ProductTenantsCallback>();
+        services.AddSingleton<ITenantDirectory, TenantDirectory>();
+        services.AddHttpClient(TenantsCallbackHttpClient.Name, client => client.Timeout = TimeSpan.FromSeconds(10))
+            .ConfigurePrimaryHttpMessageHandler(TenantsCallbackHttpClient.CreateHandler)
+            .RemoveAllLoggers();
         services.AddSingleton<ClientDescriptors>();
         services.AddScoped<SignedInAccounts>();
         services.AddScoped<ConsentPages>();

@@ -1,0 +1,15 @@
+{
+    "name": "encrypted_jwe",
+    "description": "A five-part encrypted access token is rejected before decryption, even if it could contain a valid inner JWS.",
+    "given": {
+        "token": {
+            "serialization": "JWE",
+            "parts": 5,
+            "header": { "typ": "at+jwt", "alg": "RSA-OAEP-256", "enc": "A256GCM", "kid": "encryption-key-1" },
+            "payload": null,
+            "signature": "valid"
+        }
+    },
+    "when": { "action": "validate_access_token" },
+    "then": { "outcome": "reject", "reason": "encrypted_token", "status": 401, "error": "invalid_token" }
+}

@@ -1,0 +1,43 @@
+{
+    "name": "catalog_audience_issuance",
+    "description": "The final OpenIddict access token MUST use the catalog audience, not the resource URI or an audience array.",
+    "given": {
+        "catalog": [
+            { "resource": "https://direct.cratis.io", "audience": "direct-api", "scope_prefix": "direct:" }
+        ],
+        "registered_client_id": "cli-test",
+        "request": { "resource": "https://direct.cratis.io", "scope": "direct:read" },
+        "person": {
+            "sub": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+            "tid": "t-1234",
+            "idp": "https://upstream.example.test",
+            "idp_sub": "upstream-person-1",
+            "auth_time": 1999999800,
+            "acr": "basic"
+        },
+        "grant_and_policy": "authorized"
+    },
+    "when": { "action": "issue_access_token_and_inspect_final_serialized_output" },
+    "then": {
+        "outcome": "issue",
+        "serialization": "JWS",
+        "parts": 3,
+        "header": { "typ": "at+jwt", "alg": "ES256", "kid": "key-1" },
+        "payload_assertions": {
+            "iss": "https://identity.example.test",
+            "sub": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+            "aud": "direct-api",
+            "iat": 2000000000,
+            "exp": 2000000300,
+            "client_id": "cli-test",
+            "scope": "direct:read",
+            "tid": "t-1234",
+            "idp": "https://upstream.example.test",
+            "idp_sub": "upstream-person-1",
+            "auth_time": 1999999800,
+            "acr": "basic"
+        },
+        "generated_jti": "unique_nonempty_string",
+        "signature": "valid"
+    }
+}

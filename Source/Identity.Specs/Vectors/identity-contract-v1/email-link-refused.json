@@ -1,0 +1,29 @@
+{
+  "name": "email-match-is-not-linking-proof",
+  "description": "Even a verified email collision cannot link a candidate without both-side control proof and authenticated intent.",
+  "given": {
+    "accounts": [{
+      "issuer": "https://identity.example",
+      "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+      "state": "active",
+      "linked_keys": [{ "idp": "https://github.com", "idp_sub": "12345" }],
+      "profile": { "email": "same@example.test", "email_verified": true }
+    }]
+  },
+  "when": {
+    "action": "propose_link",
+    "target_account": { "issuer": "https://identity.example", "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32" },
+    "method": "email_match",
+    "authenticated_intent": false,
+    "account_control_proven_in_session": false,
+    "verified_authentication": { "idp": "https://login.example/directory-b", "idp_sub": "user-7", "auth_time": 1800000000 },
+    "profile": { "email": "same@example.test", "email_verified": true }
+  },
+  "then": {
+    "outcome": "refused",
+    "reason": "email_is_not_identity_proof",
+    "accounts_unchanged": true,
+    "authority_from_proposed_link": false,
+    "automatic_merge": false
+  }
+}

@@ -11,7 +11,7 @@ public class when_validating_a_valid_configuration : Specification
 {
     ValidateOptionsResult _result;
 
-    void Because() => _result = new IdentityOptionsValidation().Validate(null, Configurations.TwoResourceServers());
+    void Because() => _result = new IdentityOptionsValidation(new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = "Development" }).Validate(null, Configurations.TwoResourceServers());
 
     [Fact] void should_succeed() => _result.Succeeded.ShouldBeTrue();
 }
