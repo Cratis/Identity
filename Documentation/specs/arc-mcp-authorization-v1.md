@@ -16,7 +16,7 @@ Supersedes: None
 
 An MCP client needs a machine-readable authentication challenge, not a browser sign-in page. This draft describes PAT-only, OAuth-only, and combined hosting profiles. It does not claim tested compatibility with any external connector.
 
-The MCP authorization revision is pinned to **2026-07-28; confirmation pending in Cratis/Identity#34**. The reference is the [MCP authorization specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization), based on OAuth 2.1 [draft-ietf-oauth-v2-1-13](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-13). OAuth resource discovery follows [RFC 9728](https://www.rfc-editor.org/rfc/rfc9728); resource binding follows [RFC 8707](https://www.rfc-editor.org/rfc/rfc8707).
+The MCP authorization revision is pinned to **2026-07-28** (confirmed in Cratis/Identity#34). The reference is the [MCP authorization specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization), based on OAuth 2.1 [draft-ietf-oauth-v2-1-13](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-13). OAuth resource discovery follows [RFC 9728](https://www.rfc-editor.org/rfc/rfc9728); resource binding follows [RFC 8707](https://www.rfc-editor.org/rfc/rfc8707).
 
 ## Terms
 
@@ -151,7 +151,7 @@ Machine-readable group: [profiles and discovery](../../Source/Identity.Specs/Vec
 
 ## Open questions
 
-- **Cratis/Identity#34:** MCP authorization revision is pinned to 2026-07-28; confirmation pending in Cratis/Identity#34. External connector behavior, including DPoP support, remains unverified. Agree supported versions and a finite production step-up retry limit.
+- **Cratis/Identity#34:** the 2026-07-28 pin is confirmed. External connector behavior, including DPoP support, remains unverified. Agree supported versions and a finite production step-up retry limit.
 - **D9:** registration mechanisms follow tested connector needs; the independent registration security contract remains required.
 - **D11 / q11:** approve PAT prefix and checksum encoding; no fallback on invalid PATs is part of this contract.
 - **q9 / N1:** lock production resource indicators, audiences, issuer names, and scope names. Test URLs are not production registrations.

@@ -3,7 +3,7 @@
   "description": "Grouped MCP 2026-07-28 profile, discovery, audience and scope-step-up cases.",
   "given": {
   "mcpAuthorizationRevision": "2026-07-28",
-  "revisionConfirmation": "confirmation pending in Cratis/Identity#34",
+  "revisionConfirmation": "confirmed in Cratis/Identity#34",
   "oauthBase": "draft-ietf-oauth-v2-1-13",
   "clientMetadataRevision": "draft-ietf-oauth-client-id-metadata-document-03",
   "fixtureDefaults": {"resource": "https://direct.example.test/mcp", "resourceMetadata": "https://direct.example.test/.well-known/oauth-protected-resource/mcp", "issuer": "https://login.example.test", "stepUpRetryLimit": 2},
