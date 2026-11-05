@@ -1,0 +1,30 @@
+{
+  "name": "preferred-username-is-display-only",
+  "description": "A matching preferred_username or login never links or resolves an account; it is display data from the authenticating connection's link and stays out of access tokens without a catalog opt-in.",
+  "given": {
+    "accounts": [{
+      "issuer": "https://identity.example",
+      "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+      "state": "active",
+      "linked_keys": [{ "idp": "https://github.com", "idp_sub": "12345" }],
+      "profile": { "login": "alice" }
+    }],
+    "resource_catalog": [{ "audience": "direct-api", "preferred_username_opt_in": false }]
+  },
+  "when": {
+    "action": "sign_in",
+    "realm_issuer": "https://identity.example",
+    "verified_authentication": { "idp": "https://login.example/directory-b", "idp_sub": "user-7", "auth_time": 1800000000 },
+    "profile": { "login": "alice" },
+    "requested": { "id_token_scope": "openid profile", "access_token_audience": "direct-api" }
+  },
+  "then": {
+    "outcome": "not_resolved_to_existing_account",
+    "linked_to_existing_account": false,
+    "account_resolution_key": "linked_key",
+    "existing_account_unchanged": true,
+    "id_token_claims": { "preferred_username": "alice", "preferred_username_source_idp": "https://login.example/directory-b" },
+    "access_token_contains_preferred_username": false,
+    "authorization_uses_preferred_username": false
+  }
+}
