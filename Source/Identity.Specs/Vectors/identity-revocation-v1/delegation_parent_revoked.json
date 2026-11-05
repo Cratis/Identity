@@ -1,0 +1,13 @@
+{
+  "name": "delegation_parent_revoked",
+  "description": "A parent fence denies existing descendants and races safely with child creation without enumerating the subtree.",
+  "given": { "root": "grant-root", "parent": "grant-parent", "child": "grant-child", "lineage": ["grant-root", "grant-parent", "grant-child"], "parent_version": 7 },
+  "when": [
+    { "order": 1, "t": 0, "action": "replica_b_reads_parent_for_new_child", "expected_parent_version": 7 },
+    { "order": 2, "t": 0, "action": "replica_a_commits_parent_fence_and_outbox", "parent_version": 8, "fence_sequence": 41 },
+    { "order": 3, "t": 0, "action": "durably_log_and_acknowledge_parent_revoke" },
+    { "order": 4, "t": 1, "action": "tool_call_with_existing_child_checks_all_ancestors", "expected": "deny" },
+    { "order": 5, "t": 1, "action": "replica_b_conditionally_creates_new_child", "expected_parent_version": 7, "expected": "conflict_then_deny" }
+  ],
+  "then": { "existing_child_tool_use": "deny", "new_child_issued": false, "descendant_enumeration_required_for_denial": false, "fence_count": 1 }
+}

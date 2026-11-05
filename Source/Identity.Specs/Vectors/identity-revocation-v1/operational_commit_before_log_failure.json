@@ -1,0 +1,15 @@
+{
+  "name": "operational_commit_before_log_failure",
+  "description": "A crash between the operational commit and log append cannot acknowledge revoke or erase its pending restriction.",
+  "given": { "target": "family-1", "operational_watermark": 40, "log_watermark": 40, "fence_log_available": false },
+  "when": [
+    { "order": 1, "t": 0, "action": "commit_fence_and_outbox", "target": "family-1", "fence_id": "fence-41", "fence_sequence": 41, "outbox_id": "fact-41" },
+    { "order": 2, "t": 0, "action": "fence_log_append_fails", "expected_acknowledged": false },
+    { "order": 3, "t": 0, "action": "attempt_family_redemption_on_another_replica", "expected": "deny" },
+    { "order": 4, "t": 1, "action": "crash_and_restart", "expected_ready": false },
+    { "order": 5, "t": 2, "action": "restore_fence_log_availability" },
+    { "order": 6, "t": 2, "action": "reconcile_pending_operational_fence_to_log", "fence_id": "fence-41", "log_watermark": 41 },
+    { "order": 7, "t": 3, "action": "retry_revoke_and_acknowledge_same_fence" }
+  ],
+  "then": { "acknowledged_before_log_durability": false, "acknowledged_after_reconciliation": true, "fence_count": 1, "outbox_fact_count": 1, "family_redemption": "deny", "pending_restriction_rolled_back": false }
+}

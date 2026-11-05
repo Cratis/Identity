@@ -1,0 +1,13 @@
+{
+  "name": "access_feed_stale",
+  "description": "Source progress and priority heartbeat bounds deny stale policy, even when old events are received recently.",
+  "given": { "ordinary_bound_seconds": 60, "critical_heartbeat_bound_seconds": 5, "last_trusted_source_progress_t": 0, "last_trusted_fence_heartbeat_t": 0, "projection_epoch": 7, "required_epoch": 7 },
+  "when": [
+    { "order": 1, "t": 0, "action": "access_feed_and_priority_heartbeat_stop" },
+    { "order": 2, "t": 6, "action": "attempt_critical_approval_use", "expected": "deny_stale_fence_heartbeat" },
+    { "order": 3, "t": 59, "action": "receive_delayed_old_event", "source_progress_t": 0 },
+    { "order": 4, "t": 61, "action": "attempt_ordinary_policy_dependent_read", "expected": "deny_stale_access_feed" },
+    { "order": 5, "t": 61, "action": "attempt_policy_dependent_issuance_or_refresh", "expected": "deny_stale_access_feed" }
+  ],
+  "then": { "ordinary_authorization": "deny", "critical_authorization": "deny", "policy_dependent_issuance": "deny", "local_receipt_resets_source_freshness": false }
+}

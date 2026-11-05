@@ -1,0 +1,16 @@
+{
+  "name": "crash_after_ack",
+  "description": "Acknowledgement before Chronicle publication survives restart with projections paused.",
+  "given": { "target": "family-1", "operational_watermark": 40, "chronicle_watermark": 40, "log_watermark": 40, "projections": "paused" },
+  "when": [
+    { "order": 1, "t": 0, "action": "commit_fence_and_outbox", "target": "family-1", "fence_id": "fence-41", "fence_sequence": 41, "outbox_id": "fact-41" },
+    { "order": 2, "t": 0, "action": "durably_append_fence_log", "log_watermark": 41 },
+    { "order": 3, "t": 0, "action": "acknowledge_revoke" },
+    { "order": 4, "t": 0, "action": "crash_before_chronicle_append" },
+    { "order": 5, "t": 1, "action": "restart", "expected_ready": false },
+    { "order": 6, "t": 1, "action": "prove_operational_coverage_and_restore_outbox", "barrier": 41 },
+    { "order": 7, "t": 2, "action": "redeem_family_on_another_replica", "expected": "deny" },
+    { "order": 8, "t": 3, "action": "dispatch_outbox", "event_type": "RefreshTokenFamilyRevoked", "idempotency_key": "fact-41" }
+  ],
+  "then": { "family_redemption": "deny", "fence_count": 1, "chronicle_fact_count": 1, "chronicle_watermark": 41, "projections_required_for_denial": false }
+}

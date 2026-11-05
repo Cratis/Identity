@@ -1,0 +1,16 @@
+{
+  "name": "restore_both_stores",
+  "description": "B1: restoring both backup sets cannot erase a fence acknowledged before Chronicle append.",
+  "given": { "target": "family-1", "operational_watermark": 40, "chronicle_watermark": 40, "log_watermark": 40, "both_snapshot_watermarks": 40 },
+  "when": [
+    { "order": 1, "t": 0, "action": "commit_fence_and_outbox", "fence_sequence": 41, "target": "family-1", "outbox_id": "fact-41" },
+    { "order": 2, "t": 0, "action": "durably_append_independent_log", "log_watermark": 41 },
+    { "order": 3, "t": 0, "action": "acknowledge_then_crash_before_chronicle_append" },
+    { "order": 4, "t": 1, "action": "restore_both_stores_but_not_independent_log", "watermark": 40, "expected_ready": false },
+    { "order": 5, "t": 2, "action": "attempt_refresh", "expected": "deny" },
+    { "order": 6, "t": 3, "action": "reapply_log_fence_and_reconstruct_outbox", "fence_sequence": 41 },
+    { "order": 7, "t": 4, "action": "append_missing_fact_once_and_checkpoint_both_stores", "watermark": 41 },
+    { "order": 8, "t": 5, "action": "open_recovered_class_and_attempt_refresh", "expected": "deny" }
+  ],
+  "then": { "ready": true, "family_redemption": "deny", "log_watermark": 41, "operational_watermark": 41, "chronicle_watermark": 41, "fence_count": 1, "chronicle_fact_count": 1, "new_tokens_from_replay": 0 }
+}

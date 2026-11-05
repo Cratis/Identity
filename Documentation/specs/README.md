@@ -9,6 +9,7 @@ Specifications define contracts shared by Identity and its consumers. RFC 2119 k
 | identity-contract | 1 | Draft | [Person, account, resource, tenant and token contract](identity-contract-v1.md) |
 | identity-events | 1 | Draft | [Identity event rules and catalogue](identity-events-v1.md) |
 | identity-access-token | 1 | Draft | [JWT access-token profile](identity-access-token-v1.md) |
+| identity-revocation | 1 | Draft | [Revocation protocol and fence durability](identity-revocation-v1.md) |
 | arc-pat-format | 1 | Draft | [PAT format](arc-pat-format-v1.md) |
 | arc-scope-catalog | 1 | Draft | [Scope catalog](arc-scope-catalog-v1.md) |
 | arc-verified-caller | 1 | Draft | [Verified caller and credential matrix](arc-verified-caller-v1.md) |

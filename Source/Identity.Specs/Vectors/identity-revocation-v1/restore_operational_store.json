@@ -1,0 +1,13 @@
+{
+  "name": "restore_operational_store",
+  "description": "An operational snapshot that agrees with Chronicle can still predate an acknowledged undispatched fence.",
+  "given": { "target": "pat-1", "acknowledged_fence": 41, "log_watermark": 41, "operational_snapshot_watermark": 40, "chronicle_watermark": 40, "chronicle_available": false },
+  "when": [
+    { "order": 1, "t": 0, "action": "restore_operational_snapshot", "watermark": 40, "expected_ready": false },
+    { "order": 2, "t": 1, "action": "use_pat_on_another_replica_before_recovery", "expected": "deny" },
+    { "order": 3, "t": 2, "action": "recover_fence_and_outbox_from_independent_log", "fence_sequence": 41, "outbox_id": "product-fact-41", "barrier": 41 },
+    { "order": 4, "t": 3, "action": "persist_operational_watermark_and_publication_intent", "watermark": 41 },
+    { "order": 5, "t": 4, "action": "open_recovered_class_and_use_pat", "expected": "deny" }
+  ],
+  "then": { "ready": true, "pat_use": "deny", "operational_watermark": 41, "pending_outbox_fact_count": 1, "chronicle_watermark_alone_proves_completeness": false }
+}

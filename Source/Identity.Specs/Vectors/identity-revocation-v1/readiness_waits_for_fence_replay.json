@@ -1,0 +1,14 @@
+{
+  "name": "readiness_waits_for_fence_replay",
+  "description": "Out-of-order effects cannot advance a contiguous recovery watermark over a missing fence.",
+  "given": { "restored_stores": ["operational", "chronicle"], "operational_watermark": 40, "chronicle_watermark": 40, "log_watermark": 43, "log_entries": [41, 42, 43] },
+  "when": [
+    { "order": 1, "t": 0, "action": "start_recovery", "barrier": 43, "expected_ready": false },
+    { "order": 2, "t": 1, "action": "apply_fences_41_and_43_but_not_42_to_both_stores", "expected_operational_watermark": 41, "expected_chronicle_watermark": 41, "expected_ready": false },
+    { "order": 3, "t": 2, "action": "attempt_refresh_pat_session_delegation_and_approval", "expected": "deny_not_ready" },
+    { "order": 4, "t": 3, "action": "apply_fence_42_and_all_outbox_facts_to_both_stores" },
+    { "order": 5, "t": 3, "action": "persist_proven_contiguous_watermarks", "operational_watermark": 43, "chronicle_watermark": 43 },
+    { "order": 6, "t": 4, "action": "transition_to_live_fencing_without_gap", "expected_ready": true }
+  ],
+  "then": { "ready_before_gap_filled": false, "ready_after_prefix_proven": true, "revoked_targets": "deny", "largest_observed_sequence_is_sufficient": false }
+}
