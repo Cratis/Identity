@@ -7,26 +7,26 @@ using Cratis.Identity.Contracts.Accounts;
 
 namespace Cratis.Identity.Accounts.Linking;
 
+/// <summary>A validated, fresh existing-account session binding.</summary>
+/// <param name="Account">The canonical immutable account subject.</param>
+/// <param name="SessionId">The authenticated session reference.</param>
 internal record AccountSession(AccountSubject Account, string SessionId)
 {
+    /// <summary>Checks the trusted authenticated session before accepting a link ceremony.</summary>
+    /// <param name="principal">The authenticated account principal.</param>
+    /// <param name="time">The server clock.</param>
+    /// <returns>The validated session binding.</returns>
     internal static AccountSession Require(ClaimsPrincipal principal, TimeProvider time)
     {
+        AccountOperationRefused.Require(principal.Identity?.IsAuthenticated == true, "existing_account_proof_required");
         var raw = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        AccountOperationRefused.Require(AccountSubject.TryParse(raw, out var subject), "existing_account_proof_required");
         var sid = principal.FindFirstValue("sid");
+        AccountOperationRefused.Require(!string.IsNullOrEmpty(sid), "existing_account_proof_required");
         var authTime = principal.FindFirstValue("auth_time");
-        if (principal.Identity?.IsAuthenticated != true || !AccountSubject.TryParse(raw, out var subject) || string.IsNullOrEmpty(sid))
-        {
-            throw new AccountOperationRefused("existing_account_proof_required");
-        }
-        if (!long.TryParse(authTime, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds))
-        {
-            throw new AccountOperationRefused("fresh_existing_account_proof_required");
-        }
+        AccountOperationRefused.Require(long.TryParse(authTime, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds), "fresh_existing_account_proof_required");
         var now = time.GetUtcNow().ToUnixTimeSeconds();
-        if (seconds > now || now - seconds > 300)
-        {
-            throw new AccountOperationRefused("fresh_existing_account_proof_required");
-        }
-        return new(subject!, sid);
+        AccountOperationRefused.Require(seconds <= now && now - seconds <= 300, "fresh_existing_account_proof_required");
+        return new(subject!, sid!);
     }
 }

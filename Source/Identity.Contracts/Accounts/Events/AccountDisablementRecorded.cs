@@ -10,5 +10,6 @@ namespace Cratis.Identity.Contracts.Accounts.Events;
 /// <param name="AccountEpoch">The new epoch.</param>
 /// <param name="FenceId">The fence reference.</param>
 /// <param name="FenceSequence">The durable sequence.</param>
+/// <param name="FactId">The retry-stable fact identity; not present in the Public payload.</param>
 [EventType("e26026d0-d445-4647-ba9f-f7f1d868c8ac", generation: 1)]
-public record AccountDisablementRecorded(ReasonId ReasonId, AccountEpoch AccountEpoch, FenceId FenceId, FenceSequence FenceSequence);
+public record AccountDisablementRecorded(ReasonId ReasonId, AccountEpoch AccountEpoch, FenceId FenceId, FenceSequence FenceSequence, FactId FactId);

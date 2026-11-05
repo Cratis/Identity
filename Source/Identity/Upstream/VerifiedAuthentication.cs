@@ -8,13 +8,19 @@ namespace Cratis.Identity.Upstream;
 /// <summary>Immutable key vouched for by a connection adapter, not by arbitrary claims.</summary>
 public sealed class VerifiedAuthentication
 {
-    internal VerifiedAuthentication(ConnectionId connectionId, UpstreamIssuer issuer, UpstreamSubject subject, DateTimeOffset authTime, string? sessionId = null)
+    /// <summary>Initializes a new instance of the <see cref="VerifiedAuthentication"/> class.</summary>
+    /// <param name="connectionId">The trusted connection.</param>
+    /// <param name="issuer">The exact authority.</param>
+    /// <param name="subject">The immutable subject.</param>
+    /// <param name="authTime">The authentication instant.</param>
+    /// <param name="operationId">The callback operation reference, carried unchanged through retries.</param>
+    internal VerifiedAuthentication(ConnectionId connectionId, UpstreamIssuer issuer, UpstreamSubject subject, DateTimeOffset authTime, FactId operationId)
     {
         ConnectionId = connectionId;
         IdpIssuer = issuer;
         Subject = subject;
         AuthTime = authTime;
-        SessionId = sessionId;
+        OperationId = operationId;
     }
 
     /// <summary>Gets the configured connection.</summary>
@@ -29,7 +35,11 @@ public sealed class VerifiedAuthentication
     /// <summary>Gets when the upstream proved authentication.</summary>
     public DateTimeOffset AuthTime { get; }
 
-    internal string? SessionId { get; }
+    /// <summary>Gets the accepted operation reference, stable across retries.</summary>
+    public FactId OperationId { get; }
+
+    /// <summary>Gets the existing-account session binding.</summary>
+    internal string? SessionId { get; init; }
 
     /// <inheritdoc/>
     public override string ToString() => "Verified upstream authentication [redacted]";

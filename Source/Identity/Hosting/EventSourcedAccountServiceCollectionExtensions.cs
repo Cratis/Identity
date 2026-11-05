@@ -13,7 +13,7 @@ public static class EventSourcedAccountServiceCollectionExtensions
 {
     /// <summary>Adds the Development-only account path without replacing IAccounts or configuring a Chronicle host.</summary>
     /// <param name="services">The services.</param>
-    /// <returns>The services.</returns>
+    /// <returns>The collection with the opt-in registrations.</returns>
     public static IServiceCollection AddEventSourcedAccounts(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);

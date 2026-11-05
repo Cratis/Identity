@@ -14,12 +14,14 @@ public sealed class UpstreamLookupKey
     /// <summary>Initializes a new instance of the <see cref="UpstreamLookupKey"/> class.</summary>
     /// <param name="revision">The positive revision.</param>
     /// <param name="key">At least 256 bits of key material.</param>
+    /// <exception cref="AccountOperationRefused">Revision or key material is invalid.</exception>
     public UpstreamLookupKey(int revision, byte[] key)
     {
         if (revision < 1 || key.Length < 32)
         {
             throw new AccountOperationRefused("invalid_lookup_key_configuration");
         }
+
         Revision = revision;
         _key = key.ToArray();
         Check = Convert.ToHexString(HMACSHA256.HashData(_key, Encoding.UTF8.GetBytes("cratis.identity.upstream-key-check.v1")));

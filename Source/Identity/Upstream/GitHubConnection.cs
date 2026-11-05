@@ -3,8 +3,8 @@
 
 using System.Globalization;
 using System.Security.Claims;
-using Cratis.Identity.Accounts.Linking;
 using Cratis.Identity.Accounts;
+using Cratis.Identity.Accounts.Linking;
 using Cratis.Identity.Contracts.Accounts;
 
 namespace Cratis.Identity.Upstream;
@@ -17,23 +17,26 @@ public class GitHubConnection(ConnectionId connectionId, TimeProvider time)
     /// <summary>Binds a verified provider response to the existing account session's link ceremony.</summary>
     /// <param name="user">The verified provider response.</param>
     /// <param name="session">The authenticated existing-account session.</param>
+    /// <param name="operationId">The callback operation reference retained for retries.</param>
     /// <returns>The session-bound new-key proof.</returns>
-    public VerifiedAuthentication ForLink(GitHubUser user, ClaimsPrincipal session)
+    public VerifiedAuthentication ForLink(GitHubUser user, ClaimsPrincipal session, FactId operationId)
     {
         var existing = AccountSession.Require(session, time);
-        var verified = From(user);
-        return new(verified.ConnectionId, verified.IdpIssuer, verified.Subject, verified.AuthTime, existing.SessionId);
+        var verified = From(user, operationId);
+        return new(verified.ConnectionId, verified.IdpIssuer, verified.Subject, verified.AuthTime, operationId) { SessionId = existing.SessionId };
     }
 
     /// <summary>Vouches for a positive numeric GitHub id from the verified provider response.</summary>
     /// <param name="user">The upstream user response.</param>
+    /// <param name="operationId">The callback operation reference retained for retries.</param>
     /// <returns>The verified immutable pair.</returns>
-    public VerifiedAuthentication From(GitHubUser user)
+    /// <exception cref="AccountOperationRefused">The provider did not supply a positive immutable id.</exception>
+    public VerifiedAuthentication From(GitHubUser user, FactId operationId)
     {
         if (user.Id <= 0)
         {
             throw new AccountOperationRefused("invalid_upstream_subject");
         }
-        return new(connectionId, "https://github.com", user.Id.ToString(CultureInfo.InvariantCulture), time.GetUtcNow());
+        return new(connectionId, "https://github.com", user.Id.ToString(CultureInfo.InvariantCulture), time.GetUtcNow(), operationId);
     }
 }

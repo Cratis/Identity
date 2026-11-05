@@ -22,35 +22,26 @@ public class UpstreamKeyLinking(AccountStore store, UpstreamLookups lookups, Ups
     /// <summary>Records explicit intent only after both session-bound proofs are present.</summary>
     /// <param name="session">The existing authenticated account session.</param>
     /// <param name="authentication">The adapter-verified new key.</param>
-    /// <param name="explicitIntent">Whether this is an explicit linking ceremony.</param>
-    /// <param name="emailOnlyProof">Whether the caller has only an email hint, which is refused.</param>
-    /// <param name="softDisabledConnection">Whether policy requires resolver clearance.</param>
+    /// <param name="intent">The explicit ceremony and trusted connection policy.</param>
     /// <returns>The proposal reference.</returns>
-    public async Task<LinkProposalId> Propose(ClaimsPrincipal session, VerifiedAuthentication authentication, bool explicitIntent, bool emailOnlyProof = false, bool softDisabledConnection = false)
+    /// <exception cref="AccountOperationRefused">Intent, proof, account or reservation policy refuses the proposal.</exception>
+    public async Task<LinkProposalId> Propose(ClaimsPrincipal session, VerifiedAuthentication authentication, LinkIntent intent)
     {
         var existing = AccountSession.Require(session, time);
-        if (!explicitIntent || emailOnlyProof)
-        {
-            throw new AccountOperationRefused("explicit_dual_proof_required");
-        }
+        AccountOperationRefused.Require(intent.Explicit && !intent.EmailOnlyProof, "explicit_dual_proof_required");
         RequireProof(authentication, existing.SessionId);
-        if (await lookups.Find(digester.Digest(authentication.IdpIssuer, authentication.Subject)) is not null)
-        {
-            throw new AccountOperationRefused("upstream_key_already_reserved");
-        }
+        await RequireUnreserved(authentication);
         var read = await store.Read(existing.Account);
         RequireActive(read.State);
-        if (read.State.Proposals.Values.Any(proposal => proposal.Issuer == authentication.IdpIssuer && proposal.Subject == authentication.Subject && proposal.State != "rejected"))
-        {
-            throw new AccountOperationRefused("proposal_already_exists");
-        }
+        AccountOperationRefused.Require(!read.State.Proposals.Values.Any(proposal => proposal.Matches(authentication) && proposal.State != "rejected"), "proposal_already_exists");
         LinkProposalId id = Guid.NewGuid();
         var events = new List<object> { new UpstreamKeyLinkProposed(id, authentication.ConnectionId, authentication.IdpIssuer, authentication.Subject) };
         var hold = options.Value.Accounts.LinkHoldMinimum;
-        if (hold > TimeSpan.Zero || softDisabledConnection)
+        if (hold > TimeSpan.Zero || intent.SoftDisabledConnection)
         {
-            events.Add(new UpstreamKeyLinkQuarantined(id, softDisabledConnection ? "soft_disabled_connection" : "realm_link_hold", Guid.NewGuid(), time.GetUtcNow() + hold));
+            events.Add(new UpstreamKeyLinkQuarantined(id, intent.SoftDisabledConnection ? "soft_disabled_connection" : "realm_link_hold", Guid.NewGuid(), time.GetUtcNow() + hold));
         }
+
         await store.Append(existing.Account, read, events);
         return id;
     }
@@ -60,6 +51,7 @@ public class UpstreamKeyLinking(AccountStore store, UpstreamLookups lookups, Ups
     /// <param name="proposalId">The proposal.</param>
     /// <param name="authentication">The fresh new-key proof.</param>
     /// <returns>The confirmed link.</returns>
+    /// <exception cref="AccountOperationRefused">The proposal, proof, hold or key reservation refuses confirmation.</exception>
     public async Task<LinkId> Confirm(ClaimsPrincipal session, LinkProposalId proposalId, VerifiedAuthentication authentication)
     {
         var existing = AccountSession.Require(session, time);
@@ -68,22 +60,12 @@ public class UpstreamKeyLinking(AccountStore store, UpstreamLookups lookups, Ups
         RequireActive(read.State);
         var proposal = FindProposal(read.State, proposalId);
         RequireMatchingProof(proposal, authentication);
-        if (proposal.State is not ("pending_proof" or "cleared") || time.GetUtcNow() < proposal.HoldNotBefore)
-        {
-            throw new AccountOperationRefused("proposal_not_confirmable");
-        }
-        if (proposal.HoldNotBefore > proposal.ProposedAt && authentication.AuthTime < proposal.HoldNotBefore)
-        {
-            throw new AccountOperationRefused("fresh_post_hold_proof_required");
-        }
-        var digest = digester.Digest(proposal.Issuer, proposal.Subject);
-        if (await lookups.Find(digest) is not null)
-        {
-            throw new AccountOperationRefused("upstream_key_already_reserved");
-        }
+        AccountOperationRefused.Require(proposal.Confirmable(time.GetUtcNow()), "proposal_not_confirmable");
+        AccountOperationRefused.Require(proposal.HoldNotBefore <= proposal.ProposedAt || authentication.AuthTime >= proposal.HoldNotBefore, "fresh_post_hold_proof_required");
+        await RequireUnreserved(authentication);
         LinkId link = proposalId.Value;
         await store.Append(existing.Account, read, [
-            new UpstreamKeyLinkRecorded(link, proposal.Connection, proposal.Issuer, digest, Guid.NewGuid(), time.GetUtcNow()),
+            new UpstreamKeyLinkRecorded(link, proposal.Connection, proposal.Issuer, digester.Digest(proposal.Issuer, proposal.Subject), authentication.OperationId.Value, authentication.AuthTime, FactId.ForOperation(new(proposalId.Value), nameof(UpstreamKeyLinkRecorded))),
             new UpstreamKeySubjectRecorded(link, proposal.Issuer, proposal.Subject)]);
         return link;
     }
@@ -94,22 +76,17 @@ public class UpstreamKeyLinking(AccountStore store, UpstreamLookups lookups, Ups
     /// <param name="proposalId">The proposal.</param>
     /// <param name="authentication">Fresh proof of the proposed key.</param>
     /// <returns>The completion.</returns>
+    /// <exception cref="AccountOperationRefused">Resolver authorization, proof or hold policy refuses clearance.</exception>
     public async Task Clear(ClaimsPrincipal resolver, AccountSubject account, LinkProposalId proposalId, VerifiedAuthentication authentication)
     {
         _ = AccountSession.Require(resolver, time);
-        if (!resolver.HasClaim("permission", "identity:resolve-links"))
-        {
-            throw new AccountOperationRefused("authorized_resolver_required");
-        }
+        AccountOperationRefused.Require(resolver.HasClaim("permission", "identity:resolve-links"), "authorized_resolver_required");
         RequireProof(authentication);
         var read = await store.Read(account);
         RequireActive(read.State);
         var proposal = FindProposal(read.State, proposalId);
         RequireMatchingProof(proposal, authentication);
-        if (proposal.State != "quarantined" || time.GetUtcNow() < proposal.HoldNotBefore || authentication.AuthTime < proposal.HoldNotBefore)
-        {
-            throw new AccountOperationRefused("quarantine_not_clearable");
-        }
+        AccountOperationRefused.Require(proposal.Clearable(time.GetUtcNow(), authentication), "quarantine_not_clearable");
         await store.Append(account, read, [new UpstreamKeyLinkCleared(proposalId, Guid.NewGuid(), Guid.NewGuid(), "authorized_resolution")]);
     }
 
@@ -117,59 +94,48 @@ public class UpstreamKeyLinking(AccountStore store, UpstreamLookups lookups, Ups
     /// <param name="session">The owning session.</param>
     /// <param name="proposalId">The proposal.</param>
     /// <returns>The completion.</returns>
+    /// <exception cref="AccountOperationRefused">The session, account or proposal is not eligible.</exception>
     public async Task Reject(ClaimsPrincipal session, LinkProposalId proposalId)
     {
         var existing = AccountSession.Require(session, time);
         var read = await store.Read(existing.Account);
         RequireActive(read.State);
-        var proposal = FindProposal(read.State, proposalId);
-        if (proposal.State is "confirmed" or "rejected")
-        {
-            throw new AccountOperationRefused("terminal_proposal");
-        }
+        AccountOperationRefused.Require(!FindProposal(read.State, proposalId).Terminal, "terminal_proposal");
         await store.Append(existing.Account, read, [new UpstreamKeyLinkRejected(proposalId, "owner_rejected")]);
     }
 
-    /// <summary>Removes a key only while another confirmed key remains. The reservation is never released.</summary>
+    /// <summary>Removes a key only while another confirmed key remains. Its reservation is never released.</summary>
     /// <param name="session">The owning session.</param>
     /// <param name="linkId">The confirmed link.</param>
     /// <returns>The completion.</returns>
+    /// <exception cref="AccountOperationRefused">This is the last key or the link/account proof is invalid.</exception>
     public async Task Unlink(ClaimsPrincipal session, LinkId linkId)
     {
         var existing = AccountSession.Require(session, time);
         var read = await store.Read(existing.Account);
         RequireActive(read.State);
-        if (read.State.Links.Count <= 1 || !read.State.Links.TryGetValue(linkId.Value, out var link))
-        {
-            throw new AccountOperationRefused("last_or_unknown_upstream_key");
-        }
-        await store.Append(existing.Account, read, [new UpstreamKeyUnlinkRecorded(linkId, link.KeyHash, "owner_unlinked", time.GetUtcNow())]);
+        AccountOperationRefused.Require(read.State.Links.Count > 1, "last_or_unknown_upstream_key");
+        AccountOperationRefused.Require(read.State.Links.ContainsKey(linkId.Value), "last_or_unknown_upstream_key");
+        var link = read.State.Links[linkId.Value];
+        await store.Append(existing.Account, read, [new UpstreamKeyUnlinkRecorded(linkId, link.KeyHash, "owner_unlinked", time.GetUtcNow(), FactId.ForOperation(new(linkId.Value), nameof(UpstreamKeyUnlinkRecorded)))]);
     }
 
-    internal static void RequireActive(AccountLinkState? state)
-    {
-        if (state is null || !state.Registered || state.Tombstoned || state.Disabled)
-        {
-            throw new AccountOperationRefused("account_not_active");
-        }
-    }
+    /// <summary>Refuses missing, disabled or terminal accounts.</summary>
+    /// <param name="state">The guarded state.</param>
+    internal static void RequireActive(AccountLinkState? state) => AccountOperationRefused.Require(IsActive(state), "account_not_active");
+
+    static bool IsActive(AccountLinkState? state) => state is { Registered: true, Tombstoned: false, Disabled: false };
 
     static LinkProposal FindProposal(AccountLinkState state, LinkProposalId id) => state.Proposals.TryGetValue(id.Value, out var proposal) ? proposal : throw new AccountOperationRefused("proposal_not_found");
 
-    static void RequireMatchingProof(LinkProposal proposal, VerifiedAuthentication authentication)
-    {
-        if (proposal.Connection != authentication.ConnectionId || proposal.Issuer != authentication.IdpIssuer || proposal.Subject != authentication.Subject)
-        {
-            throw new AccountOperationRefused("upstream_proof_mismatch");
-        }
-    }
+    static void RequireMatchingProof(LinkProposal proposal, VerifiedAuthentication authentication) => AccountOperationRefused.Require(proposal.Matches(authentication), "upstream_proof_mismatch");
+
+    async Task RequireUnreserved(VerifiedAuthentication authentication) => AccountOperationRefused.Require(await lookups.Find(digester.Digest(authentication.IdpIssuer, authentication.Subject)) is null, "upstream_key_already_reserved");
 
     void RequireProof(VerifiedAuthentication authentication, string? sessionId = null)
     {
         var age = time.GetUtcNow() - authentication.AuthTime;
-        if (age < TimeSpan.Zero || age > TimeSpan.FromMinutes(5) || (sessionId is not null && authentication.SessionId != sessionId))
-        {
-            throw new AccountOperationRefused("fresh_session_bound_upstream_proof_required");
-        }
+        AccountOperationRefused.Require(age >= TimeSpan.Zero && age <= TimeSpan.FromMinutes(5), "fresh_session_bound_upstream_proof_required");
+        AccountOperationRefused.Require(sessionId is null || authentication.SessionId == sessionId, "fresh_session_bound_upstream_proof_required");
     }
 }

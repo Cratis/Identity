@@ -10,7 +10,7 @@ namespace Cratis.Identity.Accounts.Linking;
 /// <summary>Folds only Internal facts for guarded account decisions.</summary>
 public class AccountLinkStateReducer : IReducerFor<AccountLinkState>
 {
-    /// <inheritdoc/>
+    /// <summary>Gets the reducer identity.</summary>
     public ReducerId Id => "47c30545-5546-433a-828a-b7ba31fd9710";
 
     /// <summary>Allocates a subject.</summary>
@@ -18,7 +18,11 @@ public class AccountLinkStateReducer : IReducerFor<AccountLinkState>
     /// <param name="current">The prior state.</param>
     /// <param name="context">The source.</param>
     /// <returns>The next state.</returns>
-    public AccountLinkState On(AccountRegistrationRecorded @event, AccountLinkState? current, EventContext context) => Start(current, context) with { Registered = true };
+    public AccountLinkState On(AccountRegistrationRecorded @event, AccountLinkState? current, EventContext context)
+    {
+        _ = @event;
+        return Start(current, context) with { Registered = true };
+    }
 
     /// <summary>Updates profile email.</summary>
     /// <param name="event">The fact.</param>
@@ -112,21 +116,33 @@ public class AccountLinkStateReducer : IReducerFor<AccountLinkState>
     /// <param name="current">The prior state.</param>
     /// <param name="context">The source.</param>
     /// <returns>The next state.</returns>
-    public AccountLinkState On(AccountDisablementRecorded @event, AccountLinkState? current, EventContext context) => Start(current, context) with { Disabled = true };
+    public AccountLinkState On(AccountDisablementRecorded @event, AccountLinkState? current, EventContext context)
+    {
+        _ = @event;
+        return Start(current, context) with { Disabled = true };
+    }
 
     /// <summary>Re-enables without restoring grants.</summary>
     /// <param name="event">The fact.</param>
     /// <param name="current">The prior state.</param>
     /// <param name="context">The source.</param>
     /// <returns>The next state.</returns>
-    public AccountLinkState On(AccountEnablementRecorded @event, AccountLinkState? current, EventContext context) => Start(current, context) with { Disabled = false };
+    public AccountLinkState On(AccountEnablementRecorded @event, AccountLinkState? current, EventContext context)
+    {
+        _ = @event;
+        return Start(current, context) with { Disabled = false };
+    }
 
     /// <summary>Permanently reserves a subject.</summary>
     /// <param name="event">The fact.</param>
     /// <param name="current">The prior state.</param>
     /// <param name="context">The source.</param>
     /// <returns>The next state.</returns>
-    public AccountLinkState On(AccountTombstoneRecorded @event, AccountLinkState? current, EventContext context) => Start(current, context) with { Tombstoned = true };
+    public AccountLinkState On(AccountTombstoneRecorded @event, AccountLinkState? current, EventContext context)
+    {
+        _ = @event;
+        return Start(current, context) with { Tombstoned = true };
+    }
 
     static AccountLinkState Start(AccountLinkState? current, EventContext context) => current ?? new(context.EventSourceId.Value);
 
@@ -137,6 +153,7 @@ public class AccountLinkStateReducer : IReducerFor<AccountLinkState>
         {
             proposals[id] = proposal with { State = status, HoldNotBefore = hold ?? proposal.HoldNotBefore };
         }
+
         return state with { Proposals = proposals };
     }
 }

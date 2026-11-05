@@ -13,5 +13,7 @@ public class UpstreamLookups(IReadModels readModels)
     /// <summary>Finds a permanent reservation by keyed digest.</summary>
     /// <param name="digest">The lookup pseudonym.</param>
     /// <returns>The reservation, if present.</returns>
-    public async Task<UpstreamKeyLookup?> Find(UpstreamLookupDigest digest) => (await readModels.GetInstances<UpstreamKeyLookup>()).SingleOrDefault(row => row.Id == digest);
+    public async Task<UpstreamKeyMatch?> Find(UpstreamLookupDigest digest) => (await readModels.GetInstances<UpstreamKeyLookup>())
+        .SelectMany(row => row.Keys.Where(key => key.KeyHash == digest).Select(key => new UpstreamKeyMatch(row.Id, key.Id, key.Active)))
+        .SingleOrDefault();
 }

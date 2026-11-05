@@ -6,17 +6,19 @@ using Cratis.Identity.Contracts.Accounts.Events;
 
 namespace Cratis.Identity.Accounts.Lookup;
 
-/// <summary>Indexes Internal link facts without deleting reservations on unlink.</summary>
+/// <summary>Indexes Internal facts under the account owner; unlink never releases a reservation.</summary>
 public class UpstreamKeyLookupProjection : IProjectionFor<UpstreamKeyLookup>
 {
     /// <inheritdoc/>
     public void Define(IProjectionBuilderFor<UpstreamKeyLookup> builder) => builder
-        .From<UpstreamKeyLinkRecorded>(from => from
-            .UsingKey(@event => @event.KeyHash)
-            .Set(model => model.Id).To(@event => @event.KeyHash)
-            .Set(model => model.AccountSubject).ToEventSourceId()
-            .Set(model => model.Active).ToValue(true))
-        .From<UpstreamKeyUnlinkRecorded>(from => from
-            .UsingKey(@event => @event.KeyHash)
-            .Set(model => model.Active).ToValue(false));
+        .From<UpstreamKeyLinkRecorded>(from => from.Set(model => model.Id).ToEventSourceId())
+        .Children(model => model.Keys, children => children
+            .IdentifiedBy(key => key.Id)
+            .From<UpstreamKeyLinkRecorded>(from => from
+                .UsingKey(@event => @event.LinkId)
+                .Set(key => key.Id).To(@event => @event.LinkId)
+                .Set(key => key.Active).ToValue(true))
+            .From<UpstreamKeyUnlinkRecorded>(from => from
+                .UsingKey(@event => @event.LinkId)
+                .Set(key => key.Active).ToValue(false)));
 }
