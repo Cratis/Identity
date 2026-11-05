@@ -129,7 +129,7 @@ This table defines person OAuth access tokens, not ID tokens, refresh-token inte
 | `iss` | string | R | Configured realm issuer (§2.2); part of the person key. | Review |
 | `sub` | string | R | Account UUID (§2.1), always the person, never an agent or upstream login. | Review |
 | `aud` | string | R | Resource catalog audience; exactly one resource (§4). | Review |
-| `exp` | integer | R | Issuer's short-lived expiry, constrained by grant/root expiry. Exact lifetime remains open. | Review |
+| `exp` | integer | R | Issuer's short-lived expiry, constrained by grant/root expiry. Default 300 seconds, at most 600 seconds ([access-token profile §4](identity-access-token-v1.md#4-lifetimes-and-refresh)). | Review |
 | `iat` | integer | R | Issuer's token issuance time; MUST precede `exp`. | Review |
 | `jti` | string | R | Issuer-generated opaque, unique token identifier, not a secret. | Review |
 | `client_id` | string | R | Registered OAuth client identifier; no assertion that a public client is authenticated. | Review |
