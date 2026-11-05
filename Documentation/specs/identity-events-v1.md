@@ -84,33 +84,33 @@ Chronicle does not append a `[Public]` event type to the event log; Public contr
 
 Source facts are named `<Public contract subject><noun>Recorded` and listed here; their type ids are allocated under §2.3 like any other row. Each has the Public contract's area, event source and fields (with the same marks) plus `FactId`, is Internal and written by the contract's writer; §8 rows describe the contract.
 
-| Public contract | Internal source fact |
-|---|---|
-| AccountRegistered | AccountRegistrationRecorded |
-| AccountDisabled | AccountDisablementRecorded |
-| AccountEnabled | AccountEnablementRecorded |
-| AccountTombstoned | AccountTombstoneRecorded |
-| AccountErased | AccountErasureRecorded |
-| UpstreamKeyLinked | UpstreamKeyLinkRecorded |
-| UpstreamKeyUnlinked | UpstreamKeyUnlinkRecorded |
-| ConsentWithdrawn | ConsentWithdrawalRecorded |
-| AuthorizationGranted | AuthorizationGrantRecorded |
-| AuthorizationRevoked | AuthorizationRevocationRecorded |
-| RefreshTokenFamilyRevoked | RefreshTokenFamilyRevocationRecorded |
-| SigningKeyActivated | SigningKeyActivationRecorded |
-| SigningKeyRetired | SigningKeyRetirementRecorded |
-| ResourceRegistered | ResourceRegistrationRecorded |
-| ResourceScopeRegistered | ResourceScopeRegistrationRecorded |
-| ResourceScopeRetired | ResourceScopeRetirementRecorded |
-| OrganisationRegistered | OrganisationRegistrationRecorded |
-| OrganisationPolicyChanged | OrganisationPolicyChangeRecorded |
-| OrganisationDomainVerified | OrganisationDomainVerificationRecorded |
-| TenantBindingConfirmed | TenantBindingConfirmationRecorded |
-| TenantBindingRemoved | TenantBindingRemovalRecorded |
-| EnterpriseConnectionRegistered | EnterpriseConnectionRegistrationRecorded |
-| ConnectionAssuranceMappingChanged | ConnectionAssuranceMappingChangeRecorded |
-| RealmPolicyEpochAdvanced | RealmPolicyEpochAdvanceRecorded |
-| RealmRecoveryEpochAdvanced | RealmRecoveryEpochAdvanceRecorded |
+| Public contract | Internal source fact | Source fact type id |
+|---|---|---|
+| AccountRegistered | AccountRegistrationRecorded | c2c8ac1b-6110-433f-93d6-1e9222852baa |
+| AccountDisabled | AccountDisablementRecorded | e26026d0-d445-4647-ba9f-f7f1d868c8ac |
+| AccountEnabled | AccountEnablementRecorded | 46c54931-10f5-4069-9c22-b059008b3fc1 |
+| AccountTombstoned | AccountTombstoneRecorded | f67aa184-1052-4a3e-863a-13059de335e0 |
+| AccountErased | AccountErasureRecorded | assigned at implementation |
+| UpstreamKeyLinked | UpstreamKeyLinkRecorded | 0948769e-d249-472e-abb3-93e8743379da |
+| UpstreamKeyUnlinked | UpstreamKeyUnlinkRecorded | de708442-c9b3-4d8b-b677-01450ef9248e |
+| ConsentWithdrawn | ConsentWithdrawalRecorded | assigned at implementation |
+| AuthorizationGranted | AuthorizationGrantRecorded | assigned at implementation |
+| AuthorizationRevoked | AuthorizationRevocationRecorded | assigned at implementation |
+| RefreshTokenFamilyRevoked | RefreshTokenFamilyRevocationRecorded | assigned at implementation |
+| SigningKeyActivated | SigningKeyActivationRecorded | assigned at implementation |
+| SigningKeyRetired | SigningKeyRetirementRecorded | assigned at implementation |
+| ResourceRegistered | ResourceRegistrationRecorded | assigned at implementation |
+| ResourceScopeRegistered | ResourceScopeRegistrationRecorded | assigned at implementation |
+| ResourceScopeRetired | ResourceScopeRetirementRecorded | assigned at implementation |
+| OrganisationRegistered | OrganisationRegistrationRecorded | assigned at implementation |
+| OrganisationPolicyChanged | OrganisationPolicyChangeRecorded | assigned at implementation |
+| OrganisationDomainVerified | OrganisationDomainVerificationRecorded | assigned at implementation |
+| TenantBindingConfirmed | TenantBindingConfirmationRecorded | assigned at implementation |
+| TenantBindingRemoved | TenantBindingRemovalRecorded | assigned at implementation |
+| EnterpriseConnectionRegistered | EnterpriseConnectionRegistrationRecorded | assigned at implementation |
+| ConnectionAssuranceMappingChanged | ConnectionAssuranceMappingChangeRecorded | assigned at implementation |
+| RealmPolicyEpochAdvanced | RealmPolicyEpochAdvanceRecorded | assigned at implementation |
+| RealmRecoveryEpochAdvanced | RealmRecoveryEpochAdvanceRecorded | assigned at implementation |
 
 ## 5. PII and erasure
 
@@ -166,23 +166,23 @@ All names, fields, writer assignments and Public/Internal choices are decided in
 
 | Event | Type id | Area | Public/Internal | Event source id | Fields (PII marks) | Written by | Notes |
 |---|---|---|---|---|---|---|---|
-| AccountRegistered | assigned at implementation | Accounts | Public | Account | RegisteredAt | Identity | Profile and initial verified key are separate facts in the same registration workflow. |
-| AccountEmailChanged | assigned at implementation | Accounts | Internal | Account | Email† | Identity | No profile snapshots; protected concept from generation 1. |
-| AccountNameChanged | assigned at implementation | Accounts | Internal | Account | PersonalName† | Identity | Personal name concept. |
-| AccountDisabled | assigned at implementation | Accounts | Public | Account | ReasonId, AccountEpoch, FenceId, FenceSequence | Identity | align with identity-revocation-v1; fence precedes acknowledgement. |
-| AccountEnabled | assigned at implementation | Accounts | Public | Account | AccountEpoch, EnabledAt | Identity | Does not restore old grants or remove a tombstone. |
-| AccountTombstoned | assigned at implementation | Accounts | Public | Account | TombstonedAt | Identity | Permanent subject reservation; no upstream/profile fields. |
+| AccountRegistered | fd1cb0b5-17c1-4f34-b625-c318dc928d97 | Accounts | Public | Account | RegisteredAt | Identity | Profile and initial verified key are separate facts in the same registration workflow. |
+| AccountEmailChanged | 92fde774-1586-4d45-a354-8349a9f5e3fd | Accounts | Internal | Account | Email† | Identity | No profile snapshots; protected concept from generation 1. |
+| AccountNameChanged | 2eba996c-8d19-4d5c-9648-3dca02daf879 | Accounts | Internal | Account | PersonalName† | Identity | Personal name concept. |
+| AccountDisabled | 8e1e68fd-e4fb-456a-9af4-f95185be950b | Accounts | Public | Account | ReasonId, AccountEpoch, FenceId, FenceSequence | Identity | align with identity-revocation-v1; fence precedes acknowledgement. |
+| AccountEnabled | 4fa5a4be-c0e1-4ad1-81d4-4eb304aab74d | Accounts | Public | Account | AccountEpoch, EnabledAt | Identity | Does not restore old grants or remove a tombstone. |
+| AccountTombstoned | 6d6b4f99-5ac3-4493-b892-13a5e44c6518 | Accounts | Public | Account | TombstonedAt | Identity | Permanent subject reservation; no upstream/profile fields. |
 | AccountErasureRequested | assigned at implementation | Accounts | Internal | Account | ErasureId, RequestedAt | Identity | Accepted user/legal request, not a retry signal. |
 | AccountErasureFailed | assigned at implementation | Accounts | Internal | Account | ErasureId, StageId, ReasonId | Identity | Real failed workflow transition; no error payload or repeating retry events. |
 | AccountErased | assigned at implementation | Accounts | Public | Account | ErasureId, CompletedAt, BoundaryVersion | Identity | Consumer cleanup acknowledgements and approved completion boundary (§5). |
-| UpstreamKeyLinkProposed | assigned at implementation | Accounts | Internal | Account | LinkProposalId, ConnectionId, IdpIssuer, IdpSub† | Identity | Accepted intent; pending_proof, never provisional access. |
-| UpstreamKeyLinkQuarantined | assigned at implementation | Accounts | Internal | Account | LinkProposalId, ReasonId, EvidenceId, HoldNotBefore | Identity | Proof/conflict transition; hold and fresh proof per contract v1. |
-| UpstreamKeyLinkCleared | assigned at implementation | Accounts | Internal | Account | LinkProposalId, ResolutionId, EvidenceId, ReasonId | Identity | Authorized resolver's clearance, not waived proof or uniqueness. |
-| UpstreamKeyLinked | assigned at implementation | Accounts | Public | Account | LinkId, ConnectionId, IdpIssuer, KeyHash‡, EvidenceId, LinkedAt | Identity | Atomic uniqueness, enforced on its source fact `UpstreamKeyLinkRecorded` (§4.1); first registration or confirmed post-hold proposal. No raw upstream id (contract v1 §7). Proof material excluded. |
-| UpstreamKeySubjectRecorded | assigned at implementation | Accounts | Internal | Account | LinkId, IdpIssuer, IdpSub† | Identity | Appended atomically with `UpstreamKeyLinkRecorded`, the source fact of `UpstreamKeyLinked`; the confirmed link's raw `IdpSub` (only Internal events carry it, see §5). Inside the erasure boundary. |
-| UpstreamKeyDisplayIdentifierObserved | assigned at implementation | Accounts | Internal | Account | LinkId, Login†, ObservedAt | Identity | Per key; mutable upstream login for display and `preferred_username` only. Never used for matching, linking or authorization. Inside the erasure boundary. |
-| UpstreamKeyLinkRejected | assigned at implementation | Accounts | Internal | Account | LinkProposalId, ReasonId | Identity | Terminal proposal; retry needs a new proposal/proofs. |
-| UpstreamKeyUnlinked | assigned at implementation | Accounts | Public | Account | LinkId, KeyHash‡, ReasonId, UnlinkedAt | Identity | New fact, never a rewrite/transfer of the original link. Reports, asynchronously, the unlink fence that revokes every grant, refresh family and session authenticated through that key (identity-revocation-v1 §7 Unlink); the event is not the fence itself. The unlinked key stays reserved to its old account; relinking it to any account needs an explicit reviewed operation (its own catalogue extension), never automatic linking. |
+| UpstreamKeyLinkProposed | b49850a5-1179-489b-bd37-96a4bb25ff69 | Accounts | Internal | Account | LinkProposalId, ConnectionId, IdpIssuer, IdpSub† | Identity | Accepted intent; pending_proof, never provisional access. |
+| UpstreamKeyLinkQuarantined | a407f6de-7435-47b3-bcc8-ae3498010e71 | Accounts | Internal | Account | LinkProposalId, ReasonId, EvidenceId, HoldNotBefore | Identity | Proof/conflict transition; hold and fresh proof per contract v1. |
+| UpstreamKeyLinkCleared | 0f4ff8c1-a7e4-48e4-9bd1-65abbe2b465d | Accounts | Internal | Account | LinkProposalId, ResolutionId, EvidenceId, ReasonId | Identity | Authorized resolver's clearance, not waived proof or uniqueness. |
+| UpstreamKeyLinked | e2d1b4ad-914e-41c6-9187-c589fb36d68c | Accounts | Public | Account | LinkId, ConnectionId, IdpIssuer, KeyHash‡, EvidenceId, LinkedAt | Identity | Atomic uniqueness, enforced on its source fact `UpstreamKeyLinkRecorded` (§4.1); first registration or confirmed post-hold proposal. No raw upstream id (contract v1 §7). Proof material excluded. |
+| UpstreamKeySubjectRecorded | b0f49e52-c457-484b-adf8-8a2207a36869 | Accounts | Internal | Account | LinkId, IdpIssuer, IdpSub† | Identity | Appended atomically with `UpstreamKeyLinkRecorded`, the source fact of `UpstreamKeyLinked`; the confirmed link's raw `IdpSub` (only Internal events carry it, see §5). Inside the erasure boundary. |
+| UpstreamKeyDisplayIdentifierObserved | ecb91993-88b6-42a1-bdbc-ee644bd50fca | Accounts | Internal | Account | LinkId, Login†, ObservedAt | Identity | Per key; mutable upstream login for display and `preferred_username` only. Never used for matching, linking or authorization. Inside the erasure boundary. |
+| UpstreamKeyLinkRejected | 81cf15b3-1e52-441d-b55c-0b89853f8861 | Accounts | Internal | Account | LinkProposalId, ReasonId | Identity | Terminal proposal; retry needs a new proposal/proofs. |
+| UpstreamKeyUnlinked | f84b03e3-e0c1-4593-962e-917c56e50bcc | Accounts | Public | Account | LinkId, KeyHash‡, ReasonId, UnlinkedAt | Identity | New fact, never a rewrite/transfer of the original link. Reports, asynchronously, the unlink fence that revokes every grant, refresh family and session authenticated through that key (identity-revocation-v1 §7 Unlink); the event is not the fence itself. The unlinked key stays reserved to its old account; relinking it to any account needs an explicit reviewed operation (its own catalogue extension), never automatic linking. |
 | PasskeyRegistered | assigned at implementation | Accounts | Internal | Account | PasskeyId, KeyThumbprint, RegisteredAt | Identity | Credential-store reference/thumbprint only; no attestation or key blob. |
 | PasskeyRemoved | assigned at implementation | Accounts | Internal | Account | PasskeyId, RemovedAt | Identity | No authenticator secret or recovery code. |
 | ConsentGranted | assigned at implementation | Authorization | Internal | Account | ConsentId, ClientRegistrationId, ResourceId, InstallationId, TenantId, EnvironmentId, Scopes, GrantedAt, ExpiresAt | Identity | Accepted bounded consent, not browser form/proof state. |
