@@ -5,7 +5,6 @@ using Cratis.Identity.Configuration;
 using Cratis.Identity.given;
 using Cratis.Identity.Keys;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -16,11 +15,13 @@ public class a_data_protection_ring : Specification
     protected string _directory;
     protected StoreFiles _files;
     protected SecretStoreKeys _keys;
+    protected FixedTimeProvider _time;
     protected SecretStoreXmlRepository _repository;
     protected Exception _exception;
 
     void Establish()
     {
+        _time = new FixedTimeProvider(KeyMaterial.Now);
         _directory = Path.Combine(Path.GetTempPath(), $"identity-specs-{Guid.NewGuid():N}");
         _files = new StoreFiles()
             .Pair("signing", "a", KeyMaterial.CurrentRsa())
@@ -40,7 +41,7 @@ public class a_data_protection_ring : Specification
     protected void Open()
     {
         _files.WriteTo(_directory);
-        _keys = new SecretStoreKeys(new SecretStoreOptions { Path = _directory }, new FixedTimeProvider(KeyMaterial.Now), NullLogger<SecretStoreKeys>.Instance);
+        _keys = new SecretStoreKeys(new SecretStoreOptions { Path = _directory }, _time, NullLogger<SecretStoreKeys>.Instance);
         _ = _keys.Current;
         _repository = new SecretStoreXmlRepository(_keys);
     }
@@ -49,9 +50,10 @@ public class a_data_protection_ring : Specification
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddSingleton<TimeProvider>(new FixedTimeProvider(KeyMaterial.Now));
+        services.AddSingleton<TimeProvider>(_time);
+        services.AddSingleton(_keys);
         services.AddDataProtection().SetApplicationName("Cratis.Identity").DisableAutomaticKeyGeneration();
-        services.AddOptions<KeyManagementOptions>().Configure(options => options.XmlRepository = _repository);
+        services.AddSecretStoreKeyRing();
         return services.BuildServiceProvider().GetRequiredService<IDataProtectionProvider>();
     }
 }

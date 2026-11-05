@@ -25,7 +25,7 @@ public class ConfigureServerKeys(SecretStoreKeys keys) : IConfigureOptions<OpenI
         var ring = keys.Current.Ring;
         foreach (var key in ring.Signing)
         {
-            options.SigningCredentials.Add(new SigningCredentials(new X509SecurityKey(key.Certificate), key.Algorithm));
+            options.SigningCredentials.Add(new SigningCredentials(SecurityKeyFor(key), key.Algorithm));
         }
 
         foreach (var key in ring.Encryption)
@@ -41,6 +41,15 @@ public class ConfigureServerKeys(SecretStoreKeys keys) : IConfigureOptions<OpenI
         MoveToFront(options.SigningCredentials, snapshot.Signer.Kid, _ => _.Key.KeyId);
         MoveToFront(options.EncryptionCredentials, snapshot.Encrypter.Kid, _ => _.Key.KeyId);
     }
+
+    /// <summary>
+    /// X509SecurityKey cannot sign ES256 or publish an EC JWK correctly, so EC keys use an ECDsaSecurityKey with the same kid.
+    /// </summary>
+    /// <param name="key">The <see cref="RealmKey"/>.</param>
+    /// <returns>The <see cref="SecurityKey"/>.</returns>
+    static SecurityKey SecurityKeyFor(RealmKey key) => key.Algorithm == SecurityAlgorithms.EcdsaSha256
+        ? new ECDsaSecurityKey(System.Security.Cryptography.X509Certificates.ECDsaCertificateExtensions.GetECDsaPrivateKey(key.Certificate)) { KeyId = key.Kid }
+        : new X509SecurityKey(key.Certificate);
 
     static void MoveToFront<T>(List<T> credentials, string kid, Func<T, string> kidOf)
     {

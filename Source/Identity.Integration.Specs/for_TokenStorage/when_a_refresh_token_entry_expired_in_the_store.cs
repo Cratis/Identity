@@ -16,7 +16,7 @@ public class when_a_refresh_token_entry_expired_in_the_store(IdentityHost host) 
         var (verifier, challenge) = Browser.Pkce();
         var (_, tokens) = await browser.RedeemCode(await browser.LoginForCode(challenge), verifier);
         var refreshToken = tokens.GetProperty("refresh_token").GetString()!;
-        await given.ExpiredEntries.Expire(host, "refresh_token");
+        await given.ExpiredEntries.Expire(host, given.ExpiredEntries.RefreshToken);
         (_status, _error) = await browser.Refresh(refreshToken);
         (_, _accessTokenIntrospection) = await browser.Introspect(tokens.GetProperty("access_token").GetString()!);
     }

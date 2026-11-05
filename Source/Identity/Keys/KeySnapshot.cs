@@ -20,7 +20,12 @@ public record KeySnapshot(KeyRing Ring, RealmKey Signer, RealmKey Encrypter)
         Signer.Kid != other.Signer.Kid ||
         Encrypter.Kid != other.Encrypter.Kid ||
         !Kids(Ring.Signing).SequenceEqual(Kids(other.Ring.Signing)) ||
-        !Kids(Ring.Encryption).SequenceEqual(Kids(other.Ring.Encryption));
+        !Kids(Ring.Encryption).SequenceEqual(Kids(other.Ring.Encryption)) ||
+        !DataProtectionIds(Ring).SequenceEqual(DataProtectionIds(other.Ring));
+
+    static IEnumerable<string> DataProtectionIds(KeyRing ring) => ring.DataProtection
+        .Select(_ => $"{_.Element.Attribute("id")?.Value}/{_.ActivationDate:O}/{_.ExpirationDate:O}")
+        .Order(StringComparer.Ordinal);
 
     static IEnumerable<string> Kids(IEnumerable<RealmKey> keys) => keys.Select(_ => _.Kid).Order(StringComparer.Ordinal);
 }

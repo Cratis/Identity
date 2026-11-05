@@ -14,7 +14,7 @@ public class when_an_authorization_code_entry_expired_in_the_store(IdentityHost 
         var browser = host.CreateBrowser();
         var (verifier, challenge) = Browser.Pkce();
         var code = await browser.LoginForCode(challenge);
-        await given.ExpiredEntries.Expire(host, "authorization_code");
+        await given.ExpiredEntries.Expire(host, given.ExpiredEntries.AuthorizationCode);
         (_status, _error) = await browser.RedeemCode(code, verifier);
     }
 

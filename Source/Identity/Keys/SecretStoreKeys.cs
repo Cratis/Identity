@@ -23,6 +23,7 @@ public sealed class SecretStoreKeys(SecretStoreOptions options, TimeProvider tim
     readonly KeyEligibility _eligibility = new(timeProvider);
     CancellationTokenSource _changed = new();
     KeySnapshot _current = default!;
+    bool _keysUnusable;
 
     /// <summary>
     /// Gets the current <see cref="KeySnapshot"/>.
@@ -35,6 +36,37 @@ public sealed class SecretStoreKeys(SecretStoreOptions options, TimeProvider tim
             lock (_lock)
             {
                 return _current ??= Build();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether tokens may be issued: the last read found usable keys, and the signing and
+    /// encryption keys in use have not expired since.
+    /// </summary>
+    public bool CanIssue
+    {
+        get
+        {
+            var snapshot = Current;
+            var now = timeProvider.GetUtcNow();
+            lock (_lock)
+            {
+                return !_keysUnusable && now < snapshot.Signer.NotAfter && now < snapshot.Encrypter.NotAfter;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets a cancellation token that fires with <see cref="ChangeToken"/>, for the Data Protection key ring cache.
+    /// </summary>
+    public CancellationToken CacheExpirationToken
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _changed.Token;
             }
         }
     }
@@ -76,12 +108,20 @@ public sealed class SecretStoreKeys(SecretStoreOptions options, TimeProvider tim
                 logger.ReloadRefused(exception.File, exception.Reason);
                 return;
             }
-            catch (Exception exception) when (exception is NoUsableKey or IOException or UnauthorizedAccessException)
+            catch (NoUsableKey exception)
+            {
+                // No unexpired key: fail closed rather than keep signing with an expired certificate.
+                _keysUnusable = true;
+                logger.IssuanceStopped(exception.Message);
+                return;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
                 logger.ReloadRefused(options.Path, exception.GetType().Name);
                 return;
             }
 
+            _keysUnusable = false;
             if (!next.DiffersFrom(_current))
             {
                 _current = next;

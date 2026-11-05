@@ -11,7 +11,6 @@ using Cratis.Identity.Storage;
 using Cratis.Identity.Tenants;
 using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using OpenIddict.Server;
@@ -134,8 +133,7 @@ internal static class IdentityServiceCollectionExtensions
             _ = keys.Current;
             return keys;
         });
-        services.AddSingleton<SecretStoreXmlRepository>();
-        services.AddOptions<KeyManagementOptions>().Configure<SecretStoreXmlRepository>((options, repository) => options.XmlRepository = repository);
+        services.AddSecretStoreKeyRing();
         services.AddHostedService<KeyRingReloading>();
     }
 
@@ -190,6 +188,11 @@ internal static class IdentityServiceCollectionExtensions
                 if (environment.IsDevelopment())
                 {
                     aspNetCore.DisableTransportSecurityRequirement();
+                }
+
+                if (startupOptions.SecretStore.IsConfigured)
+                {
+                    options.AddEventHandler(RefuseIssuanceWithoutUsableKey.Descriptor);
                 }
 
                 options.AddEventHandler(RejectExpiredTokenEntries.Descriptor)
