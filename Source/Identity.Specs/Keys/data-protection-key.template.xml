@@ -1,0 +1,14 @@
+<key id="{{ID}}" version="1">
+  <creationDate>{{CREATION}}</creationDate>
+  <activationDate>{{ACTIVATION}}</activationDate>
+  <expirationDate>{{EXPIRATION}}</expirationDate>
+  <descriptor deserializerType="Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel.AuthenticatedEncryptorDescriptorDeserializer, Microsoft.AspNetCore.DataProtection, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
+    <descriptor>
+      <encryption algorithm="AES_256_CBC" />
+      <validation algorithm="HMACSHA256" />
+      <masterKey enc:requiresEncryption="true" xmlns:enc="http://schemas.asp.net/2015/03/dataProtection">
+        <value>{{MASTER_KEY}}</value>
+      </masterKey>
+    </descriptor>
+  </descriptor>
+</key>
