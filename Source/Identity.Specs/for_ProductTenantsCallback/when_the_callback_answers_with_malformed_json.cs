@@ -1,0 +1,31 @@
+// Copyright (c) Cratis. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using Cratis.Identity.Tenants;
+
+namespace Cratis.Identity.for_ProductTenantsCallback;
+
+public class when_the_callback_answers_with_malformed_json : given.a_tenants_callback
+{
+    [Theory]
+    [InlineData("{")]
+    [InlineData(/*lang=json*/ "[]")]
+    [InlineData(/*lang=json*/ "{\"subject\":\"account-1\"}")]
+    [InlineData(/*lang=json*/ "{\"subject\":\"account-1\",\"tenants\":{}}")]
+    [InlineData(/*lang=json*/ "{\"subject\":\"account-1\",\"tenants\":[null]}")]
+    [InlineData(/*lang=json*/ "{\"subject\":\"account-1\",\"tenants\":[],\"extra\":[[[[[[[[]]]]]]]]}")]
+    async Task should_reject_the_body(string body)
+    {
+        handler.Body = body;
+        await Lookup(TestContext.Current.CancellationToken);
+        result.ShouldEqual(new TenantsUnavailable(TenantsUnavailableReason.Malformed));
+    }
+
+    [Fact]
+    async Task should_reject_more_than_256_tenants()
+    {
+        handler.Body = "{\"subject\":\"account-1\",\"tenants\":[" + string.Join(',', Enumerable.Range(0, 257).Select(i => $"{{\"id\":\"t-{i}\"}}")) + "]}";
+        await Lookup(TestContext.Current.CancellationToken);
+        result.ShouldEqual(new TenantsUnavailable(TenantsUnavailableReason.Malformed));
+    }
+}

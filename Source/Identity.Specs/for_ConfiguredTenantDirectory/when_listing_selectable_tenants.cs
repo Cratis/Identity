@@ -24,8 +24,8 @@ public class when_listing_selectable_tenants : Specification
 
     async Task Because()
     {
-        _forMember = await _directory.SelectableTenants(new Account("a", long.Parse(Configurations.MemberGitHubId, System.Globalization.CultureInfo.InvariantCulture), "einari", "Einar"), _direct);
-        _forStranger = await _directory.SelectableTenants(new Account("b", 42, "stranger", "Stranger"), _direct);
+        _forMember = ((TenantsListed)await _directory.SelectableTenants(new Account("a", long.Parse(Configurations.MemberGitHubId, System.Globalization.CultureInfo.InvariantCulture), "einari", "Einar"), _direct)).Tenants;
+        _forStranger = ((TenantsListed)await _directory.SelectableTenants(new Account("b", 42, "stranger", "Stranger"), _direct)).Tenants;
     }
 
     [Fact] void should_offer_a_member_the_tenants_it_is_listed_in_and_open_tenants() => _forMember.Select(_ => _.Id).ShouldContainOnly("cratis", "public");

@@ -66,7 +66,14 @@ public class AuthorizationEndpoint(
 
         var grant = ((Grantable)evaluation).Grant;
 
-        var selectable = (await tenants.SelectableTenants(account, grant.Resource, context.RequestAborted)).ToArray();
+        var lookup = await tenants.SelectableTenants(account, grant.Resource, context.RequestAborted);
+        if (lookup is not TenantsListed listed)
+        {
+            logger.TenantsUnavailable(account.Id, grant.Resource.Audience);
+            return OAuthResults.Error(Errors.TemporarilyUnavailable, "Tenant selection is unavailable right now. Try again later.");
+        }
+
+        var selectable = listed.Tenants.ToArray();
         if (selectable.Length == 0)
         {
             logger.NoSelectableTenant(account.Id, grant.Resource.Audience);

@@ -71,7 +71,14 @@ public class TokenEndpoint(
         var tenantId = granted.GetClaim(IdentityClaims.TenantId);
         foreach (var resource in grantedAudiences.Select(resources.FindByAudience))
         {
-            var selectable = resource is null ? [] : await tenants.SelectableTenants(account, resource, context.RequestAborted);
+            var lookup = resource is null ? new TenantsListed([]) : await tenants.SelectableTenants(account, resource, context.RequestAborted);
+            if (lookup is not TenantsListed listed)
+            {
+                logger.TenantsUnavailable(authorizationId, account.Id, resource!.Audience);
+                return OAuthResults.Error(Errors.TemporarilyUnavailable, "Tenant selection is unavailable right now. Try again later.");
+            }
+
+            var selectable = listed.Tenants;
             if (!selectable.Any(_ => string.Equals(_.Id, tenantId, StringComparison.Ordinal)))
             {
                 logger.TenantNoLongerSelectable(authorizationId, account.Id, tenantId, resource?.Audience ?? "(unknown)");

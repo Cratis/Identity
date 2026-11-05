@@ -29,7 +29,12 @@ public class ResourceServerOptions
     public IList<ScopeOptions> Scopes { get; set; } = [];
 
     /// <summary>
-    /// Gets or sets the tenants an account can select when authorizing access to the resource server.
+    /// Gets or sets the tenants used as Development fixtures only; refused outside Development.
     /// </summary>
     public IList<TenantOptions> Tenants { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the product-owned selectable-tenants callback.
+    /// </summary>
+    public TenantsCallbackOptions? TenantsCallback { get; set; }
 }

@@ -15,7 +15,7 @@ public class when_validating_an_indicator_shared_by_two_resources : Specificatio
     {
         var options = Configurations.TwoResourceServers();
         options.Resources[1].Indicators.Add(Configurations.DirectMcp);
-        _result = new IdentityOptionsValidation().Validate(null, options);
+        _result = new IdentityOptionsValidation(new Microsoft.Extensions.Hosting.Internal.HostingEnvironment { EnvironmentName = "Development" }).Validate(null, options);
     }
 
     [Fact] void should_fail() => _result.Failed.ShouldBeTrue();

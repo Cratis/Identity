@@ -58,7 +58,7 @@ await app.RunAsync();
 | Metadata | `/.well-known/oauth-authorization-server` (RFC 8414), `/.well-known/openid-configuration`, and JWKS at `/.well-known/jwks`. |
 | Upstream login | GitHub OAuth app (no GitHub scopes requested). The account is keyed by the numeric GitHub id, which survives login renames; the login is stored and refreshed at each sign-in. |
 | Consent | Asked on every authorization. The page shows the client, where the code will be sent, the resource, the scopes and a tenant picker. An optional `tenant` authorization request parameter preselects a tenant only if the signed-in user may choose it; the user can change the choice. It has no scripts, is protected by antiforgery and cannot be framed. `prompt=none` fails with `login_required` or `consent_required`. |
-| Tenants | `ITenantDirectory` lists the tenants an account may pick for a resource. v1 reads them from configuration and fails closed: an account must be a listed member unless the tenant sets `AllowAllAccounts`. Every code redemption and refresh re-checks the account and the tenant. |
+| Tenants | `ITenantDirectory` calls the resource's product tenants callback on every consent listing, consent submission, code redemption and refresh, without caching. Callback failures refuse consent and tokens with `temporarily_unavailable`. Configured tenants are Development fixtures only. |
 
 ## Access token contract
 
@@ -109,12 +109,30 @@ Everything is under the `Identity` section (environment variables use `Identity_
 | `Tokens:AuthorizationCodeLifetime` | `00:02:00` | |
 | `Tokens:RefreshTokenLifetime` | `30.00:00:00` | Absolute lifetime of a refresh-token family. |
 | `SessionLifetime` | `01:00:00` | The Identity site session cookie; not sliding. |
-| `Resources[]` | Direct | `Audience`, `DisplayName`, `Indicators[]`, `Scopes[]` (`Name`, `Description`), `Tenants[]` (`Id`, `Name`, `Members[]` as numeric GitHub ids, `AllowAllAccounts`). Validated at startup: duplicate audiences, indicators or scopes, fragments, and protocol scopes are rejected. |
+| `Resources[]` | Direct | `Audience`, `DisplayName`, `Indicators[]`, `Scopes[]` (`Name`, `Description`), `TenantsCallback` (`Url`, `Secret`, `Timeout`). `Tenants[]` (`Id`, `Name`, `Members[]` as numeric GitHub ids, `AllowAllAccounts`) is Development only and cannot be combined with a callback. Validated at startup: duplicate audiences, indicators or scopes, fragments, and protocol scopes are rejected. Outside Development every resource requires an HTTPS callback and a secret of at least 32 characters. |
 | `IntrospectionClients[]` | none | `ClientId`, `ClientSecret` for resource servers that introspect. |
 
 Clients are declared in code (`ClientDescriptors`) and configuration (introspection clients). The client store is reconciled at startup: undeclared clients are deleted.
 
 In development (`ASPNETCORE_ENVIRONMENT=Development`) Identity uses ephemeral signing and encryption keys, so tokens stop validating when it restarts, and it allows plain HTTP.
+
+### Tenants callback (internal, unstable until contract v1)
+
+This wire contract is **internal; changes without notice until contract v1 (Cratis/Identity#24) locks**. The product owns membership. Identity sends `POST` to the resource's `TenantsCallback:Url`, with `Accept: application/json`, `Authorization: Bearer <Secret>` and JSON:
+
+```json
+{"audience":"direct-api","subject":"canonical-account-id","github_id":"134365"}
+```
+
+The product authenticates the secret and returns HTTP 200 with `Content-Type: application/json`:
+
+```json
+{"subject":"canonical-account-id","tenants":[{"id":"t-1234","name":"My workspace"}]}
+```
+
+The subject must match exactly. `github_id` is a legacy membership key pending Direct#2472. Tenant ids must match `^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$` without normalization; incompatible ids need a product-side mapping. Responses are limited to 64 KiB and 256 tenants, with unique ids and names of at most 128 characters without control characters. Blank or missing names use the id. Redirects are not followed. Failure or an invalid response means no consent, code or token; `temporarily_unavailable` lets clients retry, including with the same unredeemed refresh token after recovery.
+
+Configure, for example, `Identity__Resources__0__TenantsCallback__Url=https://direct.example/api/internal/identity/tenants`. Supply `Secret` through the secret store or environment, never committed configuration. `Timeout` defaults to three seconds and must be greater than zero and at most ten seconds, covering connection, headers and body. Outside Development HTTPS and a secret of at least 32 characters are required; Development allows HTTP and an empty secret (no Authorization header). Production rollout must wait for an authenticated callback in each product; there is no production configuration-roster fallback.
 
 ## Running locally
 
@@ -161,7 +179,7 @@ The integration specs host the real pipeline (OpenIddict, MongoDB, consent, anti
 
 - **Public clients are not authenticated.** Anyone can present `client_id=cratis-cli` with a loopback redirect. PKCE protects the code in transit; it does not prove which program asked. The consent page says so, and `azp` is an asserted identity.
 - **Consent is the gate.** It is shown every time. Remembered consent and a "connected apps" page come later.
-- **Tenancy is chosen here but enforced by the product.** `tid` is what the user selected from `ITenantDirectory`. Resource servers must check membership and must never fall back to a default tenant.
+- **Tenancy is chosen here but enforced by the product.** `tid` is what the user selected from the product callback through `ITenantDirectory`; Identity does not cache membership. Resource servers must recheck live membership on every request and must never fall back to a default tenant.
 - **Access tokens are self-contained.** Revocation reaches refresh tokens immediately and access tokens only through introspection. Otherwise a revoked access token works until it expires (15 minutes by default).
 - **Refresh reuse is strict.** There is no reuse leeway. Even two requests that passed token validation before redemption cannot both receive successors: MongoDB's atomic token update picks at most one winner. A concurrent loser revokes the shared authorization and all existing tokens; a successor created later under that authorization also fails validation. A sequential reuse is caught at token validation, before OpenIddict's own check: the authorization is revoked first and then all its tokens, so a successor that a request which redeemed the token moments earlier stores afterwards also fails validation. The revocation fails closed; if it cannot be completed, the request fails instead of issuing tokens. A client that retries a refresh after a lost response loses the grant and must sign in again. The CLI must serialize refreshes (Cratis/cli#205).
 - **Token pruning keeps redeemed refresh tokens for the full refresh lifetime,** so a replayed stolen token is still detected as reuse.
@@ -177,7 +195,7 @@ In rough order, following the long-term architecture:
 
 1. **Client ID Metadata Documents (CIMD)** for remote MCP clients. `IClientIdMetadataDocuments` defines the contract: SSRF-safe fetching, `client_id` must equal the document URL, redirect validation, and surfacing through an OpenIddict application store decorator. Advertise `client_id_metadata_document_supported` once it exists.
 2. **Accounts, grants and consent as an event-sourced Cratis domain** (Arc and Chronicle) with an audit of grants, consents and revocations, remembered consent, and a "connected apps" page to review and revoke grants.
-3. **Product-backed tenant directory.** An `ITenantDirectory` that calls the resource server (for example Direct's selectable-tenants endpoint) instead of configuration.
+3. **Product-backed tenant directory — implemented.** Each production resource requires an authenticated product tenants callback; product-side rollout is still required.
 4. **Device authorization grant (RFC 8628)** for headless terminals, with polling intervals, `slow_down`, expiry and phishing-resistant confirmation.
 5. **Step-up and `max_age`/`acr`**: fresh authentication for sensitive consent, passkeys.
 6. **Decoupled approval requests (CIBA-style)**, so agents running unattended can ask a person to approve on another device.

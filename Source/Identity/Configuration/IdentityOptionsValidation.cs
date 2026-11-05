@@ -10,7 +10,8 @@ namespace Cratis.Identity.Configuration;
 /// Validates <see cref="IdentityOptions"/> at startup, so a misconfigured resource, scope or tenant stops the
 /// service instead of silently narrowing or widening what tokens can carry.
 /// </summary>
-public class IdentityOptionsValidation : IValidateOptions<IdentityOptions>
+/// <param name="environment">The host environment; configured tenants are Development fixtures only.</param>
+public class IdentityOptionsValidation(IHostEnvironment environment) : IValidateOptions<IdentityOptions>
 {
     /// <inheritdoc/>
     public ValidateOptionsResult Validate(string? name, IdentityOptions options)
@@ -35,6 +36,7 @@ public class IdentityOptionsValidation : IValidateOptions<IdentityOptions>
         failures.AddRange(Duplicates(options.Resources.SelectMany(_ => _.Scopes.Select(s => s.Name)), "scope"));
         failures.AddRange(Duplicates(options.IntrospectionClients.Select(_ => _.ClientId), "introspection client"));
         failures.AddRange(options.Resources.SelectMany(ValidateResource));
+        failures.AddRange(options.Resources.SelectMany(ValidateTenantsCallback));
         failures.AddRange(options.IntrospectionClients
             .Where(_ => string.IsNullOrWhiteSpace(_.ClientId) || string.IsNullOrWhiteSpace(_.ClientSecret))
             .Select(_ => $"Introspection client \"{_.ClientId}\" needs both a client id and a client secret."));
@@ -77,4 +79,50 @@ public class IdentityOptionsValidation : IValidateOptions<IdentityOptions>
 
     static IEnumerable<string> Duplicates(IEnumerable<string> values, string kind) =>
         values.GroupBy(_ => _, StringComparer.Ordinal).Where(_ => _.Count() > 1).Select(_ => $"The {kind} \"{_.Key}\" is configured more than once.");
+
+    IEnumerable<string> ValidateTenantsCallback(ResourceServerOptions resource)
+    {
+        if (!environment.IsDevelopment())
+        {
+            if (resource.Tenants.Count > 0)
+            {
+                yield return $"Resource server \"{resource.Audience}\": configured tenants are development fixtures.";
+            }
+
+            if (resource.TenantsCallback is null)
+            {
+                yield return $"Resource server \"{resource.Audience}\" needs a tenants callback outside Development.";
+            }
+        }
+
+        if (resource.TenantsCallback is not { } callback)
+        {
+            yield break;
+        }
+
+        if (resource.Tenants.Count > 0)
+        {
+            yield return $"Resource server \"{resource.Audience}\" has both configured tenants and a tenants callback. Configure one of them.";
+        }
+
+        if (!Uri.TryCreate(callback.Url, UriKind.Absolute, out var url) || url.Scheme is not ("http" or "https") ||
+            !string.IsNullOrEmpty(url.UserInfo) || !string.IsNullOrEmpty(url.Fragment))
+        {
+            yield return $"The tenants callback URL of \"{resource.Audience}\" must be an absolute HTTP(S) URI without user info or a fragment.";
+        }
+        else if (!environment.IsDevelopment() && url.Scheme != "https")
+        {
+            yield return $"The tenants callback of \"{resource.Audience}\" requires HTTPS outside Development.";
+        }
+
+        if (callback.Timeout <= TimeSpan.Zero || callback.Timeout > TimeSpan.FromSeconds(10))
+        {
+            yield return $"The tenants callback timeout of \"{resource.Audience}\" must be greater than zero and at most ten seconds.";
+        }
+
+        if (!environment.IsDevelopment() && (callback.Secret?.Length ?? 0) < 32)
+        {
+            yield return $"The tenants callback secret of \"{resource.Audience}\" must have at least 32 characters outside Development.";
+        }
+    }
 }
