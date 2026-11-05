@@ -41,7 +41,32 @@ public class IdentityOptionsValidation(IHostEnvironment environment) : IValidate
             .Where(_ => string.IsNullOrWhiteSpace(_.ClientId) || string.IsNullOrWhiteSpace(_.ClientSecret))
             .Select(_ => $"Introspection client \"{_.ClientId}\" needs both a client id and a client secret."));
 
+        ValidateAccounts(options.Accounts, failures);
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
+    }
+
+    void ValidateAccounts(AccountsOptions accounts, List<string> failures)
+    {
+        if (!accounts.EventSourced)
+        {
+            return;
+        }
+        if (!environment.IsDevelopment())
+        {
+            failures.Add("Event-sourced accounts are Development-only, pending owner decision D18.");
+        }
+        if (accounts.LookupKeyRevision < 1 || accounts.LinkHoldMinimum < TimeSpan.Zero)
+        {
+            failures.Add("Account lookup revision and link hold must be valid.");
+        }
+        if (!string.IsNullOrEmpty(accounts.LookupKey))
+        {
+            var bytes = new byte[accounts.LookupKey.Length];
+            if (!Convert.TryFromBase64String(accounts.LookupKey, bytes, out var written) || written < 32)
+            {
+                failures.Add("Account lookup key must be base64 with at least 256 bits of key material.");
+            }
+        }
     }
 
     static IEnumerable<string> ValidateResource(ResourceServerOptions resource)

@@ -14,5 +14,5 @@ public class UniqueUpstreamKey : IConstraint
         .WithName("unique-upstream-key")
         .WithMessage("The upstream key is already reserved.")
         .WithMode(UniqueConstraintMode.PerValue)
-        .On<UpstreamKeyLinked>(@event => @event.KeyHash));
+        .On<UpstreamKeyLinkRecorded>(@event => @event.KeyHash));
 }

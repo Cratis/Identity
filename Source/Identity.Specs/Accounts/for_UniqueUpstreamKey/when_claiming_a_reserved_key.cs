@@ -25,7 +25,7 @@ public class when_claiming_a_reserved_key : Specification
     async Task Because()
     {
         await _scenario.Given.ForEventSource(_first.Value).Events(Linked("v1.reserved"));
-        await _scenario.Given.ForEventSource(_first.Value).Events(new UpstreamKeyUnlinked(_link, "v1.reserved", "removed", DateTimeOffset.UnixEpoch));
+        await _scenario.Given.ForEventSource(_first.Value).Events(new UpstreamKeyUnlinkRecorded(_link, "v1.reserved", "removed", DateTimeOffset.UnixEpoch));
         var refused = await _scenario.When.ForEventSource(AccountSubject.New().Value).Events(Linked("v1.reserved"));
         refused.Errors.ShouldBeEmpty();
         _refused = refused.HasConstraintViolations;
@@ -39,5 +39,5 @@ public class when_claiming_a_reserved_key : Specification
 
     void Destroy() => _scenario.Dispose();
 
-    UpstreamKeyLinked Linked(string hash) => new(_link, "github", "https://github.com", hash, Guid.NewGuid(), DateTimeOffset.UnixEpoch);
+    UpstreamKeyLinkRecorded Linked(string hash) => new(_link, Guid.NewGuid(), "https://github.com", hash, Guid.NewGuid(), DateTimeOffset.UnixEpoch);
 }
