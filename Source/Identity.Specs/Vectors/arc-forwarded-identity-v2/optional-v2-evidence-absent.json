@@ -124,6 +124,7 @@
   },
   "then": {
     "outcome": "accept",
-    "reason": "ok"
+    "reason": "ok",
+    "callerSource": null
   }
 }

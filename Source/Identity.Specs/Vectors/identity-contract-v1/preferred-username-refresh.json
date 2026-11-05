@@ -1,0 +1,22 @@
+{
+  "name": "preferred-username-follows-the-primary-link-on-refresh",
+  "description": "On refresh the claim carries the authenticating link's latest observed login, so a rename shows up, and never another link's login.",
+  "given": {
+    "accounts": [{
+      "issuer": "https://identity.example",
+      "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+      "state": "active",
+      "linked_keys": [
+        { "idp": "https://github.com", "idp_sub": "12345", "latest_observed_login": "new-login" },
+        { "idp": "https://login.example/directory-b", "idp_sub": "user-7", "latest_observed_login": "alice" }
+      ]
+    }],
+    "grant": { "authenticated_via": { "idp": "https://github.com", "idp_sub": "12345" }, "login_at_authentication": "old-login" }
+  },
+  "when": { "action": "refresh", "id_token": true },
+  "then": {
+    "outcome": "refreshed",
+    "id_token_claims": { "preferred_username": "new-login" },
+    "primary_link": { "idp": "https://github.com", "idp_sub": "12345" }
+  }
+}

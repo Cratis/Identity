@@ -140,6 +140,7 @@
   },
   "then": {
     "outcome": "reject",
-    "reason": "freshness"
+    "reason": "freshness",
+    "callerSource": null
   }
 }

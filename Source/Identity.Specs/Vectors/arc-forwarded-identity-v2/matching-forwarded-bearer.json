@@ -137,17 +137,26 @@
       "storeAvailable": true,
       "storeFull": false,
       "replica": "replica-a",
-      "realmIssuer": "https://identity.example.test"
+      "realmIssuer": "https://identity.example.test",
+      "verifiedBearer": {
+        "verifier": "oauth-verifier",
+        "accountKey": {
+          "issuer": "https://identity.example.test",
+          "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32"
+        },
+        "accepted": true
+      }
     },
     "nonceReservations": []
   },
   "when": {
     "action": "verify_forwarded_identity_v2",
-    "envelope": "v2.k1.1700000000.AAECAwQFBgcICQoLDA0ODw.wpwqME2pD1gNO9E1kTul250ZPduqmZOHxlSixt4Y9uWhtPn7i6wEo0xsytazPLH4RbMEdsg64NT_PnD-PnNhXQ",
+    "envelope": "v2.k1.1700000000.AAECAwQFBgcICQoLDA0ODw.zBsBt9nuWWjYBDAugmpODcIYez1rCmOCTlBCwCviWE34Fm6buWagh53OnHeEkadLvb8YF3jCXk29wa4k-T25xQ",
     "signingInput": "Cratis.AuthProxy.ForwardedIdentity.v2\n11:example-api\n2:k1\n10:1700000000\n22:AAECAwQFBgcICQoLDA0ODw\n4:POST\n18:/api/a%2Fb//./task\n2:25\n10:service-id\n12:service-test\n9:tenant-id\n11:tenant-test\n12:x-cratis-acr\n5:basic\n12:x-cratis-act\n72:eyJpc3MiOiJodHRwczovL2FjdG9ycy5leGFtcGxlLnRlc3QiLCJzdWIiOiJhZ2VudC03In0=\n12:x-cratis-amr\n12:WyJwd2QiXQ==\n18:x-cratis-auth-time\n10:1699999900\n22:x-cratis-credential-id\n12:session-test\n24:x-cratis-credential-kind\n15:browser-session\n31:x-cratis-forwarded-token-sha256\n43:oE7VEbKFPPhLDMKET07Q5lTVeLOz4fK3qYYgZhgxWP4\n17:x-cratis-grant-id\n10:grant-test\n12:x-cratis-idp\n26:https://login.example.test\n15:x-cratis-issuer\n29:https://identity.example.test\n21:x-cratis-microservice\n12:service-test\n26:x-cratis-on-behalf-context\n6:opaque\n21:x-cratis-policy-epoch\n1:7\n23:x-cratis-sender-binding\n4:none\n16:x-cratis-subject\n36:8b167ad2-0f89-4c78-9d42-6d4580495d32\n18:x-cratis-tenant-id\n11:tenant-test\n24:x-cratis-token-client-id\n11:client-test\n20:x-cratis-token-scope\n26:example:read example:write\n16:x-example-tenant\n11:tenant-test\n21:x-ms-client-principal\n208:eyJpZGVudGl0eVByb3ZpZGVyIjoiaHR0cHM6Ly9sb2dpbi5leGFtcGxlLnRlc3QiLCJ1c2VySWQiOiI4YjE2N2FkMi0wZjg5LTRjNzgtOWQ0Mi02ZDQ1ODA0OTVkMzIiLCJ1c2VyRGV0YWlscyI6IlRlc3QgVXNlciIsInVzZXJSb2xlcyI6WyJ1c2VyIl0sImNsYWltcyI6W119\n31:x-ms-client-principal-extension\n16:opaque,extension\n24:x-ms-client-principal-id\n36:8b167ad2-0f89-4c78-9d42-6d4580495d32\n26:x-ms-client-principal-name\n9:Test User\n"
   },
   "then": {
     "outcome": "accept",
-    "reason": "ok"
+    "reason": "ok",
+    "callerSource": "oauth-verifier"
   }
 }
