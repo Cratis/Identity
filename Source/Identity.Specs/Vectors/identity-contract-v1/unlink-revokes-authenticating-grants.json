@@ -1,0 +1,27 @@
+{
+  "name": "unlinking-the-authenticating-key-denies-refresh",
+  "description": "Unlinking the key a grant authenticated through revokes that grant's refresh family, so the refresh is denied; the grant authenticated through another link keeps working and its preferred_username never falls back across links.",
+  "given": {
+    "accounts": [{
+      "issuer": "https://identity.example",
+      "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+      "state": "active",
+      "linked_keys": [
+        { "idp": "https://login.example/directory-b", "idp_sub": "user-7", "latest_observed_login": "alice" }
+      ],
+      "unlinked_keys": [
+        { "idp": "https://github.com", "idp_sub": "12345", "latest_observed_login": "new-login" }
+      ]
+    }],
+    "grants": [
+      { "grant": "grant-github", "authenticated_via": { "idp": "https://github.com", "idp_sub": "12345" } },
+      { "grant": "grant-directory", "authenticated_via": { "idp": "https://login.example/directory-b", "idp_sub": "user-7" } }
+    ]
+  },
+  "when": { "action": "refresh_each_grant", "id_token": true },
+  "then": {
+    "grant-github": { "outcome": "refused", "reason": "authenticating_link_unlinked", "refresh_family_revoked": true },
+    "grant-directory": { "outcome": "refreshed", "id_token_claims": { "preferred_username": "alice" } },
+    "falls_back_to_other_link": false
+  }
+}
