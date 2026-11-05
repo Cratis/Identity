@@ -80,14 +80,30 @@ internal class ProductTenantsCallback(IHttpClientFactory clients, ILogger<Produc
             }
 
             using var document = JsonDocument.Parse(bytes.AsMemory(0, length), new JsonDocumentOptions { MaxDepth = 8 });
-            var body = document.RootElement;
-            if (body.ValueKind == JsonValueKind.Object && body.TryGetProperty("subject", out var subject) &&
-                subject.ValueKind == JsonValueKind.String && !string.Equals(subject.GetString(), account.Id, StringComparison.Ordinal))
+            IEnumerable<SelectableTenant>? tenants;
+            try
             {
-                return Unavailable(TenantsUnavailableReason.WrongSubject);
+                var body = document.RootElement;
+                if (body.ValueKind != JsonValueKind.Object || !body.TryGetProperty("subject", out var subject) ||
+                    subject.ValueKind != JsonValueKind.String)
+                {
+                    return Unavailable(TenantsUnavailableReason.Malformed);
+                }
+
+                var subjectId = subject.GetString();
+                if (!string.Equals(subjectId, account.Id, StringComparison.Ordinal))
+                {
+                    return Unavailable(TenantsUnavailableReason.WrongSubject);
+                }
+
+                tenants = TenantsCallbackResponse.Read(body);
+            }
+            catch (InvalidOperationException)
+            {
+                // JSON strings containing unpaired surrogates cannot be decoded.
+                return Unavailable(TenantsUnavailableReason.Malformed);
             }
 
-            var tenants = TenantsCallbackResponse.Read(body, account.Id);
             deadline.Token.ThrowIfCancellationRequested();
             return tenants is null ? Unavailable(TenantsUnavailableReason.Malformed) : new TenantsListed(tenants);
         }

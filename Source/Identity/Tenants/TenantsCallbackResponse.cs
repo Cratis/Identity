@@ -15,15 +15,11 @@ internal static partial class TenantsCallbackResponse
     /// <summary>
     /// Defensively reads the internal callback answer without normalizing product identifiers.
     /// </summary>
-    /// <param name="body">The bounded JSON response.</param>
-    /// <param name="expectedSubject">The exact requested subject.</param>
+    /// <param name="body">The bounded JSON response with its subject already validated.</param>
     /// <returns>The selectable tenants, or null for a malformed answer.</returns>
-    internal static IEnumerable<SelectableTenant>? Read(JsonElement body, string expectedSubject)
+    internal static IEnumerable<SelectableTenant>? Read(JsonElement body)
     {
-        if (body.ValueKind != JsonValueKind.Object ||
-            !body.TryGetProperty("subject", out var subject) || subject.ValueKind != JsonValueKind.String ||
-            !string.Equals(subject.GetString(), expectedSubject, StringComparison.Ordinal) ||
-            !body.TryGetProperty("tenants", out var tenants) || tenants.ValueKind != JsonValueKind.Array ||
+        if (!body.TryGetProperty("tenants", out var tenants) || tenants.ValueKind != JsonValueKind.Array ||
             tenants.GetArrayLength() > 256)
         {
             return null;
@@ -34,27 +30,38 @@ internal static partial class TenantsCallbackResponse
         foreach (var tenant in tenants.EnumerateArray())
         {
             if (tenant.ValueKind != JsonValueKind.Object ||
-                !tenant.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.String ||
-                !TenantId.IsMatch(id.GetString()!) || !ids.Add(id.GetString()!))
+                !tenant.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.String)
             {
                 return null;
             }
 
-            var name = id.GetString()!;
+            var tenantId = id.GetString()!;
+            if (!TenantId.IsMatch(tenantId) || !ids.Add(tenantId))
+            {
+                return null;
+            }
+
+            var name = tenantId;
             if (tenant.TryGetProperty("name", out var displayName))
             {
-                if (displayName.ValueKind != JsonValueKind.String || displayName.GetString()!.Length > 128 || displayName.GetString()!.Any(char.IsControl))
+                if (displayName.ValueKind != JsonValueKind.String)
                 {
                     return null;
                 }
 
-                if (!string.IsNullOrWhiteSpace(displayName.GetString()))
+                var displayNameValue = displayName.GetString()!;
+                if (displayNameValue.Length > 128 || displayNameValue.Any(char.IsControl))
                 {
-                    name = displayName.GetString()!;
+                    return null;
+                }
+
+                if (!string.IsNullOrWhiteSpace(displayNameValue))
+                {
+                    name = displayNameValue;
                 }
             }
 
-            result.Add(new SelectableTenant(id.GetString()!, name));
+            result.Add(new SelectableTenant(tenantId, name));
         }
 
         return result;
