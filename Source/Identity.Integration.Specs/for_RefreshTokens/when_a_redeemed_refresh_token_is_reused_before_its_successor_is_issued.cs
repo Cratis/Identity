@@ -9,6 +9,7 @@ namespace Cratis.Identity.Integration.for_RefreshTokens;
 /// leave the authorization valid, so the successor stored afterwards would keep working.
 /// </summary>
 /// <param name="host">The <see cref="IdentityHost"/>.</param>
+[Requirement(Requirements.RefreshReuseRevokes)]
 [Collection(IdentityCollection.Name)]
 public class when_a_redeemed_refresh_token_is_reused_before_its_successor_is_issued(IdentityHost host) : IAsyncLifetime
 {

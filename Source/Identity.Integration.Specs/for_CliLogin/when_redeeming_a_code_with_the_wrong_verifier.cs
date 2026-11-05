@@ -3,6 +3,7 @@
 
 namespace Cratis.Identity.Integration.for_CliLogin;
 
+[Requirement(Requirements.PkceVerifierBound)]
 [Collection(IdentityCollection.Name)]
 public class when_redeeming_a_code_with_the_wrong_verifier(IdentityHost host) : IAsyncLifetime
 {

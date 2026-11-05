@@ -3,6 +3,7 @@
 
 namespace Cratis.Identity.Integration.for_RefreshTokens;
 
+[Requirement(Requirements.RefreshRotation), Requirement(Requirements.RefreshReuseRevokes)]
 [Collection(IdentityCollection.Name)]
 public class when_a_rotated_refresh_token_is_reused(IdentityHost host) : IAsyncLifetime
 {

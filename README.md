@@ -60,6 +60,8 @@ await app.RunAsync();
 | Consent | Asked on every authorization. The page shows the client, where the code will be sent, the resource, the scopes and a tenant picker. An optional `tenant` authorization request parameter preselects a tenant only if the signed-in user may choose it; the user can change the choice. It has no scripts, is protected by antiforgery and cannot be framed. `prompt=none` fails with `login_required` or `consent_required`. |
 | Tenants | `ITenantDirectory` calls the resource's product tenants callback on every consent listing, consent submission, code redemption and refresh, without caching. Callback failures refuse consent and tokens with `temporarily_unavailable`. Configured tenants are Development fixtures only. |
 
+Protocol obligations, executable proofs, known gaps and the OpenIddict upgrade checklist are in the [conformance catalogue](Documentation/conformance.md).
+
 ## Access token contract
 
 Access tokens are signed JWTs (`typ: at+jwt`, RS256), not encrypted. Default lifetime: 15 minutes.

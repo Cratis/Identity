@@ -3,6 +3,7 @@
 
 global using System.Net;
 global using System.Text.Json;
+global using Cratis.Identity.Integration.Conformance;
 global using Cratis.Identity.Integration.given;
 global using Cratis.Specifications;
 global using Xunit;
