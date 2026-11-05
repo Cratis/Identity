@@ -10,7 +10,8 @@
     { "order": 5, "t": 2, "action": "attempt_refresh", "expected": "deny" },
     { "order": 6, "t": 3, "action": "reapply_log_fence_and_reconstruct_outbox", "fence_sequence": 41 },
     { "order": 7, "t": 4, "action": "append_missing_fact_once_and_checkpoint_both_stores", "watermark": 41 },
-    { "order": 8, "t": 5, "action": "open_recovered_class_and_attempt_refresh", "expected": "deny" }
+    { "order": 8, "t": 5, "action": "durably_epoch_invalidate_refresh_families_and_approvals_active_at_or_after_operational_snapshot", "snapshot_watermark": 40, "expected_ready": false },
+    { "order": 9, "t": 6, "action": "open_recovered_class_and_attempt_refresh", "expected": "deny" }
   ],
-  "then": { "ready": true, "family_redemption": "deny", "log_watermark": 41, "operational_watermark": 41, "chronicle_watermark": 41, "fence_count": 1, "chronicle_fact_count": 1, "new_tokens_from_replay": 0 }
+  "then": { "ready": true, "consumption_recovered_before_ready": true, "family_redemption": "deny", "log_watermark": 41, "operational_watermark": 41, "chronicle_watermark": 41, "fence_count": 1, "chronicle_fact_count": 1, "new_tokens_from_replay": 0 }
 }
