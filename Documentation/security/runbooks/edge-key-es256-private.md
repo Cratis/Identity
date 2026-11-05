@@ -18,7 +18,7 @@ Create distinct replacement private keys per affected app in AuthProxy-only cust
 
 ## Revocation actions
 
-For every affected app, fence sessions, exposed OAuth authorizations/refresh families, delegation lineage and approvals; revoke exposed product-local PATs at their own authorities. Advance applicable app/grant invalidation epochs through a trusted mechanism; if a realm-wide invalidation is necessary, coordinate the wider scope explicitly. Require fence/outbox and independent log acknowledgement, and verify status/epoch enforcement before readiness. Use the shared rules' offline-token denial/expiry boundary; a new edge signature alone does not revoke old credentials.
+For every affected app, fence sessions, exposed OAuth authorizations/refresh families, delegation lineage and approvals; revoke all product-local PATs, delegation grants and approvals issued in the exposure window at their own authorities, and have each product owner review and reverse memberships, role grants and invitations created or changed in the window (forged envelopes can impersonate existing administrators). Recovery is not complete until these footholds are removed or confirmed legitimate by the affected person through a fresh, verified sign-in. Advance applicable app/grant invalidation epochs through a trusted mechanism; if a realm-wide invalidation is necessary, coordinate the wider scope explicitly. Require fence/outbox and independent log acknowledgement, and verify status/epoch enforcement before readiness. Use the shared rules' offline-token denial/expiry boundary; a new edge signature alone does not revoke old credentials.
 
 ## Audit review for the exposure window
 
