@@ -1,0 +1,18 @@
+{
+    "name": "wrong-ath",
+    "description": "A validly signed proof carrying a different access-token hash is refused.",
+    "given": {
+        "authorization_scheme": "DPoP",
+        "proof": { "header": {}, "payload": { "ath": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" }, "signature": "valid" }
+    },
+    "when": { "action": "validate_at_authproxy_and_forward_v2" },
+    "then": {
+        "outcome": "reject",
+        "reason": "invalid_ath",
+        "http_status": 401,
+        "challenge_scheme": "DPoP",
+        "error": "invalid_dpop_proof",
+        "algs": "ES256",
+        "forwarded": false
+    }
+}

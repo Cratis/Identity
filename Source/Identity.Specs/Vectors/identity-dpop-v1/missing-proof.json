@@ -1,0 +1,15 @@
+{
+    "name": "missing-proof",
+    "description": "A bound access token without a proof is never forwarded.",
+    "given": { "authorization_scheme": "DPoP", "proof": null },
+    "when": { "action": "validate_at_authproxy_and_forward_v2" },
+    "then": {
+        "outcome": "reject",
+        "reason": "missing_proof",
+        "http_status": 401,
+        "challenge_scheme": "DPoP",
+        "error": "invalid_dpop_proof",
+        "algs": "ES256",
+        "forwarded": false
+    }
+}

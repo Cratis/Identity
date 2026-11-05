@@ -1,0 +1,18 @@
+{
+    "name": "alg-none",
+    "description": "An unsecured proof is rejected by the fixed algorithm allowlist before signature verification.",
+    "given": {
+        "authorization_scheme": "DPoP",
+        "proof": { "header": { "alg": "none" }, "payload": {}, "signature": "invalid" }
+    },
+    "when": { "action": "validate_at_authproxy_and_forward_v2" },
+    "then": {
+        "outcome": "reject",
+        "reason": "invalid_alg",
+        "http_status": 401,
+        "challenge_scheme": "DPoP",
+        "error": "invalid_dpop_proof",
+        "algs": "ES256",
+        "forwarded": false
+    }
+}

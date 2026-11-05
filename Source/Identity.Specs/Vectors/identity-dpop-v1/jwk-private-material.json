@@ -1,0 +1,30 @@
+{
+    "name": "jwk-private-material",
+    "description": "A proof JWK carrying a private member is rejected; the d value is a non-key sentinel.",
+    "given": {
+        "authorization_scheme": "DPoP",
+        "proof": {
+            "header": {
+                "jwk": {
+                    "kty": "EC",
+                    "crv": "P-256",
+                    "x": "axfR8uEsQkf4vOblY6RA8ncDfYEt6zOg9KE5RdiYwpY",
+                    "y": "T-NC4v4af5uO5-tKfA-eFivOM1drMV7Oy7ZAaDe_UfU",
+                    "d": "not-private-key-material"
+                }
+            },
+            "payload": {},
+            "signature": "valid"
+        }
+    },
+    "when": { "action": "validate_at_authproxy_and_forward_v2" },
+    "then": {
+        "outcome": "reject",
+        "reason": "invalid_jwk",
+        "http_status": 401,
+        "challenge_scheme": "DPoP",
+        "error": "invalid_dpop_proof",
+        "algs": "ES256",
+        "forwarded": false
+    }
+}
