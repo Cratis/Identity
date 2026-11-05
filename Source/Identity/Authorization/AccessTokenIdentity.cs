@@ -4,6 +4,7 @@
 using System.Globalization;
 using System.Security.Claims;
 using Cratis.Identity.Accounts;
+using Cratis.Identity.Contracts;
 using Cratis.Identity.Tenants;
 using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;

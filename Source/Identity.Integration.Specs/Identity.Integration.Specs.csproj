@@ -27,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../Identity.Host/Identity.Host.csproj" />
     <ProjectReference Include="../Identity/Identity.csproj" />
   </ItemGroup>
 

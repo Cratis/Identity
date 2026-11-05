@@ -21,6 +21,29 @@ It is built on [OpenIddict](https://documentation.openiddict.com/) 7 as an embed
 - **AuthProxy stays an edge.** It validates Identity tokens; it does not issue them or hold grant state (Cratis/AuthProxy#143).
 - **Products stay resource servers.** A token says who the user is, which tenant they chose, and what the client may attempt. The product decides whether that user may actually do it in that tenant.
 
+## Packages
+
+| Package | Contents |
+| --- | --- |
+| `Cratis.Identity` | The module: OpenIddict server, stores, `AddCratisIdentity()` and `MapCratisIdentity()`. |
+| `Cratis.Identity.Contracts` | The contracts a resource server reads, such as the access token claim types. |
+| `@cratis/identity` | TypeScript proxies generated from the module by the Arc proxy generator. |
+
+CI builds and packs all three as artifacts. Nothing is published until the W0 specs (#24, #26) are locked. The supported surface is `AddCratisIdentity`, `MapCratisIdentity` and the `Identity` configuration section; other public types are implementation detail and may become internal.
+
+## Hosting Identity
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+builder.AddCratisIdentity();
+
+var app = builder.Build();
+app.MapCratisIdentity();
+await app.RunAsync();
+```
+
+`MapCratisIdentity` adds the security headers and authentication middleware before it maps the endpoints, so call it before the host's own endpoints. `Source/Identity.Host` is the sample host and the standalone server that the Docker image runs.
+
 ## What v1 implements
 
 | Area | Behavior |
@@ -112,7 +135,7 @@ In development (`ASPNETCORE_ENVIRONMENT=Development`) Identity uses ephemeral si
 
 4. Check the metadata at <http://localhost:5100/.well-known/oauth-authorization-server>.
 
-To run from source instead, start MongoDB on `localhost:27017` and set `Identity__Issuer=http://localhost:5100/`, `Identity__GitHub__ClientId`, `Identity__GitHub__ClientSecret`, `Identity__Resources__0__Tenants__0__Id=local` and `Identity__Resources__0__Tenants__0__Members__0` (your numeric GitHub id). Then run `ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5100 dotnet run --project Source/Identity`. Your GitHub OAuth app must have the matching callback URL.
+To run from source instead, start MongoDB on `localhost:27017` and set `Identity__Issuer=http://localhost:5100/`, `Identity__GitHub__ClientId`, `Identity__GitHub__ClientSecret`, `Identity__Resources__0__Tenants__0__Id=local` and `Identity__Resources__0__Tenants__0__Members__0` (your numeric GitHub id). Then run `ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5100 dotnet run --project Source/Identity.Host`. Your GitHub OAuth app must have the matching callback URL.
 
 The compose file configures one tenant, `local`, for your GitHub user and binds the HTTP port to loopback only. The Dockerfile builds the app in the .NET 10 SDK and runs it as a non-root user in the .NET 10 chiseled image; compose is **development only**, not a production deployment recipe.
 
@@ -126,8 +149,10 @@ The CLI sends `client_id=cratis-cli`, `response_type=code`, `code_challenge_meth
 
 ```shell
 dotnet build Identity.slnx -c Release
-dotnet test Source/Identity.Specs
-dotnet test Source/Identity.Integration.Specs   # needs Docker: starts MongoDB 8.0.14 with Testcontainers
+./Source/Identity.Specs/bin/Release/net10.0/Cratis.Identity.Specs
+./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs   # needs Docker: starts MongoDB 8.0.14 with Testcontainers
+dotnet pack Identity.slnx -c Release --no-build --output Artifacts/NuGet
+(cd Source/JavaScript/Identity && npm ci && npm run build && npm pack --pack-destination ../../../Artifacts/npm)
 ```
 
 The integration specs host the real pipeline (OpenIddict, MongoDB, consent, antiforgery, token endpoint) and replace only GitHub with a fake upstream login that uses the same account linking.
