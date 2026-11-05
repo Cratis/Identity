@@ -14,7 +14,7 @@ public partial class when_consent_lists_the_callback_tenants(IdentityHost host) 
     string _page;
     TokenValidationResult _token;
 
-    [GeneratedRegex("<option value=\"(?<id>[^\"]+)\"", RegexOptions.ExplicitCapture, 1000)]
+    [GeneratedRegex("<input type=\"radio\" name=\"consent_tenant\" value=\"(?<id>[^\"]+)\"", RegexOptions.ExplicitCapture, 1000)]
     private static partial Regex TenantOptions { get; }
 
     public async ValueTask InitializeAsync()
