@@ -14,8 +14,9 @@
     {
       "name": "upstream-idp-sub-without-pii-fails",
       "given": {
+        "visibility": "Internal",
         "event": {
-          "name": "UpstreamKeyLinked",
+          "name": "UpstreamKeySubjectRecorded",
           "properties": [{ "name": "idp_sub", "type": "System.String", "pii": false }]
         }
       },
@@ -27,6 +28,25 @@
     },
     {
       "name": "upstream-subject-concept-pii-passes",
+      "given": {
+        "visibility": "Internal",
+        "event": {
+          "name": "UpstreamKeySubjectRecorded",
+          "properties": [{ "name": "IdpSub", "type": "UpstreamSubject" }]
+        },
+        "concepts": {
+          "UpstreamSubject": {
+            "underlyingType": "System.String",
+            "attributes": ["Cratis.Chronicle.Compliance.GDPR.PIIAttribute"],
+            "complianceDetails": "Immutable upstream identifier needed for verified linking."
+          }
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": { "outcome": "pass", "violations": [] }
+    },
+    {
+      "name": "public-link-event-with-upstream-subject-fails",
       "given": {
         "event": {
           "name": "UpstreamKeyLinked",
@@ -41,7 +61,39 @@
         }
       },
       "when": { "action": "check_event_contract" },
-      "then": { "outcome": "pass", "violations": [] }
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "IdpSub", "reason": "public_upstream_identifier" }]
+      }
+    },
+    {
+      "name": "public-event-with-pii-marked-login-fails",
+      "given": {
+        "event": {
+          "name": "UpstreamKeyLinked",
+          "properties": [{ "name": "Login", "type": "System.String", "pii": true }]
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "Login", "reason": "public_upstream_identifier" }]
+      }
+    },
+    {
+      "name": "display-login-without-pii-fails",
+      "given": {
+        "visibility": "Internal",
+        "event": {
+          "name": "UpstreamKeyDisplayIdentifierObserved",
+          "properties": [{ "name": "Login", "type": "System.String" }]
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "Login", "reason": "missing_pii" }]
+      }
     },
     {
       "name": "email-without-pii-fails",
@@ -100,10 +152,10 @@
     {
       "name": "internal-prior-generation-is-not-exempt",
       "given": {
-        "eventMarker": "EventTypeGenerationFor<UpstreamKeyLinked>",
+        "eventMarker": "EventTypeGenerationFor<UpstreamKeySubjectRecorded>",
         "visibility": "Internal",
         "event": {
-          "name": "UpstreamKeyLinkedV1",
+          "name": "UpstreamKeySubjectRecordedV1",
           "properties": [{ "name": "IdpSub", "type": "System.String" }]
         }
       },

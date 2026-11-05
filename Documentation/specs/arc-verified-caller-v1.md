@@ -60,7 +60,7 @@ For delegated calls, the grant record's `accountKey`, current `actor` (`iss`, `s
 
 When a verified AuthProxy identity envelope covers the exact Authorization value and therefore counts with it as one credential, the caller MUST be built only from that bearer's own verification path: the application PAT verifier for a PAT-namespace value, the OAuth verifier otherwise. The envelope MUST NOT substitute for bearer verification; it only binds the forwarded bearer to the hop. The envelope's signed subject/account key MUST equal the verified bearer's; otherwise the request MUST be refused.
 
-An envelope covering a PAT-namespace value under any Authorization scheme MUST be refused unless its credential kind is `pat`, as defined by forwarded identity v2 (Cratis/Arc#3698). Even a `pat`-kind envelope MUST NOT replace local PAT verification, including revocation, scope ceiling, and policy epoch checks.
+An envelope covering a PAT-namespace value under any Authorization scheme MUST be refused unless its credential kind is `pat`, as defined by forwarded identity v2 (Cratis/Arc#3698). Even a `pat`-kind envelope MUST NOT replace local PAT verification, including revocation, scope ceiling, policy epoch, and recovery epoch checks. PAT verification MUST compare the PAT record's recovery epoch with the current authority/realm recovery epoch from independent custody, per [identity-revocation-v1.md](identity-revocation-v1.md) §6; an older, missing, or unavailable epoch MUST cause refusal, with no policy re-evaluation.
 
 ### Credential matrix
 

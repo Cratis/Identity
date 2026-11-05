@@ -1,0 +1,18 @@
+{
+  "name": "restore_delegation_budget",
+  "description": "Restoring spent budget, reservations and idempotency records cannot authorize a second spend from an old delegation tree.",
+  "given": { "target": "grant-root", "child": "grant-child", "lineage": ["grant-root", "grant-child"], "recovery_epoch": 7, "root_budget": 1, "child_reservation": 1, "child_available_budget": 1, "operational_snapshot_watermark": 40, "log_watermark": 40, "chronicle_watermark": 40 },
+  "when": [
+    { "order": 1, "t": 0, "action": "snapshot_operational_store", "watermark": 40, "child_available_budget": 1 },
+    { "order": 2, "t": 1, "action": "commit_budget_consumption_with_idempotency_key", "grant": "grant-child", "idempotency_key": "spend-1", "child_available_budget": 0, "expected": "allow" },
+    { "order": 3, "t": 2, "action": "restore_operational_snapshot", "watermark": 40, "child_available_budget": 1, "expected_ready": false },
+    { "order": 4, "t": 3, "action": "durably_advance_recovery_epoch_outside_both_stores", "recovery_epoch": 8, "fence_sequence": 41, "log_watermark": 41, "outbox_id": "recovery-fact-41", "expected_ready": false },
+    { "order": 5, "t": 4, "action": "persist_operational_watermark_and_publication_intent", "watermark": 41, "outbox_id": "recovery-fact-41", "event_type": "RealmRecoveryEpochAdvanced" },
+    { "order": 6, "t": 5, "action": "prove_independent_restriction_coverage_and_retirement_tombstones", "barrier": 41 },
+    { "order": 7, "t": 6, "action": "enforce_epoch_on_all_replicas_and_persist_recovery_readiness", "recovery_epoch": 8 },
+    { "order": 8, "t": 7, "action": "tool_call_with_existing_child_checks_all_ancestors", "idempotency_key": "spend-1", "expected": "deny" },
+    { "order": 9, "t": 8, "action": "tool_call_with_existing_child_checks_all_ancestors", "idempotency_key": "spend-2", "expected": "deny" },
+    { "order": 10, "t": 9, "action": "attempt_child_creation_from_old_root", "expected": "deny" }
+  ],
+  "then": { "ready": true, "recovery_epoch": 8, "root_and_descendant_grants": "epoch_invalidated", "restored_budgets_reservations_and_idempotency_records_usable": false, "spends_before_restore": 1, "spends_after_restore": 0, "new_child_issued": false, "log_watermark": 41, "operational_watermark": 41, "pending_outbox_fact_count": 1, "all_affected_verifiers_enforce_epoch_before_readiness": true }
+}

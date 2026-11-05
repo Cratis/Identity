@@ -1,0 +1,21 @@
+{
+  "name": "restore_lost_account_disable",
+  "description": "A healthy recovery epoch cannot authorize fresh login while a lost AccountDisabled restriction remains unrecovered.",
+  "given": { "target": "account-1", "account_state": "enabled", "recovery_epoch": 7, "both_snapshot_watermarks": 40, "log_watermark": 40, "monotonic_epoch_authority": "healthy_outside_both_restorable_stores", "independent_audit_available": true, "sequence_allocator": "independent_custody", "allocated_through": 41 },
+  "when": [
+    { "order": 1, "t": 0, "action": "commit_fence_and_outbox", "target": "account-1", "event_type": "AccountDisabled", "fence_sequence": 41, "outbox_id": "disable-fact-41", "operational_watermark": 41 },
+    { "order": 2, "t": 1, "action": "record_committed_restriction_in_independent_audit", "event_type": "AccountDisabled", "fence_sequence": 41, "outbox_id": "disable-fact-41", "log_watermark": 40 },
+    { "order": 3, "t": 2, "action": "restore_both_stores_but_not_independent_log", "watermark": 40, "expected_ready": false },
+    { "order": 4, "t": 3, "action": "durably_advance_recovery_epoch_outside_both_stores", "recovery_epoch": 8, "fence_sequence": 42, "outbox_id": "recovery-fact-42", "expected_ready": false },
+    { "order": 5, "t": 4, "action": "enforce_epoch_on_all_replicas", "recovery_epoch": 8, "expected_ready": false },
+    { "order": 6, "t": 5, "action": "attempt_fresh_login", "expected": "deny_not_ready" },
+    { "order": 7, "t": 6, "action": "owner_reconcile_restrictions_against_independent_audit", "event_type": "AccountDisabled", "fence_sequence": 41, "outbox_id": "disable-fact-41", "account_state": "disabled" },
+    { "order": 8, "t": 7, "action": "durably_append_independent_log", "log_watermark": 42 },
+    { "order": 9, "t": 8, "action": "persist_operational_watermark_and_publication_intent", "watermark": 42, "outbox_id": "recovery-fact-42", "event_type": "RealmRecoveryEpochAdvanced" },
+    { "order": 10, "t": 9, "action": "append_missing_facts_once_and_checkpoint_both_stores", "watermark": 42 },
+    { "order": 11, "t": 10, "action": "prove_independent_restriction_coverage_and_retirement_tombstones", "barrier": 42 },
+    { "order": 12, "t": 11, "action": "enforce_epoch_on_all_replicas_and_persist_recovery_readiness", "recovery_epoch": 8 },
+    { "order": 13, "t": 12, "action": "attempt_fresh_login", "expected": "deny_account_disabled" }
+  ],
+  "then": { "ready": true, "ready_before_restriction_recovery": false, "recovery_epoch": 8, "account_state": "disabled", "issuance_before_restriction_recovery": "deny", "disabled_account_issuance_after_recovery": "deny", "epoch_invalidation_replaces_restriction_recovery": false, "new_credentials_issued": 0, "log_watermark": 42, "operational_watermark": 42, "chronicle_watermark": 42 }
+}
