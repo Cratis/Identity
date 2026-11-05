@@ -1,7 +1,7 @@
 # Design notes
 
-Draft design notes guide implementation; they do not replace the [specifications](../specs/README.md) or record approval of pending decisions.
+Design notes guide implementation; they do not replace the [specifications](../specs/README.md). A Draft note does not record approval of pending decisions; a Locked note was signed off in [Identity #14](https://github.com/Cratis/Identity/issues/14).
 
 | Doc id | Version | Status | Document |
 |---|---|---|---|
-| identity-package-and-storage | 1 | Draft | [Identity package, storage and host UI design](identity-package-and-storage-v1.md) |
+| identity-package-and-storage | 1 | Locked | [Identity package, storage and host UI design](identity-package-and-storage-v1.md) |

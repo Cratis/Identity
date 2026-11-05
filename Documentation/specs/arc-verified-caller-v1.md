@@ -3,7 +3,8 @@
 ```text
 Spec id: arc-verified-caller
 Version: 1
-Status: Draft
+Status: Locked
+Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
 Issue: https://github.com/Cratis/Arc/issues/3701
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -14,7 +15,7 @@ Supersedes: None
 
 ## Purpose
 
-Verification paths produce one caller shape without confusing human, delegated, and machine authority. The caller supplies verified inputs to authorization; it is not authorization by itself. This is a draft logical record, not a shipped public API.
+Verification paths produce one caller shape without confusing human, delegated, and machine authority. The caller supplies verified inputs to authorization; it is not authorization by itself. This is a logical record, not a shipped public API.
 
 ## Terms
 
@@ -28,12 +29,12 @@ MUST, MUST NOT, and SHOULD use [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119
 
 ### Caller record version 1
 
-The logical field mappings below extend identity-contract-v1 §6 and remain subject to its required Direct/Studio consumer review. Camel-case names are proposed Arc record fields, not new token claims or a new signed-envelope serialization.
+The logical field mappings below extend identity-contract-v1 §6 and were reviewed by the Direct/Studio consumers in the Identity #14 sign-off. Camel-case names are Arc record fields, not new token claims or a new signed-envelope serialization.
 
 | Field | Requirement |
 | --- | --- |
 | `contractVersion` | MUST be a string identifying the verified signed-context version or supported local verification profile, never caller input. This local profile uses `"1"`. Unknown profiles MUST be refused. |
-| `principalKind` | MUST identify `person`, `delegated-actor`, `organization-automation`, `cluster-workload`, or `runner`. These proposed enum spellings do not rename the shared Organisation term. |
+| `principalKind` | MUST identify `person`, `delegated-actor`, `organization-automation`, `cluster-workload`, or `runner`. These enum spellings do not rename the shared Organisation term. |
 | `accountKey` | MUST contain exact `issuer` and lowercase UUID v4 `subject` for a person, as defined in identity-contract-v1; MUST be absent for service-only calls. |
 | `person` | MUST be the product person reference resolved from confirmed account-key mapping for person/delegated calls; MUST be absent for service-only calls. It is not a replacement wire `sub`. |
 | `actor` | MUST represent the current registered `iss`/`sub` from verified `act` for delegated/on-behalf calls. It MUST NOT be invented from public client ids or PAT labels. Historical nested actors MUST NOT authorize. |
@@ -66,7 +67,7 @@ An envelope covering a PAT-namespace value under any Authorization scheme MUST b
 
 | Principal kind | Issuer | Audience | Authentication | Authorization owner | Tenant binding | Permitted exchanges |
 | --- | --- | --- | --- | --- | --- | --- |
-| Person | Realm Identity for OAuth; resource-local PAT issuance | One catalog audience, or fixed PAT resource | OAuth with PKCE; DPoP where bound; application PAT verification; verified browser/on-behalf context where applicable | Product membership and roles intersected with scopes | Fixed per credential | Delegation within consented grant; PAT exchange is not enabled by this draft |
+| Person | Realm Identity for OAuth; resource-local PAT issuance | One catalog audience, or fixed PAT resource | OAuth with PKCE; DPoP where bound; application PAT verification; verified browser/on-behalf context where applicable | Product membership and roles intersected with scopes | Fixed per credential | Delegation within consented grant; PAT exchange is not enabled by this specification |
 | Delegated actor | Realm Identity | One allowed destination audience | Authenticated agent and DPoP-bound exchanged token | Product intersected with server-side lineage | Inherited, no wider | Only named actors, destinations, depth, budgets |
 | Organisation automation | Realm Identity | One catalog audience | Confidential client credentials, `private_key_jwt`, DPoP | Product service-principal rules, never person roles | Fixed at registration | No exchange into person authority |
 | Cluster workload | Cluster issuer or workload CA | Receiving app, for example `work-api`; never API-server default | TokenReview with live bound pod, or workload mTLS | Receiving app allowlist and explicit permissions | Checked per-work grant for tenant work | None through the people authority |
@@ -80,9 +81,9 @@ Endpoints MUST declare accepted principal kinds. A workload MUST be refused on a
 
 For service-account tokens the handler MUST validate cluster issuer, receiving-app audience, expiry, and binding to a live pod. TokenReview MUST specify the receiving app's expected audience and its returned `audiences` MUST include it. The API-server default audience MUST NOT satisfy this check. Verified cluster issuer, namespace, service account, bound pod name, and bound pod UID MUST map through the configured allowlist to explicit permissions and tenant rules. Unknown identities MUST be refused, including otherwise-valid customer workloads at platform endpoints.
 
-Projected service-account token lifetime SHOULD be short; ten minutes is proposed, not locked. For mTLS the verifier MUST check the workload-CA chain, SAN identity, and certificate validity; short lifetime MUST bound revocation exposure. The verified mTLS service identity MUST also pass the allowlist.
+Projected service-account token lifetime SHOULD be short; ten minutes is the decided value (Identity #14). For mTLS the verifier MUST check the workload-CA chain, SAN identity, and certificate validity; short lifetime MUST bound revocation exposure. The verified mTLS service identity MUST also pass the allowlist.
 
-The **deleted-pod rejection latency** `L` is a proposed maximum of 30 seconds. A successful TokenReview cache entry MUST expire no later than `min(token expiry, validation time + L)`. Earlier deletion invalidation MUST still meet `L`. After cache expiry, unavailable revalidation MUST cause refusal. Revalidation MUST re-establish pod liveness. Cache keys MUST bind token and expected audience; results MUST NOT be reused across audiences.
+The **deleted-pod rejection latency** `L` is a provisional maximum of 30 seconds until measured (see Open questions). A successful TokenReview cache entry MUST expire no later than `min(token expiry, validation time + L)`. Earlier deletion invalidation MUST still meet `L`. After cache expiry, unavailable revalidation MUST cause refusal. Revalidation MUST re-establish pod liveness. Cache keys MUST bind token and expected audience; results MUST NOT be reused across audiences.
 
 An endpoint performing work for a person MUST authenticate the service principal and separately check the per-work grant. Authorization MUST intersect both permission sets. A grant for another service principal MUST be refused. Tenant and person provenance MUST be explicit in background work, not inferred from ambient state. Any represented-person authority MUST remain in the checked per-work record rather than converting a workload into a person credential.
 
@@ -128,11 +129,11 @@ Fixtures use resource `https://work.example.test/api`, audience `work-api`, tena
 
 Machine-readable group: [principals and workload cache](../../Source/Identity.Specs/Vectors/arc-verified-caller-v1/principals-and-workload.json), repository path `Source/Identity.Specs/Vectors/arc-verified-caller-v1/principals-and-workload.json`. These are data vectors, not executed runtime conformance tests. `when.action` names a logical operation; outcomes and reasons are vector vocabulary, not public error messages.
 
-## Open questions
+## Open questions and decisions
 
-- **M10 / W0:** lock workload allowlist mapping and measured deletion latency. Thirty seconds is a placeholder; ten-minute tokens are proposed.
-- **W0 / D20:** lock policy freshness and epoch re-evaluation mechanics, plus non-secret workload/runner credential identifiers.
-- **(align with #24):** #24 defines a string Contract version, account key separate from product Person, Credential kind categories, structured Client, Sender binding, assurance fields, and conditional integer Policy epoch. This draft has adopted those constraints. Exact camel-case serialization, `principalKind`, `servicePrincipal`, and `permissions` are additional Arc mechanics; machine-principal and runner credentials and enum spellings still need review. Actor remains person-representing, not the name for a bare service principal. Environment wire syntax and Actor namespaces remain open in #24.
+- **M10 / W0 (open):** the workload deletion latency value is provisional (30 s placeholder) until measured, and will change through a new version of this specification; the rest of the specification is locked. Ten-minute tokens are decided at sign-off.
+- **W0 / D20:** decided as option C (Identity #69): policy freshness and epoch re-evaluation mechanics, plus non-secret workload/runner credential identifiers.
+- **(align with #24):** #24 defines a string Contract version, account key separate from product Person, Credential kind categories, structured Client, Sender binding, assurance fields, and conditional integer Policy epoch. This specification has adopted those constraints. Exact camel-case serialization, `principalKind`, `servicePrincipal`, and `permissions` are additional Arc mechanics; machine-principal and runner credentials and enum spellings were covered by the Identity #14 sign-off. Actor remains person-representing, not the name for a bare service principal. Environment wire syntax and Actor namespaces remain open in #24.
 - **(align with #24):** `grantId` is a record reference, not an approved extra access-token claim. #24's claim allowlist requires explicit review before such a claim is added; `jti` is not a grant id.
 - **Runner contract:** registration, session expiry, rotation, and per-work revocation are outside this record. No new default is invented here.
 

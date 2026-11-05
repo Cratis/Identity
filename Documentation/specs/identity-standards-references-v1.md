@@ -3,7 +3,8 @@
 ```text
 Spec id: identity-standards-references
 Version: 1
-Status: Draft
+Status: Locked
+Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
 Issue: https://github.com/Cratis/Identity/issues/34
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -58,11 +59,11 @@ Do not require DPoP merely because a client speaks MCP. Follow [identity-dpop-v1
 
 1. Designs cited MCP **2025-11-25**; the verified current pin is **2026-07-28**, used by [arc-mcp-authorization-v1](arc-mcp-authorization-v1.md). This document records the correction; it does not rewrite the design documents or claim a GitHub issue was updated.
 2. DPoP is optional for eligible MCP clients, not a universal connector prerequisite; this is reflected in [identity-dpop-v1](identity-dpop-v1.md). Bound-token enforcement and organisation policy remain mandatory as defined there.
-3. OpenIddict access-token encryption must be disabled and private `oi_` claims stripped for the external JWT profile; both requirements appear in [identity-access-token-v1](identity-access-token-v1.md). That draft requires actual serialized-output conformance, not merely configuration changes.
+3. OpenIddict access-token encryption must be disabled and private `oi_` claims stripped for the external JWT profile; both requirements appear in [identity-access-token-v1](identity-access-token-v1.md). That specification requires actual serialized-output conformance, not merely configuration changes.
 
-## 6. Open points and acceptance
+## 6. Acceptance and remaining evidence
 
 - Historical-revision scan: every existing spec under `Documentation/specs/` was checked with `rg` on 2026-11-05. The only remaining old-date occurrence is this file's §5 item 1, intentionally retained to explain the correction, **not** an active pin. No other spec occurrence remains. Keep this traceability occurrence visible during review rather than silently treating it as a current dependency.
-- `arc-mcp-authorization-v1.md` still labels its revision confirmation pending Identity #34. This references spec supplies the dated findings; owner follow-through on #34 / Arc #3703 and sign-off in #14 remain required. No other contract was edited in this change.
-- DPoP client support remains unverified. Obtain authoritative capability evidence or execute compatibility tests before changing client policy; absence of documentation is not non-support.
-- Review OpenIddict handler ordering/output and the draft revocation/DPoP contracts with their owners. References verification is not release approval, a completed implementation, or an OpenIddict/connector conformance result.
+- `arc-mcp-authorization-v1.md` records its revision pin as confirmed in Identity #34. This references spec supplies the dated findings; connector verification under #34 / Arc #3703 is implementation evidence; sign-off was recorded in #14 (2026-11-05). No other contract was edited in this change.
+- DPoP client support remains unverified. Authoritative capability evidence or compatibility tests are required before changing client policy; absence of documentation is not non-support.
+- Review of OpenIddict handler ordering/output and the revocation/DPoP contracts with their owners was signed off in Identity #14 (2026-11-05). References verification is not release approval, a completed implementation, or an OpenIddict/connector conformance result.

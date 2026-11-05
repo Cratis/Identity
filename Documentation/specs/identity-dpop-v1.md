@@ -3,7 +3,8 @@
 ```text
 Spec id: identity-dpop
 Version: 1
-Status: Draft
+Status: Locked
+Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
 Issue: https://github.com/Cratis/Identity/issues/29
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -11,9 +12,9 @@ Supersedes: None
 
 ## 1. Scope and authority
 
-Keywords follow [the specification conventions](README.md). The [Terms of identity-contract-v1](identity-contract-v1.md#terms) apply **verbatim**. This Draft defines Identity's issuance and AuthProxy's enforcing edge for RFC 9449 DPoP. Arc consumes the verified result through signed envelope v2; it does not re-validate the incoming proof on that path. Native OAuth verifiers MUST implement the same proof requirements themselves, without a fallback verifier after failure.
+Keywords follow [the specification conventions](README.md). The [Terms of identity-contract-v1](identity-contract-v1.md#terms) apply **verbatim**. This specification defines Identity's issuance and AuthProxy's enforcing edge for RFC 9449 DPoP. Arc consumes the verified result through signed envelope v2; it does not re-validate the incoming proof on that path. Native OAuth verifiers MUST implement the same proof requirements themselves, without a fallback verifier after failure.
 
-This is a proposed contract, not deployed behavior or sign-off. DPoP is sender constraint, not client authentication, body integrity, live membership or permission. PATs, browser cookies and workload service-account bearer credentials are not made DPoP credentials by this profile. Runners' registered-key session protocol is separate; their OAuth tokens follow this profile.
+This is a signed-off contract (Identity #14, 2026-11-05), not deployed behavior. DPoP is sender constraint, not client authentication, body integrity, live membership or permission. PATs, browser cookies and workload service-account bearer credentials are not made DPoP credentials by this profile. Runners' registered-key session protocol is separate; their OAuth tokens follow this profile.
 
 ## 2. Client selection and issuance
 
@@ -31,7 +32,7 @@ Identity MUST resolve registration metadata from the trusted client record and o
 For bound issuance:
 
 1. Identity MUST require exactly one `DPoP` header at the token endpoint and validate the proof as in §3, with `htm=POST` and `htu` equal to the configured public token endpoint. Token-endpoint proofs do not require `ath` (there is no presented access token). Identity MUST require its own AS nonce (§5), independently of resource-server nonces.
-2. Identity MUST compute the RFC 7638 SHA-256 thumbprint of the verified proof's public JWK and emit `cnf: {"jkt": "<thumbprint>"}` in the access token, with token response `token_type="DPoP"`. [Access-token v1 §2.2 and §5](identity-access-token-v1.md) retain their claim allowlist and validation order. `cnf` is already conditionally allowed by [contract v1 §5](identity-contract-v1.md#5-token-claims); no new claim is proposed here.
+2. Identity MUST compute the RFC 7638 SHA-256 thumbprint of the verified proof's public JWK and emit `cnf: {"jkt": "<thumbprint>"}` in the access token, with token response `token_type="DPoP"`. [Access-token v1 §2.2 and §5](identity-access-token-v1.md) retain their claim allowlist and validation order. `cnf` is already conditionally allowed by [contract v1 §5](identity-contract-v1.md#5-token-claims); no new claim is added here.
 3. Identity MUST bind the refresh token and every rotated replacement to the same key thumbprint in authoritative server-side state, including for public clients (RFC 9449 §5). Redemption MUST prove that key at the token endpoint; a missing/wrong proof MUST NOT mint tokens or change the binding. Key replacement requires a separately authorized new grant, not a caller-selected refresh-key swap.
 4. The [revocation profile's refresh-family rotation, reuse and fences](identity-revocation-v1.md#4-redemption-and-concurrency) remain mandatory. DPoP MUST NOT replace those checks or widen resource, tenant, scope, lifetime or authentication evidence. A DPoP-required registration MUST never receive an unbound token, even if an issuance handler would otherwise omit `cnf`.
 
@@ -76,7 +77,18 @@ This profile chooses **stateless HMAC-SHA-256 nonces with fleet-shared keys**, a
 
 A nonce MUST authenticate a version, key id, validation domain, configured public origin, `jkt`, integer issuance time and at least 128 random bits, using an unambiguous encoding. Validators MUST verify the MAC in constant time and match domain/origin/key binding, require `issued_at <= now + 30` and `now < issued_at + 300 + 30`. No nonce secret or real proof belongs in logs/events. Nonces MAY be reused within that interval with distinct proofs; the shared `jti` cache, not the nonce, enforces single use.
 
-Identity and AuthProxy MUST issue a fresh `DPoP-Nonce` on nonce challenges and SHOULD rotate it on successful DPoP responses. Clients MUST keep AS and resource nonces separately and sign the most recently received nonce into the next proof. Validators MUST accept still-valid older nonces to support concurrent requests. Key rotation MUST retain verification keys until all issued nonces expire; replicas missing a required key MUST fail closed. Clock monitoring MUST enforce §4's ±30-second offset bound against the fleet time source and refuse service outside it. HMAC parameter encoding/distribution requires review before lock (§8).
+Identity and AuthProxy MUST issue a fresh `DPoP-Nonce` on nonce challenges and SHOULD rotate it on successful DPoP responses. Clients MUST keep AS and resource nonces separately and sign the most recently received nonce into the next proof. Validators MUST accept still-valid older nonces to support concurrent requests. Key rotation MUST retain verification keys until all issued nonces expire; replicas missing a required key MUST fail closed. Clock monitoring MUST enforce §4's ±30-second offset bound against the fleet time source and refuse service outside it. The nonce encoding and key distribution are defined in §5.1; they are not part of the envelope contract, whose own random nonce is unrelated.
+
+### 5.1 Nonce encoding and keys
+
+Decided in Identity #14.
+
+- **Encoding.** A nonce is the unpadded base64url form of 66 bytes (88 characters), within RFC 9449's nonce grammar: `ver` (1 byte, `0x01`); `domain` (1 byte: `0x01` for authorization-server nonces issued by Identity, `0x02` for resource nonces issued by AuthProxy); `kid` (8 opaque bytes); `issued_at` (8 bytes, unsigned big-endian Unix seconds); `random` (16 bytes from a CSPRNG); `mac` (32 bytes).
+- **MAC input.** `mac` = HMAC-SHA-256(key[kid], `"cratis-dpop-nonce-v1"` ‖ `0x00` ‖ ver ‖ domain ‖ kid ‖ issued_at ‖ random ‖ u16be(len(origin)) ‖ origin ‖ jkt). `origin` is the configured public origin, ASCII, as serialized for `htu`; `jkt` is the 32-byte SHA-256 JWK thumbprint decoded from the proof key. Origin and `jkt` are authenticated but not carried. Every nonce is issued after the proof checks pass, so `jkt` is known at issue time.
+- **Validation order.** Length and version; domain matches the validator's role; `kid` in its verify set; MAC in constant time; then `issued_at <= now + 30` and `now < issued_at + 330`. An unknown `kid` or any failure gets a `use_dpop_nonce` challenge with a fresh nonce; the request is never forwarded.
+- **Keys.** Each nonce domain and environment has its own set of 256-bit random keys in the secret store, never shared with access-token or envelope keys; Identity and AuthProxy never share a key.
+- **Distribution and rotation.** Validators read the key set (one active `kid` plus verify-only `kid`s) from the secret store and cache it for at most 60 seconds. Routine rotation is every 24 hours: a new key is published verify-only at least 120 seconds before it becomes active, and the previous key stays verifiable for at least 390 seconds after its last issuance (1 hour recommended).
+- **Emergency retirement.** A compromised nonce key is retired with no overlap through an invalidation barrier: advance a key-set epoch in the secret store and push an invalidation to every validator; each replica drops its cached key set and stops issuing and accepting nonces until it has loaded the replacement; unreachable replicas are quarantined until they confirm. Clients recover with one extra `use_dpop_nonce` round trip. A replica that cannot load its key set fails closed.
 
 For resource failures, AuthProxy MUST return HTTP 401 without a caller or downstream dispatch:
 
@@ -107,16 +119,16 @@ DPoP support in **Claude Code, claude.ai, Codex and ChatGPT is UNVERIFIED**, not
 
 [JSON vectors](../../Source/Identity.Specs/Vectors/identity-dpop-v1/) are **data only**, not executable conformance or real credentials. Each has `name`, `description`, `given`, `when`, `then`. Unless overridden, the trusted fixture supplies: time `2000000000`, configured origin `https://direct.cratis.io`, external escaped path `/mcp`, method `POST`, internal host `http://authproxy.internal:8080`, replica `edge-a`, shared cache healthy/empty, optional binding policy, and an otherwise valid access token under access-token v1 with `cnf.jkt=xx0BcA-wMohw8atYDJOe6peGModklG2wRHBlXHMvl0M`.
 
-The synthetic token bytes for `ath` calculations are the ASCII string `synthetic-access-token`; they stand in for the token's serialized bytes, not a parseable JWT. Their SHA-256 base64url hash is `F30iRba6HrejUQBwrzD-RojRUlUkFovd8PoQVXZ9_xY`. The default decoded proof is the `valid-bound-request` vector's `given.proof`. Other vectors' decoded `header`/`payload` objects override members of that fixture; `jwk` is replaced as a whole when supplied, and null removes a member. `signature` is always a simulated `valid`/`invalid` result. `nonce-current` denotes a valid HMAC nonce for this origin/key/domain, issued at `1999999990`; `nonce-stale` denotes one issued at `1999999600`. Labels are not real nonce encodings. These defaults apply only to data vectors, not runtime validation.
+The synthetic token bytes for `ath` calculations are the ASCII string `synthetic-access-token`; they stand in for the token's serialized bytes, not a parseable JWT. Their SHA-256 base64url hash is `F30iRba6HrejUQBwrzD-RojRUlUkFovd8PoQVXZ9_xY`. The default decoded proof is the `valid-bound-request` vector's `given.proof`. Other vectors' decoded `header`/`payload` objects override members of that fixture; `jwk` is replaced as a whole when supplied, and null removes a member. `signature` is always a simulated `valid`/`invalid` result. `nonce-current` denotes a valid HMAC nonce for this origin/key/domain, issued at `1999999990`; `nonce-stale` denotes one issued at `1999999600`. Labels are not real nonce encodings, except in `nonce-encoding.json`, which carries real §5.1 encodings under a documented test-only key. These defaults apply only to data vectors, not runtime validation.
 
 A future executable suite MUST supplement these vectors with real signing, hashing, malformed parsing, time/TTL boundaries, AS refresh binding, atomic cross-replica races, cache loss/recovery, nonce domain separation and rotation, policy changes and signed-envelope tampering. JSON parsing alone proves syntax, not security conformance.
 
-## 8. Open points and required sign-off
+## 8. Decisions recorded at sign-off
 
-- **Owners/sign-off:** Identity, AuthProxy and Arc owners must review issuance, edge validation and envelope mapping; obtain required consumer reviews and Identity #14 acceptance before lock.
-- **Operations:** approve the proposed 300-second proof/nonce windows, 30-second future allowance and per-validator clock offset bound, 60-second maximum inter-validator difference, 390-second replay TTL and cache-loss quarantine (`300 + 30 + 60`), shared-cache durability/capacity and fail-closed recovery procedures; prove replica races/restarts, clock-offset refusal and key overlap.
-- **Nonce/envelope wire:** agree canonical HMAC nonce encoding, key distribution/rotation, and exact signed v2 bound/no-binding serialization in the envelope contract; logical `senderBinding` already includes accepted proof `jti`.
-- **Algorithm difference:** Design A/B mention ES256 and EdDSA; this narrower v1 intentionally permits ES256 only. Owners must accept this profile choice before lock; EdDSA needs a reviewed profile change.
+- **Owners/sign-off:** signed off in Identity #14 (2026-11-05).
+- **Operations:** decided in Identity #14: the 300-second proof/nonce windows, 30-second future allowance and per-validator clock offset bound, 60-second maximum inter-validator difference, 390-second replay TTL and cache-loss quarantine (`300 + 30 + 60`), shared-cache durability/capacity and fail-closed recovery procedures. W2 implementation proof is still required for replica races/restarts, clock-offset refusal and key overlap.
+- **Nonce/envelope wire:** the HMAC nonce encoding and key distribution/rotation are decided in §5.1; the exact signed v2 bound/no-binding serialization is locked with the envelope contract ([arc-forwarded-identity-v2](arc-forwarded-identity-v2.md)); logical `senderBinding` already includes accepted proof `jti`. The `nonce-encoding.json` vector covers valid, wrong domain, wrong origin, wrong `jkt`, unknown `kid`, expired and future nonces, with both time boundaries.
+- **Algorithm difference:** Design A/B mention ES256 and EdDSA; this narrower v1 intentionally permits ES256 only. The owners accepted this profile choice in Identity #14; EdDSA needs a reviewed profile change.
 - **MCP capability:** verify named clients and registration/capability UX with #34; do not infer support or make DPoP universal meanwhile.
 - **Inherited contracts:** registration and current-policy resolution/freshness, refresh-family durability and native-verifier rollout require implementation proof. `cnf` is already in contract v1; no allowlist change is needed. Section 2 explicitly requires DPoP-bound delegated-actor exchange and confidential organisation-automation issuance with `private_key_jwt`, matching [verified-caller v1's principal requirements](arc-verified-caller-v1.md#credential-matrix); optional MCP support does not relax those requirements.
 
