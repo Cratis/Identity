@@ -1,0 +1,47 @@
+{
+    "type": "module",
+    "name": "@cratis/identity",
+    "version": "0.0.0",
+    "private": true,
+    "description": "Generated TypeScript proxies for Cratis Identity, built on Cratis Arc.",
+    "keywords": [
+        "cratis",
+        "identity",
+        "oauth",
+        "arc",
+        "proxies",
+        "typescript"
+    ],
+    "homepage": "https://github.com/Cratis/Identity",
+    "author": "Cratis",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Cratis/Identity.git"
+    },
+    "files": [
+        "dist"
+    ],
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        "./package.json": "./package.json",
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsc -p tsconfig.json",
+        "clean": "tsc -b --clean"
+    },
+    "devDependencies": {
+        "@cratis/arc": "22.155.0",
+        "@cratis/fundamentals": "7.27.0",
+        "typescript": "6.0.3"
+    },
+    "peerDependencies": {
+        "@cratis/arc": "^22.155.0",
+        "@cratis/fundamentals": "^7.27.0"
+    }
+}

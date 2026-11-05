@@ -3,7 +3,7 @@
 
 using System.Globalization;
 using System.Security.Claims;
-using Cratis.Identity.Authorization;
+using Cratis.Identity.Contracts;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Cratis.Identity.Accounts;

@@ -16,6 +16,28 @@
         <NoWarn>NU1507;NU1608;NU1510;NU1603;NU1605;CS1705;IDE0031;IDE0032;IDE0340;CA1873;IDE0330;MA0158;ASPDEPR002;CS8670;RCS1238;SA1414</NoWarn>
     </PropertyGroup>
 
+    <!-- Package metadata shared by the packable projects (Identity and Identity.Contracts). -->
+    <PropertyGroup>
+        <Copyright>Copyright Cratis</Copyright>
+        <Authors>Cratis</Authors>
+        <Company>Cratis</Company>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <RepositoryType>git</RepositoryType>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <RepositoryUrl>https://github.com/Cratis/Identity</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/Cratis/Identity</PackageProjectUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+
+        <GenerateAssemblyTitleAttribute>true</GenerateAssemblyTitleAttribute>
+        <GenerateAssemblyDescriptionAttribute>true</GenerateAssemblyDescriptionAttribute>
+
+        <!-- Debuggability -->
+        <DebugType>portable</DebugType>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <IncludeSymbols>True</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(Configuration)'==''">
         <Configuration>Debug</Configuration>
     </PropertyGroup>

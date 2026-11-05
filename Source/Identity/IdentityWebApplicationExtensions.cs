@@ -3,24 +3,26 @@
 
 using System.Net;
 using Cratis.Identity.Authorization;
+using Cratis.Identity.Hosting;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 
-namespace Cratis.Identity.Hosting;
+namespace Microsoft.AspNetCore.Builder;
 
 /// <summary>
-/// Extension methods for mapping the Identity middleware and endpoints.
+/// Extension methods for adding the Identity middleware and mapping its endpoints.
 /// </summary>
-public static class IdentityEndpoints
+public static class IdentityWebApplicationExtensions
 {
     /// <summary>
-    /// Adds the Identity middleware and maps its endpoints. The protocol endpoints themselves (discovery, JWKS,
+    /// Adds the security headers and authentication middleware, then maps the logout, health and root endpoints. Call it
+    /// before the host's own endpoints. The protocol endpoints themselves (discovery, JWKS,
     /// revocation, introspection) are served by OpenIddict; authorization and token requests pass through to
     /// <see cref="AuthorizationEndpoint"/> and <see cref="TokenEndpoint"/> once OpenIddict has validated them.
     /// </summary>
     /// <param name="app">The <see cref="WebApplication"/>.</param>
     /// <returns>The <see cref="WebApplication"/> for continuation.</returns>
-    public static WebApplication UseCratisIdentity(this WebApplication app)
+    public static WebApplication MapCratisIdentity(this WebApplication app)
     {
         app.UseSecurityHeaders();
         app.UseAuthentication();
