@@ -102,6 +102,13 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     /// <inheritdoc/>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // AddCratisIdentity reads the secret store from builder.Configuration while the services are registered, which is before
+        // ConfigureAppConfiguration applies. Host settings are visible then, so every setting is also given as one.
+        foreach (var (key, value) in Settings().Where(_ => _.Value is not null))
+        {
+            builder.UseSetting(key, value);
+        }
+
         builder
             .UseEnvironment("Development")
             .ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(Settings()))
