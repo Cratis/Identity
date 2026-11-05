@@ -1,0 +1,38 @@
+{
+  "name": "second-account-cannot-claim-linked-key",
+  "description": "A conflicting claim is quarantined even with fresh both-side proof; the existing link is not transferred.",
+  "given": {
+    "accounts": [
+      {
+        "issuer": "https://identity.example",
+        "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+        "state": "active",
+        "linked_keys": [{ "idp": "https://github.com", "idp_sub": "12345" }]
+      },
+      {
+        "issuer": "https://identity.example",
+        "subject": "360f7f9e-cc0f-4cd1-8f75-1ae008312bd6",
+        "state": "active",
+        "linked_keys": [{ "idp": "https://login.example/directory-a", "idp_sub": "user-7" }]
+      }
+    ]
+  },
+  "when": {
+    "action": "propose_link",
+    "target_account": { "issuer": "https://identity.example", "subject": "360f7f9e-cc0f-4cd1-8f75-1ae008312bd6" },
+    "flow_id": "link-flow-1",
+    "authenticated_intent": true,
+    "account_control_proven_in_session": true,
+    "upstream_control_proven_in_same_session": true,
+    "verified_authentication": { "idp": "https://github.com", "idp_sub": "12345", "auth_time": 1800000000 }
+  },
+  "then": {
+    "outcome": "binding_refused",
+    "proposal_state": "quarantined",
+    "reason": "upstream_key_already_linked",
+    "accounts_unchanged": true,
+    "resolver": "realm_identity_administrator",
+    "authority_from_proposed_link": false,
+    "automatic_merge": false
+  }
+}

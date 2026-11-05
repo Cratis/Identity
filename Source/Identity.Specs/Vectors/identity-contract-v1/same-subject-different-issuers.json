@@ -1,0 +1,27 @@
+{
+  "name": "same-upstream-subject-different-issuers",
+  "description": "Equal upstream subject strings under two authorities are distinct keys and do not automatically link accounts.",
+  "given": {
+    "accounts": [{
+      "issuer": "https://identity.example",
+      "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+      "state": "active",
+      "linked_keys": [{ "idp": "https://login.example/directory-a", "idp_sub": "user-7" }]
+    }],
+    "tombstones": []
+  },
+  "when": {
+    "action": "register_from_upstream",
+    "realm_issuer": "https://identity.example",
+    "allocated_subject": "360f7f9e-cc0f-4cd1-8f75-1ae008312bd6",
+    "verified_authentication": { "idp": "https://login.example/directory-b", "idp_sub": "user-7", "auth_time": 1800000000 }
+  },
+  "then": {
+    "outcome": "registered",
+    "account_key": { "issuer": "https://identity.example", "subject": "360f7f9e-cc0f-4cd1-8f75-1ae008312bd6" },
+    "linked_keys": [{ "idp": "https://login.example/directory-b", "idp_sub": "user-7" }],
+    "account_count": 2,
+    "existing_accounts_unchanged": true,
+    "automatic_merge": false
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "deleted-subject-cannot-be-reused",
+  "description": "A valid subject remains reserved by a tombstone after the account and its profile have been erased.",
+  "given": {
+    "accounts": [],
+    "tombstones": [{ "issuer": "https://identity.example", "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32" }]
+  },
+  "when": {
+    "action": "register_from_upstream",
+    "realm_issuer": "https://identity.example",
+    "allocated_subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+    "verified_authentication": { "idp": "https://github.com", "idp_sub": "67890", "auth_time": 1800000000 }
+  },
+  "then": {
+    "outcome": "refused",
+    "reason": "subject_tombstoned",
+    "account_count": 0,
+    "tombstones_unchanged": true,
+    "token_issued": false
+  }
+}
