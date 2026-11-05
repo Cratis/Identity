@@ -140,6 +140,7 @@
   },
   "then": {
     "outcome": "reject",
-    "reason": "hop"
+    "reason": "hop",
+    "callerSource": null
   }
 }

@@ -140,6 +140,7 @@
   },
   "then": {
     "outcome": "reject",
-    "reason": "bounds"
+    "reason": "bounds",
+    "callerSource": null
   }
 }

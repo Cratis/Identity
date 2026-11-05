@@ -144,6 +144,7 @@
   },
   "then": {
     "outcome": "reject",
-    "reason": "credential"
+    "reason": "credential",
+    "callerSource": null
   }
 }
