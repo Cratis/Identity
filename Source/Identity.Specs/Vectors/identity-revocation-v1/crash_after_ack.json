@@ -10,7 +10,7 @@
     { "order": 5, "t": 1, "action": "restart", "expected_ready": false },
     { "order": 6, "t": 1, "action": "prove_operational_coverage_and_restore_outbox", "barrier": 41 },
     { "order": 7, "t": 2, "action": "redeem_family_on_another_replica", "expected": "deny" },
-    { "order": 8, "t": 3, "action": "dispatch_outbox", "event_type": "RefreshTokenFamilyRevocationRecorded", "idempotency_key": "fact-41" }
+    { "order": 8, "t": 3, "action": "dispatch_outbox", "event_type": "RefreshTokenFamilyRevoked", "idempotency_key": "fact-41" }
   ],
   "then": { "family_redemption": "deny", "fence_count": 1, "chronicle_fact_count": 1, "chronicle_watermark": 41, "projections_required_for_denial": false }
 }

@@ -9,7 +9,7 @@
     { "order": 4, "t": 2, "action": "persist_operational_watermark_and_publication_intent", "watermark": 42, "outbox_id": "recovery-fact-42", "event_type": "RealmRecoveryEpochAdvanced" },
     { "order": 5, "t": 3, "action": "read_independent_log_and_reapply_operational_denial", "barrier": 42, "fence_sequence": 41 },
     { "order": 6, "t": 3, "action": "invalidate_lost_delivery_marker_and_reconstruct_outbox", "outbox_id": "fact-41" },
-    { "order": 7, "t": 4, "action": "append_missing_fact_once", "event_type": "RefreshTokenFamilyRevocationRecorded", "idempotency_key": "fact-41" },
+    { "order": 7, "t": 4, "action": "append_missing_fact_once", "event_type": "RefreshTokenFamilyRevoked", "idempotency_key": "fact-41" },
     { "order": 8, "t": 4, "action": "append_missing_fact_once", "event_type": "RealmRecoveryEpochAdvanced", "idempotency_key": "recovery-fact-42" },
     { "order": 9, "t": 5, "action": "persist_chronicle_watermark", "watermark": 42 },
     { "order": 10, "t": 6, "action": "prove_independent_restriction_coverage_and_retirement_tombstones", "barrier": 42 },
