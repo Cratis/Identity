@@ -8,6 +8,7 @@ Specifications define contracts shared by Identity and its consumers. RFC 2119 k
 |---|---|---|---|
 | identity-contract | 1 | Locked | [Person, account, resource, tenant and token contract](identity-contract-v1.md) |
 | identity-events | 1 | Locked | [Identity event rules and catalogue](identity-events-v1.md) |
+| identity-tenant-model | 1 | Locked | [Tenant model: organisation, workspace and namespace](identity-tenant-model-v1.md) |
 | identity-access-token | 1 | Locked | [JWT access-token profile](identity-access-token-v1.md) |
 | identity-dpop | 1 | Locked | [DPoP edge profile](identity-dpop-v1.md) |
 | identity-revocation | 1 | Locked | [Revocation protocol and fence durability](identity-revocation-v1.md) |

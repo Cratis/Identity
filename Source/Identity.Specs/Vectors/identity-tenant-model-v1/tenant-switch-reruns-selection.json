@@ -1,0 +1,22 @@
+{
+    "name": "tenant-switch-reruns-selection",
+    "description": "Switching tenant reruns selection with live membership and policy checks and yields a new credential; the existing credential is not rewritten.",
+    "given": {
+        "session": { "bound_tenant": "t-alpha", "resource": "https://direct.example.test/mcp", "environment": "production" },
+        "existing_credential": { "tid": "t-alpha", "aud": "direct-api" },
+        "product_callback_result": ["t-alpha", "t-beta"],
+        "policy_satisfied_for": ["t-alpha", "t-beta"]
+    },
+    "when": {
+        "action": "switch_tenant",
+        "tenant": "t-beta"
+    },
+    "then": {
+        "outcome": "allowed",
+        "selection_rerun": true,
+        "live_membership_checked": true,
+        "policy_checked": true,
+        "new_credential": { "tid": "t-beta", "aud": "direct-api" },
+        "existing_credential": { "tid": "t-alpha", "modified": false }
+    }
+}
