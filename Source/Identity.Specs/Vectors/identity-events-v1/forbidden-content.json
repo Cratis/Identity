@@ -1,0 +1,312 @@
+{
+  "name": "forbidden-content-rule",
+  "description": "Data-only event-shape vectors for identity-events-v1 section 6; not implemented reflection tests.",
+  "context": {
+    "assembly": "Cratis.Identity.Contracts",
+    "namespace": "Cratis.Identity.Contracts.Authorization",
+    "eventMarker": "EventType",
+    "typeId": "synthetic-vector-event",
+    "generation": 1,
+    "visibility": "Internal",
+    "complianceSubject": "account-stream-subject"
+  },
+  "cases": [
+    {
+      "name": "token-field-is-forbidden",
+      "given": {
+        "event": {
+          "name": "CredentialObserved",
+          "properties": [{ "name": "AccessToken", "type": "System.String" }]
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "AccessToken", "reason": "forbidden_member_name" }]
+      }
+    },
+    {
+      "name": "authorization-code-is-forbidden-even-when-pii",
+      "given": {
+        "event": {
+          "name": "AuthorizationObserved",
+          "properties": [{ "name": "AuthorizationCode", "type": "System.String", "pii": true }]
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "AuthorizationCode", "reason": "forbidden_member_name" }]
+      }
+    },
+    {
+      "name": "key-material-is-forbidden",
+      "given": {
+        "event": {
+          "name": "SigningMaterialObserved",
+          "properties": [{ "name": "KeyMaterial", "type": "System.String" }]
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "KeyMaterial", "reason": "forbidden_member_name" }]
+      }
+    },
+    {
+      "name": "client-secret-is-forbidden",
+      "given": {
+        "event": {
+          "name": "ClientRegistered",
+          "properties": [{ "name": "ClientSecret", "type": "System.String" }]
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "ClientSecret", "reason": "forbidden_member_name" }]
+      }
+    },
+    {
+      "name": "nested-wire-alias-cannot-hide-refresh-token",
+      "given": {
+        "event": {
+          "name": "FamilyObserved",
+          "properties": [
+            {
+              "name": "Details",
+              "type": "ClosedDetails",
+              "properties": [{ "name": "Value", "wireName": "refresh_token", "type": "System.String" }]
+            }
+          ]
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "Details.Value", "reason": "forbidden_member_name" }]
+      }
+    },
+    {
+      "name": "renamed-crypto-container-is-forbidden",
+      "given": {
+        "event": {
+          "name": "SigningMaterialObserved",
+          "properties": [{ "name": "Attachment", "type": "System.Security.Cryptography.RSAParameters" }]
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "Attachment", "reason": "forbidden_payload_type" }]
+      }
+    },
+    {
+      "name": "token-hash-passes-with-reviewed-keyed-concept",
+      "given": {
+        "event": {
+          "name": "CredentialDigestRecorded",
+          "properties": [{ "name": "TokenHash", "type": "SecretDigest" }]
+        },
+        "registry": {
+          "SecretDigest": {
+            "underlyingType": "System.String",
+            "kind": "secret-hash",
+            "algorithm": "HMAC-SHA-256",
+            "keyed": true,
+            "purpose": "token-lookup",
+            "hashKeyRevision": "hash-key-1",
+            "producerSpec": "hash-before-append",
+            "justification": "Non-redeemable digest computed with a separate secret-store-held key."
+          }
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": { "outcome": "pass", "violations": [] }
+    },
+    {
+      "name": "key-thumbprint-passes-with-reviewed-public-digest",
+      "given": {
+        "event": {
+          "name": "SigningKeyActivated",
+          "properties": [{ "name": "KeyThumbprint", "type": "PublicKeyThumbprint" }]
+        },
+        "registry": {
+          "PublicKeyThumbprint": {
+            "underlyingType": "System.String",
+            "kind": "public-key-thumbprint",
+            "algorithm": "SHA-256",
+            "canonicalization": "RFC7638",
+            "producerSpec": "canonical-public-jwk-thumbprint",
+            "justification": "Digest of a public JWK, never a key container or private material."
+          }
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": { "outcome": "pass", "violations": [] }
+    },
+    {
+      "name": "hash-suffix-alone-is-not-an-exception",
+      "given": {
+        "event": {
+          "name": "CredentialDigestRecorded",
+          "properties": [{ "name": "TokenHash", "type": "System.String" }]
+        },
+        "registry": {}
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "TokenHash", "reason": "unapproved_safe_concept" }]
+      }
+    },
+    {
+      "name": "unkeyed-low-entropy-code-hash-is-forbidden",
+      "given": {
+        "event": {
+          "name": "CredentialDigestRecorded",
+          "properties": [{ "name": "AuthorizationCodeHash", "type": "UnsafeCodeDigest" }]
+        },
+        "registry": {
+          "UnsafeCodeDigest": {
+            "underlyingType": "System.String",
+            "kind": "secret-hash",
+            "algorithm": "SHA-256",
+            "keyed": false,
+            "inputEntropy": "low",
+            "purpose": "code-audit",
+            "producerSpec": "unkeyed-code-digest-negative-case",
+            "justification": "Negative fixture: an enumerable code must not use an unkeyed hash."
+          }
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "AuthorizationCodeHash", "reason": "unkeyed_secret_hash" }]
+      }
+    },
+    {
+      "name": "keyed-code-digest-can-pass-with-approved-purpose",
+      "given": {
+        "event": {
+          "name": "CredentialDigestRecorded",
+          "properties": [{ "name": "AuthorizationCodeHash", "type": "SecretDigest" }]
+        },
+        "registry": {
+          "SecretDigest": {
+            "underlyingType": "System.String",
+            "kind": "secret-hash",
+            "algorithm": "HMAC-SHA-256",
+            "keyed": true,
+            "inputEntropy": "low",
+            "purpose": "approved-code-audit",
+            "hashKeyRevision": "hash-key-1",
+            "producerSpec": "keyed-code-digest-before-append",
+            "justification": "One-way keyed audit digest, never redeemable; does not permit code-redemption events."
+          }
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": { "outcome": "pass", "violations": [] }
+    },
+    {
+      "name": "password-verifier-stays-out-even-if-keyed",
+      "given": {
+        "event": {
+          "name": "PasswordSet",
+          "properties": [{ "name": "PasswordHash", "type": "SecretDigest" }]
+        },
+        "registry": {
+          "SecretDigest": {
+            "underlyingType": "System.String",
+            "kind": "secret-hash",
+            "algorithm": "HMAC-SHA-256",
+            "keyed": true,
+            "purpose": "password-verification",
+            "hashKeyRevision": "hash-key-1",
+            "producerSpec": "password-verifier-negative-case",
+            "justification": "Negative fixture: verifiers belong in the operational credential store."
+          }
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "PasswordHash", "reason": "password_verifier_forbidden" }]
+      }
+    },
+    {
+      "name": "redeemable-handle-is-not-a-safe-id",
+      "given": {
+        "event": {
+          "name": "CredentialObserved",
+          "properties": [{ "name": "TokenId", "type": "RedeemableHandle" }]
+        },
+        "registry": {
+          "RedeemableHandle": {
+            "underlyingType": "System.String",
+            "kind": "reference-id",
+            "redeemable": true,
+            "producerSpec": "raw-handle-negative-case",
+            "justification": "Negative fixture: renaming a bearer handle does not make it an id."
+          }
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "TokenId", "reason": "redeemable_reference" }]
+      }
+    },
+    {
+      "name": "thumbprint-name-cannot-exempt-bytes",
+      "given": {
+        "event": {
+          "name": "SigningKeyActivated",
+          "properties": [{ "name": "KeyThumbprint", "type": "System.Byte[]" }]
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "KeyThumbprint", "reason": "forbidden_payload_type" }]
+      }
+    },
+    {
+      "name": "open-json-payload-is-forbidden",
+      "given": {
+        "event": {
+          "name": "DetailsObserved",
+          "properties": [{ "name": "Details", "type": "System.Text.Json.JsonElement" }]
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "Details", "reason": "open_payload_shape" }]
+      }
+    },
+    {
+      "name": "signing-key-id-passes-as-non-redeemable-reference",
+      "given": {
+        "event": {
+          "name": "SigningReferenceRecorded",
+          "properties": [{ "name": "SigningKeyId", "type": "OpaqueReferenceId" }]
+        },
+        "registry": {
+          "OpaqueReferenceId": {
+            "underlyingType": "System.Guid",
+            "kind": "reference-id",
+            "redeemable": false,
+            "generated": true,
+            "producerSpec": "opaque-reference-not-key-material",
+            "justification": "Random UUID reference to a secret-store entry; possession grants no access."
+          }
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": { "outcome": "pass", "violations": [] }
+    }
+  ]
+}

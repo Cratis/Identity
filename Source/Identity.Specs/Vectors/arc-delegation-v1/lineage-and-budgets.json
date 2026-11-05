@@ -1,0 +1,34 @@
+{
+  "name": "delegation-lineage-and-budgets",
+  "description": "Grouped lineage attenuation, atomic reservation and idempotent accounting cases.",
+  "given": {
+  "fixtureDefaults": {"rootGrantId": "root-fixture", "rootDepth": 0, "maximumDepth": 2, "tenant": "tenant-fixture", "environment": "test", "rootExpiresAt": "2030-01-01T01:00:00Z", "rootAllowedDestinations": ["https://direct.example.test/mcp", "https://studio.example.test/mcp"]},
+  "vectors": [
+    {"given": {"parentResource": "https://studio.example.test/mcp"}, "when": {"destination": "https://atlas.example.test/mcp"}, "then": {"accepted": false, "reason": "destination-outside-root-consent"}},
+    {"given": {"parentDepth": 2}, "when": {"operation": "create-child", "requestedDepth": 3}, "then": {"accepted": false, "reason": "depth-overflow"}},
+    {"given": {"rootCalls": 10, "childAReservedCalls": 7}, "when": {"childBRequestedCalls": 4}, "then": {"accepted": false, "parentRemainingCalls": 3}},
+    {"given": {"parentRemainingCalls": 5}, "when": {"concurrentAllocations": [{"idempotencyKey": "alloc-a", "calls": 4}, {"idempotencyKey": "alloc-b", "calls": 4}]}, "then": {"successfulAllocations": 1, "refusedAllocations": 1, "parentRemainingCalls": 1}},
+    {"given": {"parentRemainingCalls": 5}, "when": {"allocationRequests": [{"idempotencyKey": "alloc-fixture", "calls": 4}, {"idempotencyKey": "alloc-fixture", "calls": 4}]}, "then": {"distinctChildren": 1, "totalDebitedCalls": 4, "sameOutcomeReturned": true}},
+    {"given": {"committedAllocation": {"idempotencyKey": "alloc-fixture", "calls": 4}}, "when": {"allocationRequest": {"idempotencyKey": "alloc-fixture", "calls": 5}}, "then": {"accepted": false, "reason": "idempotency-conflict"}},
+    {"given": {"remainingCalls": 4}, "when": {"consumptions": [{"idempotencyKey": "call-fixture", "calls": 1}, {"idempotencyKey": "call-fixture", "calls": 1}]}, "then": {"remainingCalls": 3, "effects": 1}},
+    {"given": {"childClosed": true, "inFlightCalls": 0, "unusedReservationCalls": 3}, "when": {"releaseKeys": ["release-fixture", "release-fixture"]}, "then": {"totalReleasedCalls": 3, "effects": 1}},
+    {"given": {"parentRemainingCalls": 5}, "when": {"allocateCalls": 4, "crashPoint": "after-debit-before-child-create", "retryKey": "crash-fixture"}, "then": {"permittedAtomicOutcomes": [{"parentRemainingCalls": 5, "childExists": false}, {"parentRemainingCalls": 1, "childExists": true, "recoverableBySameKey": true}], "orphanDebitAllowed": false}},
+    {"given": {"childClosed": false, "inFlightCalls": 1}, "when": {"operation": "release-reservation"}, "then": {"releasedCalls": 0, "requiresClosureAndSettlement": true}},
+    {"given": {"middleAncestorRevoked": true, "descendantTokenUnexpired": true, "revocationBoundContract": "Cratis/Identity#32"}, "when": {"operation": "authorize-descendant", "atOrAfterRevocationBound": true}, "then": {"authorized": false, "refusedWithinRevocationBound": true}},
+    {"given": {"currentActor": {"iss": "https://agents.example.test", "sub": "agent-fixture"}, "currentActorPermitted": false, "nestedAct": {"iss": "https://agents.example.test", "sub": "privileged-former-agent"}}, "when": {"operation": "authorize"}, "then": {"authorized": false, "nestedActUsedForAuthorization": false}},
+    {"given": {"parentTenant": "tenant-fixture"}, "when": {"requestedTenant": "other-tenant"}, "then": {"accepted": false}},
+    {"given": {"parentEnvironment": "test"}, "when": {"requestedEnvironment": "production"}, "then": {"accepted": false}},
+    {"given": {"parentExpiresAt": "2030-01-01T00:30:00Z"}, "when": {"requestedExpiresAt": "2030-01-01T00:30:01Z"}, "then": {"accepted": false}},
+    {"given": {"parentAssuranceCanSatisfyRequestedLevel": false}, "when": {"operation": "request-stronger-assurance-by-exchange"}, "then": {"accepted": false}},
+    {"given": {"sourceScopes": ["direct:read"], "reviewedMappingExists": false}, "when": {"requestedScopes": ["studio:write"], "mappingMethod": "string-subset"}, "then": {"accepted": false}},
+    {"given": {"verifiedTokenActor": {"iss": "https://agents.example.test", "sub": "agent-B"}, "grantActor": {"iss": "https://agents.example.test", "sub": "agent-A"}, "otherCredentialBindingsMatch": true}, "when": {"operation": "authorize-delegation"}, "then": {"authorized": false, "reason": "credential-grant-actor-mismatch"}},
+    {"given": {"authenticatedActor": {"iss": "https://agents.example.test", "sub": "agent-B"}, "authorizedExchangeActors": [{"iss": "https://agents.example.test", "sub": "agent-A"}]}, "when": {"operation": "exchange"}, "then": {"accepted": false, "reason": "exchange-actor-not-authorized"}},
+    {"given": {"verifiedCredentialGrantReference": null, "credentialIdMapping": null}, "when": {"operation": "lookup-grant", "requestSuppliedGrantReference": "grant-request-fixture", "requestSources": ["header", "body", "query"]}, "then": {"accepted": false, "requestReferenceUsed": false}},
+    {"given": {"parentAllowedDestinations": ["https://studio.example.test/mcp"]}, "when": {"operation": "create-child", "destination": "https://direct.example.test/mcp", "childAllowedDestinations": ["https://direct.example.test/mcp"]}, "then": {"accepted": false, "reason": "destination-outside-parent-consent"}},
+    {"given": {"parentResource": "https://studio.example.test/mcp", "parentScopes": ["studio:read"]}, "when": {"operation": "create-child", "resource": "https://studio.example.test/mcp", "requestedScopes": ["studio:write"]}, "then": {"accepted": false, "reason": "same-resource-scope-widening"}},
+    {"given": {"grantLifecycleState": "closed", "remainingCalls": 4}, "when": {"operation": "consume", "idempotencyKey": "closed-grant-fixture"}, "then": {"accepted": false, "debitedCalls": 0}}
+  ]
+  },
+  "when": {"action": "evaluate-delegation-lineage-and-budget-cases"},
+  "then": {"allCaseAssertionsRequired": true}
+}

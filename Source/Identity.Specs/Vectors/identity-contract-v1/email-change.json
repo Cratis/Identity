@@ -1,0 +1,26 @@
+{
+  "name": "email-change-keeps-account",
+  "description": "Changing email does not change the account selected by an immutable upstream key.",
+  "given": {
+    "accounts": [{
+      "issuer": "https://identity.example",
+      "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+      "state": "active",
+      "linked_keys": [{ "idp": "https://login.example/directory-a", "idp_sub": "user-7" }],
+      "profile": { "email": "before@example.test" }
+    }]
+  },
+  "when": {
+    "action": "sign_in",
+    "realm_issuer": "https://identity.example",
+    "verified_authentication": { "idp": "https://login.example/directory-a", "idp_sub": "user-7", "auth_time": 1800000000 },
+    "profile": { "email": "after@example.test" }
+  },
+  "then": {
+    "outcome": "authenticated",
+    "account_key": { "issuer": "https://identity.example", "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32" },
+    "account_count": 1,
+    "profile": { "email": "after@example.test" },
+    "linked_keys_unchanged": true
+  }
+}

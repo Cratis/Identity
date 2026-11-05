@@ -1,0 +1,22 @@
+{
+    "name": "unknown_resource",
+    "description": "An unregistered resource indicator is refused; the issuer never copies an arbitrary URI into aud.",
+    "given": {
+        "catalog": [
+            { "resource": "https://direct.cratis.io", "audience": "direct-api", "scope_prefix": "direct:" }
+        ],
+        "registered_client_id": "cli-test",
+        "request": { "resource": "https://unregistered.example.test", "scope": "direct:read" },
+        "person": {
+            "sub": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+            "tid": "t-1234",
+            "idp": "https://upstream.example.test",
+            "idp_sub": "upstream-person-1",
+            "auth_time": 1999999800,
+            "acr": "basic"
+        },
+        "grant_and_policy": "authorized_except_for_resource"
+    },
+    "when": { "action": "issue_access_token_and_inspect_final_serialized_output" },
+    "then": { "outcome": "reject", "reason": "unknown_resource", "error": "invalid_target", "token_issued": false }
+}

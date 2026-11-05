@@ -1,0 +1,40 @@
+{
+  "name": "link-cannot-confirm-before-realm-configured-hold",
+  "description": "A non-conflicting proposal waits only because this realm explicitly configured a 24-hour confirmation hold; the default is no hold.",
+  "given": {
+    "accounts": [{
+      "issuer": "https://identity.example",
+      "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+      "state": "active",
+      "linked_keys": [{ "idp": "https://github.com", "idp_sub": "12345" }]
+    }],
+    "proposal": {
+      "flow_id": "link-flow-2",
+      "target_account": { "issuer": "https://identity.example", "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32" },
+      "candidate_key": { "idp": "https://login.example/directory-a", "idp_sub": "user-7" },
+      "state": "pending_proof",
+      "complete_proof_recorded_at": 1800000000,
+      "authenticated_intent": true,
+      "account_control_proven_in_session": true,
+      "upstream_control_proven_in_same_session": true,
+      "conflict": false
+    },
+    "realm_policy": {
+      "issuer": "https://identity.example",
+      "confirmation_hold_seconds": 86400
+    }
+  },
+  "when": {
+    "action": "confirm_link",
+    "flow_id": "link-flow-2",
+    "now": 1800086399,
+    "fresh_both_side_proofs_in_same_session": true
+  },
+  "then": {
+    "outcome": "refused",
+    "reason": "realm_configured_hold_not_elapsed",
+    "proposal_state": "pending_proof",
+    "accounts_unchanged": true,
+    "authority_from_proposed_link": false
+  }
+}
