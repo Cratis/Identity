@@ -140,6 +140,7 @@
   },
   "then": {
     "outcome": "reject",
-    "reason": "identity"
+    "reason": "identity",
+    "callerSource": null
   }
 }

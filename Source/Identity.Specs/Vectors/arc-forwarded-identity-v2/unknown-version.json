@@ -140,6 +140,7 @@
   },
   "then": {
     "outcome": "reject",
-    "reason": "version"
+    "reason": "version",
+    "callerSource": null
   }
 }

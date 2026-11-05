@@ -147,6 +147,7 @@
   },
   "then": {
     "outcome": "reject",
-    "reason": "replay"
+    "reason": "replay",
+    "callerSource": null
   }
 }
