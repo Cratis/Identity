@@ -38,7 +38,7 @@ MUST, MUST NOT, and SHOULD have their [RFC 2119](https://www.rfc-editor.org/rfc/
 - Parsing MUST reject incorrect lengths, extra segments, unsupported versions, noncanonical casing, whitespace, and malformed encodings. It MUST NOT normalize invalid input into an accepted credential.
 - The checksum MUST NOT substitute for secret verification or resource binding. It detects transcription mistakes, not malicious alteration.
 
-The application MUST store a one-way verifier rather than a recoverable token. Verification MUST bind the token to the stored resource, tenant, person, scopes, expiry, revocation state, and applicable policy epoch. Secret-derived verifier comparison MUST be constant-time. A valid checksum from another resource MUST still be refused.
+The application MUST store a one-way verifier rather than a recoverable token. Verification MUST bind the token to the stored resource, tenant, person, scopes, expiry, revocation state, and applicable policy epoch. Verification MUST also compare the record's `recoveryEpoch` with the current authority/realm recovery epoch read from independent custody, per [identity-revocation-v1.md](identity-revocation-v1.md) §6. An older, missing, or unavailable epoch MUST cause refusal, with no policy re-evaluation; restore invalidates every PAT. Secret-derived verifier comparison MUST be constant-time. A valid checksum from another resource MUST still be refused.
 
 ### Dispatch
 
@@ -52,7 +52,7 @@ AuthProxy MUST route PATs to the application without asserting a verified PAT id
 
 ### Creation and policy
 
-A creation record MUST retain `credentialId`, `accountKey` (`issuer`, `subject`), product `person` reference, `resource`, `environment`, `tenant`, `scopes`, `createdAt`, `expiresAt`, and `assurance`. Where organisation policy applies, it MUST also retain `policyEpoch` as a nonnegative integer. Assurance MUST retain verified `idp`, `auth_time`, `acr` (`basic` if unknown), and optional mapped `amr`, as defined in identity-contract-v1. `auth_time` MUST be integer UTC seconds and MUST NOT be refreshed by PAT use. User-submitted assurance MUST NOT substitute for verified context.
+A creation record MUST retain `credentialId`, `accountKey` (`issuer`, `subject`), product `person` reference, `resource`, `environment`, `tenant`, `scopes`, `createdAt`, `expiresAt`, `assurance`, and a required `recoveryEpoch`: the authority/realm recovery epoch current at creation, as defined in [identity-revocation-v1.md](identity-revocation-v1.md) §6 (event field name `RestoreEpoch`). Where organisation policy applies, it MUST also retain `policyEpoch` as a nonnegative integer. Assurance MUST retain verified `idp`, `auth_time`, `acr` (`basic` if unknown), and optional mapped `amr`, as defined in identity-contract-v1. `auth_time` MUST be integer UTC seconds and MUST NOT be refreshed by PAT use. User-submitted assurance MUST NOT substitute for verified context.
 
 Expiry MUST be no later than creation plus 90 days and MUST obey a shorter organisation cap. Organisations MUST be able to forbid PATs. Under D12's recommended default, creation MUST meet the organisation's SSO and authentication freshness policy. Missing required assurance MUST cause refusal. A relevant policy change MUST invalidate the PAT's prior policy authorization and force re-evaluation against current policy; an old epoch MUST NOT establish authority. Current policy may permit continued use only after that re-evaluation.
 
@@ -85,6 +85,8 @@ The bad-checksum vector is the Direct fixture with checksum `000eb749`.
 | Required SSO assurance missing | Refused. |
 | Stale policy epoch; current policy refuses after re-evaluation | Refused; old epoch provides no authority. |
 | Stale policy epoch; current policy permits after re-evaluation, all other checks pass | Accepted; old epoch is never used as authority. |
+| Record `recoveryEpoch` older than the current recovery epoch (after a restore), all other checks pass | Refused; no policy re-evaluation. |
+| Record `recoveryEpoch` missing, or current recovery epoch unavailable from independent custody | Refused. |
 | `DIRECT_PAT_v1_` namespace marker, unsupported `direct_pat_v2_`, or malformed `direct_pat_` value | PAT branch only; refused without OAuth verification or introspection. |
 | `DPoP` Authorization scheme with a `direct_pat_v1_` value | PAT branch only; refused without OAuth verification or introspection. |
 | Session cookie plus Authorization bearer | Two credentials; refused before dispatch. |
