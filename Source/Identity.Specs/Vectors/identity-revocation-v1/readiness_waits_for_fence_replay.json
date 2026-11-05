@@ -8,8 +8,10 @@
     { "order": 3, "t": 2, "action": "attempt_refresh_pat_session_delegation_and_approval", "expected": "deny_not_ready" },
     { "order": 4, "t": 3, "action": "apply_fence_42_and_all_outbox_facts_to_both_stores" },
     { "order": 5, "t": 3, "action": "persist_proven_contiguous_watermarks", "operational_watermark": 43, "chronicle_watermark": 43 },
-    { "order": 6, "t": 4, "action": "durably_epoch_invalidate_refresh_families_and_approvals_active_at_or_after_operational_snapshot", "snapshot_watermark": 40, "expected_ready": false },
-    { "order": 7, "t": 5, "action": "transition_to_live_fencing_without_gap", "expected_ready": true }
+    { "order": 6, "t": 4, "action": "durably_epoch_invalidate_refresh_families_and_approvals_active_at_or_after_operational_snapshot", "snapshot_watermark": 40, "realm_epoch": 8, "fence_sequence": 44, "log_watermark": 44, "expected_ready": false },
+    { "order": 7, "t": 5, "action": "apply_fence_44_and_persist_contiguous_watermarks", "operational_watermark": 44, "chronicle_watermark": 44 },
+    { "order": 8, "t": 6, "action": "enforce_epoch_on_all_replicas_and_persist_recovery_readiness", "realm_epoch": 8 },
+    { "order": 9, "t": 7, "action": "transition_to_live_fencing_without_gap", "expected_ready": true }
   ],
-  "then": { "ready_before_gap_filled": false, "ready_before_consumption_recovery": false, "ready_after_prefix_proven_and_consumption_recovered": true, "post_snapshot_refresh_and_approval": "deny", "revoked_targets": "deny", "largest_observed_sequence_is_sufficient": false }
+  "then": { "ready_before_gap_filled": false, "ready_before_consumption_recovery": false, "ready_after_prefix_proven_and_consumption_recovered": true, "post_snapshot_refresh_and_approval": "deny", "all_affected_verifiers_enforce_epoch_before_readiness": true, "final_log_watermark": 44, "revoked_targets": "deny", "largest_observed_sequence_is_sufficient": false }
 }
