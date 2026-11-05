@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Testcontainers.MongoDb;
 
@@ -112,6 +113,9 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         builder
             .UseEnvironment("Development")
             .ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(Settings()))
+            .ConfigureLogging(logging => logging
+                .AddFilter("Cratis.Identity", LogLevel.Debug)
+                .AddFilter("OpenIddict", LogLevel.Trace))
             .ConfigureTestServices(services =>
             {
                 services.AddAuthentication().AddScheme<AuthenticationSchemeOptions, FakeUpstream>(FakeUpstream.Scheme, _ => { });
