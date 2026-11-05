@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Driver;
 using Testcontainers.MongoDb;
 
 namespace Cratis.Identity.Integration.given;
@@ -38,6 +39,12 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     /// (SERVER-121912), which is what Docker Desktop currently ships.
     /// </summary>
     readonly MongoDbContainer _mongo = new MongoDbBuilder("mongo:8.0.14").Build();
+    readonly string _database = $"identity-specs-{Guid.NewGuid():N}";
+
+    /// <summary>
+    /// Gets the host's MongoDB database, for specs that must change what is stored behind Identity's back.
+    /// </summary>
+    public IMongoDatabase Database => new MongoClient(_mongo.GetConnectionString()).GetDatabase(_database);
 
     /// <summary>
     /// Gets the test-only pause points in the refresh-token pipeline.
@@ -109,11 +116,15 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
             });
     }
 
-    Dictionary<string, string?> Settings() => new()
+    /// <summary>
+    /// Gets the in-memory configuration of the host.
+    /// </summary>
+    /// <returns>The settings.</returns>
+    protected virtual Dictionary<string, string?> Settings() => new()
     {
         ["Identity:Issuer"] = Issuer,
         ["Identity:MongoDB:ConnectionString"] = _mongo.GetConnectionString(),
-        ["Identity:MongoDB:Database"] = $"identity-specs-{Guid.NewGuid():N}",
+        ["Identity:MongoDB:Database"] = _database,
         ["Identity:GitHub:ClientId"] = "unused-in-specs",
         ["Identity:GitHub:ClientSecret"] = "unused-in-specs",
         ["Identity:Resources:0:Tenants:0:Id"] = MemberTenant,

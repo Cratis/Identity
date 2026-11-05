@@ -8,12 +8,7 @@ namespace Cratis.Identity.Integration.Conformance;
 /// </summary>
 public static class ExpectedFailures
 {
-    public static IReadOnlyList<ExpectedFailure> All { get; } =
-    [
-        new(Requirements.KeyRotationOverlap,
-            "Only one signing certificate can be configured (IdentityServiceCollectionExtensions.AddCredentials); rotation with an overlap window arrives with keys from the secret store.",
-            "https://github.com/Cratis/Identity/issues/38")
-    ];
+    public static IReadOnlyList<ExpectedFailure> All { get; } = [];
 
     /// <summary>
     /// An explicitly owned gap in conformance.
