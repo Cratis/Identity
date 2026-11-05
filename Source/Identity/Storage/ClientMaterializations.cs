@@ -44,12 +44,21 @@ public class ClientMaterializations(IMongoDatabase database)
             DisplayName = policy.DisplayName,
             Permissions = policy.Permissions.ToArray(),
             Requirements = policy.Requirements.ToArray(),
-            Properties = new BsonDocument("cratis_client_registration_id", state.Id)
+            Properties = new BsonDocument
+            {
+                { "cratis_client_registration_id", state.Id },
+                { "cratis_client_registration_version", new BsonDecimal128(new Decimal128((decimal)state.Version.Value)) }
+            }
         };
 
         var collection = Collection();
         await collection.DeleteManyAsync(application => application.ClientId == document.ClientId && application.Id != document.Id, cancellationToken);
-        await collection.ReplaceOneAsync(application => application.Id == document.Id, document, new ReplaceOptions { IsUpsert = true }, cancellationToken);
+        var filters = Builders<OpenIddictMongoDbApplication>.Filter;
+        const string VersionPath = "properties.cratis_client_registration_version";
+        var version = document.Properties["cratis_client_registration_version"];
+        var currentOrOlder = filters.Eq(application => application.Id, document.Id) &
+            (filters.Exists(VersionPath, false) | filters.Lte(VersionPath, version));
+        await collection.ReplaceOneAsync(currentOrOlder, document, new ReplaceOptions { IsUpsert = true }, cancellationToken);
     }
 
     /// <summary>Removes a retired registration's operational copy.</summary>
@@ -57,6 +66,13 @@ public class ClientMaterializations(IMongoDatabase database)
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The completion task.</returns>
     public virtual Task Remove(ClientRegistrationId id, CancellationToken cancellationToken) => Collection().DeleteOneAsync(application => application.Id == ApplicationId(id), cancellationToken);
+
+    /// <summary>Deletes all operational copies outside the active, declared registrations, including unmarked legacy clients.</summary>
+    /// <param name="active">The authoritative active registrations declared by this startup.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The completion task.</returns>
+    public virtual Task Sweep(IEnumerable<ClientRegistrationId> active, CancellationToken cancellationToken) => Collection().DeleteManyAsync(
+        Builders<OpenIddictMongoDbApplication>.Filter.Nin(application => application.Id, active.Select(ApplicationId)), cancellationToken);
 
     IMongoCollection<OpenIddictMongoDbApplication> Collection() => database.GetCollection<OpenIddictMongoDbApplication>("openiddict.applications");
 }

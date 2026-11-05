@@ -54,5 +54,5 @@ public class ClientRegistrationStateReducer : IReducerFor<ClientRegistrationStat
         return Start(current, context) with { Retired = true };
     }
 
-    static ClientRegistrationState Start(ClientRegistrationState? current, EventContext context) => current ?? new(context.EventSourceId.Value);
+    static ClientRegistrationState Start(ClientRegistrationState? current, EventContext context) => (current ?? new(context.EventSourceId.Value)) with { Version = context.SequenceNumber };
 }

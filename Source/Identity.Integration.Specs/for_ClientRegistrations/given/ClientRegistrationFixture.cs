@@ -22,6 +22,9 @@ public class ClientRegistrationFixture : IAsyncLifetime
     readonly string _database = $"identity-clients-{Guid.NewGuid():N}";
     readonly MongoDbContainer _mongo;
     readonly IContainer _kernel;
+#pragma warning disable MA0039, CA5400 // Test-only: trust the pinned development image's self-signed health certificate.
+    readonly HttpClientHandler _healthHandler = new() { ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator };
+#pragma warning restore MA0039, CA5400
 
     public ClientRegistrationFixture()
     {
@@ -31,11 +34,12 @@ public class ClientRegistrationFixture : IAsyncLifetime
             .WithNetwork(_network)
             .WithNetworkAliases("client-registration-mongo")
             .Build();
-        _kernel = new ContainerBuilder("cratis/chronicle:19.111.0")
+        _kernel = new ContainerBuilder("cratis/chronicle:19.111.0-development")
             .WithNetwork(_network)
-            .WithEnvironment("Storage__ConnectionDetails", "mongodb://spec:spec-password@client-registration-mongo:27017/?authSource=admin")
+            .WithEnvironment("Cratis__Chronicle__Storage__Type", "MongoDB")
+            .WithEnvironment("Cratis__Chronicle__Storage__ConnectionDetails", "mongodb://spec:spec-password@client-registration-mongo:27017/?authSource=admin")
             .WithPortBinding(35000, true)
-            .WithWaitStrategy(Wait.ForUnixContainer().UntilHttpRequestIsSucceeded(request => request.ForPort(35000).ForPath("/health").UsingTls()))
+            .WithWaitStrategy(Wait.ForUnixContainer().UntilHttpRequestIsSucceeded(request => request.ForPort(35000).ForPath("/health").UsingTls().UsingHttpMessageHandler(_healthHandler)))
             .Build();
         _secrets.WriteKey("signing", "clients", DateTimeOffset.UtcNow.AddHours(-1));
         _secrets.WriteKey("encryption", "clients", DateTimeOffset.UtcNow.AddHours(-1));
@@ -138,6 +142,7 @@ public class ClientRegistrationFixture : IAsyncLifetime
         await _mongo.DisposeAsync();
         await _network.DisposeAsync();
         _secrets.Dispose();
+        _healthHandler.Dispose();
     }
 
     static bool IsClientFact(BsonDocument document)

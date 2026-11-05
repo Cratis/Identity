@@ -33,10 +33,11 @@ public class ClientRegistrationReconciler(ClientRegistrationStore store, ClientR
             throw new InvalidClientValue("duplicate client id");
         }
 
+        var registrations = new List<ClientRegistrationId>();
         foreach (var client in intended)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await RegisterOrUpdate(client, cancellationToken);
+            registrations.Add(await RegisterOrUpdate(client, cancellationToken));
         }
 
         var declared = intended.Select(client => client.ClientId).ToHashSet();
@@ -45,10 +46,21 @@ public class ClientRegistrationReconciler(ClientRegistrationStore store, ClientR
             await Retire(stale.Id, cancellationToken);
         }
 
+        var active = new List<ClientRegistrationId>();
+        foreach (var id in registrations)
+        {
+            var state = (await store.Read(id)).State;
+            if (!state.Retired && declared.Contains(state.ClientId!))
+            {
+                active.Add(id);
+            }
+        }
+
+        await materializations.Sweep(active, cancellationToken);
         return intended.Length;
     }
 
-    async Task RegisterOrUpdate(IntendedClientRegistration client, CancellationToken cancellationToken)
+    async Task<ClientRegistrationId> RegisterOrUpdate(IntendedClientRegistration client, CancellationToken cancellationToken)
     {
         for (var attempt = 0; attempt < 2; attempt++)
         {
@@ -66,9 +78,14 @@ public class ClientRegistrationReconciler(ClientRegistrationStore store, ClientR
                 continue;
             }
 
-            var committed = events.Count == 0 ? read.State : (await store.Read(id)).State;
+            var committed = (await store.Read(id)).State;
+            if (committed.Retired)
+            {
+                continue;
+            }
+
             await materializations.Upsert(committed, client.Policy, cancellationToken);
-            return;
+            return id;
         }
 
         throw new InvalidOperationException("Client registration changed concurrently; reconciliation failed closed.");

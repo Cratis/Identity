@@ -55,6 +55,7 @@ public class a_materialization : Specification
         _state = new("00112233-4455-4677-8899-aabbccddeeff")
         {
             ClientId = ClientId.Create("introspection"),
+            Version = new(12),
             RedirectUris = [RedirectUri.Create("https://fact.example/callback")],
             CurrentSecretHash = new ClientSecretDigester(Clients.given.client_test_keys.Create()).Digest(ClientId.Create("introspection"), "never-store-this-raw-secret")
         };
@@ -72,5 +73,5 @@ public class a_materialization : Specification
         _policy.Requirements.Add(OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange);
     }
 
-    static BsonDocument Render(FilterDefinition<OpenIddictMongoDbApplication> filter) => filter.Render(new RenderArgs<OpenIddictMongoDbApplication>(BsonSerializer.SerializerRegistry.GetSerializer<OpenIddictMongoDbApplication>(), BsonSerializer.SerializerRegistry));
+    protected static BsonDocument Render(FilterDefinition<OpenIddictMongoDbApplication> filter) => filter.Render(new RenderArgs<OpenIddictMongoDbApplication>(BsonSerializer.SerializerRegistry.GetSerializer<OpenIddictMongoDbApplication>(), BsonSerializer.SerializerRegistry));
 }

@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Chronicle.Events;
 using Cratis.Chronicle.Projections.ModelBound;
 using Cratis.Chronicle.ReadModels;
 using Cratis.Identity.Contracts;
@@ -34,6 +35,9 @@ public record ClientRegistrationState(string Id)
 
     /// <summary>Gets the current secret activation time.</summary>
     public DateTimeOffset? SecretActivatedAt { get; init; }
+
+    /// <summary>Gets the authoritative sequence number of the last folded client fact.</summary>
+    public EventSequenceNumber Version { get; init; } = EventSequenceNumber.Unavailable;
 
     /// <summary>Gets whether the registration is retired.</summary>
     public bool Retired { get; init; }
