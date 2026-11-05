@@ -1,10 +1,10 @@
 # Recovery: shared Identity host
 
-Status: Draft. Owner: Identity module/issuer maintainer, hosted realm lifecycle maintainer and key custodian with recovery/on-call role; **owner role pending #20**. Follow the [shared rules](../compromise-matrix-v1.md#recovery-rules-shared-by-the-runbooks) and [revocation §§3, 6–8](../../specs/identity-revocation-v1.md).
+Status: Draft. Owner: Identity module/issuer maintainer, hosted realm lifecycle maintainer and key custodian with recovery/on-call role; **woksin holds the role (Identity #20)**. Follow the [shared rules](../compromise-matrix-v1.md#recovery-rules-shared-by-the-runbooks) and [revocation §§3, 6–8](../../specs/identity-revocation-v1.md).
 
 ## Trigger and detection
 
-Unexpected issuance, client registration, key/store access, realm selection, image/secret changes, or fence-log/watermark anomalies. Inventory **every realm served or reachable**, not only the reporting realm, and establish earliest possible compromise. Under **pending #17 (D19)** option B, this includes all hosted Stage realms on the shared host. Under **pending #15 (D13)** a shared products issuer exposes Direct and Studio together. See [decision acceptance](../compromise-matrix-v1.md#decision-dependencies-and-acceptance); neither acceptance has been granted by this runbook.
+Unexpected issuance, client registration, key/store access, realm selection, image/secret changes, or fence-log/watermark anomalies. Inventory **every realm served or reachable**, not only the reporting realm, and establish earliest possible compromise. Under D19 (option B, Identity #17), one platform-run Identity host serves customer Stage app realms, so this includes all hosted Stage realms on the host. Separate stores do not contain a compromise of the host itself, so this runbook's scope covers recovery across **all** realms the host runs: per-realm key rotation and rejection, invalidation of grants and sessions, and forced reauthentication. The products realm (Direct and Studio, D13, Identity #15) runs on its own host, not the shared customer host. See [decision acceptance](../compromise-matrix-v1.md#decision-dependencies-and-acceptance).
 
 ## Immediate containment (ordered)
 

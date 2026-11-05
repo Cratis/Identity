@@ -1,6 +1,6 @@
 # Recovery: one backend app process
 
-Status: Draft. Owner: product authorization and consumer maintainer with key custodian and recovery/on-call role; **owner role pending #20**. Follow the [shared rules](../compromise-matrix-v1.md#recovery-rules-shared-by-the-runbooks) and [revocation §§3, 6–8](../../specs/identity-revocation-v1.md). Scope includes app data, Chronicle/workload credentials and received tokens, not just the public envelope key.
+Status: Draft. Owner: product authorization and consumer maintainer with key custodian and recovery/on-call role; **woksin holds the role (Identity #20)**. Follow the [shared rules](../compromise-matrix-v1.md#recovery-rules-shared-by-the-runbooks) and [revocation §§3, 6–8](../../specs/identity-revocation-v1.md). Scope includes app data, Chronicle/workload credentials and received tokens, not just the public envelope key.
 
 ## Trigger and detection
 
