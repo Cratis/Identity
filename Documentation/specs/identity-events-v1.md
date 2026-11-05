@@ -70,11 +70,52 @@ Both sets in §8 are exhaustive for this proposed initial catalogue (open point 
 
 A Public event MUST NOT become Internal, disappear or change meaning. A replacement needs a **new event id and name**, continued support for the old contract and a reviewed consumer migration. This specification's version is separate from individual event generations. Consumers MUST be idempotent by event identity/sequence and MUST NOT mint credentials or repeat external side effects during replay.
 
+### 4.1 Source facts and publication
+
+Chronicle does not append a `[Public]` event type to the event log; Public contracts reach consumers only through the outbox. Every Public row in §8 therefore has exactly one **Internal source fact**, listed below, on the **same event source** as the Public contract:
+
+1. **The writer appends only the source fact.** Atomic appends (for example `UpstreamKeySubjectRecorded` with the link's source fact), uniqueness constraints (the per-key `KeyHash` constraint on linking), concurrency scopes, projections, reactors inside Identity/Access and replay use the source fact, never the Public contract. Nothing appends a Public contract to the event log.
+2. **A publication reactor publishes the contract.** One reactor per Public contract observes its source fact on the event log and appends the Public contract to the outbox. The Public payload is derived only from the source fact's fields and Chronicle context; it adds no other data, stays pseudonymous under §5 (no `IdpSub`, login or email even when an Internal fact on the same stream carries them) and keeps the source fact's event source, compliance subject, correlation and occurrence time.
+3. **Identity and delivery.** The published event's identity is derived from its source fact (the source fact's event-log sequence number and the Public contract's type id, written `<source sequence number>:<contract type id>` and used both as the outbox idempotency key and as the consumer deduplication tag), so a redelivery or replay of the source fact publishes nothing new. Publication is at least once; consumers MUST deduplicate on that identity. A redelivered publication that finds its own earlier outbox append succeeds; any other failed append fails the reactor delivery and is retried, never skipped.
+4. **Ordering guarantee.** For one event source, Public contracts are published in the event-log order of their source facts: a later source fact's contract is never published before an earlier one's, and a failed publication holds back later ones for that event source until it succeeds. A held-back publication MUST raise an operational alert naming the event source and the stuck source-fact sequence number, so a fact that cannot be published never stalls a stream silently. Consumers may rely on per-event-source order (for an account: registration before link, link before unlink, disable before enable). There is no ordering guarantee across event sources, and none between a Public contract and Internal facts.
+5. **Latency.** Publication is asynchronous. A Public contract is never a prerequisite for enforcement: fences, epochs and tombstones (§7, identity-revocation-v1 §3) take effect before acknowledgement whether or not the contract has been published.
+6. **Catalogue and generations.** A source fact is an Internal event under every rule of this specification (stable type id, generations, PII, forbidden content). It carries at least every field its Public contract publishes, with the same protection marks, so the contract never needs data from elsewhere. A new Public generation that needs a new field needs a new source-fact generation first.
+
+Source facts are named `<Public contract subject><noun>Recorded` and listed here; their type ids are allocated under §2.3 like any other row. Each has the Public contract's area, event source and fields (with the same marks), is Internal and written by the contract's writer; §8 rows describe the contract.
+
+| Public contract | Internal source fact |
+|---|---|
+| AccountRegistered | AccountRegistrationRecorded |
+| AccountDisabled | AccountDisablementRecorded |
+| AccountEnabled | AccountEnablementRecorded |
+| AccountTombstoned | AccountTombstoneRecorded |
+| AccountErased | AccountErasureRecorded |
+| UpstreamKeyLinked | UpstreamKeyLinkRecorded |
+| UpstreamKeyUnlinked | UpstreamKeyUnlinkRecorded |
+| ConsentWithdrawn | ConsentWithdrawalRecorded |
+| AuthorizationGranted | AuthorizationGrantRecorded |
+| AuthorizationRevoked | AuthorizationRevocationRecorded |
+| RefreshTokenFamilyRevoked | RefreshTokenFamilyRevocationRecorded |
+| SigningKeyActivated | SigningKeyActivationRecorded |
+| SigningKeyRetired | SigningKeyRetirementRecorded |
+| ResourceRegistered | ResourceRegistrationRecorded |
+| ResourceScopeRegistered | ResourceScopeRegistrationRecorded |
+| ResourceScopeRetired | ResourceScopeRetirementRecorded |
+| OrganisationRegistered | OrganisationRegistrationRecorded |
+| OrganisationPolicyChanged | OrganisationPolicyChangeRecorded |
+| OrganisationDomainVerified | OrganisationDomainVerificationRecorded |
+| TenantBindingConfirmed | TenantBindingConfirmationRecorded |
+| TenantBindingRemoved | TenantBindingRemovalRecorded |
+| EnterpriseConnectionRegistered | EnterpriseConnectionRegistrationRecorded |
+| ConnectionAssuranceMappingChanged | ConnectionAssuranceMappingChangeRecorded |
+| RealmPolicyEpochAdvanced | RealmPolicyEpochAdvanceRecorded |
+| RealmRecoveryEpochAdvanced | RealmRecoveryEpochAdvanceRecorded |
+
 ## 5. PII and erasure
 
 Email, personal name/login and upstream subject (`idp_sub`) MUST be protected from the first production append, including generation 1. The real marker is `[PII]`, `Cratis.Chronicle.Compliance.GDPR.PIIAttribute`, on the concept type, property or matching constructor parameter (for positional records prefer `[property: PII]`). The rationale SHOULD use `Cratis.Chronicle.Compliance.ComplianceDetailsAttribute`; Chronicle's `PIIMetadataProvider` uses those details first and falls back to the `PIIAttribute` details argument only when no compliance details are present, so the two MUST NOT disagree. `[Encrypted]` is not a substitute for PII erasure and MUST NOT be combined with `[PII]` on the same value. `[PII]` does not make a secret permissible.
 
-In §8, `†` means `[PII]` and `‡` means a keyed personal-data lookup digest, also proposed as `[PII]` (open point 5). Concepts MUST carry protection wherever reused. Only the minimum approved recipients may receive plaintext. Following contract v1 §7, **Public events MUST NOT carry raw upstream identifiers or upstream display identifiers**: public link events use the pseudonymous `LinkId` and `KeyHash` only. Raw `IdpSub` lives only in Internal Account-stream events: the pending `UpstreamKeyLinkProposed` and, for a confirmed link, `UpstreamKeySubjectRecorded`, appended atomically with `UpstreamKeyLinked`. The upstream login lives only in the Internal `UpstreamKeyDisplayIdentifierObserved`. Both are on the Account stream, inside the erasure boundary. A display identifier MUST NOT be used for matching, linking or authorization; it serves display and the `preferred_username` claim only, under [contract v1 §5.1](identity-contract-v1.md#51-display-claim-preferred_username). Upstream disclosure/retention remains open point 5. Raw link proofs, administrator evidence and free-text reasons MUST NOT enter events; store protected evidence separately and include only a non-redeemable EvidenceId.
+In §8, `†` means `[PII]` and `‡` means a keyed personal-data lookup digest, also proposed as `[PII]` (open point 5). Concepts MUST carry protection wherever reused. Only the minimum approved recipients may receive plaintext. Following contract v1 §7, **Public events MUST NOT carry raw upstream identifiers or upstream display identifiers**: public link events use the pseudonymous `LinkId` and `KeyHash` only. Raw `IdpSub` lives only in Internal Account-stream events: the pending `UpstreamKeyLinkProposed` and, for a confirmed link, `UpstreamKeySubjectRecorded`, appended atomically with `UpstreamKeyLinkRecorded` (the source fact of `UpstreamKeyLinked`, §4.1). The upstream login lives only in the Internal `UpstreamKeyDisplayIdentifierObserved`. Both are on the Account stream, inside the erasure boundary. A display identifier MUST NOT be used for matching, linking or authorization; it serves display and the `preferred_username` claim only, under [contract v1 §5.1](identity-contract-v1.md#51-display-claim-preferred_username). Upstream disclosure/retention remains open point 5. Raw link proofs, administrator evidence and free-text reasons MUST NOT enter events; store protected evidence separately and include only a non-redeemable EvidenceId.
 
 Account streams use the account subject as Chronicle's default compliance subject. Chronicle cannot encrypt the event-source id: MUST NOT put `[PII]` or redundant `[Subject]` on it. If a non-account stream ever contains personal data, it MUST explicitly resolve the owning account through `Cratis.Chronicle.SubjectAttribute`/the append subject and prove a single-person erasure boundary; referencing an account does not itself redirect compliance. Do not mix different people's PII in one event/read-model document. This catalogue keeps personal profile/link values on Account streams.
 
@@ -118,7 +159,7 @@ Access projection freshness/heartbeat transport is operational, not a periodic d
 
 ## 8. Event catalogue v1
 
-Each row is one event kind; no row permits arbitrary fields. Type ids are allocated under §2.3 before implementation appends. Areas are namespace suffixes. Stream aliases expand to exact event-source-id rules in §2.2. `†`/`‡` expand to §5; other fields are non-PII ids, bounded configuration, closed reason ids or instants. `AccountSubject` is a referenced contract v1 subject, never an upstream id. `KeyHash`/`ClientSecretHash` include digest purpose/key revision through approved schema metadata or explicit companion fields (§6). Writers mean the sole authoritative module; an outbox dispatcher appends on its behalf.
+Each row is one event kind; no row permits arbitrary fields. Type ids are allocated under §2.3 before implementation appends. Areas are namespace suffixes. Stream aliases expand to exact event-source-id rules in §2.2. `†`/`‡` expand to §5; other fields are non-PII ids, bounded configuration, closed reason ids or instants. `AccountSubject` is a referenced contract v1 subject, never an upstream id. `KeyHash`/`ClientSecretHash` include digest purpose/key revision through approved schema metadata or explicit companion fields (§6). Writers mean the sole authoritative module; for a Public row the writer appends the row's Internal source fact and the contract is published to the outbox under §4.1.
 
 All names, fields, writer assignments and Public/Internal choices are the proposal under open point 3. Access rows additionally **depend on D5** (open point 8); no row grants Access ownership of product membership, roles, invitations or delegation approvals.
 
@@ -136,8 +177,8 @@ All names, fields, writer assignments and Public/Internal choices are the propos
 | UpstreamKeyLinkProposed | assigned at implementation | Accounts | Internal | Account | LinkProposalId, ConnectionId, IdpIssuer, IdpSub† | Identity | Accepted intent; pending_proof, never provisional access. |
 | UpstreamKeyLinkQuarantined | assigned at implementation | Accounts | Internal | Account | LinkProposalId, ReasonId, EvidenceId, HoldNotBefore | Identity | Proof/conflict transition; hold and fresh proof per contract v1. |
 | UpstreamKeyLinkCleared | assigned at implementation | Accounts | Internal | Account | LinkProposalId, ResolutionId, EvidenceId, ReasonId | Identity | Authorized resolver's clearance, not waived proof or uniqueness. |
-| UpstreamKeyLinked | assigned at implementation | Accounts | Public | Account | LinkId, ConnectionId, IdpIssuer, KeyHash‡, EvidenceId, LinkedAt | Identity | Atomic uniqueness; first registration or confirmed post-hold proposal. No raw upstream id (contract v1 §7). Proof material excluded. |
-| UpstreamKeySubjectRecorded | assigned at implementation | Accounts | Internal | Account | LinkId, IdpIssuer, IdpSub† | Identity | Appended atomically with `UpstreamKeyLinked`; the confirmed link's raw `IdpSub` (only Internal events carry it, see §5). Inside the erasure boundary. |
+| UpstreamKeyLinked | assigned at implementation | Accounts | Public | Account | LinkId, ConnectionId, IdpIssuer, KeyHash‡, EvidenceId, LinkedAt | Identity | Atomic uniqueness, enforced on its source fact `UpstreamKeyLinkRecorded` (§4.1); first registration or confirmed post-hold proposal. No raw upstream id (contract v1 §7). Proof material excluded. |
+| UpstreamKeySubjectRecorded | assigned at implementation | Accounts | Internal | Account | LinkId, IdpIssuer, IdpSub† | Identity | Appended atomically with `UpstreamKeyLinkRecorded`, the source fact of `UpstreamKeyLinked`; the confirmed link's raw `IdpSub` (only Internal events carry it, see §5). Inside the erasure boundary. |
 | UpstreamKeyDisplayIdentifierObserved | assigned at implementation | Accounts | Internal | Account | LinkId, Login†, ObservedAt | Identity | Per key; mutable upstream login for display and `preferred_username` only. Never used for matching, linking or authorization. Inside the erasure boundary. |
 | UpstreamKeyLinkRejected | assigned at implementation | Accounts | Internal | Account | LinkProposalId, ReasonId | Identity | Terminal proposal; retry needs a new proposal/proofs. |
 | UpstreamKeyUnlinked | assigned at implementation | Accounts | Public | Account | LinkId, KeyHash‡, ReasonId, UnlinkedAt | Identity | New fact, never a rewrite/transfer of the original link. Reports, asynchronously, the unlink fence that revokes every grant, refresh family and session authenticated through that key (identity-revocation-v1 §7 Unlink); the event is not the fence itself. The unlinked key stays reserved to its old account; relinking it to any account needs an explicit reviewed operation (its own catalogue extension), never automatic linking. |

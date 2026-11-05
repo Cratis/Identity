@@ -1,7 +1,7 @@
 {
   "name": "outbox_duplicate_append",
   "description": "A lost append result and a crash before outbox completion repeat delivery but not the domain fact.",
-  "given": { "target": "family-1", "fence_sequence": 41, "log_watermark": 41, "outbox_id": "fact-41", "outbox_state": "pending", "event_type": "RefreshTokenFamilyRevoked" },
+  "given": { "target": "family-1", "fence_sequence": 41, "log_watermark": 41, "outbox_id": "fact-41", "outbox_state": "pending", "event_type": "RefreshTokenFamilyRevocationRecorded" },
   "when": [
     { "order": 1, "t": 0, "action": "chronicle_commits_keyed_append_but_response_is_lost", "idempotency_key": "fact-41", "content": "immutable-original-intent" },
     { "order": 2, "t": 0, "action": "crash_before_marking_outbox_delivered" },
