@@ -1,0 +1,18 @@
+{
+  "name": "restore_runner_rotation",
+  "description": "A runner rotation lost on restore cannot revive the old credential or preserve the new one; both precede the recovery epoch.",
+  "given": { "target": "runner-1", "runner_credential": "runner-old", "runner_session": "runner-session-1", "recovery_epoch": 7, "operational_snapshot_watermark": 40, "log_watermark": 40, "chronicle_watermark": 40 },
+  "when": [
+    { "order": 1, "t": 0, "action": "snapshot_operational_store", "watermark": 40, "runner_credential": "runner-old" },
+    { "order": 2, "t": 1, "action": "commit_runner_rotation", "superseded": "runner-old", "replacement": "runner-new", "recovery_epoch": 7 },
+    { "order": 3, "t": 2, "action": "restore_operational_snapshot", "watermark": 40, "expected_ready": false },
+    { "order": 4, "t": 3, "action": "durably_advance_recovery_epoch_outside_both_stores", "recovery_epoch": 8, "fence_sequence": 41, "log_watermark": 41, "outbox_id": "recovery-fact-41", "expected_ready": false },
+    { "order": 5, "t": 4, "action": "persist_operational_watermark_and_publication_intent", "watermark": 41, "outbox_id": "recovery-fact-41", "event_type": "RealmRecoveryEpochAdvanced" },
+    { "order": 6, "t": 5, "action": "prove_independent_restriction_coverage_and_retirement_tombstones", "barrier": 41 },
+    { "order": 7, "t": 6, "action": "enforce_epoch_on_all_replicas_and_persist_recovery_readiness", "recovery_epoch": 8 },
+    { "order": 8, "t": 7, "action": "attempt_runner_dispatch", "runner_credential": "runner-old", "expected": "deny" },
+    { "order": 9, "t": 8, "action": "attempt_runner_dispatch", "runner_credential": "runner-new", "expected": "deny" },
+    { "order": 10, "t": 9, "action": "attempt_runner_session_continuation", "runner_session": "runner-session-1", "expected": "deny" }
+  ],
+  "then": { "ready": true, "recovery_epoch": 8, "old_runner_credential": "deny", "new_runner_credential": "deny", "runner_session": "deny", "dispatches_after_restore": 0, "fresh_authorization_required": true, "log_watermark": 41, "operational_watermark": 41, "pending_outbox_fact_count": 1, "all_affected_verifiers_enforce_epoch_before_readiness": true }
+}
