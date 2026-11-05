@@ -1,6 +1,6 @@
 # Recovery: AuthProxy's v2 ES256 edge private key
 
-Status: Draft. Owner: AuthProxy maintainer and key custodian with affected product maintainers; **owner role pending #20**. Scope: every app signed by the leaked key. Follow the [shared rules](../compromise-matrix-v1.md#recovery-rules-shared-by-the-runbooks) and [revocation §§3, 6–8](../../specs/identity-revocation-v1.md). Process access escalates to [AuthProxy recovery](authproxy-process.md).
+Status: Draft. Owner: AuthProxy maintainer and key custodian with affected product maintainers; **woksin holds the role (Identity #20)**. Scope: every app signed by the leaked key. Follow the [shared rules](../compromise-matrix-v1.md#recovery-rules-shared-by-the-runbooks) and [revocation §§3, 6–8](../../specs/identity-revocation-v1.md). Process access escalates to [AuthProxy recovery](authproxy-process.md).
 
 ## Trigger and detection
 

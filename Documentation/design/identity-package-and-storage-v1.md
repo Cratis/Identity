@@ -82,7 +82,7 @@ The application-facing surface is **only commands, queries and events**: registe
 | UI pages | Login, consent and enabled device/link/account interactions on the issuer's own origin; render package view models, submit package commands, and pass §5 conformance. |
 | Product callbacks and operation | Authenticated product tenant/live-membership integration, no configured membership authority outside development fixtures; monitoring, backup/restore and key drills. |
 
-Embedding is not a trust boundary against the host process. Proposed hosted Stage identity runs outside untrusted customer application code; the products realm is not embedded in Direct or Studio. Compact/self-hosted embedding remains an operator choice. D18 is decided as option A (#16); D19 (Identity #17, still open) chooses hosted placement and requires separate shared-host risk acceptance.
+Embedding is not a trust boundary against the host process. Proposed hosted Stage identity runs outside untrusted customer application code; the products realm is not embedded in Direct or Studio. Compact/self-hosted embedding remains an operator choice. D18 is decided as option A (#16); D19 (Identity #17) is decided as option B: one platform-run Identity host serves customer Stage app realms, each realm with its own signing keys and stores and never a shared key store, with a dedicated host per app as option C. The products realm (D13, Identity #15) runs on a separate host, not the shared customer host.
 
 ## 5. Consent contract: checks for #48
 
@@ -112,7 +112,7 @@ Do not copy active codes, stale consumption records or key-ring XML into events.
 
 ## 7. Decisions recorded at sign-off
 
-- **D18 (#16):** decided as option A: the event/operational/secret boundary, materialization and hosted-process details as described above. D19 placement and blast-radius acceptance (Identity #17) remain separate and open.
+- **D18 (#16):** decided as option A: the event/operational/secret boundary, materialization and hosted-process details as described above. **D19 (#17):** decided as option B with option C: one platform-run Identity host for customer Stage app realms, each realm with its own signing keys and stores (never a shared key store) and a dedicated host per app as option C; separate stores do not contain a host compromise, so the host-compromise runbook (#18) covers recovery across all realms the host runs; the products realm runs on a separate host.
 - **Package names:** module/contracts, adapter split, proxy/component names and reference-host ownership were signed off in Identity #14; signatures above are sketches.
 - **Store technologies:** W2 must prove independent fence-log durability/retention, Chronicle keyed append/version compatibility and secret/KMS adapters. No database technology is selected here.
 - **Review:** consent-view-model/host conformance and privacy/retention boundaries were signed off in Identity #14. #48 supplies executable consent evidence, not this document.

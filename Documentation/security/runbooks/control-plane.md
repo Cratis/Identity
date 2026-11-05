@@ -1,6 +1,6 @@
 # Recovery referral: control plane
 
-Status: Draft coordination referral only. Owner: Infrastructure incident authority with accountable issuer/security owner; **owner role pending #20**. Control-plane hardening and cluster restoration are outside Identity's scope. Recovery is **cluster-level**, not an Identity-only rotation. Refer to [Cratis/Infrastructure](https://github.com/Cratis/Infrastructure) for the infrastructure-owned incident response; an approved cluster-level runbook link is still needed before operational use. The [matrix](../compromise-matrix-v1.md) does not claim per-app or per-realm containment inside a compromised administrative boundary.
+Status: Draft coordination referral only. Owner: Infrastructure incident authority with accountable issuer/security owner; **woksin holds the role (Identity #20)**. Control-plane hardening and cluster restoration are outside Identity's scope. Recovery is **cluster-level**, not an Identity-only rotation. Refer to [Cratis/Infrastructure](https://github.com/Cratis/Infrastructure) for the infrastructure-owned incident response; an approved cluster-level runbook link is still needed before operational use. The [matrix](../compromise-matrix-v1.md) does not claim per-app or per-realm containment inside a compromised administrative boundary.
 
 ## Trigger and detection
 
