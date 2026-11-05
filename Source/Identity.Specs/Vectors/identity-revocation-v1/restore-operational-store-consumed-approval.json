@@ -1,0 +1,36 @@
+{
+    "name": "restore-operational-store-consumed-approval",
+    "description": "A consumed approval restored as unconsumed is invalidated before readiness and cannot authorize the operation again.",
+    "given": {
+        "target": "approval-1",
+        "authority_epoch": 7,
+        "approval_state": "unconsumed",
+        "operational_snapshot_watermark": 40,
+        "log_watermark": 40,
+        "chronicle_watermark": 40,
+        "independent_consumption_logging": false,
+        "monotonic_epoch_authority": "healthy_outside_restored_snapshots"
+    },
+    "when": [
+        { "order": 1, "t": 0, "action": "snapshot_operational_store", "watermark": 40, "approval_state": "unconsumed" },
+        { "order": 2, "t": 1, "action": "consume_approval_once_with_protected_operation", "approval": "approval-1" },
+        { "order": 3, "t": 1, "action": "release_protected_operation_result", "log_watermark": 40 },
+        { "order": 4, "t": 2, "action": "restore_operational_snapshot", "watermark": 40, "expected_ready": false },
+        { "order": 5, "t": 3, "action": "reuse_approval_before_recovery", "expected": "deny" },
+        { "order": 6, "t": 4, "action": "prove_fence_log_coverage", "barrier": 40, "expected_ready": false },
+        { "order": 7, "t": 5, "action": "durably_epoch_invalidate_affected_approvals_outside_restored_snapshots", "authority_epoch": 8, "fence_sequence": 41, "includes_approval": "approval-1" },
+        { "order": 8, "t": 6, "action": "enforce_epoch_on_all_replicas_and_persist_recovery_readiness", "authority_epoch": 8 },
+        { "order": 9, "t": 7, "action": "reuse_approval_after_recovery_on_another_replica", "expected": "deny" }
+    ],
+    "then": {
+        "ready": true,
+        "approval_state": "epoch_invalidated",
+        "approval_use": "deny",
+        "protected_operations_authorized_before_restore": 1,
+        "protected_operations_authorized_after_restore": 0,
+        "new_approval_request_required": true,
+        "fence_coverage_alone_reopens_approval": false,
+        "epoch_durable_outside_restored_snapshots": true,
+        "all_affected_verifiers_enforce_epoch_before_readiness": true
+    }
+}
