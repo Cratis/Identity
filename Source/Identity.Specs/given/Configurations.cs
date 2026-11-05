@@ -48,6 +48,18 @@ public static class Configurations
         ]
     };
 
+    public static IdentityOptions CallbackResources()
+    {
+        var options = TwoResourceServers();
+        foreach (var resource in options.Resources)
+        {
+            resource.Tenants.Clear();
+            resource.TenantsCallback = new TenantsCallbackOptions { Url = "https://products.example/tenants", Secret = new string('s', 32) };
+        }
+
+        return options;
+    }
+
     public static IOptions<IdentityOptions> AsOptions(this IdentityOptions options) => Options.Create(options);
 
     public static IOptionsMonitor<IdentityOptions> AsMonitor(this IdentityOptions options)

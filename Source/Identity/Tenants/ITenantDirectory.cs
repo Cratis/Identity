@@ -12,8 +12,8 @@ namespace Cratis.Identity.Tenants;
 /// <remarks>
 /// The product that owns the resource server owns tenancy and membership. Identity only records which tenant
 /// the user chose at authorization time and re-checks it on every refresh; resource servers must still enforce
-/// membership themselves. An implementation that calls a product endpoint (for example the Direct
-/// endpoint <c language="text">/api/internal/tenants/selectable</c>) plugs in here.
+/// membership themselves. Identity obtains selectable tenants from the product callback without caching.
+/// A failed lookup means no selection can proceed. Configured tenants are Development fixtures only.
 /// </remarks>
 public interface ITenantDirectory
 {
@@ -23,6 +23,6 @@ public interface ITenantDirectory
     /// <param name="account">The signed-in <see cref="Account"/>.</param>
     /// <param name="resource">The <see cref="ResourceServer"/> being authorized.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
-    /// <returns>The selectable tenants; empty when the account may not use the resource server at all.</returns>
-    Task<IEnumerable<SelectableTenant>> SelectableTenants(Account account, ResourceServer resource, CancellationToken cancellationToken = default);
+    /// <returns>A listed outcome (possibly empty), or an unavailable outcome that refuses selection.</returns>
+    Task<TenantLookup> SelectableTenants(Account account, ResourceServer resource, CancellationToken cancellationToken = default);
 }
