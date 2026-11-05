@@ -8,6 +8,7 @@ Specifications define contracts shared by Identity and its consumers. RFC 2119 k
 |---|---|---|---|
 | identity-contract | 1 | Draft | [Person, account, resource, tenant and token contract](identity-contract-v1.md) |
 | identity-events | 1 | Draft | [Identity event rules and catalogue](identity-events-v1.md) |
+| identity-access-token | 1 | Draft | [JWT access-token profile](identity-access-token-v1.md) |
 
 ## Conventions
 

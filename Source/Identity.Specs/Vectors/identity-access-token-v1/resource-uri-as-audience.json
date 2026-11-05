@@ -1,0 +1,29 @@
+{
+    "name": "resource_uri_as_audience",
+    "description": "Echoing the resource URI into aud fails: the verifier expects its catalog slug, not the principal resources default.",
+    "given": {
+        "token": {
+            "serialization": "JWS",
+            "parts": 3,
+            "header": { "typ": "at+jwt", "alg": "ES256", "kid": "key-1" },
+            "payload": {
+                "iss": "https://identity.example.test",
+                "sub": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+                "aud": "https://direct.cratis.io",
+                "iat": 1999999900,
+                "exp": 2000000200,
+                "client_id": "cli-test",
+                "jti": "98a61c34-c366-46af-8759-e4bb3e84869a",
+                "scope": "direct:read",
+                "tid": "t-1234",
+                "idp": "https://upstream.example.test",
+                "idp_sub": "upstream-person-1",
+                "auth_time": 1999999800,
+                "acr": "basic"
+            },
+            "signature": "valid"
+        }
+    },
+    "when": { "action": "validate_access_token" },
+    "then": { "outcome": "reject", "reason": "invalid_audience", "status": 401, "error": "invalid_token" }
+}

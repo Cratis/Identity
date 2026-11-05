@@ -1,0 +1,28 @@
+{
+    "name": "missing_client_id",
+    "description": "A token missing the required OAuth client identifier is rejected even if the framework default omits it.",
+    "given": {
+        "token": {
+            "serialization": "JWS",
+            "parts": 3,
+            "header": { "typ": "at+jwt", "alg": "ES256", "kid": "key-1" },
+            "payload": {
+                "iss": "https://identity.example.test",
+                "sub": "8b167ad2-0f89-4c78-9d42-6d4580495d32",
+                "aud": "direct-api",
+                "iat": 1999999900,
+                "exp": 2000000200,
+                "jti": "98a61c34-c366-46af-8759-e4bb3e84869a",
+                "scope": "direct:read",
+                "tid": "t-1234",
+                "idp": "https://upstream.example.test",
+                "idp_sub": "upstream-person-1",
+                "auth_time": 1999999800,
+                "acr": "basic"
+            },
+            "signature": "valid"
+        }
+    },
+    "when": { "action": "validate_access_token" },
+    "then": { "outcome": "reject", "reason": "missing_client_id", "status": 401, "error": "invalid_token" }
+}
