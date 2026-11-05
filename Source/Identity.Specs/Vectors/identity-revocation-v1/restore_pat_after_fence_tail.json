@@ -1,10 +1,10 @@
 {
   "name": "restore_pat_after_fence_tail",
   "description": "A contiguous fence prefix cannot prove the tail: a product-local PAT revoked after the last durable entry remains denied after both stores roll back.",
-  "given": { "target": "pat-1", "recovery_epoch": 7, "both_snapshot_watermarks": 40, "log_watermark": 40, "independent_audit_available": true },
+  "given": { "target": "pat-1", "recovery_epoch": 7, "both_snapshot_watermarks": 40, "log_watermark": 40, "independent_audit_available": true, "sequence_allocator": "independent_custody", "allocated_through": 41 },
   "when": [
     { "order": 1, "t": 0, "action": "commit_fence_and_outbox", "target": "pat-1", "fence_sequence": 41, "outbox_id": "product-fact-41", "operational_watermark": 41 },
-    { "order": 2, "t": 1, "action": "record_committed_restriction_in_independent_audit", "target": "pat-1", "log_watermark": 40 },
+    { "order": 2, "t": 1, "action": "record_committed_restriction_in_independent_audit", "target": "pat-1", "fence_sequence": 41, "outbox_id": "product-fact-41", "log_watermark": 40 },
     { "order": 3, "t": 2, "action": "restore_both_stores_but_not_independent_log", "watermark": 40, "expected_ready": false },
     { "order": 4, "t": 3, "action": "durably_advance_recovery_epoch_outside_both_stores", "recovery_epoch": 8, "fence_sequence": 42, "outbox_id": "recovery-fact-42", "expected_ready": false },
     { "order": 5, "t": 4, "action": "enforce_epoch_on_all_replicas", "recovery_epoch": 8, "expected_ready": false },
