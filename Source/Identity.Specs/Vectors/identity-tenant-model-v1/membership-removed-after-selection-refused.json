@@ -1,0 +1,27 @@
+{
+    "name": "membership-removed-after-selection-refused",
+    "description": "A matching tenant target passes the constraint check, but the operation is refused because live membership no longer exists; a cached tenant list does not authorize.",
+    "given": {
+        "credential": { "credential_kind": "oauth_access_token", "aud": "direct-api", "tid": "t-alpha", "scope": "direct:read" },
+        "membership_removed_by_product_after_selection": ["t-alpha"],
+        "cached_tenant_list": ["t-alpha"]
+    },
+    "when": {
+        "action": "resolve_workspace_request",
+        "requested_target": {
+            "source": "route",
+            "resource": "https://direct.example.test/mcp",
+            "installation": "direct-installation-a",
+            "environment": "production",
+            "tenant": "t-alpha"
+        }
+    },
+    "then": {
+        "target_check": "passed",
+        "outcome": "refused",
+        "reason": "not_a_member",
+        "checked_by": "application",
+        "cached_tenant_list_used_for_authorization": false,
+        "operation_executed": false
+    }
+}

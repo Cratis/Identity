@@ -1,0 +1,26 @@
+{
+    "name": "organisation-admin-is-not-membership",
+    "description": "Administering an organisation with a confirmed tenant binding does not make a person a tenant member or make the tenant selectable.",
+    "given": {
+        "organisation_administrators": [{ "organisation": "org-ref-1", "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32" }],
+        "confirmed_binding": {
+            "resource": "https://direct.example.test/mcp",
+            "installation": "direct-installation-a",
+            "tenant": "t-alpha",
+            "environment": "production",
+            "organisation": "org-ref-1"
+        },
+        "product_callback_result": []
+    },
+    "when": {
+        "action": "select_tenant",
+        "tenant": "t-alpha"
+    },
+    "then": {
+        "outcome": "refused",
+        "reason": "tenant_not_selectable",
+        "credential_issued": false,
+        "membership_created": false,
+        "organisation_grants_membership": false
+    }
+}
