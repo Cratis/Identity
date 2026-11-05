@@ -140,6 +140,7 @@
   },
   "then": {
     "outcome": "reject",
-    "reason": "signature"
+    "reason": "signature",
+    "callerSource": null
   }
 }

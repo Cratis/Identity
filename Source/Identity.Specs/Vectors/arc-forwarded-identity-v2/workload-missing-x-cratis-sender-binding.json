@@ -104,6 +104,7 @@
   },
   "then": {
     "outcome": "reject",
-    "reason": "metadata"
+    "reason": "metadata",
+    "callerSource": null
   }
 }

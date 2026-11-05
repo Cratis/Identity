@@ -1,0 +1,13 @@
+{
+  "name": "policy_epoch_vs_recovery_epoch",
+  "description": "An older policy epoch permits current-policy re-evaluation; an older recovery epoch always denies, even when current policy permits.",
+  "given": { "ready": true, "recovery_epoch": 8, "policy_epoch": 12, "access_sequence": 120, "local_access_projection_epoch": 12, "local_access_projection_sequence": 120, "current_policy": "allow", "credentials": [{ "target": "pat-policy-old", "recovery_epoch": 8, "policy_epoch": 11 }, { "target": "pat-recovery-old", "recovery_epoch": 7, "policy_epoch": 11 }] },
+  "when": [
+    { "order": 1, "t": 0, "action": "check_current_recovery_epoch", "target": "pat-policy-old", "expected": "pass" },
+    { "order": 2, "t": 1, "action": "reevaluate_against_current_policy_and_access_sequence", "target": "pat-policy-old", "required_policy_epoch": 12, "required_access_sequence": 120, "expected": "allow" },
+    { "order": 3, "t": 2, "action": "check_current_recovery_epoch", "target": "pat-recovery-old", "expected": "deny" },
+    { "order": 4, "t": 3, "action": "attempt_policy_reevaluation_of_recovery_invalidated_credential", "target": "pat-recovery-old", "expected": "reject_recovery" },
+    { "order": 5, "t": 4, "action": "attempt_credential_recovery_epoch_upgrade", "target": "pat-recovery-old", "expected": "deny" }
+  ],
+  "then": { "policy_older_credential_use": "allow_after_reevaluation", "recovery_older_credential_use": "deny", "policy_older_credential_policy_evaluations": 1, "recovery_older_credential_policy_evaluations": 0, "recovery_older_credential_epoch": 7, "current_policy_rescues_recovery_invalidated_credential": false }
+}

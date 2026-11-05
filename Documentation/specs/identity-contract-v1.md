@@ -144,7 +144,17 @@ This table defines person OAuth access tokens, not ID tokens, refresh-token inte
 | `cnf` | object with `jkt` string | C: DPoP-bound | Issuer-verified DPoP public-key thumbprint (RFC 9449); a bound token MUST NOT be accepted without a valid matching proof or as plain bearer. | Review |
 | `github_id` | string | C: GitHub migration consumer | Positive decimal immutable GitHub id, equal to `idp_sub` when this authentication is GitHub; emitted only to registered migration consumers. Removal requires coordinated migration. | Review: retirement and audience |
 
-Roles, membership, email, display name, login name and arbitrary upstream claims MUST NOT appear in these access tokens. Additional claims require contract review/versioning, not pass-through. Browser ID-token claims and user-facing profile retrieval need a separate contract; this table does not authorize PII there.
+Roles, membership, email, display name, login name and arbitrary upstream claims MUST NOT appear in these access tokens. The only exception is `preferred_username` below, and only in an access token for a resource whose catalog entry opts in. Additional claims require contract review/versioning, not pass-through. Browser ID-token claims and user-facing profile retrieval need a separate contract; apart from `preferred_username` below, this contract does not authorize PII there.
+
+### 5.1 Display claim `preferred_username`
+
+`preferred_username` (string, optional) is the only display claim. Its value is the login from the latest `UpstreamKeyDisplayIdentifierObserved` for the account's **primary link**, which is the linked key of the connection used for this authentication (`idp`). For a refresh, the primary link stays the link recorded at authentication, so the value never mixes providers, and the claim carries that link's latest observed login, so renames show up. Unlinking that key revokes every grant, refresh-token family and session authenticated through it ([revocation §7](identity-revocation-v1.md#7-revocation-targets-and-verifier-bounds)), so such a refresh is denied. Any response still produced for such a grant, for example userinfo within the remaining access-token lifetime, MUST omit the claim. The claim never falls back to another link. It MUST also be omitted when no display identifier is recorded.
+
+- It MAY appear in ID tokens and userinfo responses.
+- It MUST NOT appear in access tokens unless the resource's catalog entry explicitly opts in. Even then it is display data only and is not part of the authorization context.
+- It is mutable, not unique and not verified as an identifier. It MUST NEVER be used as an authorization, matching, linking, migration or account-resolution key; `sub` (the account id) is the key. Consumers MUST NOT persist it as an identifier or join on it.
+- It is personal data. It follows the Account erasure boundary in [identity-events-v1 §5](identity-events-v1.md), and caches holding it MUST honour erasure.
+- Its value comes only from Identity's recorded display identifier, never from an unverified forwarded header or a client-supplied value.
 
 ## 6. Verified caller
 

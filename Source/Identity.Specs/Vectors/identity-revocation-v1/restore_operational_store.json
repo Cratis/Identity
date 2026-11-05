@@ -1,16 +1,16 @@
 {
   "name": "restore_operational_store",
-  "description": "An operational snapshot that agrees with Chronicle can still predate an acknowledged undispatched fence.",
-  "given": { "target": "pat-1", "acknowledged_fence": 41, "log_watermark": 41, "operational_snapshot_watermark": 40, "chronicle_watermark": 40, "chronicle_available": false },
+  "description": "An operational restore recovers an undispatched restriction and invalidates every old stateful credential, including product-local PATs.",
+  "given": { "target": "pat-1", "recovery_epoch": 7, "acknowledged_fence": 41, "log_watermark": 41, "operational_snapshot_watermark": 40, "chronicle_watermark": 40, "chronicle_available": false },
   "when": [
     { "order": 1, "t": 0, "action": "restore_operational_snapshot", "watermark": 40, "expected_ready": false },
     { "order": 2, "t": 1, "action": "use_pat_on_another_replica_before_recovery", "expected": "deny" },
-    { "order": 3, "t": 2, "action": "recover_fence_and_outbox_from_independent_log", "fence_sequence": 41, "outbox_id": "product-fact-41", "barrier": 41 },
-    { "order": 4, "t": 3, "action": "persist_operational_watermark_and_publication_intent", "watermark": 41 },
-    { "order": 5, "t": 4, "action": "durably_epoch_invalidate_refresh_families_and_approvals_active_at_or_after_operational_snapshot", "snapshot_watermark": 40, "realm_epoch": 8, "fence_sequence": 42, "log_watermark": 42, "expected_ready": false },
-    { "order": 6, "t": 5, "action": "persist_operational_watermark_and_publication_intent", "watermark": 42 },
-    { "order": 7, "t": 6, "action": "enforce_epoch_on_all_replicas_and_persist_recovery_readiness", "realm_epoch": 8 },
+    { "order": 3, "t": 2, "action": "durably_advance_recovery_epoch_outside_both_stores", "recovery_epoch": 8, "fence_sequence": 42, "log_watermark": 42, "outbox_id": "recovery-fact-42", "expected_ready": false },
+    { "order": 4, "t": 3, "action": "recover_fence_and_outbox_from_independent_log", "fence_sequence": 41, "outbox_id": "product-fact-41", "barrier": 42 },
+    { "order": 5, "t": 4, "action": "persist_operational_watermark_and_publication_intent", "watermark": 42, "outbox_id": "recovery-fact-42", "event_type": "RealmRecoveryEpochAdvanced" },
+    { "order": 6, "t": 5, "action": "prove_independent_restriction_coverage_and_retirement_tombstones", "barrier": 42 },
+    { "order": 7, "t": 6, "action": "enforce_epoch_on_all_replicas_and_persist_recovery_readiness", "recovery_epoch": 8 },
     { "order": 8, "t": 7, "action": "open_recovered_class_and_use_pat", "expected": "deny" }
   ],
-  "then": { "ready": true, "consumption_recovered_before_ready": true, "all_affected_verifiers_enforce_epoch_before_readiness": true, "pat_use": "deny", "log_watermark": 42, "operational_watermark": 42, "pending_outbox_fact_count": 2, "chronicle_watermark_alone_proves_completeness": false }
+  "then": { "ready": true, "recovery_epoch": 8, "all_pre_recovery_stateful_credentials": "deny", "restrictions_recovered_before_ready": true, "retirement_tombstones_checked_before_ready": true, "all_affected_verifiers_enforce_epoch_before_readiness": true, "pat_use": "deny", "log_watermark": 42, "operational_watermark": 42, "chronicle_watermark": 40, "pending_outbox_fact_count": 2, "pending_outbox_facts": [{ "outbox_id": "product-fact-41", "fence_sequence": 41 }, { "outbox_id": "recovery-fact-42", "event_type": "RealmRecoveryEpochAdvanced", "recovery_epoch": 8 }], "chronicle_watermark_alone_proves_completeness": false }
 }

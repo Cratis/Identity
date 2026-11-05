@@ -1,15 +1,20 @@
 {
   "name": "restore_chronicle",
-  "description": "A restored Chronicle invalidates old delivery markers and receives the missing fence fact before readiness.",
-  "given": { "target": "family-1", "acknowledged_fence": 41, "operational_watermark": 41, "chronicle_watermark": 41, "log_watermark": 41, "outbox_delivery_marker": "delivered", "chronicle_snapshot_watermark": 40 },
+  "description": "A Chronicle-only restore also advances the recovery epoch; replay repairs delivery but cannot preserve old stateful credentials.",
+  "given": { "target": "family-1", "recovery_epoch": 7, "acknowledged_fence": 41, "operational_watermark": 41, "chronicle_watermark": 41, "log_watermark": 41, "outbox_delivery_marker": "delivered", "chronicle_snapshot_watermark": 40 },
   "when": [
     { "order": 1, "t": 0, "action": "restore_chronicle_snapshot", "watermark": 40, "expected_ready": false },
     { "order": 2, "t": 1, "action": "attempt_refresh_before_recovery", "expected": "deny" },
-    { "order": 3, "t": 2, "action": "read_independent_log_and_reapply_operational_denial", "barrier": 41, "fence_sequence": 41 },
-    { "order": 4, "t": 2, "action": "invalidate_lost_delivery_marker_and_reconstruct_outbox", "outbox_id": "fact-41" },
-    { "order": 5, "t": 3, "action": "append_missing_fact_once", "event_type": "RefreshTokenFamilyRevoked", "idempotency_key": "fact-41" },
-    { "order": 6, "t": 3, "action": "persist_chronicle_watermark", "watermark": 41 },
-    { "order": 7, "t": 4, "action": "open_recovered_class_and_attempt_revoked_family", "expected": "deny" }
+    { "order": 3, "t": 2, "action": "durably_advance_recovery_epoch_outside_both_stores", "recovery_epoch": 8, "fence_sequence": 42, "log_watermark": 42, "outbox_id": "recovery-fact-42", "expected_ready": false },
+    { "order": 4, "t": 2, "action": "persist_operational_watermark_and_publication_intent", "watermark": 42, "outbox_id": "recovery-fact-42", "event_type": "RealmRecoveryEpochAdvanced" },
+    { "order": 5, "t": 3, "action": "read_independent_log_and_reapply_operational_denial", "barrier": 42, "fence_sequence": 41 },
+    { "order": 6, "t": 3, "action": "invalidate_lost_delivery_marker_and_reconstruct_outbox", "outbox_id": "fact-41" },
+    { "order": 7, "t": 4, "action": "append_missing_fact_once", "event_type": "RefreshTokenFamilyRevoked", "idempotency_key": "fact-41" },
+    { "order": 8, "t": 4, "action": "append_missing_fact_once", "event_type": "RealmRecoveryEpochAdvanced", "idempotency_key": "recovery-fact-42" },
+    { "order": 9, "t": 5, "action": "persist_chronicle_watermark", "watermark": 42 },
+    { "order": 10, "t": 6, "action": "prove_independent_restriction_coverage_and_retirement_tombstones", "barrier": 42 },
+    { "order": 11, "t": 7, "action": "enforce_epoch_on_all_replicas_and_persist_recovery_readiness", "recovery_epoch": 8 },
+    { "order": 12, "t": 8, "action": "open_recovered_class_and_attempt_revoked_family", "expected": "deny" }
   ],
-  "then": { "ready": true, "family_redemption": "deny", "chronicle_fact_count_for_fence": 1, "chronicle_watermark": 41, "fence_count": 1 }
+  "then": { "ready": true, "recovery_epoch": 8, "all_pre_recovery_stateful_credentials": "deny", "restrictions_recovered_before_ready": true, "retirement_tombstones_checked_before_ready": true, "all_affected_verifiers_enforce_epoch_before_readiness": true, "family_redemption": "deny", "chronicle_fact_count_for_fence": 1, "chronicle_fact_count_for_recovery_fence": 1, "log_watermark": 42, "operational_watermark": 42, "chronicle_watermark": 42, "fence_count": 2 }
 }

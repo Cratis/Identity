@@ -1,13 +1,16 @@
 {
   "name": "incomplete_log_coverage",
-  "description": "A snapshot older than retained log coverage stays denied when a durable enforced epoch invalidation cannot be proven.",
-  "given": { "operational_snapshot_watermark": 40, "chronicle_snapshot_watermark": 40, "log_watermark": 43, "log_retained_entries": [42, 43], "trusted_epoch_invalidation_available": false },
+  "description": "A healthy independent recovery epoch cannot replace missing restriction coverage; issuance and use stay denied without reconciliation.",
+  "given": { "recovery_epoch": 7, "operational_snapshot_watermark": 40, "chronicle_snapshot_watermark": 40, "log_watermark": 43, "log_retained_entries": [42, 43], "monotonic_epoch_authority": "healthy_outside_both_restorable_stores", "independent_audit_available": false },
   "when": [
     { "order": 1, "t": 0, "action": "restore_both_stores", "expected_ready": false },
-    { "order": 2, "t": 1, "action": "detect_missing_fence_41_coverage_and_alert" },
-    { "order": 3, "t": 2, "action": "attempt_to_use_chronicle_or_largest_log_sequence_as_completeness_proof", "expected": "reject_proof" },
-    { "order": 4, "t": 3, "action": "attempt_local_epoch_bump_without_durable_authority_and_verifier_enforcement", "expected": "reject_recovery" },
-    { "order": 5, "t": 4, "action": "attempt_affected_credential_redemption", "expected": "deny_not_ready" }
+    { "order": 2, "t": 1, "action": "durably_advance_recovery_epoch_outside_both_stores", "recovery_epoch": 8, "fence_sequence": 44, "outbox_id": "recovery-fact-44", "expected_ready": false },
+    { "order": 3, "t": 2, "action": "enforce_epoch_on_all_replicas", "recovery_epoch": 8, "expected_ready": false },
+    { "order": 4, "t": 3, "action": "detect_missing_fence_41_coverage_and_alert" },
+    { "order": 5, "t": 4, "action": "attempt_to_use_chronicle_or_largest_log_sequence_as_completeness_proof", "expected": "reject_proof" },
+    { "order": 6, "t": 5, "action": "attempt_to_replace_restriction_recovery_with_epoch_invalidation", "expected": "reject_recovery" },
+    { "order": 7, "t": 6, "action": "attempt_fresh_login", "expected": "deny_not_ready" },
+    { "order": 8, "t": 7, "action": "attempt_affected_credential_redemption", "expected": "deny_not_ready" }
   ],
-  "then": { "ready": false, "affected_classes": "deny", "silent_tombstone_loss_allowed": false, "missing_sequence": 41 }
+  "then": { "ready": false, "recovery_epoch": 8, "issuance": "deny", "affected_classes": "deny", "silent_tombstone_loss_allowed": false, "epoch_invalidation_replaces_restriction_recovery": false, "missing_sequence": 41 }
 }

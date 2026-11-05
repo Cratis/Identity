@@ -141,7 +141,15 @@
       "storeAvailable": true,
       "storeFull": false,
       "replica": "replica-a",
-      "realmIssuer": "https://identity.example.test"
+      "realmIssuer": "https://identity.example.test",
+      "verifiedBearer": {
+        "verifier": "oauth-verifier",
+        "accountKey": {
+          "issuer": "https://identity.example.test",
+          "subject": "8b167ad2-0f89-4c78-9d42-6d4580495d32"
+        },
+        "accepted": true
+      }
     },
     "nonceReservations": []
   },
@@ -152,6 +160,7 @@
   },
   "then": {
     "outcome": "reject",
-    "reason": "credential"
+    "reason": "credential",
+    "callerSource": null
   }
 }
