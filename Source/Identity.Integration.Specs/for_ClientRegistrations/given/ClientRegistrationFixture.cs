@@ -44,17 +44,30 @@ public class ClientRegistrationFixture : IAsyncLifetime
 
     public ClientRegistrationIdentityHost Host { get; private set; } = null!;
 
-    public IMongoDatabase Database => new MongoClient(_mongo.GetConnectionString()).GetDatabase(_database);
+    /// <summary>Gets the started Mongo endpoint shared with the conformance host.</summary>
+    public string MongoConnectionString => _mongo.GetConnectionString();
+
+    /// <summary>Gets the started pinned Chronicle endpoint.</summary>
+    public string ChronicleConnectionString => $"chronicle://{_kernel.Hostname}:{_kernel.GetMappedPublicPort(35000)}?skipTlsValidation=true";
+
+    public IMongoDatabase Database => new MongoClient(MongoConnectionString).GetDatabase(_database);
 
     public IMongoCollection<OpenIddictMongoDbApplication> Applications => Database.GetCollection<OpenIddictMongoDbApplication>("openiddict.applications");
 
     /// <inheritdoc/>
     public async ValueTask InitializeAsync()
     {
+        await StartStores();
+        await Restart();
+    }
+
+    /// <summary>Starts the shared Mongo and pinned Chronicle pair without creating an Identity host.</summary>
+    /// <returns>The startup task.</returns>
+    public async Task StartStores()
+    {
         await _network.CreateAsync();
         await _mongo.StartAsync();
         await _kernel.StartAsync();
-        await Restart();
     }
 
     /// <summary>Restarts Identity only, preserving the kernel, event log, operational database and key custody.</summary>
@@ -72,7 +85,7 @@ public class ClientRegistrationFixture : IAsyncLifetime
             ["Identity:Issuer"] = IdentityHost.Issuer,
             ["Identity:MongoDB:ConnectionString"] = _mongo.GetConnectionString(),
             ["Identity:MongoDB:Database"] = _database,
-            ["Identity:Chronicle:ConnectionString"] = $"chronicle://{_kernel.Hostname}:{_kernel.GetMappedPublicPort(35000)}?skipTlsValidation=true",
+            ["Identity:Chronicle:ConnectionString"] = ChronicleConnectionString,
             ["Identity:Clients:EventSourced"] = "true",
             ["Identity:Clients:SecretDigestKey"] = Convert.ToBase64String(Enumerable.Repeat((byte)37, 32).ToArray()),
             ["Identity:SecretStore:Path"] = _secrets.Path,
