@@ -7,6 +7,7 @@ Specifications define contracts shared by Identity and its consumers. RFC 2119 k
 | Spec id | Version | Status | Document |
 |---|---|---|---|
 | identity-contract | 1 | Draft | [Person, account, resource, tenant and token contract](identity-contract-v1.md) |
+| identity-events | 1 | Draft | [Identity event rules and catalogue](identity-events-v1.md) |
 
 ## Conventions
 
