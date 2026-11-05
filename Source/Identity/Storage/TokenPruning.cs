@@ -11,9 +11,15 @@ namespace Cratis.Identity.Storage;
 /// Removes expired and revoked tokens and authorizations periodically.
 /// </summary>
 /// <remarks>
+/// <para>
+/// Token entries with an expiry are also removed by the TTL index (see <see cref="StorageIndexes"/>); pruning is still
+/// needed for authorizations, which have no expiry, and for token entries without one.
+/// </para>
+/// <para>
 /// The threshold is the refresh-token lifetime, never shorter: reuse detection depends on the entry of a
 /// redeemed refresh token still being present when a stolen copy is replayed, and a replayed token older than
 /// that lifetime is rejected by its own expiry anyway.
+/// </para>
 /// </remarks>
 /// <param name="scopes">The <see cref="IServiceScopeFactory"/>.</param>
 /// <param name="options">The <see cref="IdentityOptions"/>.</param>
