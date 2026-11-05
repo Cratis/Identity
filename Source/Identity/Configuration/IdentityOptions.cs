@@ -24,6 +24,9 @@ public class IdentityOptions
     /// <summary>Gets or sets the opt-in account experiment, pending owner decision D18.</summary>
     public AccountsOptions Accounts { get; set; } = new();
 
+    /// <summary>Gets or sets the opt-in Chronicle-backed client configuration.</summary>
+    public ClientsOptions Clients { get; set; } = new();
+
     /// <summary>
     /// Gets or sets the MongoDB storage configuration.
     /// </summary>

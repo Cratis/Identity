@@ -53,6 +53,11 @@ jobs:
       - name: Protocol conformance (RFCs)
         run: ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs -trait "Category=Conformance"
 
+      - name: Conformance specs (Chronicle stores)
+        env:
+          IDENTITY_SPECS_STORES: chronicle
+        run: ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs -trait "Category=Conformance"
+
       # CI builds and packs the packages as artifacts only. There is no publish step until the W0 specs (#24, #26, #27) lock.
       - name: Pack NuGet
         run: dotnet pack Identity.slnx --configuration Release --no-build --output Artifacts/NuGet -p:Version=0.0.0-ci.${{ github.run_number }}

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Globalization;
+using Cratis.Identity.Integration.for_ClientRegistrations.given;
 using Cratis.Identity.Tenants;
 using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.Authentication;
@@ -41,11 +42,13 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     /// </summary>
     readonly MongoDbContainer _mongo = new MongoDbBuilder("mongo:8.0.14").Build();
     readonly string _database = $"identity-specs-{Guid.NewGuid():N}";
+    readonly ClientRegistrationFixture? _chronicle = Environment.GetEnvironmentVariable("IDENTITY_SPECS_STORES") == "chronicle" ? new() : null;
+    int _chronicleDisposed;
 
     /// <summary>
     /// Gets the host's MongoDB database, for specs that must change what is stored behind Identity's back.
     /// </summary>
-    public IMongoDatabase Database => new MongoClient(_mongo.GetConnectionString()).GetDatabase(_database);
+    public IMongoDatabase Database => new MongoClient(MongoConnectionString).GetDatabase(_database);
 
     /// <summary>
     /// Gets the test-only pause points in the refresh-token pipeline.
@@ -57,10 +60,19 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     /// </summary>
     public TenantsCallbackStub TenantsCallback { get; } = new();
 
+    string MongoConnectionString => _chronicle?.MongoConnectionString ?? _mongo.GetConnectionString();
+
     /// <inheritdoc/>
     public async ValueTask InitializeAsync()
     {
-        await _mongo.StartAsync();
+        if (_chronicle is not null)
+        {
+            await _chronicle.StartStores();
+        }
+        else
+        {
+            await _mongo.StartAsync();
+        }
 
         // Start the host so the client store is reconciled before any spec runs.
         _ = Server;
@@ -71,6 +83,7 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     {
         await base.DisposeAsync();
         await _mongo.DisposeAsync();
+        await DisposeChronicle();
     }
 
     /// <inheritdoc/>
@@ -80,6 +93,7 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         if (disposing)
         {
             _mongo.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            DisposeChronicle().AsTask().GetAwaiter().GetResult();
         }
     }
 
@@ -105,14 +119,14 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     {
         // AddCratisIdentity reads the secret store from builder.Configuration while the services are registered, which is before
         // ConfigureAppConfiguration applies. Host settings are visible then, so every setting is also given as one.
-        foreach (var (key, value) in Settings().Where(_ => _.Value is not null))
+        foreach (var (key, value) in SettingsWithStores().Where(_ => _.Value is not null))
         {
             builder.UseSetting(key, value);
         }
 
         builder
             .UseEnvironment("Development")
-            .ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(Settings()))
+            .ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(SettingsWithStores()))
             .ConfigureLogging(logging => logging
                 .AddFilter("Cratis.Identity", LogLevel.Debug)
                 .AddFilter("OpenIddict", LogLevel.Trace))
@@ -134,7 +148,7 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     protected virtual Dictionary<string, string?> Settings() => new()
     {
         ["Identity:Issuer"] = Issuer,
-        ["Identity:MongoDB:ConnectionString"] = _mongo.GetConnectionString(),
+        ["Identity:MongoDB:ConnectionString"] = MongoConnectionString,
         ["Identity:MongoDB:Database"] = _database,
         ["Identity:GitHub:ClientId"] = "unused-in-specs",
         ["Identity:GitHub:ClientSecret"] = "unused-in-specs",
@@ -160,4 +174,30 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         ["Identity:IntrospectionClients:0:ClientId"] = IntrospectionClientId,
         ["Identity:IntrospectionClients:0:ClientSecret"] = IntrospectionClientSecret
     };
+
+    async ValueTask DisposeChronicle()
+    {
+        if (_chronicle is null)
+        {
+            return;
+        }
+
+        if (Interlocked.Exchange(ref _chronicleDisposed, 1) == 0)
+        {
+            await _chronicle.DisposeAsync();
+        }
+    }
+
+    Dictionary<string, string?> SettingsWithStores()
+    {
+        var settings = Settings();
+        if (_chronicle is not null)
+        {
+            settings["Identity:Clients:EventSourced"] = "true";
+            settings["Identity:Chronicle:ConnectionString"] = _chronicle.ChronicleConnectionString;
+            settings["Identity:Clients:SecretDigestKey"] = Convert.ToBase64String(Enumerable.Repeat((byte)37, 32).ToArray());
+        }
+
+        return settings;
+    }
 }

@@ -4,6 +4,7 @@
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Clients;
+using Cratis.Identity.Clients.Secrets;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.Keys;
 using Cratis.Identity.Resources;
@@ -13,6 +14,7 @@ using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using OpenIddict.MongoDb.Models;
 using OpenIddict.Server;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
@@ -54,12 +56,17 @@ internal static class IdentityServiceCollectionExtensions
         services.AddSingleton<IValidateOptions<IdentityOptions>, IdentityOptionsValidation>();
         services.AddSingleton(TimeProvider.System);
 
-        services.AddStorage();
+        services.AddStorage(startupOptions);
         services.AddSecretStoreKeys(startupOptions);
         services.AddDomain();
         if (startupOptions.Accounts.EventSourced)
         {
             services.AddEventSourcedAccounts();
+        }
+
+        if (startupOptions.Clients.EventSourced)
+        {
+            services.AddEventSourcedClients();
         }
 
         services.AddSessionAndUpstreamLogin(environment);
@@ -106,13 +113,16 @@ internal static class IdentityServiceCollectionExtensions
             .Configure<IOptions<IdentityOptions>>((cookie, identity) => cookie.ExpireTimeSpan = identity.Value.SessionLifetime);
     }
 
-    static void AddStorage(this IServiceCollection services)
+    static void AddStorage(this IServiceCollection services, IdentityOptions options)
     {
         services.AddSingleton<IMongoClient>(sp => new MongoClient(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.ConnectionString));
         services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.Database));
         services.AddSingleton<StorageIndexes>();
 
-        services.AddHostedService<ClientRegistrations>();
+        if (!options.Clients.EventSourced)
+        {
+            services.AddHostedService<ClientRegistrations>();
+        }
         services.AddHostedService<TokenPruning>();
     }
 
@@ -169,7 +179,15 @@ internal static class IdentityServiceCollectionExtensions
         }
 
         services.AddOpenIddict()
-            .AddCore(options => options.UseMongoDb())
+            .AddCore(options =>
+            {
+                options.UseMongoDb();
+                if (startupOptions.Clients.EventSourced)
+                {
+                    options.ReplaceApplicationStore<OpenIddictMongoDbApplication, MaterializedApplicationStore<OpenIddictMongoDbApplication>>()
+                        .ReplaceApplicationManager<OpenIddictMongoDbApplication, ClientApplicationManager<OpenIddictMongoDbApplication>>();
+                }
+            })
             .AddServer(options =>
             {
                 options

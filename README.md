@@ -116,6 +116,8 @@ Everything is under the `Identity` section (environment variables use `Identity_
 
 Clients are declared in code (`ClientDescriptors`) and configuration (introspection clients). The client store is reconciled at startup: undeclared clients are deleted.
 
+Opt in to Chronicle-backed client facts with `Identity:Clients:EventSourced=true`. Register a Chronicle client for event store `identity` before `AddCratisIdentity` (the bundled host uses `Identity:Chronicle:ConnectionString`). Configure `Identity:Clients:SecretDigestKey` through secret custody as base64 of at least 32 bytes, and `SecretDigestKeyRevision` (default `1`); the key is required outside Development. Only keyed secret digests, never client secrets, are appended and materialized. Undeclared clients are retired. Enabling this flag replaces existing application IDs, so tokens referencing the old IDs stop resolving and users must sign in again. With the flag off (default), the existing Mongo path is unchanged.
+
 In development (`ASPNETCORE_ENVIRONMENT=Development`) without a `SecretStore:Path`, Identity uses ephemeral signing and encryption keys and the default Data Protection ring, so tokens stop validating when it restarts, and it allows plain HTTP.
 
 ### Keys and the secret store
