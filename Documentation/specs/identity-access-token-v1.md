@@ -65,11 +65,13 @@ For example, `resource=https://direct.cratis.io` maps to `aud=direct-api`, not t
 
 A client needing several resources MUST obtain and store a separate token per resource, using a separate resource-specific request (or authorized exchange under its separate contract). This profile does not issue a combined multi-resource token. Scope ceilings, tenant constraints and live product membership checks still apply; an audience match alone grants nothing.
 
+For the products realm (Direct and Studio), D13 (Identity #15) applies: verifiers MUST enforce audience binding per product, so each product verifier accepts only the keys and audiences assigned to it; distinct key ids alone are not scoping. Signing for the products realm MUST be done by a dedicated signer; the key MUST NOT live in an application process.
+
 ## 4. Lifetimes and refresh
 
 | Setting | v1 rule |
 |---|---|
-| Access-token lifetime | Default **300 seconds**; issuer MUST enforce `0 < exp - iat <= 600` seconds, shortened by grant/root expiry and policy. |
+| Access-token lifetime | Default **300 seconds**; issuer MUST enforce `0 < exp - iat <= 600` seconds, shortened by grant/root expiry and policy. For the products realm, access tokens MUST last at most **300 seconds** (5 minutes) per D13 (Identity #15); the 300-second default and 600-second maximum apply to other realms. |
 | Clock skew | Verifiers MUST use **30 seconds** uniformly for time comparisons (§5), not extend the minted lifetime. No additional library-default tolerance may be stacked on it. |
 | Refresh rotation | Every successful refresh MUST atomically consume the old refresh token and issue its replacement. Reuse MUST revoke the whole refresh family; there is no reuse grace window in v1. |
 | Refresh absolute lifetime | **30 days** (decided at sign-off) from family creation; rotation MUST NOT reset it. |
@@ -161,6 +163,7 @@ Executable conformance coverage MUST verify the actual OpenIddict output, includ
 - **Lifetimes:** decided in Identity #14: 300-second access-token default, 600-second ceiling and 30-second skew; refresh absolute **30 days** and idle **7 days**.
 - **Additional claim:** `nbf` is not in contract v1 §5. This profile defines defensive time handling but does not authorize issuance or acceptance under the current allowlist. Adding it needs a separately reviewed contract change; otherwise omit it. This was settled at the Identity #14 sign-off.
 - **Inherited decisions:** contract v1's consumer review, actor namespaces, assurance vocabulary, tenant/`tid` and upstream/migration privacy decisions were signed off in Identity #14, with exact issuers per D1 (option B, Identity #21) and organisation per D5 (option A, Identity #23); this profile does not itself restate them.
+- **Products realm (D13):** accepted with gates in Identity #15: access tokens last at most 300 seconds, signing uses a dedicated signer, and verifiers enforce audience binding per product, as specified in §3 and §4.
 - **Dependent contracts/sign-off:** identity-dpop-v1 and identity-revocation-v1 (including family reuse/concurrency and durable fences) are aligned; signed off in Identity #14 (2026-11-05). No instant offline-JWT revocation or runtime conformance is claimed here.
 
 ## 10. Data vectors and references

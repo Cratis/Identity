@@ -1,6 +1,6 @@
 # Recovery: one app's v2 ES256 public key disclosure
 
-Status: Draft. Owner: envelope / Arc runtime contract maintainer; **owner role pending #20**. Scope: public verification key only, not replacement of trusted verifier configuration. Follow the [shared rules](../compromise-matrix-v1.md#recovery-rules-shared-by-the-runbooks) and [revocation protocol](../../specs/identity-revocation-v1.md) if triage finds broader exposure.
+Status: Draft. Owner: envelope / Arc runtime contract maintainer; **woksin holds the role (Identity #20)**. Scope: public verification key only, not replacement of trusted verifier configuration. Follow the [shared rules](../compromise-matrix-v1.md#recovery-rules-shared-by-the-runbooks) and [revocation protocol](../../specs/identity-revocation-v1.md) if triage finds broader exposure.
 
 ## Trigger and detection
 

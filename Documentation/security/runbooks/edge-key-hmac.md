@@ -1,6 +1,6 @@
 # Recovery: one app's v1 HMAC edge key
 
-Status: Draft. Owner: AuthProxy maintainer with key custodian and product maintainer; **owner role pending #20**. Scope: key-only exposure; a compromised verifier process also requires [backend recovery](backend-process.md). Follow the [matrix's shared recovery rules](../compromise-matrix-v1.md#recovery-rules-shared-by-the-runbooks) and [revocation §§3, 6–8](../../specs/identity-revocation-v1.md).
+Status: Draft. Owner: AuthProxy maintainer with key custodian and product maintainer; **woksin holds the role (Identity #20)**. Scope: key-only exposure; a compromised verifier process also requires [backend recovery](backend-process.md). Follow the [matrix's shared recovery rules](../compromise-matrix-v1.md#recovery-rules-shared-by-the-runbooks) and [revocation §§3, 6–8](../../specs/identity-revocation-v1.md).
 
 ## Trigger and detection
 
