@@ -67,6 +67,20 @@
       }
     },
     {
+      "name": "public-event-with-pii-marked-login-fails",
+      "given": {
+        "event": {
+          "name": "UpstreamKeyLinked",
+          "properties": [{ "name": "Login", "type": "System.String", "pii": true }]
+        }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": {
+        "outcome": "fail",
+        "violations": [{ "path": "Login", "reason": "public_upstream_identifier" }]
+      }
+    },
+    {
       "name": "display-login-without-pii-fails",
       "given": {
         "visibility": "Internal",
