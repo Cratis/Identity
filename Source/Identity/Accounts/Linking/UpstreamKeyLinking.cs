@@ -27,19 +27,20 @@ public class UpstreamKeyLinking(AccountStore store, UpstreamLookups lookups, Ups
     /// <exception cref="AccountOperationRefused">Intent, proof, account or reservation policy refuses the proposal.</exception>
     public async Task<LinkProposalId> Propose(ClaimsPrincipal session, VerifiedAuthentication authentication, LinkIntent intent)
     {
+        AccountOperationRefused.Require(!intent.EmailOnlyProof, "email_is_not_identity_proof");
         var existing = AccountSession.Require(session, time);
-        AccountOperationRefused.Require(intent.Explicit && !intent.EmailOnlyProof, "explicit_dual_proof_required");
+        AccountOperationRefused.Require(intent.Explicit, "explicit_dual_proof_required");
         RequireProof(authentication, existing.SessionId);
-        await RequireUnreserved(authentication);
+        var reserved = await IsReserved(authentication);
         var read = await store.Read(existing.Account);
         RequireActive(read.State);
         AccountOperationRefused.Require(!read.State.Proposals.Values.Any(proposal => proposal.Matches(authentication) && proposal.State != "rejected"), "proposal_already_exists");
         LinkProposalId id = Guid.NewGuid();
         var events = new List<object> { new UpstreamKeyLinkProposed(id, authentication.ConnectionId, authentication.IdpIssuer, authentication.Subject) };
         var hold = options.Value.Accounts.LinkHoldMinimum;
-        if (hold > TimeSpan.Zero || intent.SoftDisabledConnection)
+        if (reserved || intent.SoftDisabledConnection)
         {
-            events.Add(new UpstreamKeyLinkQuarantined(id, intent.SoftDisabledConnection ? "soft_disabled_connection" : "realm_link_hold", Guid.NewGuid(), time.GetUtcNow() + hold));
+            events.Add(new UpstreamKeyLinkQuarantined(id, reserved ? "upstream_key_already_linked" : "soft_disabled_connection", Guid.NewGuid(), time.GetUtcNow() + hold));
         }
 
         await store.Append(existing.Account, read, events);
@@ -61,13 +62,8 @@ public class UpstreamKeyLinking(AccountStore store, UpstreamLookups lookups, Ups
         var proposal = FindProposal(read.State, proposalId);
         RequireMatchingProof(proposal, authentication);
         AccountOperationRefused.Require(proposal.Confirmable(time.GetUtcNow()), "proposal_not_confirmable");
-        AccountOperationRefused.Require(proposal.HoldNotBefore <= proposal.ProposedAt || authentication.AuthTime >= proposal.HoldNotBefore, "fresh_post_hold_proof_required");
-        await RequireUnreserved(authentication);
-        LinkId link = proposalId.Value;
-        await store.Append(existing.Account, read, [
-            new UpstreamKeyLinkRecorded(link, proposal.Connection, proposal.Issuer, digester.Digest(proposal.Issuer, proposal.Subject), authentication.OperationId.Value, authentication.AuthTime, FactId.ForOperation(new(proposalId.Value), nameof(UpstreamKeyLinkRecorded))),
-            new UpstreamKeySubjectRecorded(link, proposal.Issuer, proposal.Subject)]);
-        return link;
+        RequireHold(proposal, authentication);
+        return await CommitLink(read, proposal, authentication, []);
     }
 
     /// <summary>Clears quarantine only through a privileged resolver and fresh proof, never by elapsed time alone.</summary>
@@ -87,7 +83,8 @@ public class UpstreamKeyLinking(AccountStore store, UpstreamLookups lookups, Ups
         var proposal = FindProposal(read.State, proposalId);
         RequireMatchingProof(proposal, authentication);
         AccountOperationRefused.Require(proposal.Clearable(time.GetUtcNow(), authentication), "quarantine_not_clearable");
-        await store.Append(account, read, [new UpstreamKeyLinkCleared(proposalId, Guid.NewGuid(), Guid.NewGuid(), "authorized_resolution")]);
+        RequireHold(proposal, authentication);
+        _ = await CommitLink(read, proposal, authentication, [new UpstreamKeyLinkCleared(proposalId, Guid.NewGuid(), Guid.NewGuid(), "authorized_resolution")]);
     }
 
     /// <summary>Rejects a proposal terminally without linking anything.</summary>
@@ -130,7 +127,33 @@ public class UpstreamKeyLinking(AccountStore store, UpstreamLookups lookups, Ups
 
     static void RequireMatchingProof(LinkProposal proposal, VerifiedAuthentication authentication) => AccountOperationRefused.Require(proposal.Matches(authentication), "upstream_proof_mismatch");
 
-    async Task RequireUnreserved(VerifiedAuthentication authentication) => AccountOperationRefused.Require(await lookups.Find(digester.Digest(authentication.IdpIssuer, authentication.Subject)) is null, "upstream_key_already_reserved");
+    async Task<bool> IsReserved(VerifiedAuthentication authentication) => await lookups.Find(digester.Digest(authentication.IdpIssuer, authentication.Subject)) is not null;
+
+    void RequireHold(LinkProposal proposal, VerifiedAuthentication authentication)
+    {
+        var hold = proposal.ProposedAt + options.Value.Accounts.LinkHoldMinimum;
+        var boundary = hold > proposal.HoldNotBefore ? hold : proposal.HoldNotBefore;
+        AccountOperationRefused.Require(time.GetUtcNow() >= boundary, "realm_configured_hold_not_elapsed");
+        AccountOperationRefused.Require(authentication.AuthTime >= boundary, "fresh_post_hold_proof_required");
+    }
+
+    async Task<LinkId> CommitLink(AccountStore.GuardedAccountRead read, LinkProposal proposal, VerifiedAuthentication authentication, IEnumerable<object> clearance)
+    {
+        AccountSubject account = new(read.State.Id);
+        LinkId link = proposal.Id.Value;
+        var events = clearance.Concat([
+            new UpstreamKeyLinkRecorded(link, proposal.Connection, proposal.Issuer, digester.Digest(proposal.Issuer, proposal.Subject), authentication.OperationId.Value, authentication.AuthTime, FactId.ForOperation(new(proposal.Id.Value), nameof(UpstreamKeyLinkRecorded))),
+            new UpstreamKeySubjectRecorded(link, proposal.Issuer, proposal.Subject)]);
+        if (!await IsReserved(authentication) && await store.TryAppend(account, read, events))
+        {
+            return link;
+        }
+
+        var current = await store.Read(account);
+        RequireActive(current.State);
+        await store.Append(account, current, [new UpstreamKeyLinkQuarantined(proposal.Id, "upstream_key_already_linked", Guid.NewGuid(), time.GetUtcNow() + options.Value.Accounts.LinkHoldMinimum)]);
+        throw new AccountOperationRefused("upstream_key_already_reserved");
+    }
 
     void RequireProof(VerifiedAuthentication authentication, string? sessionId = null)
     {

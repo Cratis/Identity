@@ -11,11 +11,21 @@ namespace Cratis.Identity.Accounts.Linking;
 /// <summary>The guarded event-store boundary; no public raw append operation.</summary>
 /// <param name="eventStore">The account event store.</param>
 /// <param name="readModels">The passive account fold reader.</param>
-public class AccountStore(IEventStore eventStore, IReadModels readModels)
+/// <param name="time">The trusted append clock.</param>
+public class AccountStore(IEventStore eventStore, IReadModels readModels, TimeProvider time)
 {
     /// <summary>Initializes a new instance of the <see cref="AccountStore"/> class using its store's passive reader.</summary>
     /// <param name="eventStore">The account event store.</param>
-    public AccountStore(IEventStore eventStore) : this(eventStore, eventStore.ReadModels)
+    public AccountStore(IEventStore eventStore) : this(eventStore, eventStore.ReadModels, TimeProvider.System)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AccountStore"/> class with a passive reader.
+    /// </summary>
+    /// <param name="eventStore">The account event store.</param>
+    /// <param name="readModels">The passive account fold reader.</param>
+    public AccountStore(IEventStore eventStore, IReadModels readModels) : this(eventStore, readModels, TimeProvider.System)
     {
     }
 
@@ -38,17 +48,35 @@ public class AccountStore(IEventStore eventStore, IReadModels readModels)
     /// <exception cref="AccountOperationRefused">A kernel guard or uniqueness constraint refuses the batch.</exception>
     internal async Task Append(AccountSubject account, GuardedAccountRead read, IEnumerable<object> events)
     {
+        if (!await TryAppend(account, read, events))
+        {
+            throw new AccountOperationRefused("upstream_key_already_reserved");
+        }
+    }
+
+    /// <summary>
+    /// Attempts the guarded batch, returning a uniqueness conflict without partially appending it.
+    /// </summary>
+    /// <param name="account">The account source.</param>
+    /// <param name="read">The guarded decision.</param>
+    /// <param name="events">The facts to append.</param>
+    /// <returns>Whether the batch committed.</returns>
+    /// <exception cref="AccountOperationRefused">The account changed after the guarded read.</exception>
+    internal async Task<bool> TryAppend(AccountSubject account, GuardedAccountRead read, IEnumerable<object> events)
+    {
         var batch = events.ToArray();
         if (batch.Length == 0)
         {
-            return;
+            return true;
         }
 
-        var result = await eventStore.EventLog.AppendMany(batch.Select(@event => new EventForEventSourceId(account.Value, @event)), [read.Guard]);
-        if (!result.IsSuccess)
+        var result = await eventStore.EventLog.AppendMany(batch.Select(@event => new EventForEventSourceId(account.Value, @event) { Occurred = time.GetUtcNow() }), [read.Guard]);
+        if (!result.IsSuccess && !result.HasConstraintViolations)
         {
-            throw new AccountOperationRefused(result.HasConstraintViolations ? "upstream_key_already_reserved" : "account_concurrency_conflict");
+            throw new AccountOperationRefused("account_concurrency_conflict");
         }
+
+        return result.IsSuccess;
     }
 
     /// <summary>Pairs a source token with a subsequent decision fold.</summary>

@@ -19,6 +19,7 @@ namespace Cratis.Identity.Accounts.given;
 
 public class an_account_store : Specification
 {
+    protected static readonly UpstreamIssuer GitHubIssuer = new("https://github.com");
     protected EventStoreForTesting _events;
     protected AccountClock _clock;
     protected IdentityOptions _options;
@@ -82,7 +83,19 @@ public class an_account_store : Specification
         return proof;
     }
 
-    protected ClaimsPrincipal Session(AccountSubject account) => EventSourcedAccountPrincipal.For(account, "display", _clock);
+    protected ClaimsPrincipal Session(AccountSubject account, bool resolver = false)
+    {
+        var principal = EventSourcedAccountPrincipal.For(account, "display", _clock);
+        var identity = (ClaimsIdentity)principal.Identity;
+        identity.RemoveClaim(identity.FindFirst("sid"));
+        identity.AddClaim(new("sid", $"session-{account.Value}"));
+        if (resolver)
+        {
+            identity.AddClaim(new("permission", "identity:resolve-links"));
+        }
+
+        return principal;
+    }
 
     protected async Task<LinkId> Seed(AccountSubject account, UpstreamIssuer issuer, UpstreamSubject subject)
     {
@@ -132,7 +145,7 @@ public class an_account_store : Specification
         reader.GetInstances<UpstreamKeyLookup>(default).ReturnsForAnyArgs(_ => Task.FromResult<IEnumerable<UpstreamKeyLookup>>(_reservations.Instances.Values));
         reader.GetInstanceById<AccountLinkState>(default(ReadModelKey)!, default).ReturnsForAnyArgs(call => Task.FromResult(StateFor(call.Arg<ReadModelKey>().Value)));
         _lookups = new(reader);
-        var store = new AccountStore(_events, reader);
+        var store = new AccountStore(_events, reader, _clock);
         _accounts = new(store, _lookups, _digester, _clock);
         _linking = new(store, _lookups, _digester, Options.Create(_options), _clock);
     }

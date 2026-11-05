@@ -42,6 +42,11 @@ internal static class IdentityServiceCollectionExtensions
 
         services.AddStorage(startupOptions);
         services.AddDomain();
+        if (startupOptions.Accounts.EventSourced)
+        {
+            services.AddEventSourcedAccounts();
+        }
+
         services.AddSessionAndUpstreamLogin(environment);
         services.AddAuthorizationServer(startupOptions, environment);
 

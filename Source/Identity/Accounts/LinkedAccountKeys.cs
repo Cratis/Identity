@@ -7,6 +7,7 @@ using Cratis.Chronicle.ReadModels;
 using Cratis.Identity.Accounts.Linking;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.Contracts.Accounts;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.Accounts;
@@ -16,9 +17,10 @@ namespace Cratis.Identity.Accounts;
 /// <param name="ConnectionId">The connection reference.</param>
 /// <param name="IdpIssuer">The authority.</param>
 /// <param name="DisplayIdentifier">The protected display identifier.</param>
-/// <param name="LinkedAt">The confirmation time.</param>
+/// <param name="LinkedAt">The confirmation time, absent before confirmation.</param>
+/// <param name="State">The proposal or confirmed-link state.</param>
 [ReadModel]
-public record LinkedAccountKeys(LinkId LinkId, ConnectionId ConnectionId, UpstreamIssuer IdpIssuer, Login? DisplayIdentifier, DateTimeOffset LinkedAt)
+public record LinkedAccountKeys(LinkId LinkId, ConnectionId ConnectionId, UpstreamIssuer IdpIssuer, Login? DisplayIdentifier, DateTimeOffset? LinkedAt, string State = "confirmed")
 {
     /// <summary>Gets only active keys belonging to the authenticated account, never a supplied target subject.</summary>
     /// <param name="context">The authenticated request.</param>
@@ -27,6 +29,7 @@ public record LinkedAccountKeys(LinkId LinkId, ConnectionId ConnectionId, Upstre
     /// <param name="environment">The Development boundary.</param>
     /// <returns>The current account's linked keys.</returns>
     /// <exception cref="AccountOperationRefused">The experiment or authenticated account is unavailable.</exception>
+    [Authorize]
     public static async Task<IEnumerable<LinkedAccountKeys>> ForCurrentAccount(IHttpContextAccessor context, IReadModels readModels, IOptions<IdentityOptions> options, IHostEnvironment environment)
     {
         if (!options.Value.Accounts.EventSourced || !environment.IsDevelopment())
@@ -35,13 +38,21 @@ public record LinkedAccountKeys(LinkId LinkId, ConnectionId ConnectionId, Upstre
         }
 
         var principal = context.HttpContext?.User;
-        if (principal?.Identity?.IsAuthenticated != true || !AccountSubject.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var account))
+        if (principal?.Identity?.IsAuthenticated != true)
         {
             throw new AccountOperationRefused("authenticated_account_required");
         }
 
-        var state = await readModels.GetInstanceById<AccountLinkState>(account!.Value);
+        if (!AccountSubject.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var account))
+        {
+            return [];
+        }
+
+        var state = await readModels.GetInstanceById<AccountLinkState>(new ReadModelKey(account!.Value));
         UpstreamKeyLinking.RequireActive(state);
-        return state.Links.Values.Select(link => new LinkedAccountKeys(link.LinkId, link.ConnectionId, link.IdpIssuer, state.Logins.GetValueOrDefault(link.LinkId.Value), link.LinkedAt)).ToArray();
+        var links = state.Links.Values.Select(link => new LinkedAccountKeys(link.LinkId, link.ConnectionId, link.IdpIssuer, state.Logins.GetValueOrDefault(link.LinkId.Value), link.LinkedAt));
+        var proposals = state.Proposals.Values.Where(proposal => !proposal.Terminal)
+            .Select(proposal => new LinkedAccountKeys(new(proposal.Id.Value), proposal.Connection, proposal.Issuer, null, null, proposal.State));
+        return links.Concat(proposals).ToArray();
     }
 }
