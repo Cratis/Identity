@@ -9,10 +9,10 @@ using MongoDB.Driver;
 
 namespace Cratis.Identity.Hosting;
 
-/// <summary>Opt-in wiring only; no production-host invocation, pending owner decision D18.</summary>
+/// <summary>Opt-in wiring only; no production host invokes it by default.</summary>
 public static class EventSourcedAccountServiceCollectionExtensions
 {
-    /// <summary>Adds the Development-only account path without replacing IAccounts or configuring a Chronicle host.</summary>
+    /// <summary>Adds the opt-in account path without replacing IAccounts or configuring a Chronicle host.</summary>
     /// <param name="services">The services.</param>
     /// <returns>The collection with the opt-in registrations.</returns>
     public static IServiceCollection AddEventSourcedAccounts(this IServiceCollection services)
