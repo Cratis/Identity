@@ -1,0 +1,15 @@
+{
+  "name": "crash_before_ack",
+  "description": "A fence durably written before a lost response is reused by revoke retry.",
+  "given": { "target": "family-1", "operational_watermark": 40, "log_watermark": 40, "chronicle_available": false },
+  "when": [
+    { "order": 1, "t": 0, "action": "revoke", "target": "family-1", "request_id": "revoke-1" },
+    { "order": 2, "t": 0, "action": "commit_fence_and_outbox", "fence_id": "fence-41", "fence_sequence": 41, "outbox_id": "fact-41" },
+    { "order": 3, "t": 0, "action": "durably_append_fence_log", "fence_id": "fence-41", "log_watermark": 41 },
+    { "order": 4, "t": 0, "action": "crash_before_acknowledgement" },
+    { "order": 5, "t": 1, "action": "restart_and_reconcile_to_log_barrier", "barrier": 41 },
+    { "order": 6, "t": 2, "action": "retry_revoke", "target": "family-1", "request_id": "revoke-1" },
+    { "order": 7, "t": 3, "action": "revoke_again_with_different_request_id", "target": "family-1", "request_id": "revoke-2" }
+  ],
+  "then": { "acknowledged": true, "fence_id": "fence-41", "fence_count": 1, "log_entry_count": 1, "outbox_fact_count": 1, "family_redemption": "deny", "chronicle_required_for_ack": false }
+}

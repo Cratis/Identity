@@ -1,0 +1,40 @@
+{
+    "name": "valid-bound-request",
+    "description": "A bound token with a matching proof, nonce and unused proof id passes the enforcing edge.",
+    "given": {
+        "authorization_scheme": "DPoP",
+        "proof": {
+            "header": {
+                "typ": "dpop+jwt",
+                "alg": "ES256",
+                "jwk": {
+                    "kty": "EC",
+                    "crv": "P-256",
+                    "x": "axfR8uEsQkf4vOblY6RA8ncDfYEt6zOg9KE5RdiYwpY",
+                    "y": "T-NC4v4af5uO5-tKfA-eFivOM1drMV7Oy7ZAaDe_UfU"
+                }
+            },
+            "payload": {
+                "jti": "3582ed7c-78cc-44a4-a14a-3e2cd16572bc",
+                "htm": "POST",
+                "htu": "https://direct.cratis.io/mcp",
+                "iat": 2000000000,
+                "ath": "F30iRba6HrejUQBwrzD-RojRUlUkFovd8PoQVXZ9_xY",
+                "nonce": "nonce-current"
+            },
+            "signature": "valid"
+        }
+    },
+    "when": { "action": "validate_at_authproxy_and_forward_v2" },
+    "then": {
+        "outcome": "accept",
+        "forwarded": true,
+        "envelope_version": "v2",
+        "sender_binding": {
+            "jkt": "xx0BcA-wMohw8atYDJOe6peGModklG2wRHBlXHMvl0M",
+            "jti": "3582ed7c-78cc-44a4-a14a-3e2cd16572bc"
+        },
+        "raw_proof_forwarded": false,
+        "proof_cache_reservation_ttl_seconds": 390
+    }
+}

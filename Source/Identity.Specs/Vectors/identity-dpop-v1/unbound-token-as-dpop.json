@@ -1,0 +1,19 @@
+{
+    "name": "unbound-token-as-dpop",
+    "description": "A valid proof cannot add issuer binding to a token without cnf.",
+    "given": {
+        "authorization_scheme": "DPoP",
+        "access_token": { "cnf": null },
+        "proof": { "header": {}, "payload": {}, "signature": "valid" }
+    },
+    "when": { "action": "validate_at_authproxy_and_forward_v2" },
+    "then": {
+        "outcome": "reject",
+        "reason": "unbound_token_as_dpop",
+        "http_status": 401,
+        "challenge_scheme": "DPoP",
+        "error": "invalid_token",
+        "algs": "ES256",
+        "forwarded": false
+    }
+}

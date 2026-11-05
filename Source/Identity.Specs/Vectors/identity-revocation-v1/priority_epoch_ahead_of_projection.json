@@ -1,0 +1,14 @@
+{
+  "name": "priority_epoch_ahead_of_projection",
+  "description": "A fresh heartbeat cannot authorize policy tightening against a projection behind the required epoch and Access sequence.",
+  "given": { "projection_epoch": 7, "projection_access_sequence": 90, "credential_policy_epoch": 7, "fence_heartbeat_age_seconds": 0, "membership": "known_allowed" },
+  "when": [
+    { "order": 1, "t": 0, "action": "receive_priority_policy_fence", "required_epoch": 8, "required_access_sequence": 100 },
+    { "order": 2, "t": 1, "action": "attempt_policy_dependent_use", "expected": "deny_projection_behind_fence" },
+    { "order": 3, "t": 2, "action": "apply_partial_policy_projection", "projection_epoch": 8, "projection_access_sequence": 99 },
+    { "order": 4, "t": 2, "action": "attempt_critical_approval", "expected": "deny_projection_behind_fence" },
+    { "order": 5, "t": 3, "action": "apply_remaining_policy_projection", "projection_epoch": 8, "projection_access_sequence": 100 },
+    { "order": 6, "t": 3, "action": "reevaluate_under_epoch_8", "policy_result": "deny" }
+  ],
+  "then": { "authorization": "deny", "old_policy_epoch_reused": false, "fresh_heartbeat_overrides_missing_policy": false, "required_access_sequence": 100 }
+}

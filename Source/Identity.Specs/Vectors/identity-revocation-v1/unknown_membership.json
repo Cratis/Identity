@@ -1,0 +1,12 @@
+{
+  "name": "unknown_membership",
+  "description": "A valid credential, fresh Access policy and previously known membership cannot authorize unknown live membership.",
+  "given": { "credential": "valid-access-token", "token_validation": "valid", "cached_membership": "member", "access_policy": "fresh", "grant_status": "active" },
+  "when": [
+    { "order": 1, "t": 0, "action": "product_membership_authority_becomes_unavailable" },
+    { "order": 2, "t": 1, "action": "authproxy_arc_product_attempt_membership_dependent_authorization", "live_membership": "unknown", "expected": "deny" },
+    { "order": 3, "t": 2, "action": "product_membership_authority_returns_missing_record" },
+    { "order": 4, "t": 2, "action": "retry_membership_dependent_authorization", "expected": "deny" }
+  ],
+  "then": { "authorization": "deny", "cached_membership_fallback_allowed": false, "organisation_binding_substitutes_for_membership": false }
+}

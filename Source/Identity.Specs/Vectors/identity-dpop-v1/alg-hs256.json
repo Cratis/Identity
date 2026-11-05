@@ -1,0 +1,18 @@
+{
+    "name": "alg-hs256",
+    "description": "A symmetric proof is rejected even if its simulated signature is valid.",
+    "given": {
+        "authorization_scheme": "DPoP",
+        "proof": { "header": { "alg": "HS256" }, "payload": {}, "signature": "valid" }
+    },
+    "when": { "action": "validate_at_authproxy_and_forward_v2" },
+    "then": {
+        "outcome": "reject",
+        "reason": "invalid_alg",
+        "http_status": 401,
+        "challenge_scheme": "DPoP",
+        "error": "invalid_dpop_proof",
+        "algs": "ES256",
+        "forwarded": false
+    }
+}

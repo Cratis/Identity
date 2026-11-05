@@ -1,0 +1,28 @@
+{
+    "name": "reused-jti-another-replica",
+    "description": "A proof accepted by edge-a is rejected by edge-b through the fleet-wide cache.",
+    "given": {
+        "authorization_scheme": "DPoP",
+        "replica": "edge-b",
+        "shared_cache_reservations": [{
+            "domain": "resource",
+            "public_origin": "https://direct.cratis.io",
+            "jkt": "xx0BcA-wMohw8atYDJOe6peGModklG2wRHBlXHMvl0M",
+            "jti": "3582ed7c-78cc-44a4-a14a-3e2cd16572bc",
+            "accepted_by": "edge-a",
+            "accepted_at": 1999999999,
+            "expires_at": 2000000389
+        }],
+        "proof": { "header": {}, "payload": {}, "signature": "valid" }
+    },
+    "when": { "action": "validate_at_authproxy_and_forward_v2" },
+    "then": {
+        "outcome": "reject",
+        "reason": "replayed_jti",
+        "http_status": 401,
+        "challenge_scheme": "DPoP",
+        "error": "invalid_dpop_proof",
+        "algs": "ES256",
+        "forwarded": false
+    }
+}

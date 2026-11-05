@@ -1,0 +1,21 @@
+{
+    "name": "jti-cache-unavailable",
+    "description": "A healthy local replica cannot accept a proof while the shared replay cache is unavailable.",
+    "given": {
+        "authorization_scheme": "DPoP",
+        "shared_cache_status": "unavailable",
+        "proof": { "header": {}, "payload": {}, "signature": "valid" }
+    },
+    "when": { "action": "validate_at_authproxy_and_forward_v2" },
+    "then": {
+        "outcome": "reject",
+        "reason": "jti_cache_unavailable",
+        "http_status": 401,
+        "challenge_scheme": "DPoP",
+        "error": "invalid_dpop_proof",
+        "algs": "ES256",
+        "local_cache_fallback": false,
+        "forwarded": false,
+        "caller_constructed": false
+    }
+}

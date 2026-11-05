@@ -1,0 +1,22 @@
+{
+    "name": "tenant-alias-reuse-refused",
+    "description": "Deleting a legacy tenant does not release its alias for another tenant.",
+    "given": {
+        "resource": "https://direct.cratis.io",
+        "installation": "direct-installation-a",
+        "valid_tenant_ids": [],
+        "active_alias_mappings": [],
+        "reserved_aliases": [{ "existing_id": "Deleted Workspace", "alias": "t-reserved", "tenant_deleted": true }]
+    },
+    "when": {
+        "action": "assign_tenant_alias",
+        "existing_id": "New Workspace",
+        "candidate_alias": "t-reserved"
+    },
+    "then": {
+        "outcome": "refused",
+        "reason": "tenant_alias_reserved",
+        "mapping_created": false,
+        "reservation_unchanged": true
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "name": "optional-mcp-unbound",
+    "description": "An otherwise valid unbound Bearer token is permitted when policy allows, with explicit no-binding evidence.",
+    "given": {
+        "authorization_scheme": "Bearer",
+        "access_token": { "cnf": null },
+        "registered_client": { "dpop_bound_access_tokens": false },
+        "confirmed_organisation_policy": { "requires_dpop": false },
+        "proof": null
+    },
+    "when": { "action": "validate_at_authproxy_and_forward_v2" },
+    "then": {
+        "outcome": "accept",
+        "forwarded": true,
+        "envelope_version": "v2",
+        "envelope_binding_result": "unbound",
+        "sender_binding": null,
+        "raw_proof_forwarded": false
+    }
+}

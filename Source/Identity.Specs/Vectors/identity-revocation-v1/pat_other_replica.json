@@ -1,0 +1,13 @@
+{
+  "name": "pat_other_replica",
+  "description": "A remote replica cannot use a cached positive PAT status after the revoke serialization point.",
+  "given": { "target": "pat-1", "replicas": ["a", "b"], "replica_b_cached_status": "active", "maximum_positive_status_cache_staleness_seconds": 0 },
+  "when": [
+    { "order": 1, "t": 0, "action": "replica_a_commits_pat_fence_and_outbox", "fence_sequence": 41 },
+    { "order": 2, "t": 0, "action": "durably_log_and_acknowledge_revoke" },
+    { "order": 3, "t": 0, "action": "replica_b_authorizes_new_pat_request_after_fence_commit", "status_source": "authoritative_serialized_read", "expected": "deny" },
+    { "order": 4, "t": 1, "action": "disconnect_replica_b_from_status_authority" },
+    { "order": 5, "t": 1, "action": "replica_b_retries_pat_request_with_cached_positive_status", "expected": "deny" }
+  ],
+  "then": { "pat_use_on_b": "deny", "positive_cache_fallback_allowed": false, "bound_seconds": 0 }
+}

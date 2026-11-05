@@ -1,0 +1,13 @@
+{
+  "name": "refresh_loses_to_revoke",
+  "description": "A refresh that read active state loses its conditional commit when revoke wins the family serialization point.",
+  "given": { "target": "family-1", "family_version": 7, "refresh_token_state": "unconsumed" },
+  "when": [
+    { "order": 1, "t": 0, "action": "replica_a_reads_family_for_refresh", "expected_version": 7 },
+    { "order": 2, "t": 0, "action": "replica_b_commits_family_fence_and_outbox", "family_version": 8, "fence_sequence": 41 },
+    { "order": 3, "t": 0, "action": "replica_b_durably_logs_and_acknowledges_revoke" },
+    { "order": 4, "t": 1, "action": "replica_a_attempts_consume_and_replace_cas", "expected_version": 7, "expected": "conflict" },
+    { "order": 5, "t": 1, "action": "replica_a_rereads_authoritative_fence", "expected": "deny" }
+  ],
+  "then": { "refresh": "deny", "replacements_issued": 0, "access_tokens_issued": 0, "family_state": "revoked", "fence_count": 1 }
+}

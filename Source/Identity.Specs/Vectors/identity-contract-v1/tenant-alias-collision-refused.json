@@ -1,0 +1,23 @@
+{
+    "name": "tenant-alias-collision-refused",
+    "description": "An alias cannot collide with either an existing valid tenant id or another tenant's alias in the same installation.",
+    "given": {
+        "resource": "https://direct.cratis.io",
+        "installation": "direct-installation-a",
+        "valid_tenant_ids": ["t-existing"],
+        "alias_mappings": [{ "existing_id": "Legacy Workspace", "alias": "t-alias" }]
+    },
+    "when": {
+        "action": "assign_tenant_alias",
+        "existing_id": "Another Workspace",
+        "candidate_aliases": ["t-existing", "t-alias"]
+    },
+    "then": {
+        "results": [
+            { "alias": "t-existing", "outcome": "refused", "reason": "tenant_alias_collision" },
+            { "alias": "t-alias", "outcome": "refused", "reason": "tenant_alias_collision" }
+        ],
+        "mapping_created": false,
+        "existing_mappings_unchanged": true
+    }
+}
