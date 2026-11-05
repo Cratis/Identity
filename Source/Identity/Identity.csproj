@@ -36,6 +36,7 @@
 
   <ItemGroup>
     <PackageReference Include="Cratis.Arc" />
+    <PackageReference Include="Cratis.Arc.Chronicle" />
     <PackageReference Include="MongoDB.Driver" />
     <PackageReference Include="OpenIddict.AspNetCore" />
     <PackageReference Include="OpenIddict.MongoDb" />

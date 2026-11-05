@@ -11,6 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Cratis.Chronicle.Testing" />
+    <PackageReference Include="Cratis.Arc.Chronicle.Testing" />
     <PackageReference Include="Cratis.Specifications.XUnit.v3" />
     <PackageReference Include="xunit.v3.mtp-off" />
     <PackageReference Include="coverlet.collector">
@@ -27,6 +29,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Identity/Identity.csproj" />
+    <None Include="Vectors/**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
