@@ -118,9 +118,9 @@ public class IdentityOptionsValidation(IHostEnvironment environment) : IValidate
             return;
         }
 
-        if (!environment.IsDevelopment())
+        if (!environment.IsDevelopment() && string.IsNullOrEmpty(accounts.LookupKey))
         {
-            failures.Add("Event-sourced accounts are Development-only, pending owner decision D18.");
+            failures.Add("Event-sourced accounts outside Development require a configured account lookup key.");
         }
 
         if (accounts.LookupKeyRevision < 1 || accounts.LinkHoldMinimum < TimeSpan.Zero)

@@ -9,16 +9,19 @@ using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.for_IdentityOptionsValidation;
 
-public class when_enabling_event_sourced_accounts_outside_development : Specification
+public class when_enabling_event_sourced_accounts_outside_development
 {
-    ValidateOptionsResult _result;
+    [Fact]
+    void should_allow_the_opt_in_when_a_lookup_key_is_configured() => Validate(Convert.ToBase64String(new byte[32])).Succeeded.ShouldBeTrue();
 
-    void Because()
+    [Fact]
+    void should_refuse_the_opt_in_when_the_lookup_key_is_missing() => Validate(string.Empty).Failures.ShouldContain("Event-sourced accounts outside Development require a configured account lookup key.");
+
+    static ValidateOptionsResult Validate(string lookupKey)
     {
-        var options = Configurations.TwoResourceServers();
+        var options = Configurations.CallbackResources();
         options.Accounts.EventSourced = true;
-        _result = new IdentityOptionsValidation(new HostingEnvironment { EnvironmentName = Environments.Production }).Validate(null, options);
+        options.Accounts.LookupKey = lookupKey;
+        return new IdentityOptionsValidation(new HostingEnvironment { EnvironmentName = Environments.Production }).Validate(null, options);
     }
-
-    [Fact] void should_refuse_the_development_only_path() => _result.Failures.ShouldContain("Event-sourced accounts are Development-only, pending owner decision D18.");
 }

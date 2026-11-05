@@ -26,15 +26,14 @@ public record LinkedAccountKeys(LinkId LinkId, ConnectionId ConnectionId, Upstre
     /// <param name="context">The authenticated request.</param>
     /// <param name="readModels">The passive account fold.</param>
     /// <param name="options">The explicit account experiment switch.</param>
-    /// <param name="environment">The Development boundary.</param>
     /// <returns>The current account's linked keys.</returns>
     /// <exception cref="AccountOperationRefused">The experiment or authenticated account is unavailable.</exception>
     [Authorize]
-    public static async Task<IEnumerable<LinkedAccountKeys>> ForCurrentAccount(IHttpContextAccessor context, IReadModels readModels, IOptions<IdentityOptions> options, IHostEnvironment environment)
+    public static async Task<IEnumerable<LinkedAccountKeys>> ForCurrentAccount(IHttpContextAccessor context, IReadModels readModels, IOptions<IdentityOptions> options)
     {
-        if (!options.Value.Accounts.EventSourced || !environment.IsDevelopment())
+        if (!options.Value.Accounts.EventSourced)
         {
-            throw new AccountOperationRefused("pending owner decision D18");
+            throw new AccountOperationRefused("event_sourced_accounts_not_enabled");
         }
 
         var principal = context.HttpContext?.User;
