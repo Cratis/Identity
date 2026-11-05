@@ -52,11 +52,13 @@ The authorization server MUST require PKCE S256 and MUST reject `plain` and miss
 
 Pre-registered first-party clients remain supported. Client ID Metadata Documents SHOULD be supported, pinned to [draft-ietf-oauth-client-id-metadata-document-03](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document-03). Dynamic Client Registration is optional (MAY), for backwards compatibility only, subject to the registration security contract and tested connector needs. Connector compatibility MUST remain unverified until tested against supported versions.
 
-DPoP is optional for MCP clients using unbound tokens; this contract MUST NOT impose it on every client. Client support is unverified. A sender-bound token carrying `cnf.jkt` MUST NOT be accepted as a plain bearer. Its verifier MUST require a valid matching DPoP header and MUST refuse a missing header, a proof with the wrong key thumbprint, or a replayed proof `jti` with 401. Optional client support MUST NOT disable an existing token binding.
+DPoP is optional for MCP clients using unbound tokens; this contract MUST NOT impose it on every client. Client support is unverified. A sender-bound token carrying `cnf.jkt` MUST NOT be accepted as a plain bearer. Its verifier MUST validate the proof per RFC 9449 §4.3, including `typ=dpop+jwt`, signature, `htm` and `htu` matching the request, `ath` equal to the presented token's hash, and `iat` within a configured window. A missing, non-positive or unbounded `iat` window MUST cause refusal of sender-bound tokens; the window MUST be finite (recommended at most 5 minutes). The `jti` replay cache MUST retain entries at least for that window. The verifier MUST require a valid matching DPoP header and MUST refuse a missing header, a proof with the wrong key thumbprint, a replayed proof `jti`, or any invalid proof with 401. Optional client support MUST NOT disable an existing token binding.
 
 ### Combined dispatch
 
-The combined profile MUST follow [PAT dispatch](arc-pat-format-v1.md). A recognized PAT prefix MUST select application verification; an invalid checksum, resource mismatch, or revoked PAT MUST NOT trigger OAuth fallback. Other bearer values MUST receive full OAuth verification rather than acceptance based on JWT shape. Both paths MUST preserve resource-local authority and apply current product policy.
+The combined profile MUST follow [PAT dispatch](arc-pat-format-v1.md). PAT namespace recognition MUST apply to the credential value under any Authorization scheme, including DPoP, and MUST match the whole `<key>_pat_` prefix ASCII case-insensitively, marker included. A PAT-namespace value under a non-Bearer scheme MUST be refused in the PAT branch, never passed to OAuth verification or introspection. A recognized PAT prefix under Bearer MUST select application verification; an invalid checksum, resource mismatch, or revoked PAT MUST NOT trigger OAuth fallback. Other bearer values MUST receive full OAuth verification rather than acceptance based on JWT shape. Both paths MUST preserve resource-local authority and apply current product policy.
+
+Credentials are the Authorization header value, a session cookie, an AuthProxy identity envelope, and any credential in the URI query. A session cookie plus an Authorization bearer counts as two credentials and MUST be refused. An AuthProxy identity envelope plus Authorization MUST count as one credential only when the verified envelope cryptographically covers that exact Authorization value (forwarded identity v2 signs its SHA-256 hash, Cratis/Arc#3698); otherwise they MUST count as two and be refused. These rules apply to all profiles. AuthProxy MUST NOT attach a person envelope (an envelope whose credential kind is not `pat`) to a request it forwards with a PAT. Caller construction when an envelope accompanies a bearer MUST follow [Envelope and bearer together](arc-verified-caller-v1.md#envelope-and-bearer-together).
 
 ## Test vectors
 
@@ -118,6 +120,7 @@ The corresponding synthetic authorization request contains `resource=https%3A%2F
 | Combined, valid `OAUTH_FIXTURE` | OAuth branch; same product checks. |
 | Combined, missing credential | 401 JSON with OAuth resource metadata. |
 | Combined, bad-checksum PAT | 401 JSON; no OAuth fallback. |
+| Combined, `DPoP` Authorization scheme with a `direct_pat_v1_` value | 401 JSON in PAT branch; no OAuth verification or introspection. |
 | OAuth token for Studio presented to Direct | 401 JSON for wrong audience. |
 | Resource parameter missing or different at either OAuth request | No usable Direct access token; request refused under this contract. |
 | OAuth-only, valid `direct:read` token, allowed role, operation also requires `direct:write` | 403 JSON with the insufficient-scope challenge below; client requests union `direct:read direct:write`, subject to retry limit. |
@@ -128,9 +131,19 @@ The corresponding synthetic authorization request contains `resource=https%3A%2F
 | `cnf.jkt`-bound token without DPoP header | 401; no plain-bearer downgrade. |
 | `cnf.jkt`-bound token with wrong proof key thumbprint | 401. |
 | `cnf.jkt`-bound token with replayed proof `jti` | 401. |
+| `cnf.jkt`-bound token with proof `htu` mismatch | 401. |
+| `cnf.jkt`-bound token with proof `ath` mismatch | 401. |
+| `cnf.jkt`-bound token with stale proof `iat` | 401. |
+| `cnf.jkt`-bound token with proof `htm` mismatch | 401. |
 | Protected-resource metadata `resource=https://studio.example.test/mcp` when Direct was requested | Client refuses discovery for resource mismatch. |
 | Authorization request uses an unregistered resource indicator | Authorization server refuses; no access token. |
 | Authorization request uses `code_challenge_method=plain`, or omits PKCE | Authorization server refuses; no access token. |
+| Session cookie plus Authorization bearer | Two credentials; 400 machine-readable refusal before dispatch. |
+| AuthProxy identity envelope plus bearer not cryptographically covered by it | Two credentials; 400 machine-readable refusal before dispatch. |
+| Verified `oauth-grant` AuthProxy envelope covering the exact OAuth bearer, matching account key, all other checks pass | One credential; caller constructed only through OAuth verification, handler admitted. |
+| Combined, verified non-`pat` envelope covering a `direct_pat_v1_` value | 401; refused, no caller constructed. |
+| Combined, verified `pat`-kind envelope covering a revoked PAT | 401 after local PAT verification; no caller constructed. |
+| Verified envelope covering the exact OAuth bearer but with a different signed subject | 401; refused, no caller constructed. |
 | More than one credential, or a credential in the URI query | 400 machine-readable refusal before dispatch. |
 | Valid authentication but role denies operation | 403 machine-readable refusal; no scope-based role elevation. |
 | Any profile, browser login redirect or HTML error | Nonconforming; expected machine response without `Location`. |

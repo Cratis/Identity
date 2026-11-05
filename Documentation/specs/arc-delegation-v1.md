@@ -30,7 +30,7 @@ MUST, MUST NOT, and SHOULD use [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119
 
 A delegated token MUST retain the represented person's lowercase UUID v4 account subject as `sub`, with the realm `iss`, as defined in identity-contract-v1. It MUST identify the current agent through the registered `iss` and `sub` strings in the `act` object. Nested historical `act` claims MUST be informational only, not authorization inputs. Authorization MUST use the current actor, validated top-level claims, and the server-side record named by `grantId`. A token or grant id MUST NOT substitute for authenticating the current actor.
 
-The grant reference MUST come only from the verified credential or a server-side mapping keyed by the verified `credentialId`. Request headers, body, or query MUST NOT supply or override it; a request-supplied reference MUST be ignored or refused. The grant record's `accountKey`, current `actor` (`iss`, `sub`), `resource` and catalog audience, `tenant`, and `environment` MUST equal the verified token's corresponding values and trusted installation binding. Any mismatch MUST cause refusal.
+The grant reference MUST come only from the verified credential or a server-side mapping keyed by the verified `credentialId`. Request headers, body, or query MUST NOT supply or override it; a request-supplied reference MUST be ignored or refused. If the verified credential maps to `grant-a` and the request supplies `grant-b`, authorization MUST use only `grant-a` or refuse the request; `grant-b` bounds MUST NOT be read. The grant record's `accountKey`, current `actor` (`iss`, `sub`), `resource` and catalog audience, `tenant`, and `environment` MUST equal the verified token's corresponding values and trusted installation binding. Any mismatch MUST cause refusal.
 
 Every delegation and exchanged token MUST reference a server-side record containing:
 
@@ -74,6 +74,7 @@ Synthetic root `root-fixture` permits Direct and Studio, tenant `tenant-fixture`
 | Verified token `act=agent-B`; referenced grant has `actor=agent-A` | Refused for credential/grant mismatch. |
 | Authenticated exchange actor absent from parent's `authorizedExchangeActors` | Refused. |
 | Grant reference supplied in a request header, body, or query rather than verified credential/mapping | Refused; request input never selects a grant. |
+| Verified credential maps to `grant-a`; request supplies `grant-b` | Refused; request reference unused, `grant-b` bounds never read. |
 | Root permits Direct and Studio; parent narrows destinations to Studio; child requests Direct | Refused; root consent does not restore a removed destination. |
 | Same-resource parent has `studio:read`; child requests `studio:write` | Refused; child scopes must be a subset. |
 | Depth-2 agent exchanges to a depth-3 child | Refused under proposed cap 2. |
