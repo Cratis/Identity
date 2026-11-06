@@ -15,6 +15,9 @@ public class AccountsOptions
     /// <summary>Gets or sets the single supported lookup-key revision.</summary>
     public int LookupKeyRevision { get; set; } = 1;
 
+    /// <summary>Gets or sets the positive budget for projection catch-up at the protocol boundary.</summary>
+    public TimeSpan ReadModelCatchUpTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
     /// <summary>Gets or sets the minimum explicit-link proof hold.</summary>
     public TimeSpan LinkHoldMinimum { get; set; } = TimeSpan.Zero;
 }

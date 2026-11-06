@@ -22,6 +22,8 @@ public static class EventSourcedAccountServiceCollectionExtensions
     {
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IProtocolCommands, ProtocolCommands>();
+        services.AddScoped<IObserverProgress, ObserverProgress>();
+        services.AddScoped<ReadModelCatchUp>();
         services.AddSingleton<IUpstreamLookupKeys, ConfiguredUpstreamLookupKeys>();
         services.AddSingleton<UpstreamKeyDigester>();
         services.AddSingleton<VerifiedKeyGate>();

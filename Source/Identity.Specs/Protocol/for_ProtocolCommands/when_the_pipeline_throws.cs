@@ -1,7 +1,9 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Reactive.Subjects;
 using Cratis.Arc.Commands;
+using Cratis.Chronicle.EventSequences;
 using Cratis.Identity.Realm;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,11 +14,15 @@ public class when_the_pipeline_throws : Specification
     ServiceProvider _services;
     IDisposable _dependency;
     Exception _error;
+    Subject<IEnumerable<AppendedEventWithResult>> _appends;
 
     void Establish()
     {
         _dependency = Substitute.For<IDisposable>();
-        _services = new ServiceCollection().AddScoped(_ => _dependency).BuildServiceProvider();
+        _appends = new();
+        var log = Substitute.For<IEventLog>();
+        log.AppendOperations.Returns(_appends);
+        _services = new ServiceCollection().AddSingleton(log).AddScoped(_ => _dependency).BuildServiceProvider();
     }
 
     async Task Because()
@@ -41,8 +47,13 @@ public class when_the_pipeline_throws : Specification
 
     [Fact] void should_propagate_the_error() => _error.ShouldBeOfExactType<InvalidOperationException>();
     [Fact] void should_dispose_the_child_scope() => _dependency.Received(1).Dispose();
+    [Fact] void should_dispose_append_capture() => _appends.HasObservers.ShouldBeFalse();
     [Fact] void should_restore_protocol_state() => ProtocolCommandScope.IsActive.ShouldBeFalse();
     [Fact] void should_restore_realm_state() => IdentityRealmScope.IsActive.ShouldBeFalse();
 
-    void Destroy() => _services.Dispose();
+    void Destroy()
+    {
+        _services.Dispose();
+        _appends.Dispose();
+    }
 }

@@ -88,6 +88,11 @@ public class IdentityOptionsValidation(IHostEnvironment environment) : IValidate
 
     void ValidateAccounts(AccountsOptions accounts, List<string> failures)
     {
+        if (accounts.ReadModelCatchUpTimeout <= TimeSpan.Zero)
+        {
+            failures.Add("Account read-model catch-up timeout must be positive.");
+        }
+
         if (!accounts.EventSourced)
         {
             return;

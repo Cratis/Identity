@@ -1,7 +1,9 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Reactive.Linq;
 using Cratis.Arc.Commands;
+using Cratis.Chronicle.EventSequences;
 using Cratis.Identity.Realm;
 
 namespace Cratis.Identity.Protocol;
@@ -18,6 +20,14 @@ public sealed class ProtocolCommands(IServiceScopeFactory scopes, ICommandPipeli
         using var realm = IdentityRealmScope.Begin();
         await using var child = scopes.CreateAsyncScope();
         prepare?.Invoke(child.ServiceProvider);
-        return await pipeline.Execute(command, child.ServiceProvider);
+        var appends = new List<AppendedEventWithResult>();
+        using var capture = child.ServiceProvider.GetService<IEventLog>()?.AppendOperations.Subscribe(appends.AddRange);
+        var result = await pipeline.Execute(command, child.ServiceProvider);
+        if (result.IsSuccess && appends.Count != 0)
+        {
+            await child.ServiceProvider.GetRequiredService<ReadModelCatchUp>().AfterCommand(appends, CancellationToken.None);
+        }
+
+        return result;
     }
 }
