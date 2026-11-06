@@ -31,13 +31,14 @@ public class ClientRegistrationFixture : IAsyncLifetime
         _mongo = new MongoDbBuilder("mongo:8.0.14")
             .WithUsername("spec")
             .WithPassword("spec-password")
+            .WithReplicaSet("rs0")
             .WithNetwork(_network)
             .WithNetworkAliases("client-registration-mongo")
             .Build();
         _kernel = new ContainerBuilder("cratis/chronicle:19.111.0-development")
             .WithNetwork(_network)
             .WithEnvironment("Cratis__Chronicle__Storage__Type", "MongoDB")
-            .WithEnvironment("Cratis__Chronicle__Storage__ConnectionDetails", "mongodb://spec:spec-password@client-registration-mongo:27017/?authSource=admin")
+            .WithEnvironment("Cratis__Chronicle__Storage__ConnectionDetails", "mongodb://spec:spec-password@client-registration-mongo:27017/?authSource=admin&replicaSet=rs0&directConnection=true")
             .WithPortBinding(35000, true)
             .WithWaitStrategy(Wait.ForUnixContainer().UntilHttpRequestIsSucceeded(request => request.ForPort(35000).ForPath("/health").UsingTls().UsingHttpMessageHandler(_healthHandler)))
             .Build();
