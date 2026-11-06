@@ -4,6 +4,7 @@
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Accounts.Linking;
 using Cratis.Identity.Accounts.Lookup;
+using Cratis.Identity.Operational;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MongoDB.Driver;
 

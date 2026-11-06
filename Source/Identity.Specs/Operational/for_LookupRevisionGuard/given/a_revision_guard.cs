@@ -4,7 +4,7 @@
 using Cratis.Identity.Accounts.Lookup;
 using MongoDB.Driver;
 
-namespace Cratis.Identity.Accounts.for_LookupRevisionGuard.given;
+namespace Cratis.Identity.Operational.for_LookupRevisionGuard.given;
 
 public class a_revision_guard : Specification
 {
@@ -13,9 +13,9 @@ public class a_revision_guard : Specification
     protected Exception _error;
     LookupRevisionGuard _guard;
 
-    protected int Writes => _collection.ReceivedCalls().Count(call => call.GetMethodInfo().Name == nameof(IMongoCollection<LookupRevision>.UpdateOneAsync));
+    protected int Writes => _collection.ReceivedCalls().Count(call => call.GetMethodInfo().Name == nameof(IMongoCollection<LookupRevision>.InsertOneAsync) || call.GetMethodInfo().Name == nameof(IMongoCollection<LookupRevision>.FindOneAndUpdateAsync));
     protected int Reads => _collection.ReceivedCalls().Count(call => call.GetMethodInfo().Name == nameof(IMongoCollection<LookupRevision>.FindAsync));
-    protected bool UsesUpsert => _collection.ReceivedCalls().Where(call => call.GetMethodInfo().Name == nameof(IMongoCollection<LookupRevision>.UpdateOneAsync)).All(call => call.GetArguments()[2] is UpdateOptions { IsUpsert: true });
+    protected int Inserts => _collection.ReceivedCalls().Count(call => call.GetMethodInfo().Name == nameof(IMongoCollection<LookupRevision>.InsertOneAsync));
 
     void Establish()
     {
@@ -23,8 +23,8 @@ public class a_revision_guard : Specification
         var keys = Substitute.For<IUpstreamLookupKeys>();
         keys.Current.Returns(_key);
         _collection = Substitute.For<IMongoCollection<LookupRevision>>();
-        _collection.UpdateOneAsync(Arg.Any<FilterDefinition<LookupRevision>>(), Arg.Any<UpdateDefinition<LookupRevision>>(), Arg.Any<UpdateOptions>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<UpdateResult>(new UpdateResult.Acknowledged(1, 0, null)));
+        _collection.FindOneAndUpdateAsync(Arg.Any<FilterDefinition<LookupRevision>>(), Arg.Any<UpdateDefinition<LookupRevision>>(), Arg.Any<FindOneAndUpdateOptions<LookupRevision, LookupRevision>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new LookupRevision(LookupRevision.SingletonId, _key.Check, _key.Revision)));
         _guard = new(_collection, keys);
     }
 
@@ -42,7 +42,7 @@ public class a_revision_guard : Specification
         {
             await _guard.StartAsync(CancellationToken.None);
         }
-        catch (AccountOperationRefused exception)
+        catch (LookupKeyRevisionMismatch exception)
         {
             _error = exception;
         }

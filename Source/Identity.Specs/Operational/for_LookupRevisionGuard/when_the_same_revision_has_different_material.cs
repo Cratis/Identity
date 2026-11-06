@@ -3,7 +3,7 @@
 
 using Cratis.Identity.Accounts.Lookup;
 
-namespace Cratis.Identity.Accounts.for_LookupRevisionGuard;
+namespace Cratis.Identity.Operational.for_LookupRevisionGuard;
 
 public class when_the_same_revision_has_different_material : given.a_revision_guard
 {
@@ -11,7 +11,7 @@ public class when_the_same_revision_has_different_material : given.a_revision_gu
 
     Task Because() => Start();
 
-    [Fact] void should_fail_closed() => _error.ShouldBeOfExactType<AccountOperationRefused>();
+    [Fact] void should_fail_closed() => _error.ShouldBeOfExactType<LookupKeyRevisionMismatch>();
     [Fact] void should_report_the_material_mismatch() => _error.Message.ShouldEqual("lookup_key_revision_mismatch");
     [Fact] void should_not_replace_the_retained_check() => Writes.ShouldEqual(0);
 }
