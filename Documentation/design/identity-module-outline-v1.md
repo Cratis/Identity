@@ -81,17 +81,19 @@ Chronicle, realm event store, Default namespace pinned per section 7, read-your-
 
 Account erasure (`AccountErasureRequested`, `AccountErasureFailed`, `AccountErasureCompleted`), passkeys, organisations, tenant bindings, connections, realm epochs and signing-key facts stay in their existing issues and are outside this outline.
 
-## 4. Not event-sourced
+## 4. Not event-sourced, and why
 
-| State | Where | Notes |
-|---|---|---|
-| Authorization codes, device and user codes, individual refresh-token rotations, consumption compare-and-set, `state` and nonce, `jti` replay entries, CIMD fetch cache, rate counters | Operational store (TTL): OpenIddict token store and `Operational/` collections | Kept from today: OpenIddict MongoDB token store, `Storage/StorageIndexes.cs` TTL indexes, `Storage/TokenPruning.cs`, `Authorization/RejectExpiredTokenEntries.cs` |
-| OpenIddict authorization records (live status), browser sessions, pending consent requests, tenant selection | Operational store | Live status is authoritative here; the Chronicle consent and grant facts feed connected apps and audit only |
-| Revocation fences, tombstones, grant and account epochs, revocation outbox, fence log | Operational store and the independent fence log (S6, [#41](https://github.com/Cratis/Identity/issues/41), [#42](https://github.com/Cratis/Identity/issues/42)) | Never read from projections (identity-package-and-storage §2) |
-| Lookup-key revision guard | Operational store: one fixed-id record with atomic compare-and-set | `LookupRevisionGuard` moves to `Operational/` with the atomic fix in S1 |
-| Signing and encryption keys, Data Protection ring, upstream credentials, digest keys | Secret store or KMS (`Keys/`, kept) | Never in Chronicle |
-| Failed sign-in attempts | Logs and metrics (`[LoggerMessage]`) | Not events. Only a rate limiter's counters belong in the operational TTL store |
-| Access tokens | Not stored | Signed JWTs |
+The module exposes commands, queries and events, and everything that is a durable fact about people, clients, resources, consent and grants is event-sourced. The exceptions below are deliberate and each has a reason. They are listed so they can be confirmed or rejected one by one; anything not listed here is event-sourced.
+
+| State | Where | Why it is not event-sourced | Notes |
+|---|---|---|---|
+| Authorization codes, device and user codes, individual refresh-token rotations, consumption compare-and-set, `state` and nonce, `jti` replay entries, CIMD fetch cache, rate counters | Operational store (TTL): OpenIddict token store and `Operational/` collections | Single-use or expiring protocol state. Correctness needs an atomic consume-once check and deletion at expiry; an immutable log would keep redeemable values forever and cannot express "consumed exactly once" without a separate lock anyway | Kept from today: OpenIddict MongoDB token store, `Storage/StorageIndexes.cs` TTL indexes, `Storage/TokenPruning.cs`, `Authorization/RejectExpiredTokenEntries.cs`. The durable facts (refresh-family started, reuse detected) are events (S6) |
+| OpenIddict authorization records (live status), browser sessions, pending consent requests, tenant selection | Operational store | Live, short-lived protocol state that OpenIddict checks on every request; it must change atomically and expire. The decisions themselves are events | The Chronicle consent and grant facts feed connected apps and audit only |
+| Revocation fences, tombstones, grant and account epochs, revocation outbox, fence log | Operational store and the independent fence log (S6, [#41](https://github.com/Cratis/Identity/issues/41), [#42](https://github.com/Cratis/Identity/issues/42)) | A revoke must hold on the next request even while projections lag, so the enforcement point cannot be a projection. The revocation itself is an event | Never read from projections (identity-package-and-storage §2) |
+| Lookup-key revision guard | Operational store: one fixed-id record with atomic compare-and-set | A concurrency guard, not a fact | `LookupRevisionGuard` moves to `Operational/` with the atomic fix in S1 |
+| Signing and encryption keys, Data Protection ring, upstream credentials, digest keys | Secret store or KMS (`Keys/`, kept) | Secrets must not sit in an immutable, replicated log: they must be rotatable and destroyable, and events are neither | Never in Chronicle; events refer to key ids only |
+| Failed sign-in attempts | Logs and metrics (`[LoggerMessage]`) | Not a domain fact and unbounded in volume (anyone can produce them) | Only a rate limiter's counters belong in the operational TTL store |
+| Access tokens | Not stored | Self-contained signed JWTs; nothing to store | The grant they come from is an event |
 
 ## 5. OpenIddict over Chronicle read models and the operational store
 
