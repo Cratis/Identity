@@ -43,7 +43,7 @@ public class an_owner_query : Specification
         });
         _reader.ClearReceivedCalls();
         _scenario.Services.AddSingleton(_reader);
-        _scenario.Services.AddSingleton<ICurrentPrincipalAccessor>(new Cratis.Identity.Accounts.given.FixedAccountPrincipal(principal));
+        _scenario.Services.AddSingleton<ICurrentPrincipalAccessor>(new Accounts.given.FixedAccountPrincipal(principal));
     }
 
     protected async Task Perform() => _result = await _scenario.Perform(nameof(Account.Mine), new QueryArguments { ["accountId"] = _other.Id.Value });

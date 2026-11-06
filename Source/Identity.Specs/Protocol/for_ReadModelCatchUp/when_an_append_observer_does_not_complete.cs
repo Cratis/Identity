@@ -10,7 +10,7 @@ public class when_an_append_observer_does_not_complete : given.projection_progre
 {
     async Task Because()
     {
-        var result = AppendResult.Success(Cratis.Execution.CorrelationId.New(), new(5));
+        var result = AppendResult.Success(Execution.CorrelationId.New(), new(5));
         _progress.Complete(result, Arg.Any<TimeSpan>()).Returns(Task.FromResult(new AppendResultWaitForCompletionResult(false, [])));
         try
         {

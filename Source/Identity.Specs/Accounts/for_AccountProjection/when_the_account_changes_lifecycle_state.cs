@@ -24,6 +24,6 @@ public class when_the_account_changes_lifecycle_state : Specification
             _ => new AccountTombstoneRecorded(DateTimeOffset.UnixEpoch, FactId.New())
         };
         await scenario.Given.ForEventSource(subject.Value).Events(new AccountRegistrationRecorded(DateTimeOffset.UnixEpoch, FactId.New()), last);
-        scenario.Instance!.Status.ShouldEqual(expected);
+        scenario.Instance.Status.ShouldEqual(expected);
     }
 }

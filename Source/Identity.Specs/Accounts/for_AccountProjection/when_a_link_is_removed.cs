@@ -24,7 +24,7 @@ public class when_a_link_is_removed : Specification
             new UpstreamKeyUnlinkRecorded(link, "digest", "spec_reason", DateTimeOffset.UnixEpoch, FactId.New()));
     }
 
-    [Fact] void should_remove_the_raw_child() => _scenario.Instance!.LinkedUpstreamKeys.ShouldBeEmpty();
+    [Fact] void should_remove_the_raw_child() => _scenario.Instance.LinkedUpstreamKeys.ShouldBeEmpty();
 
     void Destroy() => _scenario.Dispose();
 }

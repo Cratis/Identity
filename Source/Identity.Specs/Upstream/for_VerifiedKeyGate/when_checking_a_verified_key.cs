@@ -41,6 +41,6 @@ public class when_checking_a_verified_key : Specification
             "revision" => _key with { Revision = _key.Revision + 1 },
             _ => _key with { Digest = "invalid" }
         };
-        _gate.Validate(_authentication, key)!.Message.ShouldEqual("verified_upstream_key_mismatch");
+        _gate.Validate(_authentication, key).Message.ShouldEqual("verified_upstream_key_mismatch");
     }
 }

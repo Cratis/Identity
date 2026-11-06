@@ -144,15 +144,15 @@ internal static class IdentityServiceCollectionExtensions
 
     static void AddRealmNamespaceResolver(IServiceCollection services)
     {
-        var previous = services.LastOrDefault(descriptor => descriptor.ServiceType == typeof(Cratis.Chronicle.IEventStoreNamespaceResolver));
+        var previous = services.LastOrDefault(descriptor => descriptor.ServiceType == typeof(IEventStoreNamespaceResolver));
         if (previous is null)
         {
             return;
         }
 
         services.Remove(previous);
-        services.AddSingleton<Cratis.Chronicle.IEventStoreNamespaceResolver>(provider => new IdentityRealmNamespaceResolver(
-            (Cratis.Chronicle.IEventStoreNamespaceResolver)(previous.ImplementationInstance ?? previous.ImplementationFactory?.Invoke(provider) ??
+        services.AddSingleton<IEventStoreNamespaceResolver>(provider => new IdentityRealmNamespaceResolver(
+            (IEventStoreNamespaceResolver)(previous.ImplementationInstance ?? previous.ImplementationFactory?.Invoke(provider) ??
                 ActivatorUtilities.CreateInstance(provider, previous.ImplementationType!))));
     }
 
