@@ -6,6 +6,7 @@ using Cratis.Arc.Authorization;
 using Cratis.Arc.Chronicle.Testing.Queries;
 using Cratis.Arc.Queries;
 using Cratis.Arc.Testing.Queries;
+using Cratis.Chronicle;
 using Cratis.Identity.Contracts.Accounts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,6 +30,9 @@ public class a_linked_keys_query : a_link_proposal
         await Propose(Quarantine);
         await Prepare();
         _query = new();
+        var realmStore = Substitute.For<IEventStore>();
+        realmStore.Namespace.Returns(EventStoreNamespaceName.Default);
+        _query.Services.AddSingleton(realmStore);
         var principal = Principal;
         _query.Services.AddSingleton<ICurrentPrincipalAccessor>(new FixedAccountPrincipal(principal));
         var context = Substitute.For<IHttpContextAccessor>();

@@ -6,6 +6,7 @@ using Cratis.Identity.Authorization;
 using Cratis.Identity.Clients;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.Keys;
+using Cratis.Identity.Realm;
 using Cratis.Identity.Resources;
 using Cratis.Identity.Storage;
 using Cratis.Identity.Tenants;
@@ -54,6 +55,7 @@ internal static class IdentityServiceCollectionExtensions
         services.AddSingleton<IValidateOptions<IdentityOptions>, IdentityOptionsValidation>();
         services.AddSingleton(TimeProvider.System);
 
+        AddRealmNamespaceResolver(services);
         services.AddStorage();
         services.AddSecretStoreKeys(startupOptions);
         services.AddDomain();
@@ -104,6 +106,20 @@ internal static class IdentityServiceCollectionExtensions
 
         services.AddOptions<Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions>(IdentitySchemes.Session)
             .Configure<IOptions<IdentityOptions>>((cookie, identity) => cookie.ExpireTimeSpan = identity.Value.SessionLifetime);
+    }
+
+    static void AddRealmNamespaceResolver(IServiceCollection services)
+    {
+        var previous = services.LastOrDefault(descriptor => descriptor.ServiceType == typeof(Cratis.Chronicle.IEventStoreNamespaceResolver));
+        if (previous is null)
+        {
+            return;
+        }
+
+        services.Remove(previous);
+        services.AddSingleton<Cratis.Chronicle.IEventStoreNamespaceResolver>(provider => new IdentityRealmNamespaceResolver(
+            (Cratis.Chronicle.IEventStoreNamespaceResolver)(previous.ImplementationInstance ?? previous.ImplementationFactory?.Invoke(provider) ??
+                ActivatorUtilities.CreateInstance(provider, previous.ImplementationType!))));
     }
 
     static void AddStorage(this IServiceCollection services)
