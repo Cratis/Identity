@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.for_IdentityOptionsValidation;
 
-public class when_enabling_event_sourced_accounts_outside_development
+public class when_validating_native_accounts_outside_development
 {
     [Fact]
     void should_allow_the_opt_in_when_a_lookup_key_is_configured() => Validate(Convert.ToBase64String(new byte[32])).Succeeded.ShouldBeTrue();
@@ -20,7 +20,6 @@ public class when_enabling_event_sourced_accounts_outside_development
     static ValidateOptionsResult Validate(string lookupKey)
     {
         var options = Configurations.CallbackResources();
-        options.Accounts.EventSourced = true;
         options.Accounts.LookupKey = lookupKey;
         return new IdentityOptionsValidation(new HostingEnvironment { EnvironmentName = Environments.Production }).Validate(null, options);
     }

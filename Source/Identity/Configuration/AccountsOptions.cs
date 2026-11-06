@@ -3,12 +3,9 @@
 
 namespace Cratis.Identity.Configuration;
 
-/// <summary>Opt-in event-sourced accounts.</summary>
+/// <summary>Native account lookup and consistency options.</summary>
 public class AccountsOptions
 {
-    /// <summary>Gets or sets whether the opt-in account services are enabled.</summary>
-    public bool EventSourced { get; set; }
-
     /// <summary>Gets or sets the base64 lookup secret, never logged.</summary>
     public string LookupKey { get; set; } = string.Empty;
 

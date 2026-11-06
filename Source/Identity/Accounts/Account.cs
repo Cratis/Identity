@@ -24,16 +24,6 @@ public record Account(AccountSubject Id, PersonalName Name, Email? Email, Upstre
 {
     readonly AccountStatus _status = Status;
 
-    /// <summary>Creates the legacy store's compatibility view during the opt-in split.</summary>
-    /// <param name="id">The existing canonical subject.</param>
-    /// <param name="gitHubId">The numeric GitHub id.</param>
-    /// <param name="gitHubLogin">The display login.</param>
-    /// <param name="name">The profile name.</param>
-    public Account(string id, long gitHubId, string gitHubLogin, string name)
-        : this(new AccountSubject(id), name, null, gitHubId.ToString(System.Globalization.CultureInfo.InvariantCulture), gitHubLogin, AccountStatus.Active, [])
-    {
-    }
-
     /// <summary>Gets whether the account has ever been permanently tombstoned.</summary>
     public bool IsTombstoned { get; init; }
 

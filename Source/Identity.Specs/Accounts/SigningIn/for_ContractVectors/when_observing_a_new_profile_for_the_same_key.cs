@@ -4,9 +4,9 @@
 using Cratis.Identity.Accounts.Linking;
 using Cratis.Identity.Contracts.Accounts;
 
-namespace Cratis.Identity.Accounts.for_EventSourcedAccounts;
+namespace Cratis.Identity.Accounts.SigningIn.for_ContractVectors;
 
-public class when_observing_a_new_profile_for_the_same_key : given.an_account_store
+public class when_observing_a_new_profile_for_the_same_key : Accounts.given.an_account_store
 {
     AccountSubject _first;
     AccountSubject _second;

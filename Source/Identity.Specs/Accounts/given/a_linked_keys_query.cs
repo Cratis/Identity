@@ -22,7 +22,6 @@ public class a_linked_keys_query : a_link_proposal
     protected QueryResult _result;
     protected IEnumerable<LinkedAccountKeys> Keys => ((IEnumerable<object>)_result.Data).Cast<LinkedAccountKeys>();
     protected virtual ClaimsPrincipal Principal => Session(_account);
-    protected virtual bool Enabled => true;
     protected virtual bool Quarantine => false;
 
     async Task Establish()
@@ -39,7 +38,6 @@ public class a_linked_keys_query : a_link_proposal
         var context = Substitute.For<IHttpContextAccessor>();
         context.HttpContext.Returns(new DefaultHttpContext { User = principal });
         _query.Services.AddSingleton(context);
-        _options.Accounts.EventSourced = Enabled;
         _query.Services.AddSingleton(Options.Create(_options));
         _query.Services.AddSingleton<IHostEnvironment>(new HostingEnvironment { EnvironmentName = Environments.Development });
         _query.Given.ForEventSource(_account.Value).ReadModel(_states.InstanceForEventSourceId(_account.Value)!);

@@ -35,10 +35,19 @@ CI builds and packs all three as artifacts. Nothing is published until the W0 sp
 
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
+builder.AddCratisArc();
+builder.AddCratisChronicle(options =>
+{
+    options.EventStore = "Identity";
+    options.ConnectionString = builder.Configuration.GetConnectionString("chronicle") ?? "chronicle://localhost:35000";
+});
 builder.AddCratisIdentity();
 
 var app = builder.Build();
 app.MapCratisIdentity();
+app.UseCratisIdentity();
+app.UseCratisArc();
+app.UseCratisChronicle();
 await app.RunAsync();
 ```
 
@@ -120,7 +129,7 @@ In development (`ASPNETCORE_ENVIRONMENT=Development`) without a `SecretStore:Pat
 
 ### Event-sourced accounts
 
-Set `Identity:Accounts:EventSourced=true` to opt in to native Arc commands and Chronicle account projections. The host connects through `ConnectionStrings:chronicle` (outside the `Identity` section). Keep MongoDB for OpenIddict clients, grants, tokens and operational metadata. Existing MongoDB account rows are not imported into Chronicle.
+Accounts use native Arc commands and Chronicle projections by default; there is no legacy MongoDB account writer or opt-in switch. The host connects through `ConnectionStrings:chronicle` (outside the `Identity` section). Keep MongoDB for OpenIddict clients, grants, tokens and operational metadata. Existing MongoDB account rows are not imported into Chronicle.
 
 Outside Development, provide `Identity:Accounts:LookupKey` through the platform's secret configuration mechanism: base64 containing at least 256 bits of key material. `LookupKeyRevision` defaults to `1`; changing the revision against an existing realm store is refused. `ReadModelCatchUpTimeout` defaults to 30 seconds and must be positive. Never log or publish the lookup key.
 

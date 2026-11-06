@@ -3,17 +3,21 @@
 
 using Cratis.Chronicle;
 using Cratis.Identity.Accounts;
-using Cratis.Identity.Accounts.Legacy;
+using Cratis.Identity.Accounts.Linking;
+using Cratis.Identity.Accounts.Lookup;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Clients;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.Keys;
+using Cratis.Identity.Operational;
+using Cratis.Identity.Protocol;
 using Cratis.Identity.Realm;
 using Cratis.Identity.Resources;
 using Cratis.Identity.Storage;
 using Cratis.Identity.Tenants;
 using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using OpenIddict.Server;
@@ -54,7 +58,7 @@ internal static class IdentityServiceCollectionExtensions
             throw new SecretStoreNotConfigured();
         }
 
-        if (startupOptions.Accounts.EventSourced && !services.Any(service => service.ServiceType == typeof(IChronicleClient)))
+        if (!services.Any(service => service.ServiceType == typeof(IChronicleClient)))
         {
             throw new ChronicleNotConfigured();
         }
@@ -67,21 +71,36 @@ internal static class IdentityServiceCollectionExtensions
         services.AddStorage();
         services.AddSecretStoreKeys(startupOptions);
         services.AddDomain();
-        if (startupOptions.Accounts.EventSourced)
-        {
-            services.AddEventSourcedAccounts();
-            services.AddScoped<IAccountReader, AccountReader>();
-            services.AddScoped<IAccountSignIn, EventSourcedAccountAdapter>();
-        }
-        else
-        {
-            services.AddScoped<IAccountReader, MongoAccountReader>();
-            services.AddScoped<IAccountSignIn, MongoAccountSignIn>();
-        }
+        services.AddAccountServices();
 
         services.AddSessionAndUpstreamLogin(environment);
         services.AddAuthorizationServer(startupOptions, environment);
 
+        return services;
+    }
+
+    /// <summary>Adds native account admission, readers and lookup-key startup protection.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The service collection for continuation.</returns>
+    internal static IServiceCollection AddAccountServices(this IServiceCollection services)
+    {
+        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton<IProtocolCommands, ProtocolCommands>();
+        services.AddScoped<IObserverProgress, ObserverProgress>();
+        services.AddScoped<ReadModelCatchUp>();
+        services.AddSingleton<IUpstreamLookupKeys, ConfiguredUpstreamLookupKeys>();
+        services.AddSingleton<UpstreamKeyDigester>();
+        services.AddSingleton<VerifiedKeyGate>();
+        services.AddScoped<AccountStore>();
+        services.AddScoped<UpstreamLookups>();
+        services.AddScoped<AccountReader>();
+        services.AddScoped<IAccountReader>(provider => provider.GetRequiredService<AccountReader>());
+        services.AddScoped<EventSourcedAccountAdapter>();
+        services.AddScoped<IAccountSignIn>(provider => provider.GetRequiredService<EventSourcedAccountAdapter>());
+        services.AddScoped<VerifiedUpstreamSignIn>();
+        services.AddScoped<IVerifiedUpstreamSignIn>(provider => provider.GetRequiredService<VerifiedUpstreamSignIn>());
+        services.AddScoped<UpstreamKeyLinking>();
+        services.AddLookupRevisionGuard();
         return services;
     }
 
@@ -175,7 +194,6 @@ internal static class IdentityServiceCollectionExtensions
 
     static void AddDomain(this IServiceCollection services)
     {
-        services.AddSingleton<IAccounts, Accounts.Accounts>();
         services.AddSingleton<IResourceCatalog, ResourceCatalog>();
         services.AddSingleton<IGrantPolicy, GrantPolicy>();
         services.AddSingleton<ConfiguredTenantDirectory>();

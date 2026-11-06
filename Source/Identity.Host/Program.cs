@@ -8,26 +8,19 @@ builder.Host.UseDefaultServiceProvider(options =>
     options.ValidateOnBuild = true;
 });
 
-var eventSourcedAccounts = builder.Configuration.GetValue<bool>("Identity:Accounts:EventSourced");
-if (eventSourcedAccounts)
+builder.AddCratisArc();
+builder.AddCratisChronicle(options =>
 {
-    builder.AddCratisArc();
-    builder.AddCratisChronicle(options =>
-    {
-        options.EventStore = "Identity";
-        options.ConnectionString = builder.Configuration.GetConnectionString("chronicle") ?? builder.Configuration["Chronicle:ConnectionString"] ?? "chronicle://localhost:35000";
-    });
-}
+    options.EventStore = "Identity";
+    options.ConnectionString = builder.Configuration.GetConnectionString("chronicle") ?? builder.Configuration["Chronicle:ConnectionString"] ?? "chronicle://localhost:35000";
+});
 
 builder.AddCratisIdentity();
 
 var app = builder.Build();
 app.UseRouting();
 app.MapCratisIdentity();
-if (eventSourcedAccounts)
-{
-    app.UseCratisIdentity();
-    app.UseCratisArc();
-    app.UseCratisChronicle();
-}
+app.UseCratisIdentity();
+app.UseCratisArc();
+app.UseCratisChronicle();
 await app.RunAsync();

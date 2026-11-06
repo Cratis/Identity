@@ -93,11 +93,6 @@ public class IdentityOptionsValidation(IHostEnvironment environment) : IValidate
             failures.Add("Account read-model catch-up timeout must be positive.");
         }
 
-        if (!accounts.EventSourced)
-        {
-            return;
-        }
-
         if (!environment.IsDevelopment() && string.IsNullOrEmpty(accounts.LookupKey))
         {
             failures.Add("Event-sourced accounts outside Development require a configured account lookup key.");

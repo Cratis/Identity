@@ -3,15 +3,13 @@
 
 using System.Reflection;
 using Cratis.Identity.Accounts;
-using Cratis.Identity.Accounts.Legacy;
 using Cratis.Identity.Hosting;
 
 namespace Cratis.Identity.Architecture;
 
 public class when_inspecting_mongodb_usage : Specification
 {
-    /// <summary>The separate S1-B commit empties this temporary legacy allowlist.</summary>
-    static readonly Type[] _legacyAllowList = [typeof(Accounts.Accounts), typeof(AccountDocument), typeof(IAccounts), typeof(MongoAccountReader), typeof(MongoAccountSignIn)];
+    static readonly Type[] _legacyAllowList = [];
     Type[] _inspected;
     string[] _violations;
 
@@ -25,7 +23,6 @@ public class when_inspecting_mongodb_usage : Specification
     [Fact] void should_keep_mongodb_out_of_domain_signatures() => _violations.ShouldBeEmpty();
 
     static bool Allowed(Type type) => _legacyAllowList.Contains(type) ||
-        type.Namespace?.StartsWith("Cratis.Identity.Accounts.Legacy", StringComparison.Ordinal) == true ||
         new[] { "Cratis.Identity.Operational", "Cratis.Identity.Storage", "Cratis.Identity.Keys" }.Any(prefix => type.Namespace?.StartsWith(prefix, StringComparison.Ordinal) == true) ||
         type == typeof(IdentityServiceCollectionExtensions) || type.DeclaringType == typeof(IdentityServiceCollectionExtensions);
 

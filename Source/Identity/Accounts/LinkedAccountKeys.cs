@@ -5,10 +5,8 @@ using System.Security.Claims;
 using Cratis.Arc.Queries.ModelBound;
 using Cratis.Chronicle.ReadModels;
 using Cratis.Identity.Accounts.Linking;
-using Cratis.Identity.Configuration;
 using Cratis.Identity.Contracts.Accounts;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.Accounts;
 
@@ -25,18 +23,12 @@ public record LinkedAccountKeys(LinkId LinkId, ConnectionId ConnectionId, Upstre
     /// <summary>Gets only active keys belonging to the authenticated account, never a supplied target subject.</summary>
     /// <param name="context">The authenticated request.</param>
     /// <param name="readModels">The separate pending-proposal read model.</param>
-    /// <param name="options">The explicit account experiment switch.</param>
     /// <param name="accounts">The canonical account reader.</param>
     /// <returns>The current account's linked keys.</returns>
-    /// <exception cref="AccountOperationRefused">The experiment or authenticated account is unavailable.</exception>
+    /// <exception cref="AccountOperationRefused">The authenticated account is unavailable.</exception>
     [Authorize]
-    public static async Task<IEnumerable<LinkedAccountKeys>> ForCurrentAccount(IHttpContextAccessor context, IReadModels readModels, IOptions<IdentityOptions> options, AccountReader accounts)
+    public static async Task<IEnumerable<LinkedAccountKeys>> ForCurrentAccount(IHttpContextAccessor context, IReadModels readModels, AccountReader accounts)
     {
-        if (!options.Value.Accounts.EventSourced)
-        {
-            throw new AccountOperationRefused("event_sourced_accounts_not_enabled");
-        }
-
         var principal = context.HttpContext?.User;
         if (principal?.Identity?.IsAuthenticated != true)
         {

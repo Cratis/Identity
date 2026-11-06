@@ -15,17 +15,8 @@ namespace Cratis.Identity.Accounts;
 /// </summary>
 /// <param name="commands">The realm-scoped command boundary.</param>
 /// <param name="accounts">The passive account reader.</param>
-public class EventSourcedAccountAdapter(IProtocolCommands commands, AccountReader accounts) : IAccounts, IAccountSignIn
+public class EventSourcedAccountAdapter(IProtocolCommands commands, AccountReader accounts) : IAccountSignIn
 {
-    /// <inheritdoc/>
-    /// <exception cref="AccountOperationRefused">A DTO alone is not verified authentication.</exception>
-    public Task<Account> RecordGitHubSignIn(GitHubUser user, CancellationToken cancellationToken = default) =>
-        throw new AccountOperationRefused("verified_sign_in_required");
-
-    /// <inheritdoc/>
-    public Task<Account?> FindById(string id, CancellationToken cancellationToken = default) =>
-        AccountSubject.TryParse(id, out var subject) ? accounts.FindActive(subject!) : Task.FromResult<Account?>(null);
-
     /// <summary>
     /// Executes one guarded decision and at most one fresh retry, never replaying stale events.
     /// </summary>

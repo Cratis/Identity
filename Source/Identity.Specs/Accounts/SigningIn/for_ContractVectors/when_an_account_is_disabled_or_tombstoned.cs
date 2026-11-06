@@ -4,9 +4,9 @@
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Contracts.Accounts.Events;
 
-namespace Cratis.Identity.Accounts.for_EventSourcedAccounts;
+namespace Cratis.Identity.Accounts.SigningIn.for_ContractVectors;
 
-public class when_an_account_is_disabled_or_tombstoned : given.a_link_proposal
+public class when_an_account_is_disabled_or_tombstoned : Accounts.given.a_link_proposal
 {
     string _disabledSignIn;
     string _disabledLink;

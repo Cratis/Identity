@@ -15,15 +15,10 @@ public sealed class ConfiguredUpstreamLookupKeys : IUpstreamLookupKeys
     /// <summary>Initializes a new instance of the <see cref="ConfiguredUpstreamLookupKeys"/> class.</summary>
     /// <param name="options">The account options.</param>
     /// <param name="environment">The host environment.</param>
-    /// <exception cref="AccountOperationRefused">The experiment is not enabled, the key is invalid, or no key is configured outside Development.</exception>
+    /// <exception cref="AccountOperationRefused">The key is invalid or no key is configured outside Development.</exception>
     public ConfiguredUpstreamLookupKeys(IOptions<IdentityOptions> options, IHostEnvironment environment)
     {
         var accounts = options.Value.Accounts;
-        if (!accounts.EventSourced)
-        {
-            throw new AccountOperationRefused("event_sourced_accounts_not_enabled");
-        }
-
         if (string.IsNullOrEmpty(accounts.LookupKey) && !environment.IsDevelopment())
         {
             throw new AccountOperationRefused("lookup_key_required");

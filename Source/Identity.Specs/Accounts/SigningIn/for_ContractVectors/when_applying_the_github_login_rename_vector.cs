@@ -4,9 +4,9 @@
 using Cratis.Identity.Accounts.Linking;
 using Cratis.Identity.Contracts.Accounts;
 
-namespace Cratis.Identity.Accounts.for_EventSourcedAccounts;
+namespace Cratis.Identity.Accounts.SigningIn.for_ContractVectors;
 
-public class when_applying_the_github_login_rename_vector : given.a_contract_vector
+public class when_applying_the_github_login_rename_vector : Accounts.given.a_contract_vector
 {
     AccountSubject _account;
     AccountLinkState _state;

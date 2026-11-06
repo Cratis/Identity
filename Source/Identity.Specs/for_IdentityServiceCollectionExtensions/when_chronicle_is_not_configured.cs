@@ -14,7 +14,6 @@ public class when_chronicle_is_not_configured : Specification
     void Because()
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = Environments.Development });
-        builder.Configuration["Identity:Accounts:EventSourced"] = "true";
         try
         {
             builder.AddCratisIdentity();

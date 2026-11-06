@@ -161,7 +161,6 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     protected virtual Dictionary<string, string?> Settings() => new()
     {
         ["Identity:Issuer"] = Issuer,
-        ["Identity:Accounts:EventSourced"] = "true",
         ["Identity:Accounts:LookupKey"] = Convert.ToBase64String(Enumerable.Range(0, 32).Select(value => (byte)value).ToArray()),
         ["Identity:Accounts:ReadModelCatchUpTimeout"] = "00:00:10",
         ["ConnectionStrings:chronicle"] = _chronicle.ConnectionString,

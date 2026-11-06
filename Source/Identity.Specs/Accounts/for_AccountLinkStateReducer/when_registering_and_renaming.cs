@@ -6,7 +6,7 @@ using Cratis.Identity.Accounts.Linking;
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Contracts.Accounts.Events;
 
-namespace Cratis.Identity.Accounts.for_EventSourcedAccounts;
+namespace Cratis.Identity.Accounts.for_AccountLinkStateReducer;
 
 public class when_registering_and_renaming : Specification
 {

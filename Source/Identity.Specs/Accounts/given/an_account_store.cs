@@ -39,7 +39,7 @@ public class an_account_store : Specification
     {
         _events = new();
         _clock = new();
-        _options = new() { Accounts = new() { EventSourced = true } };
+        _options = new();
         var keys = Substitute.For<IUpstreamLookupKeys>();
         keys.Current.Returns(new UpstreamLookupKey(1, Enumerable.Range(0, 32).Select(number => (byte)number).ToArray()));
         _digester = new(keys);

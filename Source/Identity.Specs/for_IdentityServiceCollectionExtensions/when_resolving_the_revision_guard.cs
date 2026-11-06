@@ -11,7 +11,7 @@ using MongoDB.Driver;
 
 namespace Cratis.Identity.for_IdentityServiceCollectionExtensions;
 
-public class when_resolving_the_opt_in_revision_guard : Specification
+public class when_resolving_the_revision_guard : Specification
 {
     ServiceProvider _provider;
     LookupRevisionGuard _guard;
@@ -20,10 +20,10 @@ public class when_resolving_the_opt_in_revision_guard : Specification
     void Establish()
     {
         var services = new ServiceCollection();
-        services.AddOptions<IdentityOptions>().Configure(options => options.Accounts.EventSourced = true);
+        services.AddOptions<IdentityOptions>();
         services.AddSingleton<IHostEnvironment>(new HostingEnvironment { EnvironmentName = Environments.Development });
         services.AddSingleton(new MongoClient("mongodb://localhost:27017").GetDatabase("identity_revision_guard_specs"));
-        services.AddEventSourcedAccounts();
+        services.AddAccountServices();
         _provider = services.BuildServiceProvider();
     }
 

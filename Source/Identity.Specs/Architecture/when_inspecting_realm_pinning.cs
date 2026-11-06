@@ -21,6 +21,7 @@ public class when_inspecting_realm_pinning : Specification
         var inner = Substitute.For<IEventStoreNamespaceResolver>();
         inner.Resolve().Returns(new EventStoreNamespaceName("tenant-a"));
         var services = new ServiceCollection().AddSingleton(inner);
+        services.AddSingleton(Substitute.For<IChronicleClient>());
         services.AddCratisIdentity(new ConfigurationBuilder().Build(), new HostingEnvironment { EnvironmentName = Environments.Development });
         _services = services.BuildServiceProvider();
     }
