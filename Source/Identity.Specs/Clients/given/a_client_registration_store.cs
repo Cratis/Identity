@@ -8,6 +8,7 @@ using Cratis.Identity.Clients.Registration;
 using Cratis.Identity.Clients.Secrets;
 using Cratis.Identity.Contracts.Clients;
 using Cratis.Identity.Contracts.Clients.Events;
+using Cratis.Identity.given;
 using Cratis.Identity.Storage;
 using MongoDB.Driver;
 using OpenIddict.Abstractions;
@@ -27,6 +28,7 @@ public class a_client_registration_store : Specification
     protected List<(ClientRegistrationState State, OpenIddictApplicationDescriptor Policy)> _materialized;
     protected List<ClientRegistrationId> _removed;
     protected ReadModelScenario<ClientRegistrationState> _states;
+    protected AppendFailureLog<ClientRegistrationStore> _appendLog;
     ReadModelScenario<ClientIdLookup> _lookups;
     readonly HashSet<ClientRegistrationId> _ids = [];
 
@@ -52,7 +54,8 @@ public class a_client_registration_store : Specification
         var reader = Substitute.For<IReadModels>();
         reader.GetInstances<ClientIdLookup>(default).ReturnsForAnyArgs(_ => Task.FromResult<IEnumerable<ClientIdLookup>>(_lookups.Instances.Values));
         reader.GetInstanceById<ClientRegistrationState>(default(ReadModelKey)!, default).ReturnsForAnyArgs(call => Task.FromResult(_states.InstanceForEventSourceId(call.Arg<ReadModelKey>().Value) ?? new(call.Arg<ReadModelKey>().Value)));
-        _store = new(_events, reader, TimeProvider.System, Refresh);
+        _appendLog = new();
+        _store = new(_events, reader, TimeProvider.System, Refresh, _appendLog);
         _writer = new(_store, new(reader), _digester, _materializations, TimeProvider.System);
         _cli = new() { ClientId = "cratis-cli", ClientType = OpenIddictConstants.ClientTypes.Public };
         _cli.RedirectUris.Add(new("http://127.0.0.1/callback"));
