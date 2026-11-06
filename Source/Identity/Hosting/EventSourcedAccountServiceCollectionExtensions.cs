@@ -5,6 +5,7 @@ using Cratis.Identity.Accounts;
 using Cratis.Identity.Accounts.Linking;
 using Cratis.Identity.Accounts.Lookup;
 using Cratis.Identity.Operational;
+using Cratis.Identity.Protocol;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MongoDB.Driver;
 
@@ -19,6 +20,7 @@ public static class EventSourcedAccountServiceCollectionExtensions
     public static IServiceCollection AddEventSourcedAccounts(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<IProtocolCommands, ProtocolCommands>();
         services.AddSingleton<IUpstreamLookupKeys, ConfiguredUpstreamLookupKeys>();
         services.AddSingleton<UpstreamKeyDigester>();
         services.AddScoped<AccountStore>();
