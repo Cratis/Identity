@@ -5,12 +5,12 @@ Doc id: identity-module-outline
 Version: 1
 Status: Proposed
 Issue: https://github.com/Cratis/Identity/issues/11
-Depends on: identity-design v1, identity-package-and-storage v1 (Locked), identity-events v1 (Locked), identity-contract v1 (Locked)
+Depends on: identity-design v1, identity-package-and-storage v1 (Signed off), identity-events v1 (Signed off), identity-contract v1 (Signed off)
 ```
 
 ## 1. Scope and authority
 
-This note is the target outline of the `Cratis.Identity` module: which behaviors are Arc commands, queries and Chronicle events, which state stays operational, how OpenIddict sits on top, and what the module guarantees about read-your-writes, realm isolation and authorization. It is the conformance anchor against which each delivery step is checked. It is not a specification: it adds no event, claim or contract, and it never overrides a Locked document.
+This note is the target outline of the `Cratis.Identity` module: which behaviors are Arc commands, queries and Chronicle events, which state stays operational, how OpenIddict sits on top, and what the module guarantees about read-your-writes, realm isolation and authorization. It is the conformance anchor against which each delivery step is checked. It is not a specification: it adds no event, claim or contract, and it never overrides a signed-off or Locked document.
 
 Binding inputs, in this order:
 

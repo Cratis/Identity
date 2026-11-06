@@ -3,8 +3,8 @@
 ```text
 Doc id: identity-package-and-storage
 Version: 1
-Status: Locked
-Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
+Status: Signed off
+Signed off: 2026-11-05 by woksin, https://github.com/Cratis/Identity/issues/14; owner confirmation pending
 Issue: https://github.com/Cratis/Identity/issues/27
 Depends on: https://github.com/Cratis/Identity/issues/16 (D18)
 Linked from: https://github.com/Cratis/Identity/issues/11
@@ -14,7 +14,7 @@ Linked from: https://github.com/Cratis/Identity/issues/11
 
 This W0 design guides W2's package extraction and storage adapters. The headless module direction is decided; **D18 was decided as option A in #16**. This note records that decision, not an approved storage technology or implemented consistency guarantee. The note was signed off in Identity #14 (2026-11-05). The header records the intended #11 linkage; linking and merge remain follow-up work.
 
-The [Terms of identity-contract-v1](../specs/identity-contract-v1.md#terms) apply unchanged. The [event rules and catalogue](../specs/identity-events-v1.md) determine which facts are events, their public/internal visibility, generations, privacy and secret exclusions. The [revocation protocol](../specs/identity-revocation-v1.md) owns fence durability, consumption concurrency, recovery and readiness; it takes precedence over this summary. All three specifications are Locked.
+The [Terms of identity-contract-v1](../specs/identity-contract-v1.md#terms) apply unchanged. The [event rules and catalogue](../specs/identity-events-v1.md) determine which facts are events, their public/internal visibility, generations, privacy and secret exclusions. The [revocation protocol](../specs/identity-revocation-v1.md) owns fence durability, consumption concurrency, recovery and readiness; it takes precedence over this summary. All three specifications are signed off; owner confirmation is pending in Identity #14.
 
 ## 2. Store inventory
 
