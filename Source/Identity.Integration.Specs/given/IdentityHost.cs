@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Testcontainers.MongoDb;
+using Xunit.v3;
 
 namespace Cratis.Identity.Integration.given;
 
@@ -25,7 +26,7 @@ namespace Cratis.Identity.Integration.given;
 /// the token endpoint. The configuration mirrors the shipped one and adds a second resource server so resource
 /// binding can be exercised, a tenant the default user is a member of, and a confidential introspection client.
 /// </remarks>
-public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
+public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime, INotifyTestLifecycleAsync
 {
     public const string Issuer = "https://localhost/";
     public const string DirectMcp = "https://cratis.direct/mcp";
@@ -75,7 +76,31 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         }
 
         // Start the host so the client store is reconciled before any spec runs.
-        _ = Server;
+        try
+        {
+            _ = Server;
+        }
+        catch
+        {
+            if (_chronicle is not null)
+            {
+                await _chronicle.WriteKernelLogs("Identity host startup failed");
+            }
+
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
+    public ValueTask OnTestStartingAsync(IXunitTest test) => ValueTask.CompletedTask;
+
+    /// <inheritdoc/>
+    public async ValueTask OnTestFinishedAsync(IXunitTest test)
+    {
+        if (_chronicle is not null && TestContext.Current.TestState?.Result == TestResult.Failed)
+        {
+            await _chronicle.WriteKernelLogs($"Identity collection spec failed: {test.TestDisplayName}");
+        }
     }
 
     /// <inheritdoc/>

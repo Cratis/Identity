@@ -69,9 +69,17 @@ public class ClientRegistrationFixture : IAsyncLifetime
     /// <returns>The startup task.</returns>
     public async Task StartStores()
     {
-        await _network.CreateAsync();
-        await _mongo.StartAsync();
-        await _kernel.StartAsync();
+        try
+        {
+            await _network.CreateAsync();
+            await _mongo.StartAsync();
+            await _kernel.StartAsync();
+        }
+        catch
+        {
+            await WriteKernelLogs("Chronicle startup failed");
+            throw;
+        }
     }
 
     /// <summary>Restarts Identity only, preserving the kernel, event log, operational database and key custody.</summary>
@@ -105,8 +113,16 @@ public class ClientRegistrationFixture : IAsyncLifetime
             settings["Identity:IntrospectionClients:0:ClientSecret"] = secret;
         }
 
-        Host = new(settings);
-        _ = Host.Server;
+        try
+        {
+            Host = new(settings);
+            _ = Host.Server;
+        }
+        catch
+        {
+            await WriteKernelLogs("Client registration host startup failed");
+            throw;
+        }
     }
 
     /// <summary>Reads actual stored event documents, not generated schemas or reconstructed CLR payloads.</summary>
@@ -130,9 +146,33 @@ public class ClientRegistrationFixture : IAsyncLifetime
         return facts;
     }
 
+    /// <summary>Writes bounded kernel output from fixed test data without hiding the original failure.</summary>
+    /// <param name="reason">The failure that prompted diagnostics.</param>
+    /// <returns>The diagnostic task.</returns>
+    public async ValueTask WriteKernelLogs(string reason)
+    {
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var (stdout, stderr) = await _kernel.GetLogsAsync(ct: timeout.Token);
+            await Console.Out.WriteLineAsync($"Chronicle container output: {reason}");
+            await Console.Out.WriteLineAsync($"--- stdout (last 300 lines) ---\n{Tail(stdout)}");
+            await Console.Out.WriteLineAsync($"--- stderr (last 300 lines) ---\n{Tail(stderr)}");
+        }
+        catch (Exception error)
+        {
+            await Console.Out.WriteLineAsync($"Could not read Chronicle container output: {error.Message}");
+        }
+    }
+
     /// <inheritdoc/>
     public async ValueTask DisposeAsync()
     {
+        if (TestContext.Current.TestState?.Result == TestResult.Failed)
+        {
+            await WriteKernelLogs("Client registration scenario failed");
+        }
+
         if (Host is not null)
         {
             await Host.DisposeAsync();
@@ -144,6 +184,8 @@ public class ClientRegistrationFixture : IAsyncLifetime
         _secrets.Dispose();
         _healthHandler.Dispose();
     }
+
+    static string Tail(string output) => string.Join('\n', output.Split('\n').TakeLast(300));
 
     static bool IsClientFact(BsonDocument document)
     {
