@@ -133,7 +133,7 @@ public class ClientRegistrationFixture : IAsyncLifetime
         var mongo = new MongoClient(_mongo.GetConnectionString());
         using var databases = await mongo.ListDatabaseNamesAsync();
         var facts = new List<BsonDocument>();
-        foreach (var name in await databases.ToListAsync())
+        foreach (var name in (await databases.ToListAsync()).Where(name => name is not ("admin" or "config" or "local")))
         {
             var database = mongo.GetDatabase(name);
             using var collections = await database.ListCollectionNamesAsync();
