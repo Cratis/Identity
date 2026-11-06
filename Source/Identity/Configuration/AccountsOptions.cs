@@ -3,7 +3,7 @@
 
 namespace Cratis.Identity.Configuration;
 
-/// <summary>Development-only event-sourced accounts, pending D18.</summary>
+/// <summary>Opt-in event-sourced accounts.</summary>
 public class AccountsOptions
 {
     /// <summary>Gets or sets whether the opt-in account services are enabled.</summary>

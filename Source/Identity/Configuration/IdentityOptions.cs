@@ -21,7 +21,7 @@ public class IdentityOptions
     /// </remarks>
     public string Issuer { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the opt-in account experiment, pending owner decision D18.</summary>
+    /// <summary>Gets or sets the opt-in event-sourced account options.</summary>
     public AccountsOptions Accounts { get; set; } = new();
 
     /// <summary>

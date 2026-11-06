@@ -10,5 +10,5 @@ public class when_event_sourced_accounts_are_disabled : given.a_linked_keys_quer
     Task Because() => Perform();
 
     [Fact] void should_return_no_event_sourced_data() => _result.Data.ShouldBeNull();
-    [Fact] void should_enforce_the_opt_in_boundary() => _result.ExceptionMessages.ShouldContain("pending owner decision D18");
+    [Fact] void should_enforce_the_opt_in_boundary() => _result.ExceptionMessages.ShouldContain("event_sourced_accounts_not_enabled");
 }
