@@ -18,13 +18,18 @@ namespace Cratis.Identity.Integration.for_NativeAccounts;
 public class when_posting_the_protocol_command_over_http(IdentityHost host)
 {
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public async Task should_refuse_without_appending_events(bool authenticated, bool validate)
+    [InlineData(false, false, "tenant-alpha")]
+    [InlineData(false, true, "tenant-alpha")]
+    [InlineData(true, false, "tenant-alpha")]
+    [InlineData(true, true, "tenant-alpha")]
+    [InlineData(false, false, "tenant-beta")]
+    [InlineData(false, true, "tenant-beta")]
+    [InlineData(true, false, "tenant-beta")]
+    [InlineData(true, true, "tenant-beta")]
+    public async Task should_refuse_before_native_handlers_without_appending_events(bool authenticated, bool validate, string tenant)
     {
         using var client = host.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        client.DefaultRequestHeaders.Add("x-cratis-tenant-id", tenant);
         if (authenticated)
         {
             var options = host.Services.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>().Get(IdentitySchemes.Session);
@@ -34,12 +39,20 @@ public class when_posting_the_protocol_command_over_http(IdentityHost host)
         }
 
         await using var scope = host.Services.CreateAsyncScope();
-        var log = scope.ServiceProvider.GetRequiredService<IEventStore>().EventLog;
-        var before = await log.GetTailSequenceNumber();
+        var chronicle = scope.ServiceProvider.GetRequiredService<IChronicleClient>();
+        var realm = await chronicle.GetEventStore("Identity", EventStoreNamespaceName.Default);
+        var tenantStore = await chronicle.GetEventStore("Identity", tenant);
+        var before = await realm.EventLog.GetTailSequenceNumber();
+        var tenantBefore = await tenantStore.EventLog.GetTailSequenceNumber();
+        var argumentsBefore = host.NativeCommands.ArgumentResolutions;
+        var handlersBefore = host.NativeCommands.HandlerInvocations;
         var route = "/api/accounts/signing-in/sign-in-with-upstream-key" + (validate ? "/validate" : string.Empty);
         using var response = await client.PostAsJsonAsync(route, new { OperationId = FactId.New().Value }, TestContext.Current.CancellationToken);
-        (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden).ShouldBeTrue();
-        (await log.GetTailSequenceNumber()).ShouldEqual(before);
+        response.StatusCode.ShouldEqual(authenticated ? HttpStatusCode.Forbidden : HttpStatusCode.Unauthorized);
+        host.NativeCommands.ArgumentResolutions.ShouldEqual(argumentsBefore);
+        host.NativeCommands.HandlerInvocations.ShouldEqual(handlersBefore);
+        (await realm.EventLog.GetTailSequenceNumber()).ShouldEqual(before);
+        (await tenantStore.EventLog.GetTailSequenceNumber()).ShouldEqual(tenantBefore);
         response.Headers.Contains("Set-Cookie").ShouldBeFalse();
     }
 }

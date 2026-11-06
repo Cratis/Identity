@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Globalization;
+using Cratis.Arc.Commands;
+using Cratis.Arc.Tenancy;
 using Cratis.Chronicle;
 using Cratis.Chronicle.Reactors;
 using Cratis.Chronicle.Reducers;
@@ -69,6 +71,9 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     /// Gets the product callback double, independently mutable per GitHub user.
     /// </summary>
     public TenantsCallbackStub TenantsCallback { get; } = new();
+
+    /// <summary>Gets the entry counters for the real native sign-in pipeline.</summary>
+    public NativeCommandProbe NativeCommands { get; } = new();
 
     /// <inheritdoc/>
     public async ValueTask InitializeAsync()
@@ -141,7 +146,13 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
                 .AddFilter("OpenIddict", LogLevel.Trace))
             .ConfigureTestServices(services =>
             {
-                services.Replace(ServiceDescriptor.Singleton<IEventStoreNamespaceResolver>(new IdentityRealmNamespaceResolver(new SuppliedTenantNamespace())));
+                services.Replace(ServiceDescriptor.Singleton<IEventStoreNamespaceResolver>(provider =>
+                    new IdentityRealmNamespaceResolver(new SuppliedTenantNamespace(provider.GetRequiredService<ITenantIdAccessor>()))));
+                services.AddSingleton(NativeCommands);
+                services.AddSingleton<CommandHandlerProviders>();
+                services.Replace(ServiceDescriptor.Singleton<ICommandHandlerProviders, ObservedCommandHandlers>());
+                services.AddSingleton<CommandHandlerArgumentResolver>();
+                services.Replace(ServiceDescriptor.Singleton<ICommandHandlerArgumentResolver, ObservedCommandArguments>());
                 services.AddSingleton(ProjectionProgress);
                 services.AddScoped<ObserverProgress>();
                 services.Replace(ServiceDescriptor.Scoped<IObserverProgress, GatedObserverProgress>());
