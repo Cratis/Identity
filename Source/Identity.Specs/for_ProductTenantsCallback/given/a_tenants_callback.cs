@@ -25,7 +25,7 @@ public class a_tenants_callback : Specification
         factory.CreateClient(TenantsCallbackHttpClient.Name).Returns(_ => new HttpClient(handler, disposeHandler: false));
         logger = new CallbackLogger<ProductTenantsCallback>();
         callback = new ProductTenantsCallback(factory, logger);
-        account = new Account("account-1", 501, "member", "Member");
+        account = new Account("7d9d5c9e-0000-4000-8000-000000000001", 501, "member", "Member");
         resource = new ResourceServer("stage-api", "Stage", [], []);
         options = new TenantsCallbackOptions { Url = "https://products.example/tenants", Secret = new string('s', 32), Timeout = TimeSpan.FromMilliseconds(200) };
     }

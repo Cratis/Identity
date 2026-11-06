@@ -16,7 +16,7 @@ public class when_creating : given.an_account_and_a_grant
 
     void Because() => _identity = AccessTokenIdentity.Create(_account, ClientId, _grant, new SelectableTenant("cratis", "Cratis"));
 
-    [Fact] void should_use_the_canonical_account_id_as_subject() => _identity.GetClaim("sub").ShouldEqual(_account.Id);
+    [Fact] void should_use_the_canonical_account_id_as_subject() => _identity.GetClaim("sub").ShouldEqual(_account.Id.Value);
     [Fact] void should_carry_the_github_id() => _identity.GetClaim(IdentityClaims.GitHubId).ShouldEqual("134365");
     [Fact] void should_carry_the_github_login() => _identity.GetClaim(IdentityClaims.GitHubLogin).ShouldEqual("einari");
     [Fact] void should_carry_the_selected_tenant() => _identity.GetClaim(IdentityClaims.TenantId).ShouldEqual("cratis");
