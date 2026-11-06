@@ -26,7 +26,7 @@ public class and_an_unlink_commits_after_the_recheck : given.a_sign_in_decision
         await _store.EventLog.AppendMany(_subject.Value,
         [
             new AccountRegistrationRecorded(_clock.Now, FactId.New()),
-            new UpstreamKeyLinkRecorded(_link, _verified.Authentication!.ConnectionId, "https://github.com", _digest, Guid.NewGuid(), _clock.Now, FactId.New())
+            new UpstreamKeyLinkRecorded(_link, _verified.Authentication.ConnectionId, "https://github.com", _digest, Guid.NewGuid(), _clock.Now, FactId.New())
         ]);
     }
 

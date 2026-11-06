@@ -1,7 +1,9 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Chronicle;
 using Cratis.Identity.Accounts;
+using Cratis.Identity.Accounts.Legacy;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Clients;
 using Cratis.Identity.Configuration;
@@ -35,6 +37,7 @@ internal static class IdentityServiceCollectionExtensions
     /// <returns>The <see cref="IServiceCollection"/> for continuation.</returns>
     /// <exception cref="KeysInConfiguration">Thrown when a signing or encryption certificate is still configured.</exception>
     /// <exception cref="SecretStoreNotConfigured">Thrown outside development without a secret store.</exception>
+    /// <exception cref="ChronicleNotConfigured">The native account path has no configured Chronicle client.</exception>
     internal static IServiceCollection AddCratisIdentity(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         var section = configuration.GetSection(IdentityOptions.SectionName);
@@ -51,6 +54,11 @@ internal static class IdentityServiceCollectionExtensions
             throw new SecretStoreNotConfigured();
         }
 
+        if (startupOptions.Accounts.EventSourced && !services.Any(service => service.ServiceType == typeof(IChronicleClient)))
+        {
+            throw new ChronicleNotConfigured();
+        }
+
         services.AddOptions<IdentityOptions>().Bind(section).ValidateOnStart();
         services.AddSingleton<IValidateOptions<IdentityOptions>, IdentityOptionsValidation>();
         services.AddSingleton(TimeProvider.System);
@@ -62,6 +70,13 @@ internal static class IdentityServiceCollectionExtensions
         if (startupOptions.Accounts.EventSourced)
         {
             services.AddEventSourcedAccounts();
+            services.AddScoped<IAccountReader, AccountReader>();
+            services.AddScoped<IAccountSignIn, EventSourcedAccountAdapter>();
+        }
+        else
+        {
+            services.AddScoped<IAccountReader, MongoAccountReader>();
+            services.AddScoped<IAccountSignIn, MongoAccountSignIn>();
         }
 
         services.AddSessionAndUpstreamLogin(environment);

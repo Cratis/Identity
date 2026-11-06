@@ -118,6 +118,16 @@ Clients are declared in code (`ClientDescriptors`) and configuration (introspect
 
 In development (`ASPNETCORE_ENVIRONMENT=Development`) without a `SecretStore:Path`, Identity uses ephemeral signing and encryption keys and the default Data Protection ring, so tokens stop validating when it restarts, and it allows plain HTTP.
 
+### Event-sourced accounts
+
+Set `Identity:Accounts:EventSourced=true` to opt in to native Arc commands and Chronicle account projections. The host connects through `ConnectionStrings:chronicle` (outside the `Identity` section). Keep MongoDB for OpenIddict clients, grants, tokens and operational metadata. Existing MongoDB account rows are not imported into Chronicle.
+
+Outside Development, provide `Identity:Accounts:LookupKey` through the platform's secret configuration mechanism: base64 containing at least 256 bits of key material. `LookupKeyRevision` defaults to `1`; changing the revision against an existing realm store is refused. `ReadModelCatchUpTimeout` defaults to 30 seconds and must be positive. Never log or publish the lookup key.
+
+Accounts and permanent upstream-key reservations belong to Chronicle's `Default` realm namespace, not an application's tenant namespace. A verified GitHub callback supplies the immutable numeric upstream id; login, name and email observations cannot establish identity. A new account receives an immutable UUID subject. Unlinking retains the reservation, and disabling or tombstoning an account prevents sign-in.
+
+Every sign-in attempt guards the account event source, waits for the filtered Account and UpstreamKeyLookup projection targets, and rechecks reservation and lifecycle. The native transaction rejects an unlink or disable committed after that recheck. A concurrency conflict gets one fresh decision attempt; a projection timeout fails as `temporarily_unavailable`, without session creation. A session is built only from the caught-up active Account projection.
+
 ### Keys and the secret store
 
 Realm signing keys, encryption keys and the Data Protection key ring are read only from `SecretStore:Path`, a directory mounted by the platform (a Kubernetes Secret volume or a CSI secrets-store mount). Keys never live in configuration files, MongoDB or events. **Breaking change before 1.0:** `SigningCertificate` and `EncryptionCertificate` are no longer read; Identity refuses to start if either is still configured.
@@ -220,12 +230,12 @@ The CLI sends `client_id=cratis-cli`, `response_type=code`, `code_challenge_meth
 ```shell
 dotnet build Identity.slnx -c Release
 ./Source/Identity.Specs/bin/Release/net10.0/Cratis.Identity.Specs
-./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs   # needs Docker: starts MongoDB 8.0.14 with Testcontainers
+./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs   # needs Docker: starts MongoDB 8.0.14 and Chronicle 19.111.0-development
 dotnet pack Identity.slnx -c Release --no-build --output Artifacts/NuGet
 (cd Source/JavaScript/Identity && npm ci && npm run build && npm pack --pack-destination ../../../Artifacts/npm)
 ```
 
-The integration specs host the real pipeline (OpenIddict, MongoDB, consent, antiforgery, token endpoint) and replace only GitHub with a fake upstream login that uses the same account linking.
+The integration specs host the real pipeline (Arc, Chronicle, OpenIddict, MongoDB, consent, antiforgery, token endpoint). They replace GitHub's network login with a fake upstream that supplies verified observations to the same native command adapter. A test-local progress gate can hold projection acknowledgments without replacing the kernel, command pipeline or filtered target reader. The Chronicle development container is pinned to the client version and exposes only a dynamically assigned loopback port.
 
 ## Security notes
 

@@ -9,7 +9,6 @@ using Cratis.Chronicle;
 using Cratis.Identity.Contracts.Accounts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using MongoDB.Driver;
 
 namespace Cratis.Identity.Accounts.for_AccountMine.given;
 
@@ -19,8 +18,8 @@ public class an_owner_query : Specification
     protected Account _own;
     protected Account _other;
     protected QueryResult _result;
-    protected FilterDefinition<Account> _filter;
-    protected IMongoCollection<Account> _collection;
+    protected AccountSubject _readSubject;
+    protected IAccountReader _reader;
     QueryScenario<Account> _scenario;
 
     protected virtual ClaimsPrincipal Principal => new(new ClaimsIdentity([new Claim("sub", _subject.Value)], "spec"));
@@ -36,17 +35,14 @@ public class an_owner_query : Specification
         _scenario.Services.AddSingleton(store);
         var principal = Principal;
         _scenario.Services.AddSingleton<IHttpContextAccessor>(new HttpContextAccessor { HttpContext = new DefaultHttpContext { User = principal } });
-        _collection = Substitute.For<IMongoCollection<Account>>();
-        var cursor = Substitute.For<IAsyncCursor<Account>>();
-        cursor.Current.Returns([_own]);
-        cursor.MoveNextAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult(true), Task.FromResult(false));
-        _collection.FindAsync(Arg.Any<FilterDefinition<Account>>(), Arg.Any<FindOptions<Account, Account>>(), Arg.Any<CancellationToken>()).Returns(call =>
+        _reader = Substitute.For<IAccountReader>();
+        _reader.FindActive(Arg.Any<AccountSubject>(), Arg.Any<CancellationToken>()).Returns(call =>
         {
-            _filter = call.ArgAt<FilterDefinition<Account>>(0);
-            return Task.FromResult(cursor);
+            _readSubject = call.Arg<AccountSubject>();
+            return Task.FromResult<Account?>(_readSubject == _subject ? _own : _other);
         });
-        _collection.ClearReceivedCalls();
-        _scenario.Services.AddSingleton(_collection);
+        _reader.ClearReceivedCalls();
+        _scenario.Services.AddSingleton(_reader);
         _scenario.Services.AddSingleton<ICurrentPrincipalAccessor>(new Cratis.Identity.Accounts.given.FixedAccountPrincipal(principal));
     }
 

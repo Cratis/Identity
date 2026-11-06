@@ -8,7 +8,6 @@ using Cratis.Identity.Operational;
 using Cratis.Identity.Protocol;
 using Cratis.Identity.Upstream;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using MongoDB.Driver;
 
 namespace Cratis.Identity.Hosting;
 
@@ -34,8 +33,7 @@ public static class EventSourcedAccountServiceCollectionExtensions
         services.AddScoped<VerifiedUpstreamSignIn>();
         services.AddScoped<IVerifiedUpstreamSignIn>(provider => provider.GetRequiredService<VerifiedUpstreamSignIn>());
         services.AddScoped<UpstreamKeyLinking>();
-        services.TryAddSingleton(provider => provider.GetRequiredService<IMongoDatabase>().GetCollection<LookupRevision>("account_lookup_revisions"));
-        services.AddHostedService<LookupRevisionGuard>();
+        services.AddLookupRevisionGuard();
         return services;
     }
 }

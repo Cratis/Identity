@@ -1,4 +1,4 @@
-# Local development: Identity on http://localhost:5100 with MongoDB.
+# Local development: Identity on http://localhost:5100 with MongoDB and Chronicle.
 # Requires a GitHub OAuth app whose callback URL is http://localhost:5100/signin-github, and a .env file with
 # GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET and GITHUB_USER_ID (your numeric GitHub id: gh api user -q .id).
 # Development mode uses ephemeral signing keys (tokens die with the container) and allows plain HTTP.
@@ -10,6 +10,11 @@ services:
     volumes:
       - identity-mongo:/data/db
 
+  chronicle:
+    image: cratis/chronicle:19.111.0-development
+    volumes:
+      - identity-chronicle:/data
+
   identity:
     image: cratis/identity:local
     build:
@@ -17,12 +22,14 @@ services:
       dockerfile: Docker/Dockerfile
     depends_on:
       - mongo
+      - chronicle
     ports:
       - "127.0.0.1:5100:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       Identity__Issuer: http://localhost:5100/
       Identity__MongoDB__ConnectionString: mongodb://mongo:27017
+      ConnectionStrings__chronicle: chronicle://chronicle:35000?skipTlsValidation=true
       Identity__GitHub__ClientId: ${GITHUB_CLIENT_ID:?set GITHUB_CLIENT_ID in .env}
       Identity__GitHub__ClientSecret: ${GITHUB_CLIENT_SECRET:?set GITHUB_CLIENT_SECRET in .env}
       Identity__Resources__0__Tenants__0__Id: local
@@ -31,3 +38,4 @@ services:
 
 volumes:
   identity-mongo:
+  identity-chronicle:

@@ -3,6 +3,7 @@
 
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Contracts;
+using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Resources;
 using Cratis.Identity.Tenants;
 using Microsoft.AspNetCore;
@@ -19,13 +20,13 @@ namespace Cratis.Identity.Authorization;
 /// exists, that the requested resource matches the grant, and that the account can still use the tenant the
 /// grant was authorized for.
 /// </summary>
-/// <param name="accounts">The <see cref="IAccounts"/>.</param>
+/// <param name="accounts">The active-account reader.</param>
 /// <param name="grantPolicy">The <see cref="IGrantPolicy"/>.</param>
 /// <param name="resources">The <see cref="IResourceCatalog"/>.</param>
 /// <param name="tenants">The <see cref="ITenantDirectory"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
 public class TokenEndpoint(
-    IAccounts accounts,
+    IAccountReader accounts,
     IGrantPolicy grantPolicy,
     IResourceCatalog resources,
     ITenantDirectory tenants,
@@ -55,7 +56,7 @@ public class TokenEndpoint(
         }
 
         var accountId = granted.GetClaim(Claims.Subject);
-        var account = accountId is null ? null : await accounts.FindById(accountId, context.RequestAborted);
+        var account = AccountSubject.TryParse(accountId, out var subject) ? await accounts.FindActive(subject!, context.RequestAborted) : null;
         if (account is null)
         {
             logger.AccountMissing(authorizationId, accountId);

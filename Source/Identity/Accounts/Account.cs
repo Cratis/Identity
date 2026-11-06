@@ -6,7 +6,6 @@ using System.Text.Json.Serialization;
 using Cratis.Arc.Queries.ModelBound;
 using Cratis.Identity.Contracts.Accounts;
 using Microsoft.AspNetCore.Authorization;
-using MongoDB.Driver;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Cratis.Identity.Accounts;
@@ -47,11 +46,11 @@ public record Account(AccountSubject Id, PersonalName Name, Email? Email, Upstre
 
     /// <summary>Reads only the current authenticated account; the owner is never query input.</summary>
     /// <param name="context">The trusted session.</param>
-    /// <param name="collection">The injected read-model collection.</param>
+    /// <param name="accounts">The active-account projection reader.</param>
     /// <returns>The caller's account, if present.</returns>
     /// <exception cref="AccountOperationRefused">No authenticated account is available.</exception>
     [Authorize]
-    public static async Task<Account?> Mine(IHttpContextAccessor context, IMongoCollection<Account> collection)
+    public static async Task<Account?> Mine(IHttpContextAccessor context, IAccountReader accounts)
     {
         var user = context.HttpContext?.User;
         if (user?.Identity?.IsAuthenticated != true)
@@ -64,6 +63,6 @@ public record Account(AccountSubject Id, PersonalName Name, Email? Email, Upstre
             return null;
         }
 
-        return await collection.Find(account => account.Id == subject).FirstOrDefaultAsync();
+        return await accounts.FindActive(subject!);
     }
 }

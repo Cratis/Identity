@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Accounts;
+using Cratis.Identity.Configuration;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -15,7 +16,8 @@ namespace Cratis.Identity.Storage;
 /// </summary>
 /// <param name="database">The <see cref="IMongoDatabase"/>.</param>
 /// <param name="openIddict">The <see cref="OpenIddictMongoDbOptions"/>.</param>
-public class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddictMongoDbOptions> openIddict)
+/// <param name="identity">The account storage selection during the opt-in split.</param>
+public class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddictMongoDbOptions> openIddict, IOptions<IdentityOptions>? identity = null)
 {
     /// <summary>
     /// Ensures all indexes exist.
@@ -26,10 +28,13 @@ public class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddictM
     {
         var options = openIddict.CurrentValue;
 
-        // The unique GitHub id is what makes a concurrent first sign-in create one account, not two.
-        await database.GetCollection<AccountDocument>(Accounts.Accounts.CollectionName).Indexes.CreateOneAsync(
-            new CreateIndexModel<AccountDocument>(Builders<AccountDocument>.IndexKeys.Ascending(_ => _.GitHubId), new CreateIndexOptions { Unique = true }),
-            cancellationToken: cancellationToken);
+        if (identity?.Value.Accounts.EventSourced != true)
+        {
+            // Only the legacy account store relies on this index during the opt-in split.
+            await database.GetCollection<AccountDocument>(Accounts.Accounts.CollectionName).Indexes.CreateOneAsync(
+                new CreateIndexModel<AccountDocument>(Builders<AccountDocument>.IndexKeys.Ascending(_ => _.GitHubId), new CreateIndexOptions { Unique = true }),
+                cancellationToken: cancellationToken);
+        }
 
         await database.GetCollection<OpenIddictMongoDbApplication>(options.ApplicationsCollectionName).Indexes.CreateOneAsync(
             new CreateIndexModel<OpenIddictMongoDbApplication>(

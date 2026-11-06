@@ -23,7 +23,7 @@ public class an_account_adapter : a_sign_in_decision
     {
         try
         {
-            _signedIn = await _adapter.SignIn(_verified.Authentication!, _verified.Profile!);
+            _signedIn = await _adapter.SignIn(_verified.Authentication, _verified.Profile);
         }
         catch (AccountOperationRefused refusal)
         {

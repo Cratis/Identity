@@ -12,5 +12,5 @@ public class when_the_caller_is_anonymous : given.an_owner_query
     Task Because() => Perform();
 
     [Fact] void should_refuse_the_query() => _result.IsAuthorized.ShouldBeFalse();
-    [Fact] void should_not_read_a_profile() => _collection.ReceivedCalls().ShouldBeEmpty();
+    [Fact] void should_not_read_a_profile() => _reader.ReceivedCalls().ShouldBeEmpty();
 }

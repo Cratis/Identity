@@ -15,7 +15,7 @@ namespace Cratis.Identity.Accounts;
 /// </summary>
 /// <param name="commands">The realm-scoped command boundary.</param>
 /// <param name="accounts">The passive account reader.</param>
-public class EventSourcedAccountAdapter(IProtocolCommands commands, AccountReader accounts) : IAccounts
+public class EventSourcedAccountAdapter(IProtocolCommands commands, AccountReader accounts) : IAccounts, IAccountSignIn
 {
     /// <inheritdoc/>
     /// <exception cref="AccountOperationRefused">A DTO alone is not verified authentication.</exception>
@@ -33,7 +33,7 @@ public class EventSourcedAccountAdapter(IProtocolCommands commands, AccountReade
     /// <param name="profile">The observed profile.</param>
     /// <returns>The caught-up active account for session construction.</returns>
     /// <exception cref="AccountOperationRefused">The guarded decision or required projection progress was refused.</exception>
-    internal async Task<Account> SignIn(VerifiedAuthentication authentication, ObservedProfile profile)
+    public async Task<Account> SignIn(VerifiedAuthentication authentication, ObservedProfile profile)
     {
         try
         {

@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Chronicle;
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Accounts.Lookup;
 using Cratis.Identity.Hosting;
@@ -20,6 +21,7 @@ public class when_opting_into_event_sourced_accounts_in_development : Specificat
     {
         _builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = Environments.Development });
         _builder.Configuration["Identity:Accounts:EventSourced"] = "true";
+        _builder.Services.AddSingleton(Substitute.For<IChronicleClient>());
         _builder.AddCratisIdentity();
         _provider = _builder.Services.BuildServiceProvider();
         _key = _provider.GetRequiredService<IUpstreamLookupKeys>().Current;
