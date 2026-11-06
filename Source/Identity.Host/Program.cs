@@ -8,19 +8,6 @@ builder.Host.UseDefaultServiceProvider(options =>
     options.ValidateOnBuild = true;
 });
 
-if (builder.Configuration.GetValue<bool>("Identity:Clients:EventSourced"))
-{
-    builder.AddCratisChronicle(options =>
-    {
-        options.EventStore = "identity";
-        var connection = builder.Configuration["Identity:Chronicle:ConnectionString"];
-        if (!string.IsNullOrWhiteSpace(connection))
-        {
-            options.ConnectionString = connection;
-        }
-    });
-}
-
 builder.AddCratisIdentity();
 
 var app = builder.Build();
