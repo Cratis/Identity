@@ -25,6 +25,7 @@ public static class SessionPrincipal
         identity.AddClaim(new Claim(Claims.Name, account.Name.Value));
         identity.AddClaim(new Claim(IdentityClaims.GitHubId, account.GitHubId.Value));
         identity.AddClaim(new Claim(IdentityClaims.GitHubLogin, account.GitHubLogin.Value));
+        identity.AddClaim(new Claim(Claims.PreferredUsername, account.GitHubLogin.Value));
         return new ClaimsPrincipal(identity);
     }
 

@@ -22,6 +22,6 @@ public class when_inspecting_the_query_boundary : Specification
     }
 
     [Fact] void should_require_authorization() => _method.GetCustomAttribute<AuthorizeAttribute>().ShouldNotBeNull();
-    [Fact] void should_accept_only_server_dependencies() => _method.GetParameters().Select(parameter => parameter.ParameterType).ShouldEqual([typeof(IHttpContextAccessor), typeof(IReadModels), typeof(IOptions<IdentityOptions>)]);
+    [Fact] void should_accept_only_server_dependencies() => _method.GetParameters().Select(parameter => parameter.ParameterType).ShouldEqual([typeof(IHttpContextAccessor), typeof(IReadModels), typeof(IOptions<IdentityOptions>), typeof(AccountReader)]);
     [Fact] void should_expose_only_the_owner_view() => _fields.ShouldEqual(["LinkId", "ConnectionId", "IdpIssuer", "DisplayIdentifier", "LinkedAt", "State"]);
 }

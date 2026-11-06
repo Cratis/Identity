@@ -25,7 +25,7 @@ public class when_opting_into_event_sourced_accounts_in_development : Specificat
         _key = _provider.GetRequiredService<IUpstreamLookupKeys>().Current;
     }
 
-    [Fact] void should_register_the_opt_in_writer() => _builder.Services.Any(service => service.ServiceType == typeof(EventSourcedAccounts)).ShouldBeTrue();
+    [Fact] void should_register_the_opt_in_writer() => _builder.Services.Any(service => service.ServiceType == typeof(EventSourcedAccountAdapter)).ShouldBeTrue();
     [Fact] void should_not_replace_mongo_sign_in() => _builder.Services.Any(service => service.ServiceType == typeof(IAccounts)).ShouldBeTrue();
     [Fact] void should_supply_the_development_lookup_key() => _key.Revision.ShouldEqual(1);
 

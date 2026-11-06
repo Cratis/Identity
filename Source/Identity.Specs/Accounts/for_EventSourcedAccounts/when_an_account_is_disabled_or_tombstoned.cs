@@ -17,12 +17,12 @@ public class when_an_account_is_disabled_or_tombstoned : given.a_link_proposal
     {
         await _events.EventLog.Append(_account.Value, new AccountDisablementRecorded("owner-disabled", 1, Guid.NewGuid(), 1, FactId.New()));
         await Refresh();
-        _disabledSignIn = await Refusal(() => _accounts.SignIn(Verified(GitHubIssuer, "existing-key", FactId.New()), "profile@example.test", "Person", "display"));
+        _disabledSignIn = await Refusal(() => SignIn(Verified(GitHubIssuer, "existing-key", FactId.New()), "profile@example.test", "Person", "display"));
         _disabledLink = await Refusal(() => _linking.Propose(Session(_account), _proof, new(true)));
         await _events.EventLog.Append(_account.Value, new AccountTombstoneRecorded(_clock.Now, FactId.New()));
         await _events.EventLog.Append(_account.Value, new AccountEnablementRecorded(2, _clock.Now, FactId.New()));
         await Refresh();
-        _tombstonedSignIn = await Refusal(() => _accounts.SignIn(Verified(GitHubIssuer, "existing-key", FactId.New()), "profile@example.test", "Person", "display"));
+        _tombstonedSignIn = await Refusal(() => SignIn(Verified(GitHubIssuer, "existing-key", FactId.New()), "profile@example.test", "Person", "display"));
         _tombstonedLink = await Refusal(() => _linking.Propose(Session(_account), _proof, new(true)));
     }
 

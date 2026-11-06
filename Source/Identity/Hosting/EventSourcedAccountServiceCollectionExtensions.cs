@@ -29,7 +29,10 @@ public static class EventSourcedAccountServiceCollectionExtensions
         services.AddSingleton<VerifiedKeyGate>();
         services.AddScoped<AccountStore>();
         services.AddScoped<UpstreamLookups>();
-        services.AddScoped<EventSourcedAccounts>();
+        services.AddScoped<AccountReader>();
+        services.AddScoped<EventSourcedAccountAdapter>();
+        services.AddScoped<VerifiedUpstreamSignIn>();
+        services.AddScoped<IVerifiedUpstreamSignIn>(provider => provider.GetRequiredService<VerifiedUpstreamSignIn>());
         services.AddScoped<UpstreamKeyLinking>();
         services.TryAddSingleton(provider => provider.GetRequiredService<IMongoDatabase>().GetCollection<LookupRevision>("account_lookup_revisions"));
         services.AddHostedService<LookupRevisionGuard>();

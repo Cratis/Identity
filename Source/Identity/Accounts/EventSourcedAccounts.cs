@@ -55,9 +55,9 @@ public class EventSourcedAccounts(AccountStore store, UpstreamLookups lookups, U
 
     static IEnumerable<object> ProfileChanges(AccountLinkState state, LinkId link, ObservedProfile profile, DateTimeOffset now)
     {
-        if (state.Email != profile.Email)
+        if (profile.Email is { } email && state.Email != email)
         {
-            yield return new AccountEmailChanged(profile.Email);
+            yield return new AccountEmailChanged(email);
         }
 
         if (state.Name != profile.Name)

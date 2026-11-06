@@ -23,6 +23,8 @@ namespace Cratis.Identity.Accounts;
 [method: JsonConstructor]
 public record Account(AccountSubject Id, PersonalName Name, Email? Email, UpstreamSubject GitHubId, Login GitHubLogin, AccountStatus Status, IEnumerable<LinkedUpstreamKey> LinkedUpstreamKeys)
 {
+    readonly AccountStatus _status = Status;
+
     /// <summary>Creates the legacy store's compatibility view during the opt-in split.</summary>
     /// <param name="id">The existing canonical subject.</param>
     /// <param name="gitHubId">The numeric GitHub id.</param>
@@ -31,6 +33,16 @@ public record Account(AccountSubject Id, PersonalName Name, Email? Email, Upstre
     public Account(string id, long gitHubId, string gitHubLogin, string name)
         : this(new AccountSubject(id), name, null, gitHubId.ToString(System.Globalization.CultureInfo.InvariantCulture), gitHubLogin, AccountStatus.Active, [])
     {
+    }
+
+    /// <summary>Gets whether the account has ever been permanently tombstoned.</summary>
+    public bool IsTombstoned { get; init; }
+
+    /// <summary>Gets the lifecycle state; enablement cannot resurrect a tombstone.</summary>
+    public AccountStatus Status
+    {
+        get => IsTombstoned ? AccountStatus.Tombstoned : _status;
+        init => _status = value;
     }
 
     /// <summary>Reads only the current authenticated account; the owner is never query input.</summary>

@@ -13,4 +13,8 @@ public interface IProtocolCommands
     /// <param name="prepare">Optional initialization of verified protocol state in the child scope.</param>
     /// <returns>The command result.</returns>
     Task<CommandResult> Execute(object command, Action<IServiceProvider>? prepare = null);
+
+    /// <summary>Waits for filtered projection progress in the realm before the single bounded retry.</summary>
+    /// <returns>The projection progress fence.</returns>
+    Task BeforeRetry();
 }

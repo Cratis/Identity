@@ -33,6 +33,7 @@ public class a_linked_keys_query : a_link_proposal
         var realmStore = Substitute.For<IEventStore>();
         realmStore.Namespace.Returns(EventStoreNamespaceName.Default);
         _query.Services.AddSingleton(realmStore);
+        _query.Services.AddScoped<AccountReader>();
         var principal = Principal;
         _query.Services.AddSingleton<ICurrentPrincipalAccessor>(new FixedAccountPrincipal(principal));
         var context = Substitute.For<IHttpContextAccessor>();
@@ -42,10 +43,12 @@ public class a_linked_keys_query : a_link_proposal
         _query.Services.AddSingleton(Options.Create(_options));
         _query.Services.AddSingleton<IHostEnvironment>(new HostingEnvironment { EnvironmentName = Environments.Development });
         _query.Given.ForEventSource(_account.Value).ReadModel(_states.InstanceForEventSourceId(_account.Value)!);
+        _query.Given.ForEventSource(_account.Value).ReadModel(_profiles.InstanceForEventSourceId(_account.Value)!);
         var other = AccountSubject.New();
         await Seed(other, GitHubIssuer, "someone-else");
         await Refresh();
         _query.Given.ForEventSource(other.Value).ReadModel(_states.InstanceForEventSourceId(other.Value)!);
+        _query.Given.ForEventSource(other.Value).ReadModel(_profiles.InstanceForEventSourceId(other.Value)!);
     }
 
     protected virtual Task Prepare() => Task.CompletedTask;

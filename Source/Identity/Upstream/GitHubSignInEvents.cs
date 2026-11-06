@@ -5,6 +5,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Authorization;
+using Cratis.Identity.Contracts.Accounts;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OAuth;
 
@@ -16,7 +17,9 @@ namespace Cratis.Identity.Upstream;
 /// </summary>
 /// <param name="accounts">The <see cref="IAccounts"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
-public class GitHubSignInEvents(IAccounts accounts, ILogger<GitHubSignInEvents> logger) : OAuthEvents
+/// <param name="eventSourced">The opt-in native command adapter.</param>
+/// <param name="timeProvider">The trusted clock.</param>
+public class GitHubSignInEvents(IAccounts accounts, ILogger<GitHubSignInEvents> logger, EventSourcedAccountAdapter? eventSourced = null, TimeProvider? timeProvider = null) : OAuthEvents
 {
     /// <inheritdoc/>
     public override Task AccessDenied(AccessDeniedContext context)
@@ -47,7 +50,9 @@ public class GitHubSignInEvents(IAccounts accounts, ILogger<GitHubSignInEvents> 
         using var body = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(context.HttpContext.RequestAborted), cancellationToken: context.HttpContext.RequestAborted);
         var user = GitHubUserResponse.Read(body.RootElement) ?? throw new GitHubUserResponseInvalid();
 
-        var account = await accounts.RecordGitHubSignIn(user, context.HttpContext.RequestAborted);
+        var account = eventSourced is null
+            ? await accounts.RecordGitHubSignIn(user, context.HttpContext.RequestAborted)
+            : await eventSourced.SignIn(new GitHubConnection(GitHubConnection.FixedConnectionId, timeProvider ?? TimeProvider.System).From(user, FactId.New()), new(null, user.Name, user.Login));
         logger.SignedIn(account.Id, user.Id, user.Login);
         context.Principal = SessionPrincipal.For(account, IdentitySchemes.GitHub);
     }

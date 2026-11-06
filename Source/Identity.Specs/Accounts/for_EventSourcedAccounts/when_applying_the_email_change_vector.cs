@@ -13,7 +13,7 @@ public class when_applying_the_email_change_vector : given.a_contract_vector
 
     async Task Because()
     {
-        _account = await _accounts.SignIn(VectorProof(FactId.New()), new(Text(_when.GetProperty("profile"), "email")), "Person", "display-only");
+        _account = await SignIn(VectorProof(FactId.New()), new(Text(_when.GetProperty("profile"), "email")), "Person", "display-only");
         await Refresh();
     }
 

@@ -20,7 +20,7 @@ public class when_applying_the_github_login_rename_vector : given.a_contract_vec
 
     async Task Because()
     {
-        _account = await _accounts.SignIn(VectorProof(FactId.New()), "person@example.test", "Person", new(Text(_when.GetProperty("profile"), "login")));
+        _account = await SignIn(VectorProof(FactId.New()), "person@example.test", "Person", new(Text(_when.GetProperty("profile"), "login")));
         await Refresh();
         _state = _states.InstanceForEventSourceId(_account.Value);
     }

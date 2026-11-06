@@ -3,7 +3,6 @@
 
 using Cratis.Identity.Accounts.Linking;
 using Cratis.Identity.Contracts.Accounts;
-using Cratis.Identity.Upstream;
 
 namespace Cratis.Identity.Accounts.for_EventSourcedAccounts;
 
@@ -16,12 +15,12 @@ public class when_observing_a_new_profile_for_the_same_key : given.an_account_st
 
     async Task Because()
     {
-        _first = await _accounts.SignIn(GitHub(12345), "before@example.test", "Person", "old-login");
+        _first = await SignIn(GitHub(12345), "before@example.test", "Person", "old-login");
         await Refresh();
-        _second = await _accounts.SignIn(GitHub(12345), "after@example.test", "Person", "new-login");
+        _second = await SignIn(GitHub(12345), "after@example.test", "Person", "new-login");
         await Refresh();
         _state = _states.InstanceForEventSourceId(_first.Value);
-        _preferredUsername = EventSourcedAccountPrincipal.For(_first, _state.Logins.Values.Single(), _clock).FindFirst("preferred_username")!.Value;
+        _preferredUsername = SessionPrincipal.For(_profiles.InstanceForEventSourceId(_first.Value), "github").FindFirst("preferred_username")!.Value;
     }
 
     [Fact] void should_keep_the_immutable_subject() => _second.ShouldEqual(_first);

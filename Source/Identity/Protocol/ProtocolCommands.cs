@@ -14,6 +14,14 @@ namespace Cratis.Identity.Protocol;
 public sealed class ProtocolCommands(IServiceScopeFactory scopes, ICommandPipeline pipeline) : IProtocolCommands
 {
     /// <inheritdoc/>
+    public async Task BeforeRetry()
+    {
+        using var realm = IdentityRealmScope.Begin();
+        await using var child = scopes.CreateAsyncScope();
+        await child.ServiceProvider.GetRequiredService<ReadModelCatchUp>().BeforeRetry(CancellationToken.None);
+    }
+
+    /// <inheritdoc/>
     public async Task<CommandResult> Execute(object command, Action<IServiceProvider>? prepare = null)
     {
         using var protocol = ProtocolCommandScope.Begin();

@@ -18,7 +18,9 @@ public class AccountProjection : IProjectionFor<Account>
         .From<AccountEmailChanged>()
         .From<AccountDisablementRecorded>(from => from.Set(model => model.Status).ToValue(AccountStatus.Disabled))
         .From<AccountEnablementRecorded>(from => from.Set(model => model.Status).ToValue(AccountStatus.Active))
-        .From<AccountTombstoneRecorded>(from => from.Set(model => model.Status).ToValue(AccountStatus.Tombstoned))
+        .From<AccountTombstoneRecorded>(from => from
+            .Set(model => model.Status).ToValue(AccountStatus.Tombstoned)
+            .Set(model => model.IsTombstoned).ToValue(true))
         .From<UpstreamKeySubjectRecorded>(from => from.Set(model => model.GitHubId).To(@event => @event.IdpSub))
         .From<UpstreamKeyDisplayIdentifierObserved>(from => from.Set(model => model.GitHubLogin).To(@event => @event.Login))
         .Children(model => model.LinkedUpstreamKeys, children => children

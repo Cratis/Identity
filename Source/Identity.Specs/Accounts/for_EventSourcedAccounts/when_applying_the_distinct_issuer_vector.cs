@@ -13,7 +13,7 @@ public class when_applying_the_distinct_issuer_vector : given.a_contract_vector
 
     async Task Because()
     {
-        _account = await _accounts.SignIn(VectorProof(new(Guid.Parse(Text(_when, "allocated_subject")))), "person@example.test", "Person", "display-only");
+        _account = await SignIn(VectorProof(new(Guid.Parse(Text(_when, "allocated_subject")))), "person@example.test", "Person", "display-only", new(Text(_when, "allocated_subject")));
         await Refresh();
     }
 
