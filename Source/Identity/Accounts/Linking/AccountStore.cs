@@ -5,6 +5,8 @@ using Cratis.Chronicle;
 using Cratis.Chronicle.EventSequences;
 using Cratis.Chronicle.ReadModels;
 using Cratis.Identity.Contracts.Accounts;
+using Cratis.Identity.Storage;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Cratis.Identity.Accounts.Linking;
 
@@ -14,6 +16,16 @@ namespace Cratis.Identity.Accounts.Linking;
 /// <param name="time">The trusted append clock.</param>
 public class AccountStore(IEventStore eventStore, IReadModels readModels, TimeProvider time)
 {
+    readonly ILogger<AccountStore> _logger = NullLogger<AccountStore>.Instance;
+
+    /// <summary>Initializes a new instance with append failure logging.</summary>
+    /// <param name="eventStore">The account event store.</param>
+    /// <param name="readModels">The passive account fold reader.</param>
+    /// <param name="time">The trusted append clock.</param>
+    /// <param name="logger">The boundary logger.</param>
+    public AccountStore(IEventStore eventStore, IReadModels readModels, TimeProvider time, ILogger<AccountStore> logger)
+        : this(eventStore, readModels, time) => _logger = logger;
+
     /// <summary>Initializes a new instance of the <see cref="AccountStore"/> class using its store's passive reader.</summary>
     /// <param name="eventStore">The account event store.</param>
     public AccountStore(IEventStore eventStore) : this(eventStore, eventStore.ReadModels, TimeProvider.System)
@@ -62,17 +74,38 @@ public class AccountStore(IEventStore eventStore, IReadModels readModels, TimePr
     /// <param name="events">The facts to append.</param>
     /// <returns>Whether the batch committed.</returns>
     /// <exception cref="AccountOperationRefused">The account changed after the guarded read.</exception>
+    /// <exception cref="InvalidOperationException">Chronicle reported an append failure other than a constraint or concurrency violation.</exception>
     internal async Task<bool> TryAppend(AccountSubject account, GuardedAccountRead read, IEnumerable<object> events)
     {
         var batch = events.ToArray();
-        var result = await eventStore.EventLog.AppendMany(batch.Select(@event => new EventForEventSourceId(account.Value, @event) { Occurred = time.GetUtcNow() }), [read.Guard]);
-        if (!result.IsSuccess && !result.HasConstraintViolations)
+        var result = await AppendGuarded(batch.Select(@event => new EventForEventSourceId(account.Value, @event) { Occurred = time.GetUtcNow() }), read.Guard);
+        if (result.IsSuccess)
         {
-            throw new AccountOperationRefused("account_concurrency_conflict");
+            return true;
         }
 
-        return result.IsSuccess;
+        if (!result.HasErrors)
+        {
+            if (result.HasConstraintViolations)
+            {
+                return false;
+            }
+
+            if (result.HasConcurrencyViolations)
+            {
+                throw new AccountOperationRefused("account_concurrency_conflict");
+            }
+        }
+
+        throw ChronicleAppendFailure.Create(result, account.Value, batch.Select(@event => eventStore.EventTypes.GetEventTypeFor(@event.GetType())), _logger);
     }
+
+    /// <summary>Sends the guarded batch to Chronicle.</summary>
+    /// <param name="events">The source facts.</param>
+    /// <param name="guard">The detached decision token.</param>
+    /// <returns>The unclassified kernel result.</returns>
+    internal virtual Task<AppendManyResult> AppendGuarded(IEnumerable<EventForEventSourceId> events, DecisionRead<AccountGuard> guard) =>
+        eventStore.EventLog.AppendMany(events, [guard]);
 
     /// <summary>Pairs a source token with a subsequent decision fold.</summary>
     /// <param name="Guard">The source concurrency guard.</param>

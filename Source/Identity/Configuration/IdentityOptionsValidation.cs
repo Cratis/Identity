@@ -47,6 +47,7 @@ public class IdentityOptionsValidation(IHostEnvironment environment) : IValidate
             .Select(_ => $"Introspection client \"{_.ClientId}\" needs both a client id and a client secret."));
 
         ValidateAccounts(options.Accounts, failures);
+        ValidateClients(options.Clients, failures);
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }
 
@@ -85,6 +86,30 @@ public class IdentityOptionsValidation(IHostEnvironment environment) : IValidate
 
     static IEnumerable<string> Duplicates(IEnumerable<string> values, string kind) =>
         values.GroupBy(_ => _, StringComparer.Ordinal).Where(_ => _.Count() > 1).Select(_ => $"The {kind} \"{_.Key}\" is configured more than once.");
+
+    void ValidateClients(ClientsOptions clients, List<string> failures)
+    {
+        if (clients.SecretDigestKeyRevision < 1)
+        {
+            failures.Add("Client secret digest key revision must be positive.");
+        }
+
+        if (string.IsNullOrEmpty(clients.SecretDigestKey))
+        {
+            if (clients.EventSourced && !environment.IsDevelopment())
+            {
+                failures.Add("A client secret digest key is required outside Development.");
+            }
+
+            return;
+        }
+
+        var bytes = new byte[clients.SecretDigestKey.Length];
+        if (!Convert.TryFromBase64String(clients.SecretDigestKey, bytes, out var written) || written < 32)
+        {
+            failures.Add("Client secret digest key must be base64 with at least 256 bits of key material.");
+        }
+    }
 
     void ValidateAccounts(AccountsOptions accounts, List<string> failures)
     {

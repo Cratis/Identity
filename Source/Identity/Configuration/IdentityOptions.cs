@@ -24,6 +24,9 @@ public class IdentityOptions
     /// <summary>Gets or sets the opt-in event-sourced account options.</summary>
     public AccountsOptions Accounts { get; set; } = new();
 
+    /// <summary>Gets or sets the opt-in Chronicle-backed client configuration.</summary>
+    public ClientsOptions Clients { get; set; } = new();
+
     /// <summary>
     /// Gets or sets the MongoDB storage configuration.
     /// </summary>
