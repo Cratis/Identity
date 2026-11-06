@@ -149,6 +149,9 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
                 services.Replace(ServiceDescriptor.Singleton<IEventStoreNamespaceResolver>(provider =>
                     new IdentityRealmNamespaceResolver(new SuppliedTenantNamespace(provider.GetRequiredService<ITenantIdAccessor>()))));
                 services.AddSingleton(NativeCommands);
+                services.AddSingleton<NativeSignInInterleaving>();
+                services.AddSingleton<ProtocolCommands>();
+                services.Replace(ServiceDescriptor.Singleton<IProtocolCommands, ObservedProtocolCommands>());
                 services.AddSingleton<CommandHandlerProviders>();
                 services.Replace(ServiceDescriptor.Singleton<ICommandHandlerProviders, ObservedCommandHandlers>());
                 services.AddSingleton<CommandHandlerArgumentResolver>();

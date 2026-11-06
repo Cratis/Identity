@@ -9,7 +9,8 @@ namespace Cratis.Identity.Integration.given;
 /// <summary>Decorates the real handler provider, retaining its discovery and authorization metadata.</summary>
 /// <param name="inner">The real discovered command handlers.</param>
 /// <param name="probe">The native entry counters.</param>
-public sealed class ObservedCommandHandlers(CommandHandlerProviders inner, NativeCommandProbe probe) : ICommandHandlerProviders
+/// <param name="interleaving">The test-owned pre-append pause.</param>
+public sealed class ObservedCommandHandlers(CommandHandlerProviders inner, NativeCommandProbe probe, NativeSignInInterleaving interleaving) : ICommandHandlerProviders
 {
     public IEnumerable<ICommandHandler> Handlers => inner.Handlers.Select(Observe);
 
@@ -25,6 +26,6 @@ public sealed class ObservedCommandHandlers(CommandHandlerProviders inner, Nativ
     }
 
     ICommandHandler Observe(ICommandHandler handler) => handler.CommandType == typeof(SignInWithUpstreamKey)
-        ? new ObservedSignInHandler(handler, probe)
+        ? new ObservedSignInHandler(handler, probe, interleaving)
         : handler;
 }
