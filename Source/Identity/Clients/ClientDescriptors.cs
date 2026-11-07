@@ -10,8 +10,7 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 namespace Cratis.Identity.Clients;
 
 /// <summary>
-/// Declares the clients Identity knows. In v1 every client is declared here; the store is reconciled against
-/// this list at startup.
+/// Declares the clients Identity knows. In v1 the read-only application store serves these descriptors directly.
 /// </summary>
 /// <param name="resources">The <see cref="IResourceCatalog"/>.</param>
 /// <param name="options">The <see cref="IdentityOptions"/>.</param>

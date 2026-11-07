@@ -41,6 +41,7 @@ public class when_ensuring_the_indexes : Specification
     CreateIndexModel<OpenIddictMongoDbToken> Ttl => _models.Single(_ => _.Options?.ExpireAfter is not null);
 
     [Fact] void should_not_request_an_operational_accounts_collection() => _database.ReceivedCalls().Any(call => call.GetMethodInfo().Name == nameof(IMongoDatabase.GetCollection) && Equals(call.GetArguments()[0], "accounts")).ShouldBeFalse();
+    [Fact] void should_not_request_application_or_scope_collections() => _database.ReceivedCalls().Where(call => call.GetMethodInfo().Name == nameof(IMongoDatabase.GetCollection)).Select(call => (string)call.GetArguments()[0]).Order().ShouldEqual(new[] { new OpenIddictMongoDbOptions().AuthorizationsCollectionName, new OpenIddictMongoDbOptions().TokensCollectionName }.Order());
     [Fact] void should_create_one_ttl_index() => _models.Count(_ => _.Options?.ExpireAfter is not null).ShouldEqual(1);
     [Fact] void should_expire_entries_at_their_expiration_date() => Ttl.Options.ExpireAfter.ShouldEqual(TimeSpan.Zero);
     [Fact] void should_index_the_expiration_date() => Ttl.Keys.Render(new RenderArgs<OpenIddictMongoDbToken>(BsonSerializer.LookupSerializer<OpenIddictMongoDbToken>(), BsonSerializer.SerializerRegistry)).ToString().ShouldContain("expiration_date");

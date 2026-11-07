@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Chronicle;
+using Cratis.Identity.Hosting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -27,4 +28,6 @@ public class when_registering_identity : Specification
 
     [Fact] void should_register_the_guard() => _identityHostedServices.ShouldContain(typeof(LegacyAccountStoreGuard));
     [Fact] void should_run_the_guard_before_any_other_identity_hosted_service() => _identityHostedServices[0].ShouldEqual(typeof(LegacyAccountStoreGuard));
+    [Fact] void should_initialize_operational_indexes_after_the_guard() => _identityHostedServices[1].ShouldEqual(typeof(StorageIndexInitialization));
+    [Fact] void should_not_register_a_client_writer() => _identityHostedServices.Any(_ => _.Name == "ClientRegistrations").ShouldBeFalse();
 }
