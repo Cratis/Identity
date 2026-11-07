@@ -8,6 +8,8 @@ using Cratis.Identity.Accounts.Lookup;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Clients;
 using Cratis.Identity.Configuration;
+using Cratis.Identity.ConsentFlow;
+using Cratis.Identity.ConsentFlow.Operational;
 using Cratis.Identity.Keys;
 using Cratis.Identity.Operational;
 using Cratis.Identity.Protocol;
@@ -73,6 +75,7 @@ internal static class IdentityServiceCollectionExtensions
         services.AddSecretStoreKeys(startupOptions);
         services.AddDomain();
         services.AddAccountServices();
+        services.AddConsentActivation(configuration.GetSection("Identity:ConsentActivation"));
 
         services.AddSessionAndUpstreamLogin(environment);
         services.AddAuthorizationServer(startupOptions, environment);
@@ -141,6 +144,21 @@ internal static class IdentityServiceCollectionExtensions
 
         services.AddOptions<Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions>(IdentitySchemes.Session)
             .Configure<IOptions<IdentityOptions>>((cookie, identity) => cookie.ExpireTimeSpan = identity.Value.SessionLifetime);
+    }
+
+    /// <summary>Adds the dormant, fail-closed consent state machine; the live endpoint is intentionally unchanged.</summary>
+    /// <param name="services">The services.</param>
+    /// <param name="configuration">The consent activation options.</param>
+    internal static void AddConsentActivation(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<ConsentActivationOptions>().Bind(configuration).ValidateDataAnnotations().ValidateOnStart();
+        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddScoped<IConsentRequestStore, MongoConsentRequestStore>();
+        services.TryAddScoped<IConsentEvidence, UnavailableConsentServices>();
+        services.TryAddScoped<IRevocationFence, UnavailableConsentServices>();
+        services.TryAddScoped<IAuthorizationActivator, UnavailableConsentServices>();
+        services.TryAddScoped<ConsentActivation>();
+        services.AddHostedService<ConsentReconciler>();
     }
 
     static void AddRealmNamespaceResolver(IServiceCollection services)
