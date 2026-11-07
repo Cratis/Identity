@@ -48,7 +48,7 @@ public class when_posting_the_protocol_command_over_http(IdentityHost host)
         var handlersBefore = host.NativeCommands.HandlerInvocations;
         var route = "/api/accounts/signing-in/sign-in-with-upstream-key" + (validate ? "/validate" : string.Empty);
         using var response = await client.PostAsJsonAsync(route, new { OperationId = FactId.New().Value }, TestContext.Current.CancellationToken);
-        response.StatusCode.ShouldEqual(authenticated ? HttpStatusCode.Forbidden : HttpStatusCode.Unauthorized);
+        response.StatusCode.ShouldEqual(HttpStatusCode.Forbidden);
         host.NativeCommands.ArgumentResolutions.ShouldEqual(argumentsBefore);
         host.NativeCommands.HandlerInvocations.ShouldEqual(handlersBefore);
         (await realm.EventLog.GetTailSequenceNumber()).ShouldEqual(before);

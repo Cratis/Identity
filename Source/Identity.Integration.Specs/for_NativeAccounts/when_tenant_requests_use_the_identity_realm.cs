@@ -79,7 +79,7 @@ public class when_tenant_requests_use_the_identity_realm(IdentityHost host)
         var handlersBefore = host.NativeCommands.HandlerInvocations;
 
         using var response = await client.GetAsync("/api/accounts/mine", TestContext.Current.CancellationToken);
-        response.StatusCode.ShouldEqual(HttpStatusCode.Unauthorized);
+        response.StatusCode.ShouldEqual(HttpStatusCode.Forbidden);
         response.Headers.Contains("Set-Cookie").ShouldBeFalse();
         host.NativeCommands.HandlerInvocations.ShouldEqual(handlersBefore);
         (await realm.EventLog.GetTailSequenceNumber()).ShouldEqual(realmBefore);
