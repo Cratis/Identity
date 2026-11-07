@@ -13,12 +13,13 @@ public class an_activation : Specification
     protected readonly MemoryAuthorizations authorizations = new();
     protected readonly ManualClock clock = new();
     protected readonly ConsentActivationOptions options = new();
-    protected readonly ConsentBinding binding = new("realm-a", "00000000-0000-4000-8000-000000000001", "client-a", "tenant-a", "resource-a", "openid read", "session-a");
+    protected readonly ConsentBinding binding = new("realm-a", "00000000-0000-4000-8000-000000000001", "client-a", "tenant-a", "resource-a", "openid read", "session-a", new AuthorizationRequestId(Guid.Parse("00000000-0000-4000-8000-000000000003")));
     protected ConsentActivation activation;
     protected ConsentRequest request;
 
     async Task Establish()
     {
+        store.Clock = clock;
         activation = Restart();
         request = await activation.Create(binding, CancellationToken.None);
     }

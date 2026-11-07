@@ -85,7 +85,7 @@ public sealed class ConsentActivation(
         if (!await Eligible(request, cancellationToken)) return null;
 
         var claimed = request with { CodeClaimed = true, Revision = request.Revision + 1 };
-        if (!await store.CompareExchange(request, claimed, cancellationToken)) return null;
+        if (!await store.CompareExchange(request, claimed, timeProvider.GetUtcNow(), cancellationToken)) return null;
         return await Eligible(claimed, cancellationToken) ? claimed.AuthorizationId : null;
     }
 
@@ -155,7 +155,7 @@ public sealed class ConsentActivation(
             AuthorizationId = authorizationId,
             Revision = request.Revision + 1
         };
-        await store.CompareExchange(request, active, cancellationToken);
+        await store.CompareExchange(request, active, timeProvider.GetUtcNow(), cancellationToken);
         return true;
     }
 
@@ -185,6 +185,6 @@ public sealed class ConsentActivation(
             PurgeAt = state is ConsentRequestState.Denied or ConsentRequestState.Abandoned or ConsentRequestState.EvidenceWithheld
                 ? timeProvider.GetUtcNow() + options.Value.TerminalRetention : null
         };
-        return store.CompareExchange(request, replacement, cancellationToken);
+        return store.CompareExchange(request, replacement, timeProvider.GetUtcNow(), cancellationToken);
     }
 }

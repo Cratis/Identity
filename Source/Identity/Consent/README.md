@@ -5,7 +5,7 @@
 
 This is dormant infrastructure, not a replacement for the current authorization endpoint. It writes no Chronicle events and issues no OpenIddict authorization codes. The live consent flow is unchanged. Its namespace is `Cratis.Identity.ConsentFlow` to avoid colliding with the existing `Authorization.Consent` model.
 
-`ConsentActivation.Create` accepts only already validated server-side authorization parameters. The caller must persist the resulting request identity in its protected browser flow, validate antiforgery and the authenticated session, and reconstruct the exact immutable binding on submission. Never use submitted client, realm, account, tenant, resource, scope or session values as that binding.
+`ConsentActivation.Create` accepts only already validated server-side authorization parameters. The caller must allocate a distinct `AuthorizationRequestId` for the original authorization request and carry it in server-side or protected state together with the resulting consent request identity. The binding stores this opaque, non-sensitive correlation identity, not raw authorization parameters. Before live wiring (#78), the endpoint must validate antiforgery and the authenticated session and reconstruct the exact immutable binding from that protected request. Never use submitted client, realm, account, tenant, resource, scope, session or authorization-request identities as that binding.
 
 Approval compare-and-sets `Pending -> Decided`; denial closes the request without evidence. `Resume` idempotently records evidence, persists `EvidenceRecorded`, prepares a dormant authorization, rechecks the deadline and live fence, and compare-and-sets `Active`. Only `ClaimCode` can consume the single permission to issue a code. It requires the exact binding and a confirmed live fence. A crash after consuming that permission intentionally requires a fresh consent request, rather than issuing a second code. Actual code redemption and its single-use enforcement remain OpenIddict's responsibility.
 
@@ -21,7 +21,7 @@ A real authorization adapter must prepare the same **unusable** authorization on
 
 ## Storage and settings
 
-MongoDB stores one majority-durable document per request in `consent-requests`, using the request identity as `_id`. Replacements compare identity, revision and observed state. A separate transition guard prevents changing the binding or skipping the evidence barrier. MongoDB types are confined to `Cratis.Identity.ConsentFlow.Operational`.
+MongoDB stores one majority-durable document per request in `consent-requests`, using the request identity as `_id`. Replacements compare identity, revision and observed state. Every Active write additionally requires `Deadline > now` in the atomic Mongo filter, using both the caller's UTC time and MongoDB's `$$NOW` execution time so a delayed write cannot rely on a stale eligibility check. The in-memory store models both clock conditions under its CAS lock. A separate transition guard prevents changing the binding or skipping the evidence barrier. MongoDB types are confined to `Cratis.Identity.ConsentFlow.Operational`.
 
 `Identity:ConsentActivation` binds validated options:
 

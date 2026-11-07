@@ -52,12 +52,19 @@ public sealed class MongoConsentRequestStore(IMongoDatabase database) : IConsent
     }
 
     /// <inheritdoc/>
-    public async Task<bool> CompareExchange(ConsentRequest expected, ConsentRequest replacement, CancellationToken cancellationToken)
+    public async Task<bool> CompareExchange(ConsentRequest expected, ConsentRequest replacement, DateTimeOffset now, CancellationToken cancellationToken)
     {
         if (!ConsentRequestTransitions.CanReplace(expected, replacement)) return false;
         var filter = Builders<BsonDocument>.Filter;
+        var condition = filter.Eq("_id", expected.Id.Value.ToString("D")) & filter.Eq("Revision", expected.Revision) & filter.Eq("State", expected.State.ToString());
+        if (replacement.State == ConsentRequestState.Active)
+        {
+            condition &= filter.Gt("Deadline", new BsonDateTime(now.UtcDateTime)) &
+                new BsonDocument("$expr", new BsonDocument("$gt", new BsonArray { "$Deadline", "$$NOW" }));
+        }
+
         var result = await _requests.ReplaceOneAsync(
-            filter.Eq("_id", expected.Id.Value.ToString("D")) & filter.Eq("Revision", expected.Revision) & filter.Eq("State", expected.State.ToString()),
+            condition,
             ToDocument(replacement),
             cancellationToken: cancellationToken);
         return result.ModifiedCount == 1;
@@ -87,6 +94,7 @@ public sealed class MongoConsentRequestStore(IMongoDatabase database) : IConsent
             ["Resource"] = binding.Resource,
             ["Scopes"] = binding.Scopes,
             ["Session"] = binding.Session,
+            ["AuthorizationRequest"] = binding.AuthorizationRequest.Value.ToString("D"),
             ["Deadline"] = new BsonDateTime(request.Deadline.UtcDateTime),
             ["State"] = request.State.ToString(),
             ["Revision"] = request.Revision,
@@ -99,7 +107,7 @@ public sealed class MongoConsentRequestStore(IMongoDatabase database) : IConsent
 
     static ConsentRequest FromDocument(BsonDocument document) => new(
         new(Guid.Parse(document["_id"].AsString)),
-        new(document["Realm"].AsString, new AccountSubject(document["Account"].AsString), document["Client"].AsString, document["Tenant"].AsString, document["Resource"].AsString, document["Scopes"].AsString, document["Session"].AsString),
+        new(document["Realm"].AsString, new AccountSubject(document["Account"].AsString), document["Client"].AsString, document["Tenant"].AsString, document["Resource"].AsString, document["Scopes"].AsString, document["Session"].AsString, new AuthorizationRequestId(Guid.Parse(document["AuthorizationRequest"].AsString))),
         new DateTimeOffset(document["Deadline"].ToUniversalTime()),
         Enum.Parse<ConsentRequestState>(document["State"].AsString),
         document["Revision"].AsInt64,

@@ -12,6 +12,7 @@ public class when_persisting_a_consent_request : given.an_activation
 {
     BsonDocument _inserted;
     BsonDocument _filter;
+    BsonDocument _activeFilter;
     BsonDocument _replacement;
     ConsentRequest _roundTrip;
     bool _updated;
@@ -34,15 +35,28 @@ public class when_persisting_a_consent_request : given.an_activation
         cursor.MoveNextAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult(true), Task.FromResult(false));
         _collection.FindAsync(Arg.Any<FilterDefinition<BsonDocument>>(), Arg.Any<FindOptions<BsonDocument, BsonDocument>>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult(cursor));
         _roundTrip = await mongo.Read(request.Id, CancellationToken.None);
-        _collection.ReplaceOneAsync(Arg.Do<FilterDefinition<BsonDocument>>(_ => _filter = _.Render(new RenderArgs<BsonDocument>(BsonSerializer.SerializerRegistry.GetSerializer<BsonDocument>(), BsonSerializer.SerializerRegistry))),
-            Arg.Do<BsonDocument>(_ => _replacement = _),
+        _collection.ReplaceOneAsync(Arg.Do<FilterDefinition<BsonDocument>>(CaptureFilter),
+            Arg.Do<BsonDocument>(_ => _replacement ??= _),
             Arg.Any<ReplaceOptions>(),
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<ReplaceOneResult>(new ReplaceOneResult.Acknowledged(1, 1, null)));
-        _updated = await mongo.CompareExchange(_roundTrip, _roundTrip with { State = ConsentRequestState.Decided, Revision = 1 }, CancellationToken.None);
-        _invalidTransition = await mongo.CompareExchange(_roundTrip, _roundTrip with { State = ConsentRequestState.Active, Revision = 1, AuthorizationId = "injected" }, CancellationToken.None);
+        _updated = await mongo.CompareExchange(_roundTrip, _roundTrip with { State = ConsentRequestState.Decided, Revision = 1 }, clock.Now, CancellationToken.None);
+        _invalidTransition = await mongo.CompareExchange(_roundTrip, _roundTrip with { State = ConsentRequestState.Active, Revision = 1, AuthorizationId = "injected" }, clock.Now, CancellationToken.None);
+        var evidenced = _roundTrip with { State = ConsentRequestState.EvidenceRecorded, Revision = 2 };
+        var active = evidenced with { State = ConsentRequestState.Active, Revision = 3, AuthorizationId = "prepared" };
+        await mongo.CompareExchange(evidenced, active, clock.Now, CancellationToken.None);
     }
 
+    void CaptureFilter(FilterDefinition<BsonDocument> filter)
+    {
+        var document = filter.Render(new RenderArgs<BsonDocument>(BsonSerializer.SerializerRegistry.GetSerializer<BsonDocument>(), BsonSerializer.SerializerRegistry));
+        if (document.Contains("$expr")) _activeFilter = document;
+        else _filter = document;
+    }
+
+    [Fact] void should_atomically_require_the_deadline_after_the_supplied_time() => _activeFilter["Deadline"]["$gt"].ToUniversalTime().ShouldEqual(clock.Now.UtcDateTime);
+    [Fact] void should_also_compare_the_deadline_to_mongodb_execution_time() => _activeFilter["$expr"]["$gt"].AsBsonArray.ShouldEqual(new BsonArray { "$Deadline", "$$NOW" });
+    [Fact] void should_store_only_the_opaque_authorization_request_identity() => _inserted["AuthorizationRequest"].AsString.ShouldEqual(binding.AuthorizationRequest.Value.ToString("D"));
     [Fact] void should_round_trip_the_immutable_binding() => _roundTrip.ShouldEqual(request);
     [Fact] void should_use_the_request_identity_as_the_unique_document_id() => _inserted["_id"].AsString.ShouldEqual(request.Id.Value.ToString("D"));
     [Fact] void should_not_ttl_unresolved_work() => _inserted.Contains("PurgeAt").ShouldBeFalse();

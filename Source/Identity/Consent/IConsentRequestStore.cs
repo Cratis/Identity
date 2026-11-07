@@ -18,12 +18,13 @@ public interface IConsentRequestStore
     /// <returns>The snapshot, or null.</returns>
     Task<ConsentRequest?> Read(ConsentRequestId id, CancellationToken cancellationToken);
 
-    /// <summary>Replaces only the matching revision and state; preserves the identity and binding.</summary>
+    /// <summary>Replaces only the matching revision and state; Active writes also atomically require an unexpired deadline at persistence time.</summary>
     /// <param name="expected">The observed snapshot.</param>
     /// <param name="replacement">The next snapshot with revision incremented by one.</param>
+    /// <param name="now">The caller's current UTC time, an additional lower bound on the persistence clock.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>Whether the compare-and-set won.</returns>
-    Task<bool> CompareExchange(ConsentRequest expected, ConsentRequest replacement, CancellationToken cancellationToken);
+    Task<bool> CompareExchange(ConsentRequest expected, ConsentRequest replacement, DateTimeOffset now, CancellationToken cancellationToken);
 
     /// <summary>Reads unresolved work ordered by identity, allowing fair bounded cursor scans across retries.</summary>
     /// <param name="limit">The maximum number of rows.</param>
