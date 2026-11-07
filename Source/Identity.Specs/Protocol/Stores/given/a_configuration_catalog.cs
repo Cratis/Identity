@@ -18,11 +18,11 @@ public class a_configuration_catalog : Specification
     protected const string Secret = "spec-only-introspection-canary";
     protected ServiceProvider Provider;
     protected IServiceScope Scope;
-    protected IOpenIddictApplicationStore<ClientApplication> Applications;
-    protected IOpenIddictScopeStore<ResourceScope> Scopes;
+    internal IOpenIddictApplicationStore<ClientApplication> Applications;
+    internal IOpenIddictScopeStore<ResourceScope> Scopes;
     protected IOpenIddictApplicationManager Manager;
-    protected ClientDescriptors Descriptors;
-    protected IResourceCatalog Resources;
+    internal ClientDescriptors Descriptors;
+    internal IResourceCatalog Resources;
     protected ConcurrentQueue<string> Logs = new();
 
     void Establish()

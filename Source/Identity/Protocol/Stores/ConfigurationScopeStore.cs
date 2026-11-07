@@ -10,7 +10,7 @@ namespace Cratis.Identity.Protocol.Stores;
 
 /// <summary>Serves scope reads without persisting configuration to MongoDB.</summary>
 /// <param name="catalog">The scope read model source.</param>
-public sealed class ConfigurationScopeStore(IProtocolCatalog catalog) : IOpenIddictScopeStore<ResourceScope>
+internal sealed class ConfigurationScopeStore(IProtocolCatalog catalog) : IOpenIddictScopeStore<ResourceScope>
 {
     /// <inheritdoc/>
     public ValueTask<long> CountAsync(CancellationToken cancellationToken) => StoreQueries.Read((long)catalog.Scopes.Count, cancellationToken);

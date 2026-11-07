@@ -6,7 +6,7 @@ using OpenIddict.Abstractions;
 namespace Cratis.Identity.Protocol.Stores;
 
 /// <summary>A scope read from the configured resource catalog.</summary>
-public sealed class ResourceScope
+internal sealed class ResourceScope
 {
     /// <summary>Initializes a scope snapshot.</summary>
     /// <param name="descriptor">The declared scope descriptor.</param>

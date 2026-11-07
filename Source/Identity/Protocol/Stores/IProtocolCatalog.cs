@@ -6,7 +6,7 @@ namespace Cratis.Identity.Protocol.Stores;
 /// <summary>
 /// Provides the application and scope read models used by the protocol stores.
 /// </summary>
-public interface IProtocolCatalog
+internal interface IProtocolCatalog
 {
     /// <summary>Gets the applications known to the realm.</summary>
     IReadOnlyList<ClientApplication> Applications { get; }

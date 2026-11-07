@@ -8,7 +8,7 @@ using OpenIddict.Abstractions;
 namespace Cratis.Identity.Protocol.Stores;
 
 /// <summary>A configuration-backed application with an obfuscated client secret.</summary>
-public sealed class ClientApplication
+internal sealed class ClientApplication
 {
     /// <summary>Initializes a snapshot without retaining the clear client secret.</summary>
     /// <param name="descriptor">The declared client descriptor.</param>

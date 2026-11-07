@@ -10,7 +10,7 @@ namespace Cratis.Identity.Protocol.Stores;
 /// <summary>Snapshots the configured descriptors for the read-only protocol stores.</summary>
 /// <param name="clients">The declared client descriptors.</param>
 /// <param name="resources">The configured resource catalog.</param>
-public sealed class ConfigurationProtocolCatalog(ClientDescriptors clients, IResourceCatalog resources) : IProtocolCatalog
+internal sealed class ConfigurationProtocolCatalog(ClientDescriptors clients, IResourceCatalog resources) : IProtocolCatalog
 {
     /// <inheritdoc/>
     public IReadOnlyList<ClientApplication> Applications { get; } = clients.All().Select(_ => new ClientApplication(_)).ToList().AsReadOnly();

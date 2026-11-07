@@ -11,7 +11,7 @@ namespace Cratis.Identity.Protocol.Stores;
 
 /// <summary>Serves application reads without persisting configuration to MongoDB.</summary>
 /// <param name="catalog">The application read model source.</param>
-public sealed class ConfigurationApplicationStore(IProtocolCatalog catalog) : IOpenIddictApplicationStore<ClientApplication>
+internal sealed class ConfigurationApplicationStore(IProtocolCatalog catalog) : IOpenIddictApplicationStore<ClientApplication>
 {
     /// <inheritdoc/>
     public ValueTask<long> CountAsync(CancellationToken cancellationToken) => StoreQueries.Read((long)catalog.Applications.Count, cancellationToken);

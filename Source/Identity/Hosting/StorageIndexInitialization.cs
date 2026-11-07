@@ -7,7 +7,7 @@ namespace Cratis.Identity.Hosting;
 
 /// <summary>Initializes operational store indexes after the legacy account guard has run.</summary>
 /// <param name="scopes">The service scope factory.</param>
-public sealed class StorageIndexInitialization(IServiceScopeFactory scopes) : IHostedService
+internal sealed class StorageIndexInitialization(IServiceScopeFactory scopes) : IHostedService
 {
     /// <inheritdoc/>
     public async Task StartAsync(CancellationToken cancellationToken)
