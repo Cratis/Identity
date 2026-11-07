@@ -10,6 +10,12 @@ namespace Cratis.Identity.Integration.for_GrantFences;
 /// <summary>Explicit native test provisioning on the host's separate custody deployment; not production B1 evidence.</summary>
 internal static class FenceLogDatabase
 {
+    /// <summary>A throwaway operational database, so spec fences never reach the host's own outbox worker.</summary>
+    /// <param name="host">The spec host.</param>
+    /// <returns>A new, empty database.</returns>
+    internal static MongoDB.Driver.IMongoDatabase Operational(IdentityHost host) =>
+        host.Database.Client.GetDatabase($"fence-store-test-{Guid.NewGuid():N}");
+
     internal static async Task<MongoIndependentFenceLog> Create(IdentityHost host)
     {
         var independent = host.Services.GetRequiredService<IndependentFenceLogConnection>().Database;
