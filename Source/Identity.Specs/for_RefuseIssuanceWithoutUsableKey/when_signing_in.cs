@@ -43,6 +43,7 @@ public class when_signing_in : for_SecretStoreKeys.given.a_secret_store_director
     [Fact] void should_allow_issuance_with_a_valid_key() => _usable.IsRejected.ShouldBeFalse();
     [Fact] void should_refuse_issuance_once_the_signing_key_expired() => _expired.IsRejected.ShouldBeTrue();
     [Fact] void should_report_a_server_error() => _expired.Error.ShouldEqual(Errors.ServerError);
-    [Fact] void should_run_before_the_sign_in_demand_and_so_before_a_refresh_token_is_redeemed() =>
+    [Fact]
+    void should_run_before_the_sign_in_demand_and_so_before_a_refresh_token_is_redeemed() =>
         RefuseIssuanceWithoutUsableKey.Descriptor.Order.ShouldBeLessThan(OpenIddictServerHandlers.RedeemTokenEntry.Descriptor.Order);
 }

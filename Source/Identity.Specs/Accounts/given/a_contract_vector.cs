@@ -38,12 +38,12 @@ public class a_contract_vector : an_account_store
                 var facts = new List<object>();
                 if (profile.TryGetProperty("email", out var email))
                 {
-                    facts.Add(new AccountEmailChanged(new(email.GetString()!)));
+                    facts.Add(new AccountEmailChanged(new(email.GetString())));
                 }
 
                 if (profile.TryGetProperty("login", out var login))
                 {
-                    facts.Add(new UpstreamKeyDisplayIdentifierObserved(link, new(login.GetString()!), _clock.Now));
+                    facts.Add(new UpstreamKeyDisplayIdentifierObserved(link, new(login.GetString()), _clock.Now));
                 }
 
                 await _events.EventLog.AppendMany(subject.Value, facts);

@@ -64,7 +64,7 @@ public partial class Browser(HttpClient client)
         var response = await client.SendAsync(request);
         while (response.StatusCode is HttpStatusCode.Redirect or HttpStatusCode.Found or HttpStatusCode.SeeOther &&
                response.Headers.Location is { } location &&
-               (!location.IsAbsoluteUri || location.Host == client.BaseAddress!.Host))
+               (!location.IsAbsoluteUri || location.Host == client.BaseAddress.Host))
         {
             response.Dispose();
             response = await client.GetAsync(location);
@@ -115,7 +115,7 @@ public partial class Browser(HttpClient client)
     {
         using var page = await Authorize(CliAuthorization(challenge, resources));
         using var redirect = await Consent(await page.Content.ReadAsStringAsync());
-        return QueryHelpers.ParseQuery(redirect.Headers.Location!.Query)["code"].ToString();
+        return QueryHelpers.ParseQuery(redirect.Headers.Location.Query)["code"].ToString();
     }
 
     /// <summary>

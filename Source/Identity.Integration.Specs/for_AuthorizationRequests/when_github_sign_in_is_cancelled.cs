@@ -33,9 +33,9 @@ public class when_github_sign_in_is_cancelled(IdentityHost host) : IAsyncLifetim
         {
             var (_, challenge) = Browser.Pkce();
             using var github = await browser.Authorize(Browser.CliAuthorization(challenge));
-            var state = QueryHelpers.ParseQuery(github.Headers.Location!.Query)["state"].ToString();
+            var state = QueryHelpers.ParseQuery(github.Headers.Location.Query)["state"].ToString();
             using var result = await browser.Send(new HttpRequestMessage(HttpMethod.Get, $"/signin-github?error={error}&state={Uri.EscapeDataString(state)}"));
-            redirects.Add(result.Headers.Location!);
+            redirects.Add(result.Headers.Location);
         }
 
         _redirects = redirects.ToArray();

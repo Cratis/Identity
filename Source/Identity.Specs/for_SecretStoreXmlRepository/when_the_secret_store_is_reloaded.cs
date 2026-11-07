@@ -34,7 +34,7 @@ public class when_the_secret_store_is_reloaded : given.a_data_protection_ring
         _files.DataProtection("b", _time.Now.AddHours(-1), _time.Now.AddDays(90));
         _files.WriteTo(_directory);
         _keys.Reload();
-        var newKey = _keys.Current.Ring.DataProtection.Single(_ => _.Name == "b").Element.Attribute("id")!.Value;
+        var newKey = _keys.Current.Ring.DataProtection.Single(_ => _.Name == "b").Element.Attribute("id").Value;
         _afterAdding = KeyIdOf(_protector.Protect([1, 2, 3]));
         _added = newKey;
 

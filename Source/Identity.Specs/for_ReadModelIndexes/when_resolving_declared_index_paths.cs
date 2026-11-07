@@ -27,7 +27,7 @@ public class when_resolving_declared_index_paths
 
     [Fact]
     void should_index_the_upstream_key_hash_of_each_reservation() =>
-        typeof(UpstreamKeyReservation).GetProperty(nameof(UpstreamKeyReservation.KeyHash))!.IsDefined(typeof(IndexAttribute)).ShouldBeTrue();
+        typeof(UpstreamKeyReservation).GetProperty(nameof(UpstreamKeyReservation.KeyHash)).IsDefined(typeof(IndexAttribute)).ShouldBeTrue();
 
     static bool Resolves(Type type, string path)
     {

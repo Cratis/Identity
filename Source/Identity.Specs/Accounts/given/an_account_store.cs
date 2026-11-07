@@ -142,7 +142,7 @@ public class an_account_store : Specification
         _states = new();
         _reservations = new();
         var reader = Substitute.For<IReadModels>();
-        reader.GetInstances<UpstreamKeyLookup>(default).ReturnsForAnyArgs(_ => Task.FromResult<IEnumerable<UpstreamKeyLookup>>(_reservations.Instances.Values));
+        reader.GetInstances<UpstreamKeyLookup>(default).ReturnsForAnyArgs(_ => Task.FromResult(_reservations.Instances.Values));
         reader.GetInstanceById<AccountLinkState>(default(ReadModelKey)!, default).ReturnsForAnyArgs(call => Task.FromResult(StateFor(call.Arg<ReadModelKey>().Value)));
         _lookups = new(reader);
         var store = new AccountStore(_events, reader, _clock);

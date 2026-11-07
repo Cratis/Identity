@@ -16,7 +16,7 @@ public class when_rendering_untrusted_values : Specification
 
     void Because()
     {
-        var direct = new ResourceCatalog(Configurations.TwoResourceServers().AsOptions()).FindByAudience(Configurations.DirectAudience)!;
+        var direct = new ResourceCatalog(Configurations.TwoResourceServers().AsOptions()).FindByAudience(Configurations.DirectAudience);
         _html = ConsentPage.Render(
             new Consent(
                 "cratis-cli",

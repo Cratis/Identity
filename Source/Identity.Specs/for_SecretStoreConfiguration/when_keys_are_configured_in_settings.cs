@@ -20,5 +20,5 @@ public class when_keys_are_configured_in_settings : Specification
         .ToList();
 
     [Fact] void should_refuse_each_setting_even_in_development() => _exceptions.TrueForAll(_ => _ is KeysInConfiguration).ShouldBeTrue();
-    [Fact] void should_name_the_secret_store_layout() => _exceptions.TrueForAll(_ => _!.Message.Contains("Identity:SecretStore:Path", StringComparison.Ordinal)).ShouldBeTrue();
+    [Fact] void should_name_the_secret_store_layout() => _exceptions.TrueForAll(_ => _.Message.Contains("Identity:SecretStore:Path", StringComparison.Ordinal)).ShouldBeTrue();
 }

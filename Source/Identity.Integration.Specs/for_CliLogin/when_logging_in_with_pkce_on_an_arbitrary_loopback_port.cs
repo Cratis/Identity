@@ -26,12 +26,12 @@ public class when_logging_in_with_pkce_on_an_arbitrary_loopback_port(IdentityHos
         _consentPage = await page.Content.ReadAsStringAsync();
 
         using var redirect = await browser.Consent(_consentPage);
-        _callback = redirect.Headers.Location!;
+        _callback = redirect.Headers.Location;
 
         var code = QueryHelpers.ParseQuery(_callback.Query)["code"].ToString();
         (_tokenStatus, _tokens) = await browser.RedeemCode(code, verifier);
-        _accessToken = await AccessTokens.Validate(browser, _tokens.GetProperty("access_token").GetString()!);
-        (_, _introspection) = await browser.Introspect(_tokens.GetProperty("access_token").GetString()!);
+        _accessToken = await AccessTokens.Validate(browser, _tokens.GetProperty("access_token").GetString());
+        (_, _introspection) = await browser.Introspect(_tokens.GetProperty("access_token").GetString());
     }
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;

@@ -19,6 +19,6 @@ public class when_applying_the_email_change_vector : given.a_contract_vector
 
     [Fact] void should_keep_the_account() => _account.Value.ShouldEqual(Text(_then.GetProperty("account_key"), "subject"));
     [Fact] void should_keep_one_account() => _states.Instances.Count.ShouldEqual(_then.GetProperty("account_count").GetInt32());
-    [Fact] void should_update_only_profile_email() => _states.InstanceForEventSourceId(_account.Value).Email!.Value.ShouldEqual(Text(_then.GetProperty("profile"), "email"));
+    [Fact] void should_update_only_profile_email() => _states.InstanceForEventSourceId(_account.Value).Email.Value.ShouldEqual(Text(_then.GetProperty("profile"), "email"));
     [Fact] void should_not_link_another_key() => _states.InstanceForEventSourceId(_account.Value).Links.Count.ShouldEqual(1);
 }
