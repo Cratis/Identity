@@ -42,7 +42,7 @@ internal sealed class ProtocolCommands(IServiceScopeFactory scopes, ICommandPipe
         {
             // Arc generates a correlation id for a direct execution without installing it ambiently, so appends would carry another one.
             var accessor = child.ServiceProvider.GetService<ICorrelationIdAccessor>();
-            var modifier = child.ServiceProvider.GetService<ICorrelationIdModifier>();
+            var modifier = accessor as ICorrelationIdModifier;
             var previous = accessor?.Current;
             modifier?.Modify(CorrelationId.New());
             try

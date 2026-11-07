@@ -4,6 +4,7 @@
 using System.Net.Http.Json;
 using Cratis.Chronicle;
 using Cratis.Chronicle.Events;
+using Cratis.Chronicle.EventSequences;
 using Cratis.Chronicle.Reactors;
 using Cratis.Chronicle.Registrations;
 using Cratis.Identity.Accounts;
@@ -100,7 +101,8 @@ public class when_tenant_requests_use_the_identity_realm(IdentityHost host)
         var realmEvents = (await realm.EventLog.GetFromSequenceNumber(EventSequenceNumber.First, subject)).Select(@event => @event.Content).ToArray();
         realmEvents.OfType<AccountRegistrationRecorded>().ShouldContainSingleItem();
         realmEvents.OfType<UpstreamKeySubjectRecorded>().ShouldContainSingleItem();
-        realmEvents.OfType<AccountRegistered>().ShouldContainSingleItem();
+        var publications = (await realm.GetEventSequence(EventSequenceId.Outbox).GetFromSequenceNumber(EventSequenceNumber.First, subject)).Select(@event => @event.Content);
+        publications.OfType<AccountRegistered>().ShouldContainSingleItem();
         var account = await realm.ReadModels.GetInstanceById<Account>(subject);
         account.ShouldNotBeNull();
         account.Id.Value.ShouldEqual(subject);

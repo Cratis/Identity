@@ -3,6 +3,8 @@
 
 using Cratis.Chronicle;
 using Cratis.Chronicle.Events;
+using Cratis.Chronicle.EventSequences;
+using Cratis.Chronicle.Reactors;
 using Cratis.Chronicle.Registrations;
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Contracts.Accounts;
@@ -34,7 +36,11 @@ public class when_signing_in_through_the_native_pipeline(IdentityHost host) : IA
         var realm = await client.GetEventStore("Identity", EventStoreNamespaceName.Default);
         var tenant = await client.GetEventStore("Identity", "tenant-alpha");
         (await tenant.WaitForRegistration(TimeSpan.FromSeconds(30))).IsSuccess.ShouldBeTrue();
-        _defaultEvents = (await realm.EventLog.GetFromSequenceNumber(EventSequenceNumber.First, _account.Id.Value)).Select(@event => @event.Content).ToArray();
+        var internalEvents = (await realm.EventLog.GetFromSequenceNumber(EventSequenceNumber.First, _account.Id.Value)).ToArray();
+        var registration = internalEvents.Single(@event => @event.Content is AccountRegistrationRecorded);
+        await realm.Reactors.WaitTillReachesEventSequenceNumber<AccountPublications>(registration.Context.SequenceNumber, TimeSpan.FromSeconds(10));
+        var publications = (await realm.GetEventSequence(EventSequenceId.Outbox).GetFromSequenceNumber(EventSequenceNumber.First, _account.Id.Value)).Select(@event => @event.Content);
+        _defaultEvents = internalEvents.Select(@event => @event.Content).Concat(publications).ToArray();
         _tenantEvents = (await tenant.EventLog.GetFromSequenceNumber(EventSequenceNumber.First, _account.Id.Value)).Select(@event => @event.Content).ToArray();
         _tenantAccount = await tenant.ReadModels.GetInstanceById<Account>(_account.Id.Value);
         using var names = await provider.GetRequiredService<IMongoDatabase>().ListCollectionNamesAsync();
