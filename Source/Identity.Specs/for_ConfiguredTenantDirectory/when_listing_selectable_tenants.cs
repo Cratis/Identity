@@ -19,7 +19,7 @@ public class when_listing_selectable_tenants : Specification
     {
         var options = Configurations.TwoResourceServers();
         _directory = new ConfiguredTenantDirectory(options.AsMonitor());
-        _direct = new ResourceCatalog(options.AsOptions()).FindByAudience(Configurations.DirectAudience)!;
+        _direct = new ResourceCatalog(options.AsOptions()).FindByAudience(Configurations.DirectAudience);
     }
 
     async Task Because()

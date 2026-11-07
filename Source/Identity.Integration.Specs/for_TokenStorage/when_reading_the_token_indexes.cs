@@ -16,6 +16,7 @@ public class when_reading_the_token_indexes(IdentityHost host) : IAsyncLifetime
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
-    [Fact] void should_expire_entries_at_their_expiration_date() =>
+    [Fact]
+    void should_expire_entries_at_their_expiration_date() =>
         _indexes.Exists(_ => _.Contains("expireAfterSeconds") && _["expireAfterSeconds"].ToInt32() == 0 && _["key"].AsBsonDocument.Contains("expiration_date")).ShouldBeTrue();
 }

@@ -40,6 +40,6 @@ public class when_reading_keys_outside_development
     }
 
     static ConfiguredUpstreamLookupKeys Read(string? material, bool eventSourced) => new(
-        Options.Create(new IdentityOptions { Accounts = new() { EventSourced = eventSourced, LookupKey = material!, LookupKeyRevision = 3 } }),
+        Options.Create(new IdentityOptions { Accounts = new() { EventSourced = eventSourced, LookupKey = material, LookupKeyRevision = 3 } }),
         new HostingEnvironment { EnvironmentName = Environments.Production });
 }

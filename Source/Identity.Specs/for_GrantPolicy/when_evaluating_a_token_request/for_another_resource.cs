@@ -12,5 +12,5 @@ public class for_another_resource : given.a_grant_policy
 
     void Because() => _result = _policy.EvaluateTokenRequest([Configurations.StudioMcp], [Configurations.DirectAudience]);
 
-    [Fact] void should_reject_with_invalid_target() => _result!.Error.ShouldEqual("invalid_target");
+    [Fact] void should_reject_with_invalid_target() => _result.Error.ShouldEqual("invalid_target");
 }

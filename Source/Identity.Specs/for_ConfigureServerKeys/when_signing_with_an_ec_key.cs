@@ -50,7 +50,7 @@ public class when_signing_with_an_ec_key : Specification
         });
         services.AddSingleton(_keys);
         services.AddSingleton<ConfigureServerKeys>();
-        services.AddSingleton<Microsoft.Extensions.Options.IConfigureOptions<OpenIddictServerOptions>>(sp => sp.GetRequiredService<ConfigureServerKeys>());
+        services.AddSingleton<IConfigureOptions<OpenIddictServerOptions>>(sp => sp.GetRequiredService<ConfigureServerKeys>());
         services.AddSingleton<IPostConfigureOptions<OpenIddictServerOptions>>(sp => sp.GetRequiredService<ConfigureServerKeys>());
         _provider = services.BuildServiceProvider();
         _options = _provider.GetRequiredService<IOptions<OpenIddictServerOptions>>().Value;

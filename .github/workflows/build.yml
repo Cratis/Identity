@@ -44,6 +44,9 @@ jobs:
       - name: Build (Release, zero warnings)
         run: dotnet build Identity.slnx --configuration Release
 
+      - name: Format
+        run: dotnet format Identity.slnx --verify-no-changes --no-restore --verbosity minimal
+
       - name: Unit specs
         run: ./Source/Identity.Specs/bin/Release/net10.0/Cratis.Identity.Specs
 

@@ -17,7 +17,7 @@ public class when_reading_a_user_without_a_name : Specification
         _user = GitHubUserResponse.Read(document.RootElement);
     }
 
-    [Fact] void should_read_the_numeric_id() => _user!.Id.ShouldEqual(134365L);
-    [Fact] void should_read_the_login() => _user!.Login.ShouldEqual("einari");
-    [Fact] void should_use_the_login_as_name() => _user!.Name.ShouldEqual("einari");
+    [Fact] void should_read_the_numeric_id() => _user.Id.ShouldEqual(134365L);
+    [Fact] void should_read_the_login() => _user.Login.ShouldEqual("einari");
+    [Fact] void should_use_the_login_as_name() => _user.Name.ShouldEqual("einari");
 }

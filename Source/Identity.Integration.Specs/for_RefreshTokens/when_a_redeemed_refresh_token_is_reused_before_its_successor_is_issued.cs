@@ -23,7 +23,7 @@ public class when_a_redeemed_refresh_token_is_reused_before_its_successor_is_iss
         var browser = host.CreateBrowser();
         var (verifier, challenge) = Browser.Pkce();
         var (_, tokens) = await browser.RedeemCode(await browser.LoginForCode(challenge), verifier);
-        var refreshToken = tokens.GetProperty("refresh_token").GetString()!;
+        var refreshToken = tokens.GetProperty("refresh_token").GetString();
 
         var hold = host.RefreshGates.ArmHold(refreshToken);
         var winner = Task.Run(() => browser.Refresh(refreshToken));
@@ -40,8 +40,8 @@ public class when_a_redeemed_refresh_token_is_reused_before_its_successor_is_iss
         _winner = await winner;
         if (_winner.Status == HttpStatusCode.OK)
         {
-            _successorRefresh = await browser.Refresh(_winner.Body.GetProperty("refresh_token").GetString()!);
-            (_, _successorIntrospection) = await browser.Introspect(_winner.Body.GetProperty("access_token").GetString()!);
+            _successorRefresh = await browser.Refresh(_winner.Body.GetProperty("refresh_token").GetString());
+            (_, _successorIntrospection) = await browser.Introspect(_winner.Body.GetProperty("access_token").GetString());
         }
     }
 

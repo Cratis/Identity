@@ -21,7 +21,7 @@ public class when_observing_a_new_profile_for_the_same_key : given.an_account_st
         _second = await _accounts.SignIn(GitHub(12345), "after@example.test", "Person", "new-login");
         await Refresh();
         _state = _states.InstanceForEventSourceId(_first.Value);
-        _preferredUsername = EventSourcedAccountPrincipal.For(_first, _state.Logins.Values.Single(), _clock).FindFirst("preferred_username")!.Value;
+        _preferredUsername = EventSourcedAccountPrincipal.For(_first, _state.Logins.Values.Single(), _clock).FindFirst("preferred_username").Value;
     }
 
     [Fact] void should_keep_the_immutable_subject() => _second.ShouldEqual(_first);
