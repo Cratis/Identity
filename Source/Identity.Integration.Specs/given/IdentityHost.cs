@@ -132,8 +132,25 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     public Task StopChronicle() => _chronicle.Stop();
 
     /// <summary>Restarts the same kernel after an outage scenario without replacing its state.</summary>
-    /// <returns>The started kernel.</returns>
-    public Task RestartChronicle() => _chronicle.Start();
+    /// <returns>A task that completes once the kernel is back and the host has finished its restriction recovery.</returns>
+    public async Task RestartChronicle()
+    {
+        await _chronicle.Start();
+
+        // The host refuses issuance until recovery has reconciled; later specs must not start inside that window.
+        var health = Services.GetRequiredService<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckService>();
+        var deadline = DateTime.UtcNow.AddSeconds(90);
+        while (true)
+        {
+            var report = await health.CheckHealthAsync(check => check.Name == "identity-restriction-recovery");
+            if (report.Status == Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Healthy || DateTime.UtcNow > deadline)
+            {
+                return;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(250));
+        }
+    }
 
     /// <summary>
     /// Creates a browser: a client that keeps cookies and surfaces redirects instead of following them.
