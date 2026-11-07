@@ -23,7 +23,7 @@ public class when_projection_progress_is_held(IdentityHost host) : IAsyncLifetim
         var provider = scope.ServiceProvider;
         var adapter = provider.GetRequiredService<EventSourcedAccountAdapter>();
         var connection = new GitHubConnection(GitHubConnection.FixedConnectionId, provider.GetRequiredService<TimeProvider>());
-        var user = new GitHubUser(987654322, "progress-hold", "Before Progress");
+        var user = new GitHubUser(given.UpstreamUserIds.Next(), "progress-hold", "Before Progress");
         var initial = await adapter.SignIn(connection.From(user, FactId.New()), new(null, "Before Progress", "progress-hold"));
         var store = provider.GetRequiredService<IEventStore>();
         var position = await provider.GetRequiredService<IObserverProgress>().Position(typeof(Account));

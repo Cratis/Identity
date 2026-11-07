@@ -28,7 +28,7 @@ public class when_signing_in_through_the_native_pipeline(IdentityHost host) : IA
         var provider = scope.ServiceProvider;
         var operation = FactId.New();
         var authentication = new GitHubConnection(GitHubConnection.FixedConnectionId, provider.GetRequiredService<TimeProvider>())
-            .From(new(987654321, "native-pipeline", "Native Pipeline"), operation);
+            .From(new(given.UpstreamUserIds.Next(), "native-pipeline", "Native Pipeline"), operation);
         _account = await provider.GetRequiredService<EventSourcedAccountAdapter>().SignIn(authentication, new(null, "Native Pipeline", "native-pipeline"));
         var client = provider.GetRequiredService<IChronicleClient>();
         var realm = await client.GetEventStore("Identity", EventStoreNamespaceName.Default);

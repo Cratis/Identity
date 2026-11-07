@@ -27,7 +27,7 @@ public class when_an_account_is_disabled_after_the_sign_in_recheck(IdentityHost 
         var provider = scope.ServiceProvider;
         var adapter = provider.GetRequiredService<EventSourcedAccountAdapter>();
         var connection = new GitHubConnection(GitHubConnection.FixedConnectionId, provider.GetRequiredService<TimeProvider>());
-        var user = new GitHubUser(987654327, "disabled-after-recheck", "Before Disable");
+        var user = new GitHubUser(UpstreamUserIds.Next(), "disabled-after-recheck", "Before Disable");
         var initial = await adapter.SignIn(connection.From(user, FactId.New()), new(null, user.Name, user.Login));
         var store = provider.GetRequiredService<IEventStore>();
         var before = (await store.EventLog.GetFromSequenceNumber(EventSequenceNumber.First, initial.Id.Value)).Count;

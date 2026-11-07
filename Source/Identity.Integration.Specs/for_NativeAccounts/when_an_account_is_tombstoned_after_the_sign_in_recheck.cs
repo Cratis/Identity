@@ -28,7 +28,7 @@ public class when_an_account_is_tombstoned_after_the_sign_in_recheck(IdentityHos
         var adapter = provider.GetRequiredService<EventSourcedAccountAdapter>();
         var timeProvider = provider.GetRequiredService<TimeProvider>();
         var connection = new GitHubConnection(GitHubConnection.FixedConnectionId, timeProvider);
-        var user = new GitHubUser(987654330, "tombstoned-after-recheck", "Before Tombstone");
+        var user = new GitHubUser(UpstreamUserIds.Next(), "tombstoned-after-recheck", "Before Tombstone");
         var initial = await adapter.SignIn(connection.From(user, FactId.New()), new(null, user.Name, user.Login));
         var store = provider.GetRequiredService<IEventStore>();
         var before = (await store.EventLog.GetFromSequenceNumber(EventSequenceNumber.First, initial.Id.Value)).Count;
