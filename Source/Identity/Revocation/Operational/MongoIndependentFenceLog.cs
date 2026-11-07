@@ -90,7 +90,7 @@ internal sealed class MongoIndependentFenceLog(Func<IMongoDatabase> database, Ti
     public async Task<IReadOnlyList<FenceReservation>> Unresolved(CancellationToken cancellationToken)
     {
         var filter = new BsonDocument("state", new BsonDocument("$in", new BsonArray { (int)ReservationState.Reserved, (int)ReservationState.Fencing }));
-        var entries = await _entries.Find(filter).Sort(new BsonDocument("sequence", 1)).ToListAsync(cancellationToken);
+        var entries = await _entries.Find(filter).Sort(new BsonDocument("sequence", 1)).Limit(100).ToListAsync(cancellationToken);
         return entries.Select(document => new FenceReservation(
             Guid.Parse(document["_id"].AsString),
             document["sequence"].AsInt64,

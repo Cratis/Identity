@@ -8,7 +8,7 @@ namespace Cratis.Identity.Revocation;
 /// </summary>
 internal interface IReservationLog
 {
-    /// <summary>Reads reservations that have not reached a final state.</summary>
+    /// <summary>Reads at most 100 unresolved reservations, oldest sequence first.</summary>
     /// <param name="cancellationToken">Cancellation.</param>
     /// <returns>The unresolved reservations.</returns>
     Task<IReadOnlyList<FenceReservation>> Unresolved(CancellationToken cancellationToken);

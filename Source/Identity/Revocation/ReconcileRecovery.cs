@@ -124,7 +124,7 @@ internal sealed class ReconcileRecovery(
             await RegisterRestore(cancellationToken);
         }
 
-        var watermark = recovering ? await ResolveReservations(cancellationToken) : await log.Watermark(cancellationToken);
+        var watermark = await ResolveReservations(recovering, cancellationToken);
         RequireProgress(watermark, custody.AppliedThrough, checkpoint?.AppliedThrough ?? 0);
         if (recovering)
         {
@@ -215,16 +215,19 @@ internal sealed class ReconcileRecovery(
         }
     }
 
-    async Task<long> ResolveReservations(CancellationToken cancellationToken)
+    async Task<long> ResolveReservations(bool recovering, CancellationToken cancellationToken)
     {
-        foreach (var reservation in (await log.Unresolved(cancellationToken)).Where(reservation => reservation.ReservedAt <= timeProvider.GetUtcNow().AddSeconds(-30)))
+        // Poll abandoned work even after startup, without fencing live requests or
+        // allowing a large backlog to monopolize a lease renewal pass.
+        var abandonedBefore = timeProvider.GetUtcNow().AddSeconds(-30);
+        foreach (var reservation in (await log.Unresolved(cancellationToken)).Take(100).Where(reservation => reservation.ReservedAt <= abandonedBefore))
         {
             gate.Close();
             await reservations.Reconcile(reservation, cancellationToken);
         }
 
         var watermark = await log.Watermark(cancellationToken);
-        if (watermark != await log.AllocatedThrough(cancellationToken))
+        if (recovering && watermark != await log.AllocatedThrough(cancellationToken))
         {
             throw new RevocationPending();
         }
