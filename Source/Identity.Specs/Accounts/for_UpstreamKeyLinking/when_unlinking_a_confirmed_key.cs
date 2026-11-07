@@ -21,7 +21,7 @@ public class when_unlinking_a_confirmed_key : given.a_link_proposal
     {
         await _linking.Unlink(Session(_account), new(_proposal.Value));
         await Refresh();
-        _signIn = await Refusal(() => _accounts.SignIn(Verified(GitHubIssuer, "candidate-key", FactId.New()), "profile@example.test", "Person", "display"));
+        _signIn = await Refusal(() => SignIn(Verified(GitHubIssuer, "candidate-key", FactId.New()), "profile@example.test", "Person", "display"));
         _relink = await Refusal(() => _linking.Confirm(Session(_account), _proposal, _proof));
     }
 

@@ -9,6 +9,7 @@ using Cratis.Chronicle.Testing.Events;
 using Cratis.Chronicle.Testing.ReadModels;
 using Cratis.Identity.Accounts.Linking;
 using Cratis.Identity.Accounts.Lookup;
+using Cratis.Identity.Accounts.SigningIn;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Contracts.Accounts.Events;
@@ -24,7 +25,8 @@ public class an_account_store : Specification
     protected AccountClock _clock;
     protected IdentityOptions _options;
     protected UpstreamKeyDigester _digester;
-    protected EventSourcedAccounts _accounts;
+    protected ReadModelScenario<Account> _profiles;
+    AccountStore _store;
     protected UpstreamKeyLinking _linking;
     protected GitHubConnection _github;
     protected UpstreamLookups _lookups;
@@ -37,7 +39,7 @@ public class an_account_store : Specification
     {
         _events = new();
         _clock = new();
-        _options = new() { Accounts = new() { EventSourced = true } };
+        _options = new();
         var keys = Substitute.For<IUpstreamLookupKeys>();
         keys.Current.Returns(new UpstreamLookupKey(1, Enumerable.Range(0, 32).Select(number => (byte)number).ToArray()));
         _digester = new(keys);
@@ -49,6 +51,7 @@ public class an_account_store : Specification
     {
         _states.Dispose();
         _reservations.Dispose();
+        _profiles.Dispose();
         _events.Dispose();
     }
 
@@ -118,6 +121,7 @@ public class an_account_store : Specification
     {
         _states.Dispose();
         _reservations.Dispose();
+        _profiles.Dispose();
         WireReaders();
         var types = typeof(AccountRegistrationRecorded).Assembly.GetTypes()
             .Where(type => type.IsDefined(typeof(EventTypeAttribute)) && !type.IsDefined(typeof(PublicAttribute)))
@@ -127,10 +131,30 @@ public class an_account_store : Specification
             var events = await _events.EventLog.GetForEventSourceIdAndEventTypes(account.Value, types);
             await _states.ProcessAppendedEvents(events);
             await _reservations.ProcessAppendedEvents(events);
+            await _profiles.ProcessAppendedEvents(events);
         }
 
         _ = _states.Instances;
         _ = _reservations.Instances;
+        _ = _profiles.Instances;
+    }
+
+    protected async Task<AccountSubject> SignIn(VerifiedAuthentication authentication, Email email, PersonalName name, Login login, AccountSubject? allocatedSubject = null)
+    {
+        await Refresh();
+        var reservation = await _lookups.Find(_digester.Digest(authentication.IdpIssuer, authentication.Subject));
+        var subject = reservation?.AccountSubject ?? allocatedSubject ?? AccountSubject.New();
+        _subjects.Add(subject);
+        var account = _profiles.InstanceForEventSourceId(subject.Value);
+        var decision = new SignInDecision(subject, authentication, _digester.Digest(authentication.IdpIssuer, authentication.Subject), new(email, name, login), reservation, account, _clock.GetUtcNow());
+        var result = new SignInWithUpstreamKey(authentication.OperationId).Handle(decision);
+        if (result.TryGetError(out var refusal))
+        {
+            throw new AccountOperationRefused(refusal.Message);
+        }
+
+        await _store.Append(subject, await _store.Read(subject), result.AsT0.Item1.Select(item => item.Event));
+        return result.AsT0.Item2;
     }
 
     AccountLinkState StateFor(string id) => _states.InstanceForEventSourceId(id) ?? new(id);
@@ -141,12 +165,13 @@ public class an_account_store : Specification
         // appended events through Chronicle's read-model harness, retaining real writer/constraint/guard paths.
         _states = new();
         _reservations = new();
+        _profiles = new();
         var reader = Substitute.For<IReadModels>();
         reader.GetInstances<UpstreamKeyLookup>(default).ReturnsForAnyArgs(_ => Task.FromResult(_reservations.Instances.Values));
         reader.GetInstanceById<AccountLinkState>(default(ReadModelKey)!, default).ReturnsForAnyArgs(call => Task.FromResult(StateFor(call.Arg<ReadModelKey>().Value)));
         _lookups = new(reader);
         var store = new AccountStore(_events, reader, _clock);
-        _accounts = new(store, _lookups, _digester, _clock);
+        _store = store;
         _linking = new(store, _lookups, _digester, Options.Create(_options), _clock);
     }
 }

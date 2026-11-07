@@ -1,16 +1,23 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Chronicle;
 using Cratis.Identity.Accounts;
+using Cratis.Identity.Accounts.Linking;
+using Cratis.Identity.Accounts.Lookup;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Clients;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.Keys;
+using Cratis.Identity.Operational;
+using Cratis.Identity.Protocol;
+using Cratis.Identity.Realm;
 using Cratis.Identity.Resources;
 using Cratis.Identity.Storage;
 using Cratis.Identity.Tenants;
 using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using OpenIddict.Server;
@@ -34,6 +41,7 @@ internal static class IdentityServiceCollectionExtensions
     /// <returns>The <see cref="IServiceCollection"/> for continuation.</returns>
     /// <exception cref="KeysInConfiguration">Thrown when a signing or encryption certificate is still configured.</exception>
     /// <exception cref="SecretStoreNotConfigured">Thrown outside development without a secret store.</exception>
+    /// <exception cref="ChronicleNotConfigured">The native account path has no configured Chronicle client.</exception>
     internal static IServiceCollection AddCratisIdentity(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         var section = configuration.GetSection(IdentityOptions.SectionName);
@@ -50,21 +58,49 @@ internal static class IdentityServiceCollectionExtensions
             throw new SecretStoreNotConfigured();
         }
 
+        if (!services.Any(service => service.ServiceType == typeof(IChronicleClient)))
+        {
+            throw new ChronicleNotConfigured();
+        }
+
         services.AddOptions<IdentityOptions>().Bind(section).ValidateOnStart();
         services.AddSingleton<IValidateOptions<IdentityOptions>, IdentityOptionsValidation>();
         services.AddSingleton(TimeProvider.System);
 
+        AddRealmNamespaceResolver(services);
         services.AddStorage();
         services.AddSecretStoreKeys(startupOptions);
         services.AddDomain();
-        if (startupOptions.Accounts.EventSourced)
-        {
-            services.AddEventSourcedAccounts();
-        }
+        services.AddAccountServices();
 
         services.AddSessionAndUpstreamLogin(environment);
         services.AddAuthorizationServer(startupOptions, environment);
 
+        return services;
+    }
+
+    /// <summary>Adds native account admission, readers and lookup-key startup protection.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The service collection for continuation.</returns>
+    internal static IServiceCollection AddAccountServices(this IServiceCollection services)
+    {
+        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton<IProtocolCommands, ProtocolCommands>();
+        services.AddScoped<IObserverProgress, ObserverProgress>();
+        services.AddScoped<ReadModelCatchUp>();
+        services.AddSingleton<IUpstreamLookupKeys, ConfiguredUpstreamLookupKeys>();
+        services.AddSingleton<UpstreamKeyDigester>();
+        services.AddSingleton<VerifiedKeyGate>();
+        services.AddScoped<AccountStore>();
+        services.AddScoped<UpstreamLookups>();
+        services.AddScoped<AccountReader>();
+        services.AddScoped<IAccountReader>(provider => provider.GetRequiredService<AccountReader>());
+        services.AddScoped<EventSourcedAccountAdapter>();
+        services.AddScoped<IAccountSignIn>(provider => provider.GetRequiredService<EventSourcedAccountAdapter>());
+        services.AddScoped<VerifiedUpstreamSignIn>();
+        services.AddScoped<IVerifiedUpstreamSignIn>(provider => provider.GetRequiredService<VerifiedUpstreamSignIn>());
+        services.AddScoped<UpstreamKeyLinking>();
+        services.AddLookupRevisionGuard();
         return services;
     }
 
@@ -106,6 +142,20 @@ internal static class IdentityServiceCollectionExtensions
             .Configure<IOptions<IdentityOptions>>((cookie, identity) => cookie.ExpireTimeSpan = identity.Value.SessionLifetime);
     }
 
+    static void AddRealmNamespaceResolver(IServiceCollection services)
+    {
+        var previous = services.LastOrDefault(descriptor => descriptor.ServiceType == typeof(IEventStoreNamespaceResolver));
+        if (previous is null)
+        {
+            return;
+        }
+
+        services.Remove(previous);
+        services.AddSingleton<IEventStoreNamespaceResolver>(provider => new IdentityRealmNamespaceResolver(
+            (IEventStoreNamespaceResolver)(previous.ImplementationInstance ?? previous.ImplementationFactory?.Invoke(provider) ??
+                ActivatorUtilities.CreateInstance(provider, previous.ImplementationType!))));
+    }
+
     static void AddStorage(this IServiceCollection services)
     {
         services.AddSingleton<IMongoClient>(sp => new MongoClient(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.ConnectionString));
@@ -144,7 +194,6 @@ internal static class IdentityServiceCollectionExtensions
 
     static void AddDomain(this IServiceCollection services)
     {
-        services.AddSingleton<IAccounts, Accounts.Accounts>();
         services.AddSingleton<IResourceCatalog, ResourceCatalog>();
         services.AddSingleton<IGrantPolicy, GrantPolicy>();
         services.AddSingleton<ConfiguredTenantDirectory>();

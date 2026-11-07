@@ -9,4 +9,4 @@ namespace Cratis.Identity.Accounts;
 /// <param name="Email">The email observation.</param>
 /// <param name="Name">The name observation.</param>
 /// <param name="Login">The per-key display observation.</param>
-internal record ObservedProfile(Email Email, PersonalName Name, Login Login);
+public record ObservedProfile(Email? Email, PersonalName Name, Login Login);

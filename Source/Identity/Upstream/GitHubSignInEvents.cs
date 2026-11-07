@@ -5,6 +5,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Authorization;
+using Cratis.Identity.Contracts.Accounts;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OAuth;
 
@@ -14,9 +15,10 @@ namespace Cratis.Identity.Upstream;
 /// Handles the GitHub OAuth sign-in: reads the GitHub user, links it to an account and replaces the upstream
 /// principal with the Identity session principal. The GitHub access token is used once and never stored.
 /// </summary>
-/// <param name="accounts">The <see cref="IAccounts"/>.</param>
+/// <param name="accounts">The verified account sign-in boundary.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
-public class GitHubSignInEvents(IAccounts accounts, ILogger<GitHubSignInEvents> logger) : OAuthEvents
+/// <param name="timeProvider">The trusted clock.</param>
+public class GitHubSignInEvents(IAccountSignIn accounts, ILogger<GitHubSignInEvents> logger, TimeProvider timeProvider) : OAuthEvents
 {
     /// <inheritdoc/>
     public override Task AccessDenied(AccessDeniedContext context)
@@ -30,7 +32,7 @@ public class GitHubSignInEvents(IAccounts accounts, ILogger<GitHubSignInEvents> 
     {
         logger.SignInFailed(context.Failure);
         context.HandleResponse();
-        return Fail(context.HttpContext, context.Properties);
+        return Fail(context.HttpContext, context.Properties, TemporaryFailure(context.Failure) ? "temporarily_unavailable" : "access_denied");
     }
 
     /// <inheritdoc/>
@@ -47,19 +49,23 @@ public class GitHubSignInEvents(IAccounts accounts, ILogger<GitHubSignInEvents> 
         using var body = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(context.HttpContext.RequestAborted), cancellationToken: context.HttpContext.RequestAborted);
         var user = GitHubUserResponse.Read(body.RootElement) ?? throw new GitHubUserResponseInvalid();
 
-        var account = await accounts.RecordGitHubSignIn(user, context.HttpContext.RequestAborted);
+        var authentication = new GitHubConnection(GitHubConnection.FixedConnectionId, timeProvider).From(user, FactId.New());
+        var account = await accounts.SignIn(authentication, new(user.Email, user.Name, user.Login));
         logger.SignedIn(account.Id, user.Id, user.Login);
         context.Principal = SessionPrincipal.For(account, IdentitySchemes.GitHub);
     }
 
-    static async Task Fail(HttpContext context, AuthenticationProperties? properties)
+    static bool TemporaryFailure(Exception? failure) => (failure is AccountOperationRefused && string.Equals(failure.Message, "temporarily_unavailable", StringComparison.Ordinal)) ||
+        (failure?.InnerException is { } inner && TemporaryFailure(inner));
+
+    static async Task Fail(HttpContext context, AuthenticationProperties? properties, string reason = "access_denied")
     {
         var returnUrl = properties?.RedirectUri;
         var path = $"{context.Request.PathBase}/connect/authorize?";
         if (returnUrl?.StartsWith(path, StringComparison.Ordinal) == true &&
             Uri.TryCreate(returnUrl, UriKind.Relative, out _))
         {
-            context.Response.Redirect($"{returnUrl}&upstream_error=access_denied");
+            context.Response.Redirect($"{returnUrl}&upstream_error={reason}");
             return;
         }
 

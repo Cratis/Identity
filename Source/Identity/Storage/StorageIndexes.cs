@@ -1,7 +1,6 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Cratis.Identity.Accounts;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -25,11 +24,6 @@ public class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddictM
     public async Task Ensure(CancellationToken cancellationToken)
     {
         var options = openIddict.CurrentValue;
-
-        // The unique GitHub id is what makes a concurrent first sign-in create one account, not two.
-        await database.GetCollection<AccountDocument>(Accounts.Accounts.CollectionName).Indexes.CreateOneAsync(
-            new CreateIndexModel<AccountDocument>(Builders<AccountDocument>.IndexKeys.Ascending(_ => _.GitHubId), new CreateIndexOptions { Unique = true }),
-            cancellationToken: cancellationToken);
 
         await database.GetCollection<OpenIddictMongoDbApplication>(options.ApplicationsCollectionName).Indexes.CreateOneAsync(
             new CreateIndexModel<OpenIddictMongoDbApplication>(
