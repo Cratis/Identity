@@ -25,18 +25,6 @@ public class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddictM
     {
         var options = openIddict.CurrentValue;
 
-        await database.GetCollection<OpenIddictMongoDbApplication>(options.ApplicationsCollectionName).Indexes.CreateOneAsync(
-            new CreateIndexModel<OpenIddictMongoDbApplication>(
-                Builders<OpenIddictMongoDbApplication>.IndexKeys.Ascending(_ => _.ClientId),
-                new CreateIndexOptions { Unique = true }),
-            cancellationToken: cancellationToken);
-
-        await database.GetCollection<OpenIddictMongoDbScope>(options.ScopesCollectionName).Indexes.CreateOneAsync(
-            new CreateIndexModel<OpenIddictMongoDbScope>(
-                Builders<OpenIddictMongoDbScope>.IndexKeys.Ascending(_ => _.Name),
-                new CreateIndexOptions { Unique = true }),
-            cancellationToken: cancellationToken);
-
         await database.GetCollection<OpenIddictMongoDbAuthorization>(options.AuthorizationsCollectionName).Indexes.CreateOneAsync(
             new CreateIndexModel<OpenIddictMongoDbAuthorization>(
                 Builders<OpenIddictMongoDbAuthorization>.IndexKeys

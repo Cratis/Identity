@@ -20,6 +20,8 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using OpenIddict.MongoDb;
+using OpenIddict.MongoDb.Models;
 using OpenIddict.Server;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
@@ -165,7 +167,9 @@ internal static class IdentityServiceCollectionExtensions
         services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.Database));
         services.AddSingleton<StorageIndexes>();
 
-        services.AddHostedService<ClientRegistrations>();
+        services.AddHostedService<StorageIndexInitialization>();
+        services.AddSingleton<IOpenIddictMongoDbContext, OpenIddictMongoDbContext>();
+        services.AddOptions<OpenIddictMongoDbOptions>();
         services.AddHostedService<TokenPruning>();
     }
 
@@ -221,7 +225,11 @@ internal static class IdentityServiceCollectionExtensions
         }
 
         services.AddOpenIddict()
-            .AddCore(options => options.UseMongoDb())
+            .AddCore(options => options.UseConfigurationStores()
+                .SetDefaultAuthorizationEntity<OpenIddictMongoDbAuthorization>()
+                .SetDefaultTokenEntity<OpenIddictMongoDbToken>()
+                .ReplaceAuthorizationStore<OpenIddictMongoDbAuthorization, OpenIddictMongoDbAuthorizationStore<OpenIddictMongoDbAuthorization>>()
+                .ReplaceTokenStore<OpenIddictMongoDbToken, OpenIddictMongoDbTokenStore<OpenIddictMongoDbToken>>())
             .AddServer(options =>
             {
                 options
