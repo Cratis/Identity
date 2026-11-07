@@ -60,6 +60,11 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     public IMongoDatabase Database => new MongoClient(_mongo.GetConnectionString()).GetDatabase(_database);
 
     /// <summary>
+    /// Gets the connection string of the host's MongoDB container, for specs that need their own databases on it.
+    /// </summary>
+    public string MongoConnectionString => _mongo.GetConnectionString();
+
+    /// <summary>
     /// Gets the test-only pause points in the refresh-token pipeline.
     /// </summary>
     public RefreshGates RefreshGates { get; } = new();
@@ -177,6 +182,7 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         ["Identity:Issuer"] = Issuer,
         ["Identity:Accounts:LookupKey"] = Convert.ToBase64String(Enumerable.Range(0, 32).Select(value => (byte)value).ToArray()),
         ["Identity:Accounts:ReadModelCatchUpTimeout"] = "00:00:10",
+        ["Identity:Accounts:ConfirmNoLegacyMongoStore"] = "true",
         ["ConnectionStrings:chronicle"] = _chronicle.ConnectionString,
         ["Identity:MongoDB:ConnectionString"] = _mongo.GetConnectionString(),
         ["Identity:MongoDB:Database"] = _database,
