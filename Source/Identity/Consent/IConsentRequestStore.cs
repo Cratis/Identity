@@ -1,6 +1,8 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Contracts.Accounts;
+
 namespace Cratis.Identity.ConsentFlow;
 
 /// <summary>Durable request storage. Only the operational state, never evidence replay, enables a grant.</summary>
@@ -17,6 +19,15 @@ internal interface IConsentRequestStore
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The snapshot, or null.</returns>
     Task<ConsentRequest?> Read(ConsentRequestId id, CancellationToken cancellationToken);
+
+    /// <summary>Finds the newest unexpired pending request for the authenticated realm binding.</summary>
+    /// <param name="account">The authenticated account.</param>
+    /// <param name="session">The authenticated session.</param>
+    /// <param name="realm">The Identity realm.</param>
+    /// <param name="now">The current server time.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The newest eligible snapshot, or null.</returns>
+    Task<ConsentRequest?> FindPending(AccountSubject account, string session, string realm, DateTimeOffset now, CancellationToken cancellationToken);
 
     /// <summary>Replaces only the matching revision and state; Active writes also atomically require an unexpired deadline at persistence time.</summary>
     /// <param name="expected">The observed snapshot.</param>
