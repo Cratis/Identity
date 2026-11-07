@@ -73,6 +73,9 @@ internal static class IdentityServiceCollectionExtensions
         services.AddSingleton(TimeProvider.System);
 
         AddRealmNamespaceResolver(services);
+
+        // Protected-decision commands (sign-in) need the command-aware Chronicle decision reader.
+        services.AddCommandAwareDecisionReads();
         services.AddStorage();
         services.AddSecretStoreKeys(startupOptions);
         services.AddDomain();
