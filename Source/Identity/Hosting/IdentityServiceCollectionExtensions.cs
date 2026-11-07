@@ -15,6 +15,8 @@ using Cratis.Identity.Operational;
 using Cratis.Identity.Protocol;
 using Cratis.Identity.Realm;
 using Cratis.Identity.Resources;
+using Cratis.Identity.Revocation;
+using Cratis.Identity.Revocation.Operational;
 using Cratis.Identity.Storage;
 using Cratis.Identity.Tenants;
 using Cratis.Identity.Upstream;
@@ -235,6 +237,16 @@ internal static class IdentityServiceCollectionExtensions
         services.AddScoped<ConsentPages>();
         services.AddScoped<AuthorizationEndpoint>();
         services.AddScoped<TokenEndpoint>();
+        services.TryAddSingleton<IFenceStore, MongoFenceStore>();
+
+        // Interim only: not B1-compliant. Independent durability and restore gating remain #42.
+        services.TryAddSingleton<IFenceLog, CoLocatedMongoFenceLog>();
+        services.AddScoped<ConfirmFenceLog>();
+        services.TryAddScoped<IRevocationFactWriter, ChronicleRevocationFactWriter>();
+        services.AddScoped<DispatchRevocationOutbox>();
+        services.AddHostedService<RevocationOutboxWorker>();
+        services.AddScoped<ReadRefreshGrant>();
+        services.AddScoped<RefreshIssuance>();
         services.AddScoped<GrantRevocation>();
     }
 
@@ -250,7 +262,7 @@ internal static class IdentityServiceCollectionExtensions
                 .SetDefaultAuthorizationEntity<OpenIddictMongoDbAuthorization>()
                 .SetDefaultTokenEntity<OpenIddictMongoDbToken>()
                 .ReplaceAuthorizationStore<OpenIddictMongoDbAuthorization, OpenIddictMongoDbAuthorizationStore<OpenIddictMongoDbAuthorization>>()
-                .ReplaceTokenStore<OpenIddictMongoDbToken, OpenIddictMongoDbTokenStore<OpenIddictMongoDbToken>>())
+                .ReplaceTokenStore<OpenIddictMongoDbToken, FencedTokenStore>())
             .AddServer(options =>
             {
                 options
@@ -282,6 +294,8 @@ internal static class IdentityServiceCollectionExtensions
                 }
 
                 options.AddEventHandler(RejectExpiredTokenEntries.Descriptor)
+                    .AddEventHandler(RejectFencedGrants.Descriptor)
+                    .AddEventHandler(RejectFencedGrants.SignInDescriptor)
                     .AddEventHandler(RevokeGrantOnRefreshTokenReuse.Descriptor)
                     .AddEventHandler(RedeemRefreshTokenOnce.Descriptor)
                     .AddEventHandler(RevokeGrantOnRefreshTokenRevocation.Descriptor);

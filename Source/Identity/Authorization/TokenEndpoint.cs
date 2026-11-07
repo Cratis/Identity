@@ -5,6 +5,7 @@ using Cratis.Identity.Accounts;
 using Cratis.Identity.Contracts;
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Resources;
+using Cratis.Identity.Revocation;
 using Cratis.Identity.Tenants;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
@@ -25,12 +26,14 @@ namespace Cratis.Identity.Authorization;
 /// <param name="resources">The <see cref="IResourceCatalog"/>.</param>
 /// <param name="tenants">The <see cref="ITenantDirectory"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
+/// <param name="fences">The primary grant authority.</param>
 internal class TokenEndpoint(
     IAccountReader accounts,
     IGrantPolicy grantPolicy,
     IResourceCatalog resources,
     ITenantDirectory tenants,
-    ILogger<TokenEndpoint> logger)
+    ILogger<TokenEndpoint> logger,
+    IFenceStore fences)
 {
     /// <summary>
     /// Handles a token request.
@@ -87,6 +90,23 @@ internal class TokenEndpoint(
             }
         }
 
+        try
+        {
+            var state = string.IsNullOrEmpty(authorizationId) ? null : await fences.Read(authorizationId, context.RequestAborted);
+            if (string.IsNullOrEmpty(authorizationId) || state?.Fence is not null || (state is not null && !GrantStateValidation.IsKnown(state)) ||
+                (request.IsRefreshTokenGrantType() && state is null))
+            {
+                return OAuthResults.Error(Errors.InvalidGrant, "The refresh token is no longer valid.");
+            }
+        }
+        catch (Exception)
+        {
+            return OAuthResults.Error(Errors.InvalidGrant, "The refresh token is no longer valid.");
+        }
+
+        // Offline access JWTs retain the accepted 630-second lifetime+skew window after a fence.
+        // Online refresh admission is decided again by the single-document consume/install CAS.
+        // A known non-current entry must reach redemption so concurrent reuse fences the family.
         return OAuthResults.Issue(AccessTokenIdentity.Renew(granted, account, request.ClientId!));
     }
 }

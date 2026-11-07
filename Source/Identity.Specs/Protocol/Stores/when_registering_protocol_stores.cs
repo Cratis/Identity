@@ -49,7 +49,7 @@ public class when_registering_protocol_stores : Specification
     [Fact] void should_resolve_the_configuration_application_store() => _applications.ShouldBeOfExactType<ConfigurationApplicationStore>();
     [Fact] void should_resolve_the_configuration_scope_store() => _scopes.ShouldBeOfExactType<ConfigurationScopeStore>();
     [Fact] void should_keep_the_mongo_authorization_store() => _authorizations.ShouldBeOfExactType<OpenIddictMongoDbAuthorizationStore<OpenIddictMongoDbAuthorization>>();
-    [Fact] void should_keep_the_mongo_token_store() => _tokens.ShouldBeOfExactType<OpenIddictMongoDbTokenStore<OpenIddictMongoDbToken>>();
+    [Fact] void should_use_the_fenced_mongo_token_store() => _tokens.ShouldBeOfExactType<Authorization.FencedTokenStore>();
 
     async Task Destroy()
     {

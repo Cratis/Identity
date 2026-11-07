@@ -7,7 +7,11 @@ namespace Cratis.Identity.for_RedeemRefreshTokenOnce.when_handling_a_refresh;
 
 public class and_another_request_redeemed_it_after_validation : given.a_refresh_token_request
 {
-    void Establish() => _tokens.HasStatusAsync(_token, Statuses.Valid, Arg.Any<CancellationToken>()).Returns(false);
+    void Establish()
+    {
+        _tokens.HasStatusAsync(_token, Statuses.Valid, Arg.Any<CancellationToken>()).Returns(false);
+        _tokens.HasStatusAsync(_token, Statuses.Redeemed, Arg.Any<CancellationToken>()).Returns(true);
+    }
 
     async Task Because() => await _handler.HandleAsync(_context);
 

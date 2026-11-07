@@ -7,7 +7,11 @@ namespace Cratis.Identity.for_RevokeGrantOnRefreshTokenReuse.when_validating_a_r
 
 public class and_it_was_already_redeemed : given.a_refresh_token_being_validated
 {
-    void Establish() => _tokens.HasStatusAsync(_token, Statuses.Valid, Arg.Any<CancellationToken>()).Returns(false);
+    void Establish()
+    {
+        _tokens.HasStatusAsync(_token, Statuses.Valid, Arg.Any<CancellationToken>()).Returns(false);
+        _tokens.HasStatusAsync(_token, Statuses.Redeemed, Arg.Any<CancellationToken>()).Returns(true);
+    }
 
     async Task Because() => await _handler.HandleAsync(_context);
 

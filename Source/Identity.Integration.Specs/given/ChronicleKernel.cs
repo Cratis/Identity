@@ -64,6 +64,10 @@ public sealed class ChronicleKernel : IAsyncDisposable
         throw new TimeoutException("The Chronicle kernel did not become ready.");
     }
 
+    /// <summary>Stops the real kernel for outage scenarios; its state is retained for restart.</summary>
+    /// <returns>The stopped container.</returns>
+    public Task Stop() => _container.StopAsync();
+
     /// <inheritdoc/>
     public ValueTask DisposeAsync() => _container.DisposeAsync();
 }
