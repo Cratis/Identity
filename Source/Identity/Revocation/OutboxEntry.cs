@@ -35,8 +35,8 @@ internal sealed record OutboxEntry(string Id, FactKind Kind, Guid FactId, Guid G
     /// <returns>The immutable pending intent.</returns>
     internal static OutboxEntry Create(FactKind kind, string grantId, string subject, DateTimeOffset occurred, DateTimeOffset? expires = null, GrantFence? fence = null)
     {
-        var factId = Guid.NewGuid();
-        return new($"{factId:D}:{EventTypeId(kind)}", kind, factId, Source(grantId), subject, occurred, expires, fence, kind == FactKind.Reuse ? Guid.NewGuid() : null, fence is null ? OutboxState.LogConfirmed : OutboxState.Pending);
+        var factId = fence is null ? Guid.NewGuid() : RestrictionIdentity(fence.Id, $"fact:{EventTypeId(kind)}");
+        return new($"{factId:D}:{EventTypeId(kind)}", kind, factId, Source(grantId), subject, occurred, expires, fence, kind == FactKind.Reuse ? RestrictionIdentity(fence!.Id, "reuse-detection") : null, fence is null ? OutboxState.LogConfirmed : OutboxState.Pending);
     }
 
     /// <summary>Gets the stable event type used in the durable deduplication pair.</summary>
@@ -63,4 +63,6 @@ internal sealed record OutboxEntry(string Id, FactKind Kind, Guid FactId, Guid G
         FactKind.Reuse when DetectionId.HasValue => new RefreshTokenReuseDetected(new(GrantId), new(DetectionId.Value), OccurredAt, new(FactId)),
         _ => throw new RevocationPending()
     };
+
+    static Guid RestrictionIdentity(Guid fenceId, string purpose) => new(SHA256.HashData(Encoding.UTF8.GetBytes($"Cratis.Identity.Restriction.v1:{fenceId:D}:{purpose}")).AsSpan(0, 16));
 }

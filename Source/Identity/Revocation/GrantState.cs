@@ -9,4 +9,5 @@ namespace Cratis.Identity.Revocation;
 /// <param name="CurrentRefreshTokenId">The only redeemable entry; never included in facts or logs.</param>
 /// <param name="Fence">The permanent denial, when present.</param>
 /// <param name="Outbox">The immutable delivery intents and their current delivery states.</param>
-internal sealed record GrantState(string GrantId, long Version, string? CurrentRefreshTokenId, GrantFence? Fence, OutboxEntry[] Outbox);
+/// <param name="RecoveryEpoch">The independently held epoch at family creation.</param>
+internal sealed record GrantState(string GrantId, long Version, string? CurrentRefreshTokenId, GrantFence? Fence, OutboxEntry[] Outbox, long RecoveryEpoch = 0);

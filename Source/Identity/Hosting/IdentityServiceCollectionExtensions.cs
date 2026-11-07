@@ -77,7 +77,7 @@ internal static class IdentityServiceCollectionExtensions
         AddRealmNamespaceResolver(services);
         services.AddStorage();
         services.AddSecretStoreKeys(startupOptions);
-        services.AddDomain();
+        services.AddDomain(configuration);
         services.AddAccountServices();
         services.AddConsentActivation(configuration.GetSection("Identity:ConsentActivation"));
 
@@ -219,7 +219,7 @@ internal static class IdentityServiceCollectionExtensions
         services.AddHostedService<KeyRingReloading>();
     }
 
-    static void AddDomain(this IServiceCollection services)
+    static void AddDomain(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<IResourceCatalog, ResourceCatalog>();
         services.AddSingleton<IGrantPolicy, GrantPolicy>();
@@ -234,10 +234,23 @@ internal static class IdentityServiceCollectionExtensions
         services.AddScoped<ConsentPages>();
         services.AddScoped<AuthorizationEndpoint>();
         services.AddScoped<TokenEndpoint>();
-        services.TryAddSingleton<IFenceStore, MongoFenceStore>();
-
-        // Interim only: not B1-compliant. Independent durability and restore gating remain #42.
-        services.TryAddSingleton<IFenceLog, CoLocatedMongoFenceLog>();
+        services.AddSingleton(configuration.GetSection("Identity:FenceLog").Get<FenceLogOptions>() ?? new FenceLogOptions());
+        services.AddSingleton<IndependentFenceLogConnection>();
+        services.AddSingleton(sp => new MongoIndependentFenceLog(() => sp.GetRequiredService<IndependentFenceLogConnection>().Database, sp.GetRequiredService<TimeProvider>(), () => sp.GetRequiredService<RecoverySession>().Verified));
+        services.AddSingleton<IIndependentFenceLog>(sp => sp.GetRequiredService<MongoIndependentFenceLog>());
+        services.AddSingleton<IRecoveryLog>(sp => sp.GetRequiredService<MongoIndependentFenceLog>());
+        services.AddSingleton<IReservationLog>(sp => sp.GetRequiredService<MongoIndependentFenceLog>());
+        services.AddSingleton<MongoFenceStore>();
+        services.TryAddSingleton<IFenceStore>(sp => sp.GetRequiredService<MongoFenceStore>());
+        services.AddSingleton<IReservationAuthority>(sp => sp.GetRequiredService<MongoFenceStore>());
+        services.AddSingleton<IRecoveryStore, MongoFenceRecovery>();
+        services.AddSingleton<RecoveryGate>();
+        services.AddSingleton<RecoverySession>();
+        services.AddScoped<ReconcileReservation>();
+        services.AddScoped<ReconcileRecovery>();
+        services.AddScoped<IRecoveryFactWriter, ChronicleRecoveryFactWriter>();
+        services.TryAddSingleton<IFenceLog, IndependentFenceLogAppender>();
+        services.AddHealthChecks().AddCheck<RecoveryReadiness>("identity-restriction-recovery");
         services.AddScoped<ConfirmFenceLog>();
         services.TryAddScoped<IRevocationFactWriter, ChronicleRevocationFactWriter>();
         services.AddScoped<DispatchRevocationOutbox>();
@@ -290,7 +303,10 @@ internal static class IdentityServiceCollectionExtensions
                     options.AddEventHandler(RefuseIssuanceWithoutUsableKey.Descriptor);
                 }
 
-                options.AddEventHandler(RejectExpiredTokenEntries.Descriptor)
+                options.AddEventHandler(RefuseIssuanceDuringRecovery.Descriptor)
+                    .AddEventHandler(RefuseIssuanceDuringRecovery.ValidationDescriptor)
+                    .AddEventHandler(RefuseIssuanceDuringRecovery.RequestDescriptor)
+                    .AddEventHandler(RejectExpiredTokenEntries.Descriptor)
                     .AddEventHandler(RejectFencedGrants.Descriptor)
                     .AddEventHandler(RejectFencedGrants.SignInDescriptor)
                     .AddEventHandler(RevokeGrantOnRefreshTokenReuse.Descriptor)

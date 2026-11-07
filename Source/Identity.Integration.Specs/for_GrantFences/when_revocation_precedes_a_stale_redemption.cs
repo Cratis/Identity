@@ -16,14 +16,15 @@ public class when_revocation_precedes_a_stale_redemption(IdentityHost host) : IA
 
     public async ValueTask InitializeAsync()
     {
-        var first = new MongoFenceStore(host.Database, TimeProvider.System);
-        var second = new MongoFenceStore(host.Database, TimeProvider.System);
+        var log = await FenceLogDatabase.Create(host.Database);
+        var first = new MongoFenceStore(host.Database, TimeProvider.System, log);
+        var second = new MongoFenceStore(host.Database, TimeProvider.System, log);
         var grant = Guid.NewGuid().ToString("D");
         var subject = Guid.NewGuid().ToString("D");
         var read = await first.RecordFamilyStart(grant, "presented-entry", subject, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(30), CancellationToken.None);
         _first = await second.Commit(grant, subject, RevocationReason.RefreshTokenReused, CancellationToken.None);
         _outcome = await first.RedeemAndInstall(grant, "presented-entry", "successor-entry", read.Version, CancellationToken.None);
-        _retry = await new MongoFenceStore(host.Database, TimeProvider.System).Commit(grant, subject, RevocationReason.RefreshTokenReused, CancellationToken.None);
+        _retry = await new MongoFenceStore(host.Database, TimeProvider.System, log).Commit(grant, subject, RevocationReason.RefreshTokenReused, CancellationToken.None);
         _state = await first.Read(grant, CancellationToken.None);
     }
 

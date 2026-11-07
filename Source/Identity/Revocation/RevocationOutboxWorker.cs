@@ -1,12 +1,16 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.Metrics;
+using Cratis.Identity.Revocation.Operational;
+
 namespace Cratis.Identity.Revocation;
 
 /// <summary>Bounded polling worker; request-time denial never depends on its progress.</summary>
 /// <param name="scopes">The per-pass scope factory.</param>
 /// <param name="logger">The diagnostic logger; no payloads or operational identifiers are logged.</param>
-internal sealed class RevocationOutboxWorker(IServiceScopeFactory scopes, ILogger<RevocationOutboxWorker> logger) : BackgroundService
+/// <param name="gate">The host recovery barrier.</param>
+internal sealed class RevocationOutboxWorker(IServiceScopeFactory scopes, ILogger<RevocationOutboxWorker> logger, RecoveryGate gate) : BackgroundService
 {
     static readonly Action<ILogger, Exception?> _held = LoggerMessage.Define(LogLevel.Warning, new EventId(1, "RevocationOutboxHeld"), "Revocation outbox delivery held; durable intents will be retried.");
 
@@ -15,13 +19,26 @@ internal sealed class RevocationOutboxWorker(IServiceScopeFactory scopes, ILogge
     /// <inheritdoc/>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        using var meter = new Meter("Cratis.Identity.Recovery");
+        meter.CreateObservableGauge("identity_recovery_unready_seconds", () => gate.UnreadySeconds, "s");
         var delaySeconds = 5;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
                 using var scope = scopes.CreateScope();
+                var session = scope.ServiceProvider.GetRequiredService<RecoverySession>();
+                if (!session.Verified)
+                {
+                    await scope.ServiceProvider.GetRequiredService<IndependentFenceLogConnection>().Verify(stoppingToken);
+                    session.Verified = true;
+                }
+
+                var recovery = scope.ServiceProvider.GetRequiredService<ReconcileRecovery>();
+                await recovery.Run(stoppingToken);
+                await recovery.PublishEpochs(stoppingToken);
                 await scope.ServiceProvider.GetRequiredService<DispatchRevocationOutbox>().Dispatch(stoppingToken);
+                await recovery.ConfirmPublication(stoppingToken);
                 delaySeconds = 5;
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
