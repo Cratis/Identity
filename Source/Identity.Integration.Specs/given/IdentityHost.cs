@@ -177,6 +177,7 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
                 services.AddHttpClient(TenantsCallbackHttpClient.Name).ConfigurePrimaryHttpMessageHandler(() => TenantsCallback);
                 services.AddOpenIddict().AddServer(server => server
                     .AddEventHandler(RefreshGates.BarrierDescriptor)
+                    .AddEventHandler(RefreshGates.BeforeRedemptionHoldDescriptor)
                     .AddEventHandler(RefreshGates.HoldDescriptor));
             });
     }

@@ -17,7 +17,9 @@ public class when_revocation_wins_before_successor_generation(IdentityHost host)
             var (verifier, challenge) = Browser.Pkce();
             var (_, tokens) = await browser.RedeemCode(await browser.LoginForCode(challenge), verifier);
             var presented = tokens.GetProperty("refresh_token").GetString();
-            var hold = host.RefreshGates.ArmHold(presented);
+
+            // Revoke must land before consume/install, not merely before the successor's token entry is inserted.
+            var hold = host.RefreshGates.ArmBeforeRedemptionHold(presented);
             var refresh = browser.Refresh(presented);
             try
             {
@@ -37,6 +39,7 @@ public class when_revocation_wins_before_successor_generation(IdentityHost host)
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     [Fact] void should_acknowledge_all_fifty_restrictions() => _revocations.Count(status => status == HttpStatusCode.OK).ShouldEqual(50);
-    [Fact] void should_reject_every_response_after_the_acknowledgement() => _refreshes.TrueForAll(response => response.Status == HttpStatusCode.BadRequest && response.Body.GetProperty("error").GetString() == "invalid_grant").ShouldBeTrue();
+    [Fact] void should_reject_every_refresh_ordered_after_the_fence() => _refreshes.TrueForAll(response => response.Status == HttpStatusCode.BadRequest && response.Body.GetProperty("error").GetString() == "invalid_grant").ShouldBeTrue();
     [Fact] void should_not_release_a_successor() => _refreshes.Exists(response => response.Body.TryGetProperty("refresh_token", out _)).ShouldBeFalse();
+    [Fact] void should_not_release_an_access_token() => _refreshes.Exists(response => response.Body.TryGetProperty("access_token", out _)).ShouldBeFalse();
 }

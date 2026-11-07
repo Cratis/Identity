@@ -26,7 +26,7 @@ internal sealed class RejectFencedGrants(IFenceStore fences, IOpenIddictTokenMan
         .SetOrder(RevokeGrantOnRefreshTokenReuse.Descriptor.Order - 1)
         .SetType(OpenIddictServerHandlerType.Custom).Build();
 
-    /// <summary>Gets the final response guard after stock redemption and before successor generation.</summary>
+    /// <summary>Gets the admission guard after atomic consume/install and stock redemption, before successor generation.</summary>
     public static OpenIddictServerHandlerDescriptor SignInDescriptor { get; } = OpenIddictServerHandlerDescriptor.CreateBuilder<ProcessSignInContext>()
         .UseScopedHandler<RejectFencedGrants>()
         .SetOrder(OpenIddictServerHandlers.RedeemTokenEntry.Descriptor.Order + 2)
@@ -99,8 +99,10 @@ internal sealed class RejectFencedGrants(IFenceStore fences, IOpenIddictTokenMan
             context.Reject(error: Errors.InvalidGrant, description: "The refresh token is no longer valid.");
         }
 
-        // The successful CAS is the serialization point. A later fence denies the successor's
-        // next use, not the response of the request already ordered before that fence.
+        // Admission exists only after the atomic consume/install CAS succeeds. A fence that wins that
+        // write rejects redemption with invalid_grant; this guard must not revive it. A later fence denies
+        // the successor's next use, not this already-admitted response (offline access tokens retain the
+        // accepted lifetime/skew window of up to 630 seconds).
         return ValueTask.CompletedTask;
     }
 }

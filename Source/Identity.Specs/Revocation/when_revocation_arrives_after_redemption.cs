@@ -11,6 +11,7 @@ public class when_revocation_arrives_after_redemption : for_RedeemRefreshTokenOn
 {
     RejectFencedGrants _guard;
     SharedFenceStore _authority;
+    RedeemOutcome _nextUse;
 
     async Task Establish()
     {
@@ -30,10 +31,19 @@ public class when_revocation_arrives_after_redemption : for_RedeemRefreshTokenOn
         var held = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var response = FinishResponse();
-        await held.Task.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System);
-        await _authority.Commit(AuthorizationId, FenceDoubles.Subject, RevocationReason.RefreshTokenReused, CancellationToken.None);
-        release.SetResult();
+        try
+        {
+            await held.Task.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System);
+            await _authority.Commit(AuthorizationId, FenceDoubles.Subject, RevocationReason.Revoked, CancellationToken.None);
+        }
+        finally
+        {
+            release.SetResult();
+        }
+
         await response;
+        var state = await _authority.Read(AuthorizationId, CancellationToken.None);
+        _nextUse = await _authority.RedeemAndInstall(AuthorizationId, _issuance.SuccessorId, "later-entry", state.Version, CancellationToken.None);
 
         async Task FinishResponse()
         {
@@ -44,4 +54,6 @@ public class when_revocation_arrives_after_redemption : for_RedeemRefreshTokenOn
     }
     [Fact] void should_have_consumed_exactly_once_before_restriction() => _tokens.Received(1).TryRedeemAsync(_token, Arg.Any<CancellationToken>());
     [Fact] void should_allow_the_response_admitted_before_the_fence() => _context.IsRejected.ShouldBeFalse();
+    [Fact] void should_retain_the_successful_admission() => _issuance.Admission.ShouldNotBeNull();
+    [Fact] void should_deny_the_successors_next_use() => _nextUse.ShouldEqual(RedeemOutcome.Fenced);
 }

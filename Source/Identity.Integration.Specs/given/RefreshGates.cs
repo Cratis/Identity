@@ -14,7 +14,8 @@ namespace Cratis.Identity.Integration.given;
 /// </summary>
 /// <remarks>
 /// The barrier sits just before <see cref="RedeemRefreshTokenOnce"/>: every request that reaches it has passed
-/// token validation. The hold sits just after OpenIddict's redemption and before any successor token is generated.
+/// token validation. The before-redemption hold precedes the atomic consume/install write; the existing hold
+/// follows that write and OpenIddict's redemption, before any successor token is generated.
 /// </remarks>
 public class RefreshGates
 {
@@ -22,6 +23,7 @@ public class RefreshGates
 
     readonly ConcurrentDictionary<string, Rendezvous> _barriers = new(StringComparer.Ordinal);
     readonly ConcurrentDictionary<string, Hold> _holds = new(StringComparer.Ordinal);
+    readonly ConcurrentDictionary<string, Hold> _beforeRedemptionHolds = new(StringComparer.Ordinal);
 
     /// <summary>
     /// Gets the descriptor of the barrier handler.
@@ -39,7 +41,22 @@ public class RefreshGates
         .Build();
 
     /// <summary>
-    /// Gets the descriptor of the hold handler.
+    /// Gets the descriptor of the hold before the atomic consume/install write.
+    /// </summary>
+    public OpenIddictServerHandlerDescriptor BeforeRedemptionHoldDescriptor => OpenIddictServerHandlerDescriptor.CreateBuilder<ProcessSignInContext>()
+        .UseInlineHandler(async context =>
+        {
+            if (RefreshToken(context) is { } token && _beforeRedemptionHolds.TryRemove(token, out var hold))
+            {
+                await hold.Wait();
+            }
+        })
+        .SetOrder(RedeemRefreshTokenOnce.Descriptor.Order - 1)
+        .SetType(OpenIddictServerHandlerType.Custom)
+        .Build();
+
+    /// <summary>
+    /// Gets the descriptor of the hold after the atomic consume/install write.
     /// </summary>
     public OpenIddictServerHandlerDescriptor HoldDescriptor => OpenIddictServerHandlerDescriptor.CreateBuilder<ProcessSignInContext>()
         .UseInlineHandler(async context =>
@@ -66,7 +83,19 @@ public class RefreshGates
     }
 
     /// <summary>
-    /// Holds the next refresh with the token after it has redeemed the token and before it issues its successor.
+    /// Holds the next validated refresh before the atomic consume/install write.
+    /// </summary>
+    /// <param name="refreshToken">The refresh token.</param>
+    /// <returns>The <see cref="Hold"/>.</returns>
+    public Hold ArmBeforeRedemptionHold(string refreshToken)
+    {
+        var hold = new Hold();
+        _beforeRedemptionHolds[refreshToken] = hold;
+        return hold;
+    }
+
+    /// <summary>
+    /// Holds the next refresh after the atomic consume/install write and redemption, before successor generation.
     /// </summary>
     /// <param name="refreshToken">The refresh token.</param>
     /// <returns>The <see cref="Hold"/>.</returns>
