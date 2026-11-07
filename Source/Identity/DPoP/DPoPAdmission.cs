@@ -33,20 +33,13 @@ internal sealed class DPoPAdmission(DPoPProofValidator validator, DPoPNonce nonc
         if (headers.Length == 0 && existingJkt is null && !required) return true;
         if (refresh && existingJkt is null) return Refuse(context, headers.Length > 0 ? DPoPFailure.UnboundFamily : DPoPFailure.MissingProof);
         var origin = new Uri(policy.PublicTokenEndpoint).GetLeftPart(UriPartial.Authority);
-        string? challengeJkt = null;
-        DPoPFailure BeforeSignature(DPoPProof candidate)
+        var result = validator.Validate(headers, policy.PublicTokenEndpoint);
+        if (result.Proof is not { } proof) return Refuse(context, result.Failure);
+        if (existingJkt is not null && !string.Equals(existingJkt, proof.Jkt, StringComparison.Ordinal)) return Refuse(context, DPoPFailure.JktMismatch);
+        if (!nonces.Validate(proof.Nonce, origin, proof.Jkt))
         {
-            if (existingJkt is not null && !string.Equals(existingJkt, candidate.Jkt, StringComparison.Ordinal)) return DPoPFailure.JktMismatch;
-            if (nonces.Validate(candidate.Nonce, origin, candidate.Jkt)) return DPoPFailure.None;
-            challengeJkt = candidate.Jkt;
-            return DPoPFailure.NonceRequired;
-        }
-
-        var result = validator.Validate(headers, policy.PublicTokenEndpoint, BeforeSignature);
-        if (result.Proof is not { } proof)
-        {
-            if (challengeJkt is not null) NonceHeader(context, nonces.Issue(origin, challengeJkt));
-            return Refuse(context, result.Failure);
+            NonceHeader(context, nonces.Issue(origin, proof.Jkt));
+            return Refuse(context, DPoPFailure.NonceRequired);
         }
 
         try

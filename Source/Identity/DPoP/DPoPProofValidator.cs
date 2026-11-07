@@ -17,16 +17,15 @@ internal sealed class DPoPProofValidator(TimeProvider time)
     /// <summary>Validates exactly one header against the exact configured endpoint.</summary>
     /// <param name="headers">The DPoP header values.</param>
     /// <param name="endpoint">The configured public endpoint, not a request-derived URL.</param>
-    /// <param name="beforeSignature">Optional cheap nonce and persisted-binding checks. Must not reserve state.</param>
     /// <returns>A verified proof or a non-sensitive reason.</returns>
-    internal (DPoPProof? Proof, DPoPFailure Failure) Validate(IReadOnlyList<string> headers, string endpoint, Func<DPoPProof, DPoPFailure>? beforeSignature = null)
+    internal (DPoPProof? Proof, DPoPFailure Failure) Validate(IReadOnlyList<string> headers, string endpoint)
     {
         if (headers.Count == 0) return (null, DPoPFailure.MissingProof);
         if (headers.Count != 1) return (null, DPoPFailure.Malformed);
         if (headers[0].Length > 4096) return (null, DPoPFailure.Malformed);
         try
         {
-            return ValidateCompact(headers[0], endpoint, beforeSignature);
+            return ValidateCompact(headers[0], endpoint);
         }
         catch (Exception exception) when (InvalidInput(exception))
         {
@@ -89,7 +88,7 @@ internal sealed class DPoPProofValidator(TimeProvider time)
         return signature.Length == 64 && key.VerifyData(Encoding.ASCII.GetBytes(parts[0] + "." + parts[1]), signature, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
     }
 
-    static (DPoPProof?, DPoPFailure) Verify(string[] parts, JsonElement jwk, JsonElement payload, Func<DPoPProof, DPoPFailure>? beforeSignature)
+    static (DPoPProof?, DPoPFailure) Verify(string[] parts, JsonElement jwk, JsonElement payload)
     {
         try
         {
@@ -99,8 +98,6 @@ internal sealed class DPoPProofValidator(TimeProvider time)
             if (!ValidCoordinate(y, Text(jwk, "y"))) return (null, DPoPFailure.InvalidJwk);
             using var key = ECDsa.Create(new ECParameters { Curve = ECCurve.NamedCurves.nistP256, Q = new ECPoint { X = x, Y = y } });
             var proof = new DPoPProof(Thumbprint(jwk), Text(payload, "jti") ?? throw new JsonException(), Text(payload, "nonce"));
-            var failure = beforeSignature?.Invoke(proof) ?? DPoPFailure.None;
-            if (failure != DPoPFailure.None) return (null, failure);
             return ValidSignature(parts, key) ? (proof, DPoPFailure.None) : (null, DPoPFailure.InvalidSignature);
         }
         catch (Exception exception) when (InvalidInput(exception))
@@ -124,7 +121,7 @@ internal sealed class DPoPProofValidator(TimeProvider time)
         return JsonDocument.Parse(bytes, new JsonDocumentOptions { MaxDepth = 8 });
     }
 
-    (DPoPProof?, DPoPFailure) ValidateCompact(string compact, string endpoint, Func<DPoPProof, DPoPFailure>? beforeSignature)
+    (DPoPProof?, DPoPFailure) ValidateCompact(string compact, string endpoint)
     {
         var parts = compact.Split('.');
         if (!CompactShape(parts)) return (null, DPoPFailure.Malformed);
@@ -135,7 +132,7 @@ internal sealed class DPoPProofValidator(TimeProvider time)
         if (failure != DPoPFailure.None) return (null, failure);
         failure = PayloadFailure(payload.RootElement, endpoint);
         if (failure != DPoPFailure.None) return (null, failure);
-        return Verify(parts, header.RootElement.GetProperty("jwk"), payload.RootElement, beforeSignature);
+        return Verify(parts, header.RootElement.GetProperty("jwk"), payload.RootElement);
     }
 
     DPoPFailure PayloadFailure(JsonElement payload, string endpoint)

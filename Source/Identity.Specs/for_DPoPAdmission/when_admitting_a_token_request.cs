@@ -35,6 +35,35 @@ public class when_admitting_a_token_request : for_DPoPProofValidator.given.a_sig
         await request.Replay.DidNotReceiveWithAnyArgs().TryReserve(default!, default!, default!, default!, default, Arg.Any<CancellationToken>());
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("wrong-nonce")]
+    async Task should_refuse_invalid_signatures_without_a_nonce_challenge(string? nonce)
+    {
+        var request = NewRequest(nonce: nonce is not null, nonceValue: nonce);
+        var parts = request.Http.Request.Headers["DPoP"].ToString().Split('.');
+        parts[2] = new string('A', 86);
+        request.Http.Request.Headers["DPoP"] = string.Join('.', parts);
+        (await request.Admission.Admit(request.Context)).ShouldBeFalse();
+        request.Context.Error.ShouldEqual("invalid_dpop_proof");
+        request.Context.ErrorDescription.ShouldEqual("invalid_signature");
+        request.Http.Response.Headers.ContainsKey("DPoP-Nonce").ShouldBeFalse();
+        request.Binding.Jkt.ShouldBeNull();
+        await request.Replay.DidNotReceiveWithAnyArgs().TryReserve(default!, default!, default!, default!, default, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    async Task should_challenge_a_valid_proof_with_a_wrong_nonce_without_reserving()
+    {
+        var request = NewRequest(nonceValue: "wrong-nonce");
+        (await request.Admission.Admit(request.Context)).ShouldBeFalse();
+        request.Context.Error.ShouldEqual("use_dpop_nonce");
+        var challenge = request.Http.Response.Headers["DPoP-Nonce"].ToString();
+        request.Nonces.Validate(challenge, "https://identity.example", request.Jkt).ShouldBeTrue();
+        request.Binding.Jkt.ShouldBeNull();
+        await request.Replay.DidNotReceiveWithAnyArgs().TryReserve(default!, default!, default!, default!, default, Arg.Any<CancellationToken>());
+    }
+
     [Fact]
     async Task should_refuse_wrong_key_without_reserving()
     {
@@ -111,7 +140,7 @@ public class when_admitting_a_token_request : for_DPoPProofValidator.given.a_sig
         request.Binding.Jkt.ShouldBeNull();
     }
 
-    Request NewRequest(bool nonce = true)
+    Request NewRequest(bool nonce = true, string? nonceValue = null)
     {
         var replay = Substitute.For<IDPoPReplayStore>();
         replay.TryReserve(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>()).Returns(true);
@@ -125,12 +154,12 @@ public class when_admitting_a_token_request : for_DPoPProofValidator.given.a_sig
         transaction.SetProperty(typeof(HttpRequest).FullName, new WeakReference<HttpRequest>(http.Request));
         var jkt = _validator.Validate([Sign()], Endpoint).Proof.Jkt;
         var payload = new Dictionary<string, object>(_payload);
-        if (nonce) payload["nonce"] = nonces.Issue("https://identity.example", jkt);
+        if (nonce) payload["nonce"] = nonceValue ?? nonces.Issue("https://identity.example", jkt);
         http.Request.Headers["DPoP"] = Sign(payload: JsonSerializer.Serialize(payload));
-        return new(admission, replay, binding, new ProcessSignInContext(transaction), http, options, jkt);
+        return new(admission, replay, binding, new ProcessSignInContext(transaction), http, options, jkt, nonces);
     }
 
-    sealed record Request(DPoPAdmission Admission, IDPoPReplayStore Replay, DPoPBinding Binding, ProcessSignInContext Context, DefaultHttpContext Http, IdentityOptions Options, string Jkt);
+    sealed record Request(DPoPAdmission Admission, IDPoPReplayStore Replay, DPoPBinding Binding, ProcessSignInContext Context, DefaultHttpContext Http, IdentityOptions Options, string Jkt, DPoPNonce Nonces);
 
     sealed class Clock : TimeProvider
     {
