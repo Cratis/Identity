@@ -14,22 +14,32 @@ namespace Cratis.Identity.for_DeviceGrantRateLimiter.given;
 public class a_polling_request : a_shared_limiter
 {
     private protected DevicePollingGuard _guard;
-    protected ProcessAuthenticationContext _context;
+    protected ValidateTokenContext _context;
+    protected IOpenIddictTokenManager _tokens;
+    protected object _token;
 
     void Establish()
     {
-        _guard = new(_first);
+        _tokens = Substitute.For<IOpenIddictTokenManager>();
+        _token = new object();
+        _tokens.FindByIdAsync("validated-device-entry", Arg.Any<CancellationToken>()).Returns(_token);
+        _tokens.HasStatusAsync(_token, Statuses.Inactive, Arg.Any<CancellationToken>()).Returns(true);
+        _guard = new(_first, _tokens);
         _context = new(new OpenIddictServerTransaction
         {
             EndpointType = OpenIddictServerEndpointType.Token,
             Logger = NullLogger.Instance,
-            Options = new OpenIddictServerOptions(),
+            Options = new OpenIddictServerOptions { TimeProvider = _clock },
             Request = new OpenIddictRequest { GrantType = GrantTypes.DeviceCode, ClientId = "device-client" }
         })
         {
-            DeviceCode = "opaque-device-test-value",
-            DeviceCodePrincipal = new ClaimsPrincipal(new ClaimsIdentity("test"))
+            Token = "opaque-device-test-value",
+            TokenValidationParameters = new(),
+            TokenId = "validated-device-entry",
+            Principal = new ClaimsPrincipal(new ClaimsIdentity("test"))
                 .SetTokenId("validated-device-entry").SetPresenters("device-client")
+                .SetTokenType(TokenTypeIdentifiers.Private.DeviceCode),
+            ValidTokenTypes = { TokenTypeIdentifiers.Private.DeviceCode }
         };
     }
 }

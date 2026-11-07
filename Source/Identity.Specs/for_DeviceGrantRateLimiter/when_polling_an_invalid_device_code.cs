@@ -5,7 +5,7 @@ namespace Cratis.Identity.for_DeviceGrantRateLimiter;
 
 public class when_polling_an_invalid_device_code : given.a_polling_request
 {
-    void Establish() => _context.DeviceCodePrincipal = null;
+    void Establish() => _context.Principal = null;
 
     async Task Because() => await _guard.HandleAsync(_context);
 

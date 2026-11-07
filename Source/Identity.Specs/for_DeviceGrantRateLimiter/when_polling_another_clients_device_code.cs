@@ -7,7 +7,7 @@ namespace Cratis.Identity.for_DeviceGrantRateLimiter;
 
 public class when_polling_another_clients_device_code : given.a_polling_request
 {
-    void Establish() => _context.DeviceCodePrincipal.SetPresenters("another-client");
+    void Establish() => _context.Principal.SetPresenters("another-client");
 
     async Task Because() => await _guard.HandleAsync(_context);
 
