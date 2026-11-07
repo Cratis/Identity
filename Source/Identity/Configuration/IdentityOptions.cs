@@ -48,6 +48,9 @@ public class IdentityOptions
     [ConfigurationKeyName("Device")]
     public DeviceGrantOptions DeviceGrant { get; set; } = new();
 
+    /// <summary>Gets or sets token-endpoint DPoP sender binding.</summary>
+    public DPoPOptions DPoP { get; set; } = new();
+
     /// <summary>
     /// Gets or sets the lifetime of the Identity site session cookie.
     /// </summary>

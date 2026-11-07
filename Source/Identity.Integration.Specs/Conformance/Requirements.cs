@@ -36,9 +36,21 @@ public static class Requirements
     public const string DeviceDenial = "DEVICE-DENIAL";
     public const string DeviceSingleUse = "DEVICE-SINGLE-USE";
     public const string DeviceBinding = "DEVICE-BINDING";
+    public const string DPoPIssuance = "DPOP-BOUND-ISSUANCE";
+    public const string DPoPRefresh = "DPOP-REFRESH-BINDING";
+    public const string DPoPNonce = "DPOP-AS-NONCE";
+    public const string DPoPReplay = "DPOP-PROOF-REPLAY";
+    public const string DPoPProof = "DPOP-PROOF-VALIDATION";
+    public const string DPoPMetadata = "DPOP-METADATA";
 
     public static IReadOnlyList<Requirement> All { get; } =
     [
+        new(DPoPIssuance, "RFC 9449 §5 and §6; identity-dpop-v1 §2", "MUST", "When enabled, bind code and approved device issuance to the proof key with object-valued cnf and DPoP token type."),
+        new(DPoPRefresh, "RFC 9449 §5; identity-dpop-v1 §2.3", "MUST", "Preserve immutable family binding; refuse missing or different keys without consuming the entry."),
+        new(DPoPNonce, "RFC 9449 §8; identity-dpop-v1 §5", "MUST", "Challenge with a stateless AS nonce without consuming the grant."),
+        new(DPoPReplay, "RFC 9449 §4.3; identity-dpop-v1 §4", "MUST", "Refuse proof replay across token requests without consuming the current refresh entry."),
+        new(DPoPProof, "RFC 9449 §4.3; identity-dpop-v1 §3", "MUST", "Validate ES256 proofs against the exact configured public token endpoint."),
+        new(DPoPMetadata, "RFC 9449 §5.1", "MUST", "Advertise ES256 only when the profile is enabled."),
         new(DeviceLifecycle, "RFC 8628 §3.2 and §3.5", "MUST", "Issue bounded device codes and exchange an explicitly approved request."),
         new(DevicePolling, "RFC 8628 §3.5", "MUST", "Keep unapproved requests pending and enforce polling slowdown across connections."),
         new(DeviceDenial, "RFC 8628 §3.5", "MUST", "Refuse device requests denied by the user."),

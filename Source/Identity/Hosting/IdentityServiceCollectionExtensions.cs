@@ -12,6 +12,8 @@ using Cratis.Identity.ConsentFlow;
 using Cratis.Identity.ConsentFlow.Operational;
 using Cratis.Identity.Device;
 using Cratis.Identity.Device.Operational;
+using Cratis.Identity.DPoP;
+using Cratis.Identity.DPoP.Operational;
 using Cratis.Identity.Keys;
 using Cratis.Identity.Operational;
 using Cratis.Identity.Protocol;
@@ -85,6 +87,14 @@ internal static class IdentityServiceCollectionExtensions
 
         services.AddSessionAndUpstreamLogin(environment);
         services.AddAuthorizationServer(startupOptions, environment);
+        if (startupOptions.DPoP.Enabled)
+        {
+            services.AddScoped<DPoPBinding>();
+            services.AddScoped<DPoPAdmission>();
+            services.AddSingleton<DPoPProofValidator>();
+            services.AddSingleton<DPoPNonce>();
+            services.AddSingleton<IDPoPReplayStore, MongoDPoPReplayStore>();
+        }
 
         return services;
     }
@@ -356,7 +366,8 @@ internal static class IdentityServiceCollectionExtensions
                     .AddEventHandler(RejectFencedGrants.SignInDescriptor)
                     .AddEventHandler(RevokeGrantOnRefreshTokenReuse.Descriptor)
                     .AddEventHandler(RedeemRefreshTokenOnce.Descriptor)
-                    .AddEventHandler(RevokeGrantOnRefreshTokenRevocation.Descriptor);
+                    .AddEventHandler(RevokeGrantOnRefreshTokenRevocation.Descriptor)
+                    .AddDPoPHandlers(startupOptions.DPoP.Enabled);
             });
 
         services.AddOptions<OpenIddictServerOptions>().Configure<IOptions<IdentityOptions>, IResourceCatalog>(ConfigureServer);

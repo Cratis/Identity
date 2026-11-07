@@ -84,6 +84,18 @@ Default shared MongoDB limits are five attempts per code and per signed-in accou
 
 Rate-counter keys are purpose-separated SHA-256 digests, not HMACs; counters use atomic increment/upsert with logical expiry independent of TTL cleanup. Polling alone retains compare-and-swap because it must update the deadline and cumulative interval together, not just increment a counter. OpenIddict token rows remain authoritative for device/user codes, approval and expiry; the operational collection contains only rate and polling state. Its zero-delay TTL index is housekeeping, never the admission decision. Durable consent events and a connected-apps UI are separate work.
 
+## Sender-bound token issuance (opt-in)
+
+RFC 9449 token-endpoint DPoP is disabled by default. Set `Identity:DPoP:Enabled=true` and `Identity:DPoP:PublicTokenEndpoint` to the **exact public token endpoint URL** before registering Identity. The endpoint is never inferred from `Host`, forwarded headers or an internal URL. HTTPS is required; Development permits loopback HTTP. Only ES256 proofs with public P-256 keys are supported. Enabled discovery advertises `dpop_signing_alg_values_supported: ["ES256"]`.
+
+`Identity:DPoP:RequireForAllClients=true` requires proofs for new supported grants. Alternatively, `Identity:DPoP:RequiredClients` lists registered clients (currently `cratis-cli`). Optional clients without a proof retain Bearer behavior; any supplied proof must validate. Organization policy, token exchange and `client_credentials` are not included.
+
+Send a compact proof in one `DPoP` header, with `typ=dpop+jwt`, `alg=ES256`, a public `jwk`, `htm=POST`, the exact configured `htu`, an integer `iat` and a fresh bounded `jti`. The fixed proof lifetime is 300 seconds, future skew 30 seconds and shared replay reservation 390 seconds from acceptance. Do not reuse a proof on retries. A missing or stale server nonce returns `use_dpop_nonce` and `DPoP-Nonce`, with no grant consumption. Retry with that nonce and a **new proof/jti**. Nonces are stateless, origin- and key-bound, using the issuer's existing shared ASP.NET Core Data Protection ring with purpose `Cratis.Identity.Dpop.Nonce.v1`. Retain old ring keys across rotation; all replicas must share the same ring/application discriminator. No new secret-store entry is needed. The current 300-second issuance window overlaps its predecessor by 30 seconds; timestamps at age 330 seconds are refused.
+
+Authorization-code redemption and approved device-code polling issue access tokens with object-valued `cnf: { "jkt": "..." }` and `token_type=DPoP`. Refresh entries carry immutable operational family binding; every rotation requires the same key. Missing/wrong proofs, nonce challenges and replay-store outages refuse issuance **before** consuming a refresh entry. An existing unbound family presented with a proof is refused; requiring DPoP later requires reauthentication, not key attachment during refresh. Disabling DPoP does not downgrade existing bound families to Bearer. ID tokens, authorization/device codes and refresh-token payloads do not carry `cnf`.
+
+**This slice is issuer-only. AuthProxy remains Bearer-only and is not a DPoP resource server.** Do not enable DPoP for clients targeting AuthProxy or assume sender binding is enforced at an API. Resource-server validation of `DPoP` authorization, proof `ath`, nonce and replay handling is deferred. See [the profile](Documentation/specs/identity-dpop-v1.md) and [conformance coverage](Documentation/conformance.md).
+
 ## Access token contract
 
 Access tokens are signed JWTs (`typ: at+jwt`, RS256), not encrypted. Default lifetime: 15 minutes.
@@ -99,6 +111,7 @@ Access tokens are signed JWTs (`typ: at+jwt`, RS256), not encrypted. Default lif
 | `github_id`, `github_login` | The linked GitHub user id and the login at issue time. |
 | `name`, `preferred_username` | Display name and GitHub login. |
 | `exp`, `iat`, `jti` | Standard. |
+| `cnf` | Only for opt-in DPoP issuance: JSON object with the proof key's RFC 7638 `jkt`. Never a JSON string. |
 
 A resource server must validate `iss`, the signature against the JWKS, `aud`, `exp` and `typ`. It must still check that `sub` is a member of `tid`: Identity records the choice, the product enforces membership.
 

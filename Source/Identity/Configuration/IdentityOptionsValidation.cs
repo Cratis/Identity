@@ -46,9 +46,47 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
             .Where(_ => string.IsNullOrWhiteSpace(_.ClientId) || string.IsNullOrWhiteSpace(_.ClientSecret))
             .Select(_ => $"Introspection client \"{_.ClientId}\" needs both a client id and a client secret."));
 
+        ValidateDPoP(options.DPoP, environment.IsDevelopment(), failures);
         ValidateDeviceGrant(options.DeviceGrant, failures);
         ValidateAccounts(options.Accounts, failures);
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
+    }
+
+    static void ValidateDPoP(DPoPOptions dpop, bool development, List<string> failures)
+    {
+        if (!dpop.Enabled) return;
+        if (!ValidDPoPEndpoint(dpop.PublicTokenEndpoint, development))
+        {
+            failures.Add("Identity:DPoP requires an absolute public HTTPS token endpoint without user information, query or fragment (Development permits loopback HTTP).");
+        }
+
+        if (dpop.RequiredClients.Any(client => client != Clients.ClientDescriptors.CratisCli))
+        {
+            failures.Add("Identity:DPoP required clients must be registered token clients.");
+        }
+
+        if (!FixedDPoPWindows(dpop))
+        {
+            failures.Add("Identity:DPoP requires the fixed 300-second proof lifetime, 30-second future skew and 390-second replay TTL.");
+        }
+    }
+
+    static bool ValidDPoPEndpoint(string configured, bool development)
+    {
+        if (!Uri.TryCreate(configured, UriKind.Absolute, out var endpoint)) return false;
+        if (!string.IsNullOrEmpty(endpoint.Query)) return false;
+        if (!string.IsNullOrEmpty(endpoint.Fragment)) return false;
+        if (!string.IsNullOrEmpty(endpoint.UserInfo)) return false;
+        if (endpoint.Scheme == "https") return true;
+        if (!development) return false;
+        return endpoint.Scheme == "http" && endpoint.IsLoopback;
+    }
+
+    static bool FixedDPoPWindows(DPoPOptions dpop)
+    {
+        if (dpop.ProofLifetime != TimeSpan.FromSeconds(300)) return false;
+        if (dpop.FutureSkew != TimeSpan.FromSeconds(30)) return false;
+        return dpop.ReplayTtl == TimeSpan.FromSeconds(390);
     }
 
     static void ValidateDeviceGrant(DeviceGrantOptions device, List<string> failures)

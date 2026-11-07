@@ -23,6 +23,7 @@ public class when_exporting_types : Specification
             typeof(IdentityWebApplicationExtensions),
             typeof(AccountsOptions),
             typeof(DeviceGrantOptions),
+            typeof(DPoPOptions),
             typeof(GitHubOptions),
             typeof(IdentityOptions),
             typeof(IntrospectionClientOptions),

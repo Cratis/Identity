@@ -56,6 +56,21 @@ Device authorization is opt-in through `Identity:Device:Enabled`; the integratio
 
 Rate keys use purpose-separated SHA-256. Guess and issuance counters use atomic MongoDB increment/upsert; polling retains compare-and-swap to preserve the cumulative five-second slowdown and deadline together. TTL cleanup is not expiry enforcement. Verification also checks antiforgery, session-bound confirmation, live account and tenant membership, independent recovery epochs and grant fences. Durable consent events are outside this profile.
 
+## Opt-in issuer-side DPoP
+
+DPoP is disabled by default. AuthProxy remains Bearer-only; resource-server proofs (`ath`), edge forwarding, organization policy, token exchange and `client_credentials` are deferred. No certification claim is made. The new integration scenarios below were added for CI and were **not run locally**.
+
+| Requirement | Reference | Behavior | Proof |
+| --- | --- | --- | --- |
+| `DPOP-BOUND-ISSUANCE` | RFC 9449 §5 and §6 | Code and approved device issuance emit object-valued `cnf.jkt` and `token_type=DPoP`. | `for_DPoP/when_using_sender_bound_grants` |
+| `DPOP-REFRESH-BINDING` | RFC 9449 §5 | Preserve operational family binding; refuse missing/wrong keys without consumption; refuse attaching a key to an unbound family. | `for_DPoP/when_using_sender_bound_grants` |
+| `DPOP-AS-NONCE` | RFC 9449 §8 | Stateless nonce challenges do not consume the code. | `for_DPoP/when_using_sender_bound_grants` |
+| `DPOP-PROOF-REPLAY` | RFC 9449 §4.3 | Shared reservations reject replay across replicas, concurrent requests and logical expiry before TTL cleanup. | `for_DPoP/when_using_sender_bound_grants`, `for_DPoP/when_reserving_across_replicas` |
+| `DPOP-PROOF-VALIDATION` | RFC 9449 §4.3 | Validate against the exact configured public endpoint. | `for_DPoP/when_using_sender_bound_grants`; focused unit specs also check bounded ES256 parsing and signatures. |
+| `DPOP-METADATA` | RFC 9449 §5.1 | Advertise ES256 only when enabled. | `for_DPoP/when_using_sender_bound_grants` |
+
+The AS nonce uses the issuer's existing shared Data Protection ring and purpose `Cratis.Identity.Dpop.Nonce.v1`, replacing the draft profile's standalone HMAC secret/encoding. The secret-store loader and contracts are unchanged. The older fixed nonce-encoding fixture describes the draft HMAC format, not Data Protection ciphertext. Focused unit specs cover nonce origin/key/time binding, shared-store failure, immutable family properties and access-only confirmation. Retained ring keys remain usable across rotation; all replicas must share the ring and application discriminator.
+
 ## Running and upgrading
 
 Local gate (never run the integration executable locally):
@@ -87,4 +102,4 @@ Before accepting an upgrade:
 4. Update the two central OpenIddict pins together in the actual dependency PR (normally the grouped Dependabot PR). Run the local gate; require green Build and specs CI, including ordinary integration and conformance. The candidate probe alone does not replace that complete gate.
 5. Update this catalogue if supported behavior intentionally changes. Name its normative reference, proof and any explicitly owned non-MUST gap in review.
 
-Scope deliberately excludes OIDC provider behavior, logout protocols, DPoP, JAR/PAR, upstream login changes and production key management. Changes to those profiles need their own reviewed requirements.
+Scope deliberately excludes OIDC provider behavior, logout protocols, resource-server DPoP, JAR/PAR, upstream login changes and production key management. Changes to those profiles need their own reviewed requirements.

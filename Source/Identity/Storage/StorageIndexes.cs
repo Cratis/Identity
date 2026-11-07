@@ -64,6 +64,12 @@ internal class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddic
                     new CreateIndexOptions { ExpireAfter = TimeSpan.Zero })
             ],
             cancellationToken);
+        if (identity.Value.DPoP.Enabled)
+        {
+            await database.GetCollection<BsonDocument>(DPoP.Operational.MongoDPoPReplayStore.CollectionName).Indexes.CreateOneAsync(
+                new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("ExpiresAt"), new CreateIndexOptions { Name = "dpop_proof_expiry", ExpireAfter = TimeSpan.Zero }), cancellationToken: cancellationToken);
+        }
+
         if (identity.Value.DeviceGrant.Enabled)
         {
             await database.GetCollection<Device.DeviceGrantState>("device_grant_state").Indexes.CreateOneAsync(
