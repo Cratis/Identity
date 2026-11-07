@@ -7,7 +7,7 @@ using Cratis.Identity.Revocation.Operational;
 namespace Cratis.Identity.Integration.for_GrantFences;
 
 [Collection(IdentityCollection.Name)]
-public class when_reappending_the_co_located_log(IdentityHost host) : IAsyncLifetime
+public class when_reappending_the_independent_log(IdentityHost host) : IAsyncLifetime
 {
     GrantFence _fence;
     long _first;
@@ -16,11 +16,14 @@ public class when_reappending_the_co_located_log(IdentityHost host) : IAsyncLife
 
     public async ValueTask InitializeAsync()
     {
-        var store = new MongoFenceStore(host.Database, TimeProvider.System);
+        var log = await FenceLogDatabase.Create(host);
+        var store = new MongoFenceStore(host.Database, TimeProvider.System, log);
         _fence = await store.Commit(Guid.NewGuid().ToString("D"), Guid.NewGuid().ToString("D"), RevocationReason.Revoked, CancellationToken.None);
-        _first = await new CoLocatedMongoFenceLog(host.Database).Append(_fence, CancellationToken.None);
-        _retry = await new CoLocatedMongoFenceLog(host.Database).Append(_fence, CancellationToken.None);
-        _conflict = await Catch.Exception(() => new CoLocatedMongoFenceLog(host.Database).Append(_fence with { Reason = RevocationReason.RefreshTokenReused }, CancellationToken.None));
+        var state = await store.Read(_fence.GrantId, CancellationToken.None);
+        var record = FenceRecordFactory.Record(state);
+        _first = await log.Append(record, CancellationToken.None);
+        _retry = await log.Append(record, CancellationToken.None);
+        _conflict = await Catch.Exception(() => log.Append(record with { Fence = _fence with { Reason = RevocationReason.RefreshTokenReused } }, CancellationToken.None));
     }
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;

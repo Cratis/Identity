@@ -33,6 +33,11 @@ internal sealed class DispatchRevocationOutbox(IFenceStore store, ConfirmFenceLo
         }
     }
 
+    /// <summary>Tests remaining work without treating a bounded batch as full replay.</summary>
+    /// <param name="cancellationToken">Cancellation.</param>
+    /// <returns>Whether any delivery remains uncertain.</returns>
+    internal async Task<bool> Pending(CancellationToken cancellationToken) => (await store.Undelivered(1, cancellationToken)).Count != 0;
+
     static Exception PreferConflict(Exception? previous, Exception current) => current is OutboxContentConflict or FenceLogConflict ? current : previous ?? current;
 
     async Task Dispatch(GrantState state, CancellationToken cancellationToken)

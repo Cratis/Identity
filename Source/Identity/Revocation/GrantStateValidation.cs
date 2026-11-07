@@ -22,7 +22,7 @@ internal static class GrantStateValidation
     }
 
     static bool HeaderIsKnown(GrantState state) =>
-        state.Version > 0 && !string.IsNullOrEmpty(state.GrantId) && state.Outbox is { Length: > 0 } &&
+        state.Version > 0 && state.RecoveryEpoch >= 0 && !string.IsNullOrEmpty(state.GrantId) && state.Outbox is { Length: > 0 } &&
         state.Outbox.All(entry => entry is not null) &&
         state.Outbox.Select(entry => entry.Id).Distinct().Count() == state.Outbox.Length;
 

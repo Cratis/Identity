@@ -16,6 +16,31 @@ internal sealed class SharedFenceStore : IFenceStore
     internal Func<Task>? BeforeRevoke { get; set; }
     internal bool FailDeliveryMark { get; set; }
     internal bool FailConfirmation { get; set; }
+    internal FaultPoints Faults { get; } = new();
+
+    internal sealed record Snapshotted(Dictionary<string, GrantState> States, long Sequence);
+
+    internal Snapshotted Snapshot()
+    {
+        lock (_gate)
+        {
+            return new(new(_states), _sequence);
+        }
+    }
+
+    internal void Restore(Snapshotted snapshot)
+    {
+        lock (_gate)
+        {
+            _states.Clear();
+            foreach (var (grantId, state) in snapshot.States)
+            {
+                _states[grantId] = state;
+            }
+
+            _sequence = snapshot.Sequence;
+        }
+    }
 
     public Task<GrantState?> Read(string grantId, CancellationToken cancellationToken)
     {
@@ -55,6 +80,7 @@ internal sealed class SharedFenceStore : IFenceStore
                 }
 
                 _states[grantId] = new(grantId, (state?.Version ?? 0) + 1, null, fence, [.. entries]);
+                Faults.Reach(FaultPoint.AfterCommit);
                 return fence;
             }
         }
@@ -135,6 +161,7 @@ internal sealed class SharedFenceStore : IFenceStore
             }
 
             _states[fence.GrantId] = state with { Version = state.Version + 1, Outbox = state.Outbox.Select(entry => entry.State == OutboxState.Pending ? entry with { State = OutboxState.LogConfirmed } : entry).ToArray() };
+            Faults.Reach(FaultPoint.AfterConfirm);
             return Task.CompletedTask;
         }
     }
@@ -150,6 +177,7 @@ internal sealed class SharedFenceStore : IFenceStore
 
             var state = _states[grantId];
             _states[grantId] = state with { Version = state.Version + 1, Outbox = state.Outbox.Select(entry => entry.Id == outboxId ? entry with { State = OutboxState.Delivered } : entry).ToArray() };
+            Faults.Reach(FaultPoint.AfterDelivery);
             return Task.CompletedTask;
         }
     }

@@ -14,7 +14,8 @@ namespace Cratis.Identity.Authorization;
 /// <param name="tokens">The entry manager.</param>
 /// <param name="authorizations">The authorization manager.</param>
 /// <param name="timeProvider">The clock.</param>
-internal sealed class ReadRefreshGrant(IFenceStore fences, IOpenIddictTokenManager tokens, IOpenIddictAuthorizationManager authorizations, TimeProvider timeProvider)
+/// <param name="gate">The host continuity guard.</param>
+internal sealed class ReadRefreshGrant(IFenceStore fences, IOpenIddictTokenManager tokens, IOpenIddictAuthorizationManager authorizations, TimeProvider timeProvider, RecoveryGate? gate = null)
 {
     /// <summary>Reads or atomically repairs once; a tombstone or unknown state is never repaired into permission.</summary>
     /// <param name="grantId">The authorization.</param>
@@ -28,7 +29,12 @@ internal sealed class ReadRefreshGrant(IFenceStore fences, IOpenIddictTokenManag
         var state = await fences.Read(grantId, cancellationToken);
         if (state is not null)
         {
-            return GrantStateValidation.IsKnown(state) ? state : null;
+            return Admissible(state) ? state : null;
+        }
+
+        if (gate?.AllowLegacyBootstrap != true)
+        {
+            return null;
         }
 
         var subject = principal.GetClaim(Claims.Subject);
@@ -44,5 +50,15 @@ internal sealed class ReadRefreshGrant(IFenceStore fences, IOpenIddictTokenManag
         }
 
         return await fences.RecordFamilyStart(grantId, entryId, subject!, created, expires, cancellationToken);
+    }
+
+    bool Admissible(GrantState state)
+    {
+        if (!GrantStateValidation.IsKnown(state))
+        {
+            return false;
+        }
+
+        return gate is null || (gate.Ready && state.RecoveryEpoch == gate.Epoch);
     }
 }

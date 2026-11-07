@@ -21,7 +21,9 @@ public class when_family_adoption_loses_to_revocation : for_RedeemRefreshTokenOn
     {
         _authority = new();
         var grants = new GrantRevocation(_tokens, _authorizations, _authority, FenceDoubles.Confirmation(_authority));
-        _handler = new(_tokens, grants, _time, _authority, new(_authority, _tokens, _authorizations, _time), _issuance);
+        var gate = new RecoveryGate();
+        gate.Open(true);
+        _handler = new(_tokens, grants, _time, _authority, new(_authority, _tokens, _authorizations, _time, gate), _issuance);
         _context.Transaction.GetProperty<ProcessAuthenticationContext>(typeof(ProcessAuthenticationContext).FullName).RefreshTokenPrincipal
             .SetClaim(Claims.Subject, FenceDoubles.Subject);
         _authorizations.HasStatusAsync(_authorization, Statuses.Valid, Arg.Any<CancellationToken>()).Returns(true);

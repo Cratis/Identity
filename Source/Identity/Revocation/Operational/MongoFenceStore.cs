@@ -10,12 +10,11 @@ namespace Cratis.Identity.Revocation.Operational;
 /// <summary>One majority-durable document is the refresh/revoke ordering point, not an event projection.</summary>
 /// <param name="database">The operational database.</param>
 /// <param name="timeProvider">The clock.</param>
-internal sealed class MongoFenceStore(IMongoDatabase database, TimeProvider timeProvider) : IFenceStore
+/// <param name="log">The independent sequence authority.</param>
+internal sealed class MongoFenceStore(IMongoDatabase database, TimeProvider timeProvider, IIndependentFenceLog log) : IFenceStore, IReservationAuthority
 {
     const int Attempts = 8;
     readonly IMongoCollection<BsonDocument> _grants = database.GetCollection<BsonDocument>("grant-fences")
-        .WithReadPreference(ReadPreference.Primary).WithReadConcern(ReadConcern.Majority).WithWriteConcern(WriteConcern.WMajority);
-    readonly IMongoCollection<BsonDocument> _log = database.GetCollection<BsonDocument>("grant-fence-log")
         .WithReadPreference(ReadPreference.Primary).WithReadConcern(ReadConcern.Majority).WithWriteConcern(WriteConcern.WMajority);
 
     /// <inheritdoc/>
@@ -24,6 +23,17 @@ internal sealed class MongoFenceStore(IMongoDatabase database, TimeProvider time
         var document = await _grants.Find(new BsonDocument("_id", grantId)).FirstOrDefaultAsync(cancellationToken);
         if (document is null)
         {
+            return null;
+        }
+
+        if (!document.Contains("payload"))
+        {
+            // A cancellation can win before the first operational write. It must survive that write.
+            if (!document.TryGetValue("cancelledReservations", out var cancelled) || cancelled.AsBsonArray.Count == 0)
+            {
+                throw new RevocationPending();
+            }
+
             return null;
         }
 
@@ -50,24 +60,10 @@ internal sealed class MongoFenceStore(IMongoDatabase database, TimeProvider time
                 return existing;
             }
 
-            var sequence = await _log.FindOneAndUpdateAsync(
-                new BsonDocument("_id", "sequence"),
-                new BsonDocument("$inc", new BsonDocument("value", 1L)),
-                new FindOneAndUpdateOptions<BsonDocument> { IsUpsert = true, ReturnDocument = ReturnDocument.After },
-                cancellationToken);
-            var fence = new GrantFence(Guid.NewGuid(), sequence["value"].AsInt64, grantId, subject, reason, timeProvider.GetUtcNow());
-            var entries = new List<OutboxEntry>(current?.Outbox ?? [])
-            {
-                OutboxEntry.Create(FactKind.AuthorizationRevocation, grantId, subject, fence.RecordedAt, fence: fence),
-                OutboxEntry.Create(FactKind.FamilyRevocation, grantId, subject, fence.RecordedAt, fence: fence)
-            };
-            if (reason == RevocationReason.RefreshTokenReused)
-            {
-                entries.Add(OutboxEntry.Create(FactKind.Reuse, grantId, subject, fence.RecordedAt, fence: fence));
-            }
-
-            var next = new GrantState(grantId, (current?.Version ?? 0) + 1, null, fence, [.. entries]);
-            if (await Replace(current, next, cancellationToken))
+            var id = Guid.NewGuid();
+            var sequence = await log.Reserve(id, grantId, cancellationToken);
+            var fence = new GrantFence(id, sequence, grantId, subject, reason, timeProvider.GetUtcNow());
+            if (await CommitReserved(current, fence, cancellationToken))
             {
                 return fence;
             }
@@ -85,8 +81,14 @@ internal sealed class MongoFenceStore(IMongoDatabase database, TimeProvider time
             return current;
         }
 
+        if (await log.Tombstone(grantId, cancellationToken) is not null)
+        {
+            throw new RevocationPending();
+        }
+
+        var epoch = await log.RecoveryEpoch(cancellationToken);
         var entry = OutboxEntry.Create(FactKind.FamilyStarted, grantId, subject, startedAt, absoluteExpiresAt);
-        var state = new GrantState(grantId, 1, tokenId, null, [entry]);
+        var state = new GrantState(grantId, 1, tokenId, null, [entry], epoch);
         return await Replace(null, state, cancellationToken) ? state : await Read(grantId, cancellationToken) ?? throw new RevocationPending();
     }
 
@@ -99,7 +101,7 @@ internal sealed class MongoFenceStore(IMongoDatabase database, TimeProvider time
             return RedeemOutcome.Unknown;
         }
 
-        if (current.Fence is not null)
+        if (current.Fence is not null || current.RecoveryEpoch != await log.RecoveryEpoch(cancellationToken) || await log.Tombstone(grantId, cancellationToken) is not null)
         {
             return RedeemOutcome.Fenced;
         }
@@ -172,6 +174,103 @@ internal sealed class MongoFenceStore(IMongoDatabase database, TimeProvider time
     },
         cancellationToken);
 
+    /// <inheritdoc/>
+    public async Task<FenceRecord?> Cancel(FenceReservation reservation, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var filter = new BsonDocument { { "_id", reservation.GrantId }, { "fenceId", new BsonDocument("$ne", reservation.Id.ToString("D")) } };
+            var result = await _grants.UpdateOneAsync(
+                filter,
+                new BsonDocument("$addToSet", new BsonDocument("cancelledReservations", reservation.Id.ToString("D"))),
+                new UpdateOptions { IsUpsert = true },
+                cancellationToken);
+            if (!result.IsAcknowledged || (result.MatchedCount != 1 && result.UpsertedId is null))
+            {
+                throw new RevocationPending();
+            }
+
+            return null;
+        }
+        catch (MongoWriteException exception) when (exception.WriteError.Category == ServerErrorCategory.DuplicateKey)
+        {
+            var state = await Read(reservation.GrantId, cancellationToken) ?? throw new RevocationPending();
+            if (state.Fence is not { } fence || fence.Id != reservation.Id || fence.Sequence != reservation.Sequence)
+            {
+                throw new RevocationPending();
+            }
+
+            return FenceRecordFactory.Record(state);
+        }
+    }
+
+    /// <summary>Attempts one writer using its original independent reservation.</summary>
+    /// <param name="current">The expected authority revision.</param>
+    /// <param name="fence">The originally reserved permanent denial.</param>
+    /// <param name="cancellationToken">Cancellation.</param>
+    /// <returns>Whether the conditional write committed.</returns>
+    /// <exception cref="RevocationPending">Cancellation won or the commit remains uncertain.</exception>
+    internal async Task<bool> CommitReserved(GrantState? current, GrantFence fence, CancellationToken cancellationToken)
+    {
+        var entries = (current?.Outbox ?? []).Concat(FenceRecordFactory.Entries(fence)).ToArray();
+        var next = new GrantState(fence.GrantId, (current?.Version ?? 0) + 1, null, fence, entries, current?.RecoveryEpoch ?? 0);
+        if (await Replace(current, next, cancellationToken))
+        {
+            return true;
+        }
+
+        var cancelled = await _grants.Find(new BsonDocument { { "_id", fence.GrantId }, { "cancelledReservations", fence.Id.ToString("D") } }).AnyAsync(cancellationToken);
+        if (cancelled)
+        {
+            // Do not retry a cancelled operation under a newly allocated identity.
+            throw new RevocationPending();
+        }
+
+        return false;
+    }
+
+    /// <summary>Atomically replaces authority while preserving cancellation markers.</summary>
+    /// <param name="current">The expected authority revision.</param>
+    /// <param name="next">The new authority revision.</param>
+    /// <param name="cancellationToken">Cancellation.</param>
+    /// <param name="replayEpoch">An optional atomic delivery-reset marker.</param>
+    /// <returns>Whether the conditional write committed.</returns>
+    /// <exception cref="RevocationPending">The write was not acknowledged.</exception>
+    internal async Task<bool> Replace(GrantState? current, GrantState next, CancellationToken cancellationToken, long? replayEpoch = null)
+    {
+        var document = new BsonDocument
+        {
+            { "version", next.Version }, { "fenced", next.Fence is not null },
+            { "fenceId", next.Fence is null ? BsonNull.Value : new BsonString(next.Fence.Id.ToString("D")) },
+            { "currentRefreshTokenId", next.CurrentRefreshTokenId is null ? BsonNull.Value : new BsonString(next.CurrentRefreshTokenId) },
+            { "undelivered", next.Outbox.Any(entry => entry.State != OutboxState.Delivered) },
+            { "payload", JsonSerializer.Serialize(next) }
+        };
+        var filter = current is null
+            ? new BsonDocument { { "_id", next.GrantId }, { "payload", new BsonDocument("$exists", false) } }
+            : new BsonDocument { { "_id", current.GrantId }, { "version", current.Version }, { "fenced", current.Fence is not null }, { "currentRefreshTokenId", current.CurrentRefreshTokenId is null ? BsonNull.Value : new BsonString(current.CurrentRefreshTokenId) } };
+        if (next.Fence is { } fence)
+        {
+            filter.Add("cancelledReservations", new BsonDocument("$ne", fence.Id.ToString("D")));
+        }
+
+        if (replayEpoch is not null)
+        {
+            document.Add("replayEpoch", replayEpoch.Value);
+        }
+
+        try
+        {
+            // $set preserves all cancellation markers. Replacing the document could resurrect a delayed writer.
+            var result = await _grants.UpdateOneAsync(filter, new BsonDocument("$set", document), new UpdateOptions { IsUpsert = current is null }, cancellationToken);
+            return result.IsAcknowledged && (result.MatchedCount == 1 || result.UpsertedId is not null);
+        }
+        catch (MongoWriteException exception) when (exception.WriteError.Category == ServerErrorCategory.DuplicateKey)
+        {
+            return false;
+        }
+    }
+
     async Task Progress(string grantId, Func<GrantState, GrantState> update, CancellationToken cancellationToken)
     {
         for (var attempt = 0; attempt < Attempts; attempt++)
@@ -185,31 +284,5 @@ internal sealed class MongoFenceStore(IMongoDatabase database, TimeProvider time
         }
 
         throw new RevocationPending();
-    }
-
-    async Task<bool> Replace(GrantState? current, GrantState next, CancellationToken cancellationToken)
-    {
-        var document = new BsonDocument
-        {
-            { "_id", next.GrantId }, { "version", next.Version }, { "fenced", next.Fence is not null },
-            { "currentRefreshTokenId", next.CurrentRefreshTokenId is null ? BsonNull.Value : new BsonString(next.CurrentRefreshTokenId) },
-            { "undelivered", next.Outbox.Any(entry => entry.State != OutboxState.Delivered) },
-            { "payload", JsonSerializer.Serialize(next) }
-        };
-        if (current is null)
-        {
-            try
-            {
-                await _grants.InsertOneAsync(document, cancellationToken: cancellationToken);
-                return true;
-            }
-            catch (MongoWriteException exception) when (exception.WriteError.Category == ServerErrorCategory.DuplicateKey)
-            {
-                return false;
-            }
-        }
-
-        var result = await _grants.ReplaceOneAsync(new BsonDocument { { "_id", current.GrantId }, { "version", current.Version }, { "fenced", current.Fence is not null }, { "currentRefreshTokenId", current.CurrentRefreshTokenId is null ? BsonNull.Value : new BsonString(current.CurrentRefreshTokenId) } }, document, cancellationToken: cancellationToken);
-        return result.IsAcknowledged && result.MatchedCount == 1;
     }
 }
