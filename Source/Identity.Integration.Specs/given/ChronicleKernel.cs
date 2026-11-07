@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Net.Sockets;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 
@@ -12,17 +13,25 @@ namespace Cratis.Identity.Integration.given;
 public sealed class ChronicleKernel : IAsyncDisposable
 {
     const int ClientPort = 35000;
-    readonly IContainer _container = new ContainerBuilder(Environment.GetEnvironmentVariable("IDENTITY_CHRONICLE_IMAGE") ?? "cratis/chronicle:19.111.0-development")
-        .WithPortBinding(ClientPort, true)
-        .WithCreateParameterModifier(parameters =>
-        {
-            foreach (var binding in parameters.HostConfig.PortBindings[$"{ClientPort}/tcp"])
+    readonly IContainer _container;
+
+    /// <summary>Initializes a new instance of the <see cref="ChronicleKernel"/> class.</summary>
+    public ChronicleKernel()
+    {
+        // A fixed host port keeps the endpoint stable across the outage specs' stop/start; a Docker-assigned port changes on restart.
+        var hostPort = FreeLoopbackPort();
+        _container = new ContainerBuilder(Environment.GetEnvironmentVariable("IDENTITY_CHRONICLE_IMAGE") ?? "cratis/chronicle:19.111.0-development")
+            .WithPortBinding(hostPort, ClientPort)
+            .WithCreateParameterModifier(parameters =>
             {
-                binding.HostIP = "127.0.0.1";
-            }
-        })
-        .WithWaitStrategy(Wait.ForUnixContainer().UntilInternalTcpPortIsAvailable(ClientPort, wait => wait.WithTimeout(TimeSpan.FromMinutes(2))))
-        .Build();
+                foreach (var binding in parameters.HostConfig.PortBindings[$"{ClientPort}/tcp"])
+                {
+                    binding.HostIP = "127.0.0.1";
+                }
+            })
+            .WithWaitStrategy(Wait.ForUnixContainer().UntilInternalTcpPortIsAvailable(ClientPort, wait => wait.WithTimeout(TimeSpan.FromMinutes(2))))
+            .Build();
+    }
 
     /// <summary>Gets the local test endpoint. Development authentication is provided by the native client's development defaults.</summary>
     public string ConnectionString => $"chronicle://{_container.Hostname}:{_container.GetMappedPublicPort(ClientPort)}?skipTlsValidation=true";
@@ -70,4 +79,11 @@ public sealed class ChronicleKernel : IAsyncDisposable
 
     /// <inheritdoc/>
     public ValueTask DisposeAsync() => _container.DisposeAsync();
+
+    static int FreeLoopbackPort()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        return ((IPEndPoint)listener.LocalEndpoint).Port;
+    }
 }
