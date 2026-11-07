@@ -3,8 +3,8 @@
 ```text
 Spec id: identity-access-token
 Version: 1
-Status: Locked
-Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
+Status: Signed off
+Signed off: 2026-11-05 by woksin, https://github.com/Cratis/Identity/issues/14; owner confirmation pending
 Issue: https://github.com/Cratis/Identity/issues/28
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None

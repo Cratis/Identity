@@ -3,8 +3,8 @@
 ```text
 Spec id: arc-pat-format
 Version: 1
-Status: Locked
-Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
+Status: Signed off
+Signed off: 2026-11-05 by woksin, https://github.com/Cratis/Identity/issues/14; owner confirmation pending
 Issue: https://github.com/Cratis/Arc/issues/3699
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -113,4 +113,4 @@ Decided in Identity #14 (2026-11-05) with the recommended answers from the sign-
 
 ## Versioning
 
-A Locked spec MUST change only through a new version file. A verifier MUST accept only explicitly supported format versions and MUST NOT reinterpret an unsupported PAT version as OAuth. Prefix or checksum changes MUST use an explicitly versioned format and an announced compatibility lifecycle.
+This spec MUST change only through a new version file. A verifier MUST accept only explicitly supported format versions and MUST NOT reinterpret an unsupported PAT version as OAuth. Prefix or checksum changes MUST use an explicitly versioned format and an announced compatibility lifecycle.
