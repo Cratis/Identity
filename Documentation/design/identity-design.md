@@ -102,6 +102,12 @@ Read models are eventually consistent, so revocation never waits for a projectio
 
 A revoked refresh token fails on its next use; an access token already issued lives until it expires (the §7.2 targets), unless AuthProxy introspects.
 
+### Replay and rebuild boundary
+
+Rebuilding business read models is not an issuance path. The current projections and reducer have no dependencies; the sole reactor publishes account contracts through the event store using the stable `FactId:contractTypeId` identity. An observer-inventory spec fails when a new observer has not been classified, so mail, token issuance or grant mutation cannot silently become replay behavior.
+
+Unit replay specs rebuild all four models twice, keep operational revocation fences authoritative and scan serialized source-log/outbox payloads and envelopes for synthetic secrets. Consent activation is exercised with in-memory doubles: replay cannot activate abandoned or withheld requests, make never-active evidence usable, bypass revocation or repeat a code claim. Real-kernel consent replay remains with [#99](https://github.com/Cratis/Identity/issues/99); this coverage is not a claim of full restore conformance. See [event replay checks](../specs/identity-events-v1.md#611-replay-regression-checks) and [revocation rebuild coverage](../specs/identity-revocation-v1.md#91-unit-replay-and-rebuild-coverage).
+
 ## UI moves out, the security does not
 
 *W0 identity design §4.10, "Security, honestly", UI rule.*

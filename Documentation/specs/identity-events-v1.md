@@ -132,6 +132,14 @@ No event, internal or public, may contain a secret or redeemable value: access/I
 
 Secret-derived hashes MUST use a reviewed keyed construction; the decided construction is HMAC-SHA-256 with a separate secret-store-held key, domain separation by purpose and an explicit hash-key revision. Hashing MUST happen before append, never in a reactor. An unkeyed hash of a low-entropy code/secret is forbidden because offline enumeration recovers it. Password verifiers remain operational credential state even if salted/keyed. Public-key thumbprints MAY use SHA-256 under a documented canonical public-key representation (for JWKs, RFC 7638). These digest choices/allowances are decided in §9 point 6.
 
+### 6.1.1 Replay regression checks
+
+The unit specs discover Identity events from the Identity and contracts assemblies, compare them with Chronicle's testing registry, seed every registered event and scan serialized source-log and outbox payloads **and envelopes**. The scan rejects recognizable token, PAT, authorization-header and PEM shapes, secret-bearing properties, opaque handles and exact synthetic inputs. Poisoned fixtures prove rejection without printing the offending value. The real GitHub callback, account sign-in decision and revocation fact writer are exercised alongside registry fixtures; this is a runtime regression check, not the complete content analyzer below.
+
+Read-model rebuilds replay the same history twice into empty `Account`, `AccountGuard`, `UpstreamKeyLookup` and `AccountLinkState` instances. An observer-inventory architecture spec classifies every projection, reducer and reactor; adding an unclassified observer fails the suite. Pure observers have no dependencies, and `AccountPublications` has only the event store and logger. New side-effecting observers need explicit review rather than automatic inclusion. Publication tests retain the §4.1 `FactId:contractTypeId` key across changed sequence numbers, reject conflicting content and retry failed publication without duplicating contracts. Rebuilds have no token, grant-mutation, mail or live-clock capability.
+
+Consent replay tests drive the real `ConsentActivation` API with in-memory operational, evidence and authorization doubles. Abandoned, withheld, never-active and revoked requests cannot acquire new usable authority or code claims through replay. Real-kernel consent evidence replay and durability remain tracked in [#99](https://github.com/Cratis/Identity/issues/99); these unit specs do not establish that conformance.
+
 ### 6.2 Required executable check (W2)
 
 The check is **implemented with the contracts project ([#35](https://github.com/Cratis/Identity/issues/35)); the build-failing content check is tracked in [#82](https://github.com/Cratis/Identity/issues/82)**. The vectors here are data only, not an existing analyzer or passing conformance suite. The proposed exact check policy is open point 6:
