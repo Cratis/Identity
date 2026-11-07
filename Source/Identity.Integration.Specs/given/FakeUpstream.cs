@@ -5,6 +5,8 @@ using System.Globalization;
 using System.Text.Encodings.Web;
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Authorization;
+using Cratis.Identity.Contracts.Accounts;
+using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -18,12 +20,14 @@ namespace Cratis.Identity.Integration.given;
 /// <param name="options">The options monitor.</param>
 /// <param name="logger">The logger factory.</param>
 /// <param name="encoder">The URL encoder.</param>
-/// <param name="accounts">The <see cref="IAccounts"/>.</param>
+/// <param name="accounts">The native verified sign-in adapter.</param>
+/// <param name="timeProvider">The trusted test clock.</param>
 internal class FakeUpstream(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
     UrlEncoder encoder,
-    IAccounts accounts) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+    EventSourcedAccountAdapter accounts,
+    TimeProvider timeProvider) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     public const string Scheme = "fake-github";
     public const string UserHeader = "x-spec-github-user";
@@ -37,8 +41,10 @@ internal class FakeUpstream(
     protected override async Task HandleChallengeAsync(AuthenticationProperties properties)
     {
         var user = Request.Headers[UserHeader].ToString().Split(':');
-        var account = await accounts.RecordGitHubSignIn(new GitHubUser(long.Parse(user[0], CultureInfo.InvariantCulture), user[1], user[1]));
+        var observation = new GitHubUser(long.Parse(user[0], CultureInfo.InvariantCulture), user[1], user[1]);
+        var authentication = new GitHubConnection(GitHubConnection.FixedConnectionId, timeProvider).From(observation, FactId.New());
+        var account = await accounts.SignIn(authentication, new(null, observation.Name, observation.Login));
         await Context.SignInAsync(IdentitySchemes.Session, SessionPrincipal.For(account, Scheme), new AuthenticationProperties());
-        Response.Redirect(properties.RedirectUri!);
+        Response.Redirect(properties.RedirectUri);
     }
 }

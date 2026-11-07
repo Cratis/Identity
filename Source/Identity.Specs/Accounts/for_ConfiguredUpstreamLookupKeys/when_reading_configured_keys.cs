@@ -37,6 +37,6 @@ public class when_reading_configured_keys
     }
 
     static ConfiguredUpstreamLookupKeys Read(string material, int revision) => new(
-        Options.Create(new IdentityOptions { Accounts = new() { EventSourced = true, LookupKey = material, LookupKeyRevision = revision } }),
+        Options.Create(new IdentityOptions { Accounts = new() { LookupKey = material, LookupKeyRevision = revision } }),
         new HostingEnvironment { EnvironmentName = Environments.Development });
 }

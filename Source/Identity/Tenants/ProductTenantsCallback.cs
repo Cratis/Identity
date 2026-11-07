@@ -1,7 +1,6 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -38,7 +37,7 @@ internal class ProductTenantsCallback(IHttpClientFactory clients, ILogger<Produc
             using var client = clients.CreateClient(TenantsCallbackHttpClient.Name);
             using var request = new HttpRequestMessage(HttpMethod.Post, options.Url)
             {
-                Content = JsonContent.Create(new TenantsCallbackRequest(resource.Audience, account.Id, account.GitHubId.ToString(CultureInfo.InvariantCulture)))
+                Content = JsonContent.Create(new TenantsCallbackRequest(resource.Audience, account.Id.Value, account.GitHubId.Value))
             };
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             if (!string.IsNullOrEmpty(options.Secret))

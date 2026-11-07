@@ -18,9 +18,9 @@ public class when_the_cli_revokes_its_refresh_token(IdentityHost host) : IAsyncL
         var (verifier, challenge) = Browser.Pkce();
         var (_, tokens) = await browser.RedeemCode(await browser.LoginForCode(challenge), verifier);
 
-        (_revocationStatus, _) = await browser.Revoke(tokens.GetProperty("refresh_token").GetString()!);
-        (_refreshStatus, _refresh) = await browser.Refresh(tokens.GetProperty("refresh_token").GetString()!);
-        (_, _introspection) = await browser.Introspect(tokens.GetProperty("access_token").GetString()!);
+        (_revocationStatus, _) = await browser.Revoke(tokens.GetProperty("refresh_token").GetString());
+        (_refreshStatus, _refresh) = await browser.Refresh(tokens.GetProperty("refresh_token").GetString());
+        (_, _introspection) = await browser.Introspect(tokens.GetProperty("access_token").GetString());
     }
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;

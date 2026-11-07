@@ -3,6 +3,7 @@
 
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Authorization;
+using Cratis.Identity.Contracts.Accounts;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
@@ -13,9 +14,9 @@ namespace Cratis.Identity.Upstream;
 /// <summary>
 /// Resolves the account signed in to the Identity site, and sends the browser to upstream login when there is none.
 /// </summary>
-/// <param name="accounts">The <see cref="IAccounts"/>.</param>
+/// <param name="accounts">The active-account reader.</param>
 /// <param name="upstream">The <see cref="UpstreamLoginOptions"/>.</param>
-internal class SignedInAccounts(IAccounts accounts, IOptions<UpstreamLoginOptions> upstream)
+internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginOptions> upstream)
 {
     /// <summary>
     /// Finds the account signed in to the Identity site for an authorization request.
@@ -32,7 +33,7 @@ internal class SignedInAccounts(IAccounts accounts, IOptions<UpstreamLoginOption
         }
 
         var accountId = SessionPrincipal.AccountId(session.Principal);
-        return accountId is null ? null : await accounts.FindById(accountId, context.RequestAborted);
+        return AccountSubject.TryParse(accountId, out var subject) ? await accounts.FindActive(subject!, context.RequestAborted) : null;
     }
 
     /// <summary>

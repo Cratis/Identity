@@ -32,6 +32,6 @@ public class a_tenant_directory : Specification
         factory.CreateClient(TenantsCallbackHttpClient.Name).Returns(new HttpClient(handler));
         var monitor = options.AsMonitor();
         var directory = new TenantDirectory(monitor, environment, new ProductTenantsCallback(factory, NullLogger<ProductTenantsCallback>.Instance), new ConfiguredTenantDirectory(monitor));
-        result = await directory.SelectableTenants(new Account("account-1", 42, "member", "Member"), new ResourceServer(Configurations.DirectAudience, "Direct", [], []));
+        result = await directory.SelectableTenants(new Account(new("7d9d5c9e-0000-4000-8000-000000000001"), "Member", null, "42", "member", AccountStatus.Active, []), new ResourceServer(Configurations.DirectAudience, "Direct", [], []));
     }
 }

@@ -4,8 +4,8 @@
 Spec id: arc-forwarded-identity-v2
 Version: 3
 Source revision: Cratis/Arc@c1ce7d749
-Status: Locked
-Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
+Status: Signed off
+Signed off: 2026-11-05 by woksin, https://github.com/Cratis/Identity/issues/14; owner confirmation pending
 Issue: Cratis/Arc#3698
 Sign-off issue: Cratis/Identity#14
 Supersedes: none — v1 remains
@@ -26,7 +26,7 @@ Sign every identity-bearing producer before switching a backend: YARP requests, 
 
 ## Normative vocabulary
 
-This specification depends on Identity's `identity-contract` version 1, Terms and §§2, 4–6. The relevant definitions below are reused verbatim; Identity contract version 1 is Locked.
+This specification depends on Identity's `identity-contract` version 1, Terms and §§2, 4–6. The relevant definitions below are reused verbatim; Identity contract version 1 is signed off.
 
 | Term | Definition |
 | --- | --- |

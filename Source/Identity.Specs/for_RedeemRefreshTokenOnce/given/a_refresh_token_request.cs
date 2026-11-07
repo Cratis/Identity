@@ -51,7 +51,7 @@ public class a_refresh_token_request : Specification
         var principal = new ClaimsPrincipal(new ClaimsIdentity("test"))
             .SetTokenId(TokenId)
             .SetAuthorizationId(AuthorizationId);
-        transaction.SetProperty(typeof(ProcessAuthenticationContext).FullName!, new ProcessAuthenticationContext(transaction) { RefreshTokenPrincipal = principal });
+        transaction.SetProperty(typeof(ProcessAuthenticationContext).FullName, new ProcessAuthenticationContext(transaction) { RefreshTokenPrincipal = principal });
         _context = new ProcessSignInContext(transaction);
     }
 }

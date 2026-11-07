@@ -12,5 +12,5 @@ public class for_an_unknown_resource : given.a_grant_policy
 
     void Because() => _result = _policy.EvaluateTokenRequest(["https://evil.example/"], [Configurations.DirectAudience]);
 
-    [Fact] void should_reject_with_invalid_target() => _result!.Error.ShouldEqual("invalid_target");
+    [Fact] void should_reject_with_invalid_target() => _result.Error.ShouldEqual("invalid_target");
 }

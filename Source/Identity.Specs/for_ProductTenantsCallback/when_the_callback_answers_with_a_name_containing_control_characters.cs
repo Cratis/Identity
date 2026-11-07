@@ -14,7 +14,7 @@ public class when_the_callback_answers_with_a_name_containing_control_characters
     [InlineData("null")]
     async Task should_refuse_the_name(string name)
     {
-        handler.Body = $"{{\"subject\":\"account-1\",\"tenants\":[{{\"id\":\"one\",\"name\":{name}}}]}}";
+        handler.Body = $"{{\"subject\":\"{account.Id.Value}\",\"tenants\":[{{\"id\":\"one\",\"name\":{name}}}]}}";
         await Lookup(TestContext.Current.CancellationToken);
         result.ShouldEqual(new TenantsUnavailable(TenantsUnavailableReason.Malformed));
     }
@@ -22,7 +22,7 @@ public class when_the_callback_answers_with_a_name_containing_control_characters
     [Fact]
     async Task should_refuse_a_name_longer_than_128_characters()
     {
-        handler.Body = $"{{\"subject\":\"account-1\",\"tenants\":[{{\"id\":\"one\",\"name\":\"{new string('a', 129)}\"}}]}}";
+        handler.Body = $"{{\"subject\":\"{account.Id.Value}\",\"tenants\":[{{\"id\":\"one\",\"name\":\"{new string('a', 129)}\"}}]}}";
         await Lookup(TestContext.Current.CancellationToken);
         result.ShouldEqual(new TenantsUnavailable(TenantsUnavailableReason.Malformed));
     }

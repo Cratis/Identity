@@ -7,7 +7,7 @@ namespace Cratis.Identity.for_ProductTenantsCallback;
 
 public class when_the_callback_lists_no_tenants : given.a_tenants_callback
 {
-    void Establish() => handler.Body = /*lang=json*/ """{"subject":"account-1","tenants":[]}""";
+    void Establish() => handler.Body = /*lang=json*/ """{"subject":"7d9d5c9e-0000-4000-8000-000000000001","tenants":[]}""";
     Task Because() => Lookup();
 
     [Fact] void should_be_an_empty_success_not_an_outage() => ((TenantsListed)result).Tenants.ShouldBeEmpty();

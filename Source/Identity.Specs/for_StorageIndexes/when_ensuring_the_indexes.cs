@@ -12,6 +12,7 @@ namespace Cratis.Identity.for_StorageIndexes;
 
 public class when_ensuring_the_indexes : Specification
 {
+    IMongoDatabase _database;
     IMongoIndexManager<OpenIddictMongoDbToken> _tokenIndexes;
     List<CreateIndexModel<OpenIddictMongoDbToken>> _models;
 
@@ -28,9 +29,9 @@ public class when_ensuring_the_indexes : Specification
         var tokens = Substitute.For<IMongoCollection<OpenIddictMongoDbToken>>();
         tokens.Indexes.Returns(_tokenIndexes);
 
-        var database = Substitute.For<IMongoDatabase>();
-        database.GetCollection<OpenIddictMongoDbToken>(options.TokensCollectionName, Arg.Any<MongoCollectionSettings>()).Returns(tokens);
-        _indexes = new StorageIndexes(database, monitor);
+        _database = Substitute.For<IMongoDatabase>();
+        _database.GetCollection<OpenIddictMongoDbToken>(options.TokensCollectionName, Arg.Any<MongoCollectionSettings>()).Returns(tokens);
+        _indexes = new StorageIndexes(_database, monitor);
     }
 
     StorageIndexes _indexes;
@@ -39,6 +40,7 @@ public class when_ensuring_the_indexes : Specification
 
     CreateIndexModel<OpenIddictMongoDbToken> Ttl => _models.Single(_ => _.Options?.ExpireAfter is not null);
 
+    [Fact] void should_not_request_an_operational_accounts_collection() => _database.ReceivedCalls().Any(call => call.GetMethodInfo().Name == nameof(IMongoDatabase.GetCollection) && Equals(call.GetArguments()[0], "accounts")).ShouldBeFalse();
     [Fact] void should_create_one_ttl_index() => _models.Count(_ => _.Options?.ExpireAfter is not null).ShouldEqual(1);
     [Fact] void should_expire_entries_at_their_expiration_date() => Ttl.Options.ExpireAfter.ShouldEqual(TimeSpan.Zero);
     [Fact] void should_index_the_expiration_date() => Ttl.Keys.Render(new RenderArgs<OpenIddictMongoDbToken>(BsonSerializer.LookupSerializer<OpenIddictMongoDbToken>(), BsonSerializer.SerializerRegistry)).ToString().ShouldContain("expiration_date");

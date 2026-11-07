@@ -2,6 +2,16 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Globalization;
+using Cratis.Arc.Commands;
+using Cratis.Arc.Tenancy;
+using Cratis.Chronicle;
+using Cratis.Chronicle.Reactors;
+using Cratis.Chronicle.Reducers;
+using Cratis.Chronicle.Registrations;
+using Cratis.Identity.Accounts;
+using Cratis.Identity.Accounts.Linking;
+using Cratis.Identity.Protocol;
+using Cratis.Identity.Realm;
 using Cratis.Identity.Tenants;
 using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.Authentication;
@@ -10,6 +20,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Testcontainers.MongoDb;
@@ -41,6 +52,7 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     /// </summary>
     readonly MongoDbContainer _mongo = new MongoDbBuilder("mongo:8.0.14").Build();
     readonly string _database = $"identity-specs-{Guid.NewGuid():N}";
+    readonly ChronicleKernel _chronicle = new();
 
     /// <summary>
     /// Gets the host's MongoDB database, for specs that must change what is stored behind Identity's back.
@@ -48,28 +60,48 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     public IMongoDatabase Database => new MongoClient(_mongo.GetConnectionString()).GetDatabase(_database);
 
     /// <summary>
+    /// Gets the connection string of the host's MongoDB container, for specs that need their own databases on it.
+    /// </summary>
+    public string MongoConnectionString => _mongo.GetConnectionString();
+
+    /// <summary>
     /// Gets the test-only pause points in the refresh-token pipeline.
     /// </summary>
     public RefreshGates RefreshGates { get; } = new();
+
+    /// <summary>Gets the async-flow-local gate for native account projection progress.</summary>
+    public ProjectionProgressGate ProjectionProgress { get; } = new();
 
     /// <summary>
     /// Gets the product callback double, independently mutable per GitHub user.
     /// </summary>
     public TenantsCallbackStub TenantsCallback { get; } = new();
 
+    /// <summary>Gets the entry counters for the real native sign-in pipeline.</summary>
+    public NativeCommandProbe NativeCommands { get; } = new();
+
     /// <inheritdoc/>
     public async ValueTask InitializeAsync()
     {
         await _mongo.StartAsync();
+        await _chronicle.Start();
 
-        // Start the host so the client store is reconciled before any spec runs.
+        // Start the native client and reconcile all artifacts before any spec runs.
         _ = Server;
+        await using var scope = Services.CreateAsyncScope();
+        var store = scope.ServiceProvider.GetRequiredService<IEventStore>();
+        var registration = await store.WaitForRegistration(TimeSpan.FromSeconds(30));
+        registration.IsSuccess.ShouldBeTrue();
+        registration.Artifacts.ShouldNotBeEmpty();
+        await store.Reactors.WaitTillSubscribed<AccountPublications>(TimeSpan.FromSeconds(30));
+        await store.Reducers.WaitTillSubscribed<AccountLinkStateReducer>(TimeSpan.FromSeconds(30));
     }
 
     /// <inheritdoc/>
     public override async ValueTask DisposeAsync()
     {
         await base.DisposeAsync();
+        await _chronicle.DisposeAsync();
         await _mongo.DisposeAsync();
     }
 
@@ -79,6 +111,7 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         base.Dispose(disposing);
         if (disposing)
         {
+            _chronicle.DisposeAsync().AsTask().GetAwaiter().GetResult();
             _mongo.DisposeAsync().AsTask().GetAwaiter().GetResult();
         }
     }
@@ -118,6 +151,19 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
                 .AddFilter("OpenIddict", LogLevel.Trace))
             .ConfigureTestServices(services =>
             {
+                services.Replace(ServiceDescriptor.Singleton<IEventStoreNamespaceResolver>(provider =>
+                    new IdentityRealmNamespaceResolver(new SuppliedTenantNamespace(provider.GetRequiredService<ITenantIdAccessor>()))));
+                services.AddSingleton(NativeCommands);
+                services.AddSingleton<NativeSignInInterleaving>();
+                services.AddSingleton<ProtocolCommands>();
+                services.Replace(ServiceDescriptor.Singleton<IProtocolCommands, ObservedProtocolCommands>());
+                services.AddSingleton<CommandHandlerProviders>();
+                services.Replace(ServiceDescriptor.Singleton<ICommandHandlerProviders, ObservedCommandHandlers>());
+                services.AddSingleton<CommandHandlerArgumentResolver>();
+                services.Replace(ServiceDescriptor.Singleton<ICommandHandlerArgumentResolver, ObservedCommandArguments>());
+                services.AddSingleton(ProjectionProgress);
+                services.AddScoped<ObserverProgress>();
+                services.Replace(ServiceDescriptor.Scoped<IObserverProgress, GatedObserverProgress>());
                 services.AddAuthentication().AddScheme<AuthenticationSchemeOptions, FakeUpstream>(FakeUpstream.Scheme, _ => { });
                 services.Configure<UpstreamLoginOptions>(_ => _.Scheme = FakeUpstream.Scheme);
                 services.AddHttpClient(TenantsCallbackHttpClient.Name).ConfigurePrimaryHttpMessageHandler(() => TenantsCallback);
@@ -134,6 +180,10 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     protected virtual Dictionary<string, string?> Settings() => new()
     {
         ["Identity:Issuer"] = Issuer,
+        ["Identity:Accounts:LookupKey"] = Convert.ToBase64String(Enumerable.Range(0, 32).Select(value => (byte)value).ToArray()),
+        ["Identity:Accounts:ReadModelCatchUpTimeout"] = "00:00:10",
+        ["Identity:Accounts:ConfirmNoLegacyMongoStore"] = "true",
+        ["ConnectionStrings:chronicle"] = _chronicle.ConnectionString,
         ["Identity:MongoDB:ConnectionString"] = _mongo.GetConnectionString(),
         ["Identity:MongoDB:Database"] = _database,
         ["Identity:GitHub:ClientId"] = "unused-in-specs",

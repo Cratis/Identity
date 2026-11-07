@@ -17,7 +17,7 @@ public class when_a_client_introspects_an_access_token(IdentityHost host) : IAsy
         var browser = host.CreateBrowser();
         var (verifier, challenge) = Browser.Pkce();
         var (_, tokens) = await browser.RedeemCode(await browser.LoginForCode(challenge), verifier);
-        var accessToken = tokens.GetProperty("access_token").GetString()!;
+        var accessToken = tokens.GetProperty("access_token").GetString();
         _confidential = await browser.Introspect(accessToken);
         _public = await browser.PostForm("/connect/introspect", [new("client_id", Browser.ClientId), new("token", accessToken)]);
         _anonymous = await browser.PostForm("/connect/introspect", [new("token", accessToken)]);

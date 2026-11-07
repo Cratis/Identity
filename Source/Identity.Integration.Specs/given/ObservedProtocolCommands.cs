@@ -1,0 +1,30 @@
+// Copyright (c) Cratis. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using Cratis.Arc.Commands;
+using Cratis.Identity.Protocol;
+
+namespace Cratis.Identity.Integration.given;
+
+/// <summary>
+/// Observes real protocol results and retry fences without replacing append or catch-up behavior.
+/// </summary>
+/// <param name="inner">The real protocol boundary.</param>
+/// <param name="interleaving">The async-flow-local observation.</param>
+internal sealed class ObservedProtocolCommands(ProtocolCommands inner, NativeSignInInterleaving interleaving) : IProtocolCommands
+{
+    /// <inheritdoc/>
+    public async Task<CommandResult> Execute(object command, Action<IServiceProvider>? prepare = null)
+    {
+        var result = await inner.Execute(command, prepare);
+        interleaving.Completed(command, result);
+        return result;
+    }
+
+    /// <inheritdoc/>
+    public Task BeforeRetry()
+    {
+        interleaving.Retrying();
+        return inner.BeforeRetry();
+    }
+}

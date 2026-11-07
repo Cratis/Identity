@@ -1,7 +1,6 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Globalization;
 using System.Security.Claims;
 using Cratis.Identity.Contracts;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -22,10 +21,11 @@ internal static class SessionPrincipal
     public static ClaimsPrincipal For(Account account, string upstreamScheme)
     {
         var identity = new ClaimsIdentity(upstreamScheme, Claims.Name, Claims.Role);
-        identity.AddClaim(new Claim(Claims.Subject, account.Id));
-        identity.AddClaim(new Claim(Claims.Name, account.Name));
-        identity.AddClaim(new Claim(IdentityClaims.GitHubId, account.GitHubId.ToString(CultureInfo.InvariantCulture)));
-        identity.AddClaim(new Claim(IdentityClaims.GitHubLogin, account.GitHubLogin));
+        identity.AddClaim(new Claim(Claims.Subject, account.Id.Value));
+        identity.AddClaim(new Claim(Claims.Name, account.Name.Value));
+        identity.AddClaim(new Claim(IdentityClaims.GitHubId, account.GitHubId.Value));
+        identity.AddClaim(new Claim(IdentityClaims.GitHubLogin, account.GitHubLogin.Value));
+        identity.AddClaim(new Claim(Claims.PreferredUsername, account.GitHubLogin.Value));
         return new ClaimsPrincipal(identity);
     }
 

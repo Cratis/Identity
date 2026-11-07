@@ -21,6 +21,6 @@ public class when_the_user_denies_consent(IdentityHost host) : IAsyncLifetime
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
-    [Fact] void should_return_access_denied() => QueryHelpers.ParseQuery(_redirect!.Query)["error"].ToString().ShouldEqual("access_denied");
-    [Fact] void should_not_issue_a_code() => QueryHelpers.ParseQuery(_redirect!.Query).ContainsKey("code").ShouldBeFalse();
+    [Fact] void should_return_access_denied() => QueryHelpers.ParseQuery(_redirect.Query)["error"].ToString().ShouldEqual("access_denied");
+    [Fact] void should_not_issue_a_code() => QueryHelpers.ParseQuery(_redirect.Query).ContainsKey("code").ShouldBeFalse();
 }

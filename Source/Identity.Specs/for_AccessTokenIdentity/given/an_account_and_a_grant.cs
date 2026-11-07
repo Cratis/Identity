@@ -16,8 +16,8 @@ public class an_account_and_a_grant : Specification
 
     void Establish()
     {
-        _account = new Account("7d9d5c9e-0000-4000-8000-000000000001", 134365, "einari", "Einar Ingebrigtsen");
-        var direct = new ResourceCatalog(Configurations.TwoResourceServers().AsOptions()).FindByAudience(Configurations.DirectAudience)!;
+        _account = new Account(new("7d9d5c9e-0000-4000-8000-000000000001"), "Einar Ingebrigtsen", null, "134365", "einari", AccountStatus.Active, []);
+        var direct = new ResourceCatalog(Configurations.TwoResourceServers().AsOptions()).FindByAudience(Configurations.DirectAudience);
         _grant = new Grant(direct, ["direct:read", "offline_access"]);
     }
 }

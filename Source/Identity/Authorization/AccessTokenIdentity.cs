@@ -1,7 +1,6 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Globalization;
 using System.Security.Claims;
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Contracts;
@@ -73,11 +72,11 @@ internal static class AccessTokenIdentity
     static void Apply(ClaimsIdentity identity, Account account, string clientId)
     {
         identity
-            .SetClaim(Claims.Subject, account.Id)
-            .SetClaim(Claims.Name, account.Name)
-            .SetClaim(Claims.PreferredUsername, account.GitHubLogin)
-            .SetClaim(IdentityClaims.GitHubId, account.GitHubId.ToString(CultureInfo.InvariantCulture))
-            .SetClaim(IdentityClaims.GitHubLogin, account.GitHubLogin)
+            .SetClaim(Claims.Subject, account.Id.Value)
+            .SetClaim(Claims.Name, account.Name.Value)
+            .SetClaim(Claims.PreferredUsername, account.GitHubLogin.Value)
+            .SetClaim(IdentityClaims.GitHubId, account.GitHubId.Value)
+            .SetClaim(IdentityClaims.GitHubLogin, account.GitHubLogin.Value)
             .SetClaim(Claims.AuthorizedParty, clientId);
 
         identity.SetDestinations(claim => AccessTokenClaimTypes.Contains(claim.Type, StringComparer.Ordinal) ? [Destinations.AccessToken] : []);

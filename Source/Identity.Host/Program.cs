@@ -8,8 +8,17 @@ builder.Host.UseDefaultServiceProvider(options =>
     options.ValidateOnBuild = true;
 });
 
+builder.AddCratisArc();
+builder.AddCratisChronicle(options =>
+{
+    options.EventStore = "Identity";
+    options.ConnectionString = builder.Configuration.GetConnectionString("chronicle") ?? builder.Configuration["Chronicle:ConnectionString"] ?? "chronicle://localhost:35000";
+});
+
 builder.AddCratisIdentity();
 
 var app = builder.Build();
 app.MapCratisIdentity();
+app.UseCratisArc();
+app.UseCratisChronicle();
 await app.RunAsync();

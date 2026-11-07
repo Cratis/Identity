@@ -88,9 +88,9 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
 
     void ValidateAccounts(AccountsOptions accounts, List<string> failures)
     {
-        if (!accounts.EventSourced)
+        if (accounts.ReadModelCatchUpTimeout <= TimeSpan.Zero)
         {
-            return;
+            failures.Add("Account read-model catch-up timeout must be positive.");
         }
 
         if (!environment.IsDevelopment() && string.IsNullOrEmpty(accounts.LookupKey))

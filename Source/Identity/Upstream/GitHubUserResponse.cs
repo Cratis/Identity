@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using Cratis.Identity.Accounts;
+using Cratis.Identity.Contracts.Accounts;
 
 namespace Cratis.Identity.Upstream;
 
@@ -29,6 +30,12 @@ internal static class GitHubUserResponse
             ? n.GetString()!
             : login.GetString()!;
 
-        return new GitHubUser(gitHubId, login.GetString()!, name);
+        var email = user.TryGetProperty("email", out var emailProperty) && emailProperty.ValueKind == JsonValueKind.String
+            ? emailProperty.GetString()
+            : null;
+        return new GitHubUser(gitHubId, login.GetString()!, name)
+        {
+            Email = string.IsNullOrWhiteSpace(email) ? null : new Email(email)
+        };
     }
 }
