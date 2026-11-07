@@ -12,7 +12,7 @@ namespace Cratis.Identity.ConsentFlow;
 /// <param name="AuthorizationId">The prepared, operationally guarded authorization.</param>
 /// <param name="CodeClaimed">Whether the one-time permission to issue a code has been consumed.</param>
 /// <param name="PurgeAt">The terminal-row retention deadline; never set on unresolved requests.</param>
-public record ConsentRequest(
+internal record ConsentRequest(
     ConsentRequestId Id,
     ConsentBinding Binding,
     DateTimeOffset Deadline,

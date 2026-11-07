@@ -13,7 +13,7 @@ namespace Cratis.Identity.ConsentFlow;
 /// <param name="authorizations">The dormant authorization adapter.</param>
 /// <param name="timeProvider">The clock.</param>
 /// <param name="options">The validated deadlines.</param>
-public sealed class ConsentActivation(
+internal sealed class ConsentActivation(
     IConsentRequestStore store,
     IConsentEvidence evidence,
     IRevocationFence fence,

@@ -7,7 +7,7 @@ namespace Cratis.Identity.ConsentFlow;
 /// The future Chronicle evidence boundary. Implementations must serialize Record and Resolve per request,
 /// deduplicate by request identity, and reject appends after a NotRecorded resolution. A partial append is Unknown.
 /// </summary>
-public interface IConsentEvidence
+internal interface IConsentEvidence
 {
     /// <summary>Idempotently records the complete evidence; acknowledgement loss must not permit a duplicate.</summary>
     /// <param name="request">The immutable request.</param>

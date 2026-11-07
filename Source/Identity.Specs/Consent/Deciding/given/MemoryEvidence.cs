@@ -3,7 +3,7 @@
 
 namespace Cratis.Identity.ConsentFlow.Deciding.given;
 
-public class MemoryEvidence : IConsentEvidence
+internal class MemoryEvidence : IConsentEvidence
 {
     readonly Lock _gate = new();
     readonly HashSet<ConsentRequestId> _recorded = [];

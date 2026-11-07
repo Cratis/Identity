@@ -4,7 +4,7 @@
 namespace Cratis.Identity.ConsentFlow;
 
 /// <summary>The complete evidence-append outcome, not merely the presence of one event.</summary>
-public enum ConsentEvidenceResolution
+internal enum ConsentEvidenceResolution
 {
     /// <summary>The outcome cannot be confirmed; neither activate nor abandon. This is the safe default.</summary>
     Unknown = 0,

@@ -7,7 +7,7 @@ namespace Cratis.Identity.ConsentFlow;
 
 /// <summary>An opaque identity for one validated authorization request, carried only in its server-side or protected flow.</summary>
 /// <param name="Value">The non-sensitive request correlation identity, not raw authorization parameters.</param>
-public record AuthorizationRequestId(Guid Value) : ConceptAs<Guid>(Value)
+internal record AuthorizationRequestId(Guid Value) : ConceptAs<Guid>(Value)
 {
     /// <summary>Allocates an identity when the server validates the original authorization request.</summary>
     /// <returns>The identity to bind into the protected flow.</returns>

@@ -3,7 +3,7 @@
 
 namespace Cratis.Identity.ConsentFlow.Deciding.given;
 
-public class MemoryAuthorizations : IAuthorizationActivator
+internal class MemoryAuthorizations : IAuthorizationActivator
 {
     readonly Lock _gate = new();
     readonly Dictionary<ConsentRequestId, string> _prepared = [];

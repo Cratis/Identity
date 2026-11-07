@@ -14,4 +14,4 @@ namespace Cratis.Identity.ConsentFlow;
 /// <param name="Scopes">The canonical, sorted scope set.</param>
 /// <param name="Session">The authenticated browser session identity.</param>
 /// <param name="AuthorizationRequest">The distinct original authorization request identity, recovered from server-side or protected state, never untrusted form data.</param>
-public record ConsentBinding(string Realm, AccountSubject Account, string Client, string Tenant, string Resource, string Scopes, string Session, AuthorizationRequestId AuthorizationRequest);
+internal record ConsentBinding(string Realm, AccountSubject Account, string Client, string Tenant, string Resource, string Scopes, string Session, AuthorizationRequestId AuthorizationRequest);

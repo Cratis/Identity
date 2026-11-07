@@ -9,7 +9,7 @@ namespace Cratis.Identity.ConsentFlow.Operational;
 
 /// <summary>Majority-durable, single-document consent transitions, separate from OpenIddict's collections.</summary>
 /// <param name="database">The operational database, created through MongoClientFactory.</param>
-public sealed class MongoConsentRequestStore(IMongoDatabase database) : IConsentRequestStore
+internal sealed class MongoConsentRequestStore(IMongoDatabase database) : IConsentRequestStore
 {
     /// <summary>The operational collection; the Mongo _id index uniquely enforces ConsentRequestId.</summary>
     public const string CollectionName = "consent-requests";

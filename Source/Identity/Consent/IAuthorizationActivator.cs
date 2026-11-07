@@ -8,7 +8,7 @@ namespace Cratis.Identity.ConsentFlow;
 /// every issuance/redemption with the operational Active state and a live revocation fence. Preparation alone,
 /// evidence replay, and possession of the returned identity never confer authority. No production adapter is wired yet.
 /// </summary>
-public interface IAuthorizationActivator
+internal interface IAuthorizationActivator
 {
     /// <summary>Prepares or finds the same dormant authorization; null means activation is unavailable.</summary>
     /// <param name="request">The evidenced request.</param>

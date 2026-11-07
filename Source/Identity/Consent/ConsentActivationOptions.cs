@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 namespace Cratis.Identity.ConsentFlow;
 
 /// <summary>Validated operational consent deadlines and bounded reconciliation settings.</summary>
-public sealed class ConsentActivationOptions : IValidatableObject
+internal sealed class ConsentActivationOptions : IValidatableObject
 {
     /// <summary>Gets or sets the time allowed to activate a request.</summary>
     public TimeSpan ActivationDeadline { get; set; } = TimeSpan.FromMinutes(10);

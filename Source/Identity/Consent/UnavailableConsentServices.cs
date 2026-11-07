@@ -4,7 +4,7 @@
 namespace Cratis.Identity.ConsentFlow;
 
 /// <summary>Fail-closed defaults until the evidence, fence and guarded authorization adapters are implemented.</summary>
-public sealed class UnavailableConsentServices : IConsentEvidence, IRevocationFence, IAuthorizationActivator
+internal sealed class UnavailableConsentServices : IConsentEvidence, IRevocationFence, IAuthorizationActivator
 {
     /// <inheritdoc/>
     public Task<ConsentEvidenceResolution> Record(ConsentRequest request, CancellationToken cancellationToken) => Task.FromResult(ConsentEvidenceResolution.Unknown);

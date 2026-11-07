@@ -4,7 +4,7 @@
 namespace Cratis.Identity.ConsentFlow;
 
 /// <summary>The operational authority for a consent request, independent of replayed evidence.</summary>
-public enum ConsentRequestState
+internal enum ConsentRequestState
 {
     /// <summary>No decision has been made.</summary>
     Pending = 0,

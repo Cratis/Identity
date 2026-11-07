@@ -3,7 +3,7 @@
 
 namespace Cratis.Identity.ConsentFlow.Deciding.given;
 
-public class MemoryFence : IRevocationFence
+internal class MemoryFence : IRevocationFence
 {
     public bool Clear = true;
     public bool Fail;

@@ -3,7 +3,7 @@
 
 namespace Cratis.Identity.ConsentFlow.Deciding.given;
 
-public class MemoryRequests : IConsentRequestStore
+internal class MemoryRequests : IConsentRequestStore
 {
     readonly Lock _gate = new();
     readonly Dictionary<ConsentRequestId, ConsentRequest> _rows = [];

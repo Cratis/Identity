@@ -7,7 +7,7 @@ namespace Cratis.Identity.ConsentFlow;
 
 /// <summary>The server-generated identity and evidence idempotency key of a consent request.</summary>
 /// <param name="Value">The request identity.</param>
-public record ConsentRequestId(Guid Value) : ConceptAs<Guid>(Value)
+internal record ConsentRequestId(Guid Value) : ConceptAs<Guid>(Value)
 {
     /// <summary>Allocates a request identity.</summary>
     /// <returns>A new identity.</returns>

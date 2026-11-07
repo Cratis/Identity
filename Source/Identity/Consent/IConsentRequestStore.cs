@@ -4,7 +4,7 @@
 namespace Cratis.Identity.ConsentFlow;
 
 /// <summary>Durable request storage. Only the operational state, never evidence replay, enables a grant.</summary>
-public interface IConsentRequestStore
+internal interface IConsentRequestStore
 {
     /// <summary>Inserts a new pending request without overwriting an existing identity.</summary>
     /// <param name="request">The request.</param>

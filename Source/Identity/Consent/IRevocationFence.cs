@@ -4,7 +4,7 @@
 namespace Cratis.Identity.ConsentFlow;
 
 /// <summary>Confirms live account/session/grant fence state; absence, errors and uncertainty must deny.</summary>
-public interface IRevocationFence
+internal interface IRevocationFence
 {
     /// <summary>Confirms this exact binding is not fenced and its session remains live.</summary>
     /// <param name="request">The operational request.</param>

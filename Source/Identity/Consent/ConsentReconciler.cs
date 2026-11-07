@@ -10,7 +10,7 @@ namespace Cratis.Identity.ConsentFlow;
 /// <param name="options">The reconciliation settings.</param>
 /// <param name="timeProvider">The clock.</param>
 /// <param name="logger">The logger.</param>
-public sealed class ConsentReconciler(
+internal sealed class ConsentReconciler(
     IServiceScopeFactory scopes,
     IOptions<ConsentActivationOptions> options,
     TimeProvider timeProvider,
