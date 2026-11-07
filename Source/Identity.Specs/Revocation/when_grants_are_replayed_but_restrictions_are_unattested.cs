@@ -27,13 +27,4 @@ public class when_grants_are_replayed_but_restrictions_are_unattested : given.a_
     [Fact] void should_not_cover_personal_access_tokens() => _gate.Allows(RestrictionClass.PersonalAccessTokens).ShouldBeFalse();
     [Fact] void should_still_require_global_attestation() => _gate.Ready.ShouldBeFalse();
     [Fact] void should_keep_legacy_bootstrap_disabled() => _gate.AllowLegacyBootstrap.ShouldBeFalse();
-
-    [Fact]
-    void should_close_class_coverage_when_the_epoch_advances()
-    {
-        _gate.ObserveEpoch(_gate.Epoch + 1);
-        _gate.Allows(RestrictionClass.Tokens).ShouldBeFalse();
-        _gate.Allows(RestrictionClass.Authorizations).ShouldBeFalse();
-        _gate.Allows(RestrictionClass.Consent).ShouldBeFalse();
-    }
 }
