@@ -24,7 +24,7 @@ internal sealed class FencedTokenStore(IOpenIddictMongoDbContext context, IOptio
     /// <inheritdoc/>
     public override async ValueTask CreateAsync(OpenIddictMongoDbToken token, CancellationToken cancellationToken)
     {
-        if (token.Type != TokenTypeHints.RefreshToken)
+        if (token.Type != TokenTypeIdentifiers.RefreshToken)
         {
             await base.CreateAsync(token, cancellationToken);
             return;
