@@ -50,7 +50,7 @@ app.UseCratisChronicle();
 await app.RunAsync();
 ```
 
-`MapCratisIdentity` adds routing, the Identity realm scope, security headers and authentication middleware before it maps the endpoints, so call it before the host's own endpoints and any middleware that resolves Identity services. Authentication and generated Identity API routes use the realm namespace; non-Identity routes retain the host's namespace resolver. `Source/Identity.Host` is the sample host and the standalone server that the Docker image runs.
+`MapCratisIdentity` owns the Identity pipeline order: routing → realm scope → security headers → authentication, followed by endpoint mapping. Call it once, before the host's own endpoints and Arc/Chronicle middleware; do not call `UseAuthentication` or `UseRouting` ahead of it for Identity routes. Authentication and generated Identity API routes use the realm namespace; non-Identity routes retain the host's namespace resolver. `Source/Identity.Host` is the sample host and the standalone server that the Docker image runs.
 
 ## What v1 implements
 
