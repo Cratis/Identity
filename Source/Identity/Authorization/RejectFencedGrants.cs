@@ -65,10 +65,10 @@ internal sealed class RejectFencedGrants(IFenceStore fences, IOpenIddictTokenMan
             {
                 var entry = string.IsNullOrEmpty(context.TokenId) ? null : await tokens.FindByIdAsync(context.TokenId, context.CancellationToken);
                 state ??= entry is null ? null : await read.Read(context.AuthorizationId, context.TokenId!, entry, context.Principal, context.CancellationToken);
-                denied = state is null || state.Fence is not null || entry is null ||
-                    (state.CurrentRefreshTokenId != context.TokenId && !await tokens.HasStatusAsync(entry, Statuses.Redeemed, context.CancellationToken));
+                denied = state is null || state.Fence is not null || entry is null;
 
-                // A known Redeemed non-current entry proceeds to the reuse protocol, never to issuance.
+                // Non-current entries can still look Valid while the winner updates OpenIddict.
+                // Let built-in status/expiry validation and redemption classify reuse, never issue from this read.
             }
             else
             {
@@ -92,29 +92,15 @@ internal sealed class RejectFencedGrants(IFenceStore fences, IOpenIddictTokenMan
     }
 
     /// <inheritdoc/>
-    public async ValueTask HandleAsync(ProcessSignInContext context)
+    public ValueTask HandleAsync(ProcessSignInContext context)
     {
-        if (context.EndpointType is not OpenIddictServerEndpointType.Token || context.Request?.IsRefreshTokenGrantType() != true)
+        if (context.EndpointType is OpenIddictServerEndpointType.Token && context.Request?.IsRefreshTokenGrantType() == true && issuance.Admission is null)
         {
-            return;
-        }
-
-        try
-        {
-            var state = string.IsNullOrEmpty(issuance.GrantId) ? null : await fences.Read(issuance.GrantId, context.CancellationToken);
-            if (state is not null && GrantStateValidation.IsKnown(state) && state.Fence is null &&
-                !string.IsNullOrEmpty(issuance.SuccessorId) && state.CurrentRefreshTokenId == issuance.SuccessorId)
-            {
-                return;
-            }
-        }
-        catch (Exception)
-        {
-            // Unknown admission can never become a successful sign-in response.
             context.Reject(error: Errors.InvalidGrant, description: "The refresh token is no longer valid.");
-            return;
         }
 
-        context.Reject(error: Errors.InvalidGrant, description: "The refresh token is no longer valid.");
+        // The successful CAS is the serialization point. A later fence denies the successor's
+        // next use, not the response of the request already ordered before that fence.
+        return ValueTask.CompletedTask;
     }
 }

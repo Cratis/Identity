@@ -27,9 +27,21 @@ public class when_revocation_arrives_after_redemption : for_RedeemRefreshTokenOn
     async Task Because()
     {
         await _handler.HandleAsync(_context);
-        await _authority.Commit(AuthorizationId, FenceDoubles.Subject, RevocationReason.Revoked, CancellationToken.None);
-        await _guard.HandleAsync(_context);
+        var held = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var response = FinishResponse();
+        await held.Task.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System);
+        await _authority.Commit(AuthorizationId, FenceDoubles.Subject, RevocationReason.RefreshTokenReused, CancellationToken.None);
+        release.SetResult();
+        await response;
+
+        async Task FinishResponse()
+        {
+            held.SetResult();
+            await release.Task.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System);
+            await _guard.HandleAsync(_context);
+        }
     }
     [Fact] void should_have_consumed_exactly_once_before_restriction() => _tokens.Received(1).TryRedeemAsync(_token, Arg.Any<CancellationToken>());
-    [Fact] void should_explicitly_reject_before_generating_the_response() => _context.Error.ShouldEqual(Errors.InvalidGrant);
+    [Fact] void should_allow_the_response_admitted_before_the_fence() => _context.IsRejected.ShouldBeFalse();
 }

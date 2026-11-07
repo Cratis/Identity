@@ -90,13 +90,13 @@ internal class RedeemRefreshTokenOnce(IOpenIddictTokenManager tokens, GrantRevoc
 
     async Task<bool> IsRedeemable(ProcessSignInContext context, object token, GrantState state, string tokenId)
     {
-        var valid = state.CurrentRefreshTokenId == tokenId && await tokens.HasStatusAsync(token, Statuses.Valid, context.CancellationToken);
-        if (valid)
+        var valid = await tokens.HasStatusAsync(token, Statuses.Valid, context.CancellationToken);
+        if (state.CurrentRefreshTokenId == tokenId && valid)
         {
             return true;
         }
 
-        if (await tokens.HasStatusAsync(token, Statuses.Redeemed, context.CancellationToken))
+        if (valid || await tokens.HasStatusAsync(token, Statuses.Redeemed, context.CancellationToken))
         {
             await grants.RevokeAfterReuse(state.GrantId, context.CancellationToken);
         }
@@ -140,8 +140,7 @@ internal class RedeemRefreshTokenOnce(IOpenIddictTokenManager tokens, GrantRevoc
             return;
         }
 
-        issuance.GrantId = authorizationId;
-        issuance.SuccessorId = successor;
+        issuance.Admit(state, successor);
         context.Transaction.SetProperty(typeof(RefreshIssuance).FullName!, successor);
     }
 

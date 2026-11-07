@@ -13,10 +13,10 @@ public class when_creating_an_installed_successor : given.a_token_store
     async Task Establish()
     {
         var grantId = _entry.AuthorizationId.ToString();
-        await _fences.RecordFamilyStart(grantId, "old-entry", FenceDoubles.Subject, DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(20), CancellationToken.None);
-        _issuance.GrantId = grantId;
-        _issuance.SuccessorId = "65ab56ef0123456789012350";
-        await _fences.RedeemAndInstall(grantId, "old-entry", _issuance.SuccessorId, 1, CancellationToken.None);
+        var state = await _fences.RecordFamilyStart(grantId, "old-entry", FenceDoubles.Subject, DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(20), CancellationToken.None);
+        const string successor = "65ab56ef0123456789012350";
+        await _fences.RedeemAndInstall(grantId, "old-entry", successor, state.Version, CancellationToken.None);
+        _issuance.Admit(state, successor);
     }
     async Task Because()
     {

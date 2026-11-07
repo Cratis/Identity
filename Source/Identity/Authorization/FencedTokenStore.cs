@@ -46,7 +46,9 @@ internal sealed class FencedTokenStore(IOpenIddictMongoDbContext context, IOptio
             }
 
             token.Id = ObjectId.Parse(successor);
-            state = await fences.Read(grantId, cancellationToken) ?? throw new RevocationPending();
+
+            // Retain the successful admission even if a later reuse/revoke has fenced the family.
+            state = issuance.Admission ?? throw new RevocationPending();
         }
         else
         {
@@ -69,7 +71,7 @@ internal sealed class FencedTokenStore(IOpenIddictMongoDbContext context, IOptio
         token.ExpirationDate = expires <= absolute.UtcDateTime ? expires : absolute.UtcDateTime;
         await base.CreateAsync(token, cancellationToken);
 
-        // A revoke after this check still wins future admission because the tombstone clears CurrentRefreshTokenId.
+        // A later revoke still wins future admission because the tombstone clears CurrentRefreshTokenId.
     }
 
     /// <summary>Allocates an entry ID without exposing Mongo types in request state.</summary>
