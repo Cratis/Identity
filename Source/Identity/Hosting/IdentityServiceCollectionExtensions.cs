@@ -34,6 +34,7 @@ internal static class IdentityServiceCollectionExtensions
     /// <returns>The <see cref="IServiceCollection"/> for continuation.</returns>
     /// <exception cref="KeysInConfiguration">Thrown when a signing or encryption certificate is still configured.</exception>
     /// <exception cref="SecretStoreNotConfigured">Thrown outside development without a secret store.</exception>
+    /// <exception cref="InvalidMongoDBConnectionString">Thrown when the MongoDB client is first resolved with a connection string that cannot be parsed.</exception>
     internal static IServiceCollection AddCratisIdentity(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         var section = configuration.GetSection(IdentityOptions.SectionName);
@@ -108,7 +109,7 @@ internal static class IdentityServiceCollectionExtensions
 
     static void AddStorage(this IServiceCollection services)
     {
-        services.AddSingleton<IMongoClient>(sp => new MongoClient(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.ConnectionString));
+        services.AddSingleton<IMongoClient>(sp => MongoClientFactory.Create(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.ConnectionString));
         services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.Database));
         services.AddSingleton<StorageIndexes>();
 
