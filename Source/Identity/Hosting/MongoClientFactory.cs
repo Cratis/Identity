@@ -11,6 +11,8 @@ namespace Cratis.Identity.Hosting;
 /// </summary>
 internal static class MongoClientFactory
 {
+    static readonly string[] _supportedMechanisms = ["DEFAULT", "SCRAM-SHA-1", "SCRAM-SHA-256", "MONGODB-X509"];
+
     /// <summary>
     /// Creates the client.
     /// </summary>
@@ -29,6 +31,15 @@ internal static class MongoClientFactory
 #pragma warning restore CA1031
         {
             // Deliberately no inner exception: it would carry the driver's message into the log.
+            throw new InvalidMongoDBConnectionString();
+        }
+
+        // Mechanisms that take properties (OIDC, AWS, GSSAPI) validate those properties lazily on first connection and
+        // the driver quotes them in that exception, outside any boundary we own. Only password and certificate
+        // mechanisms, which carry no such properties, are accepted.
+        var mechanism = settings.Credential?.Mechanism;
+        if (mechanism is not null && !_supportedMechanisms.Contains(mechanism, StringComparer.OrdinalIgnoreCase))
+        {
             throw new InvalidMongoDBConnectionString();
         }
 

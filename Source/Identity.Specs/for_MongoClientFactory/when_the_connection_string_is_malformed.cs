@@ -14,6 +14,7 @@ public class when_the_connection_string_is_malformed : Specification
     [
         $"mongodb://admin:{Marker}@db.example:notaport/?authMechanism=MONGODB-OIDC&authMechanismProperties={Property}",
         $"mongodb://admin:{Marker}@db.example/?maxPoolSize=notanumber&authMechanismProperties={Property}",
+        $"mongodb://localhost/?authMechanism=MONGODB-OIDC&authMechanismProperties=ENVIRONMENT:{Marker}",
         $"notmongo://admin:{Marker}@db.example/?authMechanismProperties={Property}"
     ];
 
