@@ -18,7 +18,7 @@ internal static class EventLogScanner
         ("opaque", Pattern("^[A-Za-z0-9_-]{40,}$"))
     ];
 
-    static readonly string[] _secretProperties = ["client_secret", "refresh_token", "access_token", "authorization_code", "password", "secret"];
+    static readonly string[] _secretProperties = ["token", "secret", "password", "authorization", "code", "assertion", "privatekey", "credential", "verifier", "nonce", "cookie"];
 
     internal static IReadOnlyList<(string EventType, string Rule)> Findings(IEnumerable<string> serializedEvents, IEnumerable<string> knownSecrets)
     {
@@ -60,9 +60,14 @@ internal static class EventLogScanner
         }
     }
 
-    static bool IsSecretProperty(JsonProperty property) =>
-        _secretProperties.Contains(property.Name, StringComparer.OrdinalIgnoreCase) &&
-        property.Value.ValueKind == JsonValueKind.String && !string.IsNullOrEmpty(property.Value.GetString());
+    static bool IsSecretProperty(JsonProperty property)
+    {
+        var name = property.Name.Replace("_", string.Empty, StringComparison.Ordinal)
+            .Replace("-", string.Empty, StringComparison.Ordinal).ToLowerInvariant();
+        return _secretProperties.Any(secret => name.Contains(secret, StringComparison.Ordinal)) &&
+            property.Value.ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined) &&
+            (property.Value.ValueKind != JsonValueKind.String || !string.IsNullOrEmpty(property.Value.GetString()));
+    }
 
     static void ScanValue(string value, string type, string[] secrets, List<(string EventType, string Rule)> findings)
     {

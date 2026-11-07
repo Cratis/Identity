@@ -28,8 +28,8 @@ public class when_rebuilding_every_read_model : given.a_replayed_activation
         await ReplayTwice();
     }
 
-    [Fact] void should_mint_no_token() => when_inspecting_observers.Observers.SelectMany(when_inspecting_observers.Dependencies).Where(when_inspecting_observers.IsForbidden).ShouldBeEmpty();
-    [Fact] void should_send_no_mail() => when_inspecting_observers.Observers.All(when_inspecting_observers.IsClassified).ShouldBeTrue();
+    [Fact] void should_have_no_observer_token_or_grant_mutation_dependency() => when_inspecting_observers.Observers.SelectMany(when_inspecting_observers.Dependencies).Where(when_inspecting_observers.IsForbidden).ShouldBeEmpty();
+    [Fact] void should_classify_every_observer_for_side_effect_review() => when_inspecting_observers.Observers.All(when_inspecting_observers.IsClassified).ShouldBeTrue();
     [Fact] void should_not_restore_a_revoked_grant() => _revocation.Redemption.ShouldEqual(RedeemOutcome.Fenced);
     [Fact] void should_not_activate_an_abandoned_or_never_active_consent_grant() => after.State.ShouldEqual(ConsentRequestState.Abandoned);
     [Fact] void should_leave_preparation_untouched() => counting.Prepares.ShouldEqual(_prepares);
