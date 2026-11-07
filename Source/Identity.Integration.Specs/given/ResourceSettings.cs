@@ -4,10 +4,20 @@
 namespace Cratis.Identity.Integration.given;
 
 /// <summary>
-/// Resource overrides layered over the shipped host configuration by the integration host and its binding spec.
+/// Resource and introspection client overrides layered over the shipped host configuration by the integration host and its binding spec.
 /// </summary>
 public static class ResourceSettings
 {
+    /// <summary>
+    /// The confidential resource server client that introspects the CLI's MCP-audience access tokens.
+    /// </summary>
+    public const string IntrospectionClientId = "direct-mcp";
+
+    /// <summary>
+    /// The test-only secret for the MCP introspection client.
+    /// </summary>
+    public const string IntrospectionClientSecret = "mcp-introspection-secret-for-specs";
+
     /// <summary>
     /// Creates tenant fixtures for both Direct resources and appends the Studio and Stage resources.
     /// </summary>
@@ -17,6 +27,8 @@ public static class ResourceSettings
     /// <returns>The resource configuration overrides.</returns>
     public static Dictionary<string, string?> Create(string memberTenant, string otherMemberTenant, string memberId) => new()
     {
+        ["Identity:IntrospectionClients:0:ClientId"] = IntrospectionClientId,
+        ["Identity:IntrospectionClients:0:ClientSecret"] = IntrospectionClientSecret,
         ["Identity:Resources:0:Tenants:0:Id"] = memberTenant,
         ["Identity:Resources:0:Tenants:0:Name"] = "Cratis",
         ["Identity:Resources:0:Tenants:0:Members:0"] = memberId,

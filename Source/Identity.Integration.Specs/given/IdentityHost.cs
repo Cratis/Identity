@@ -42,8 +42,8 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     public const string DirectMcp = "https://cratis.direct/mcp";
     public const string DirectV1 = "https://cratis.direct/v1";
     public const string StudioMcp = "https://cratis.studio/mcp";
-    public const string IntrospectionClientId = "direct-api";
-    public const string IntrospectionClientSecret = "introspection-secret-for-specs";
+    public const string IntrospectionClientId = ResourceSettings.IntrospectionClientId;
+    public const string IntrospectionClientSecret = ResourceSettings.IntrospectionClientSecret;
     public const string MemberTenant = "cratis";
     public const string OtherMemberTenant = "second";
 
@@ -212,8 +212,6 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         ["Identity:FenceLog:InstanceId"] = _fenceInstance,
         ["Identity:FenceLog:MinimumSequence"] = "0",
         ["Identity:GitHub:ClientId"] = "unused-in-specs",
-        ["Identity:GitHub:ClientSecret"] = "unused-in-specs",
-        ["Identity:IntrospectionClients:0:ClientId"] = IntrospectionClientId,
-        ["Identity:IntrospectionClients:0:ClientSecret"] = IntrospectionClientSecret
+        ["Identity:GitHub:ClientSecret"] = "unused-in-specs"
     };
 }

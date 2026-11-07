@@ -1,17 +1,22 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Clients;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.Integration.given;
+using Cratis.Identity.Resources;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Internal;
+using Microsoft.Extensions.Options;
+using OpenIddict.Abstractions;
 
 namespace Cratis.Identity.for_IdentityOptionsValidation;
 
 public class when_loading_the_integration_resources : Specification
 {
     IdentityOptions _options;
+    OpenIddictApplicationDescriptor _introspection;
 
     void Because()
     {
@@ -23,11 +28,17 @@ public class when_loading_the_integration_resources : Specification
             .Build();
         _options = new IdentityOptions();
         configuration.GetSection(IdentityOptions.SectionName).Bind(_options);
+        var options = Options.Create(_options);
+        _introspection = new ClientDescriptors(new ResourceCatalog(options), options).All().Single(client => client.ClientId == ResourceSettings.IntrospectionClientId);
         (configuration as IDisposable)?.Dispose();
     }
 
     [Fact] void should_validate_the_merged_configuration() => new IdentityOptionsValidation(new HostingEnvironment { EnvironmentName = Environments.Development }).Validate(null, _options).Succeeded.ShouldBeTrue();
     [Fact] void should_preserve_both_direct_resources_and_append_the_test_resources() => _options.Resources.Select(resource => resource.Audience).SequenceEqual(["direct-api", "direct-mcp", "studio-api", "stage-api"]).ShouldBeTrue();
+    [Fact] void should_use_the_mcp_audience_as_the_introspection_client_id() => _introspection.ClientId.ShouldEqual(Resource("direct-mcp").Audience);
+    [Fact] void should_register_a_confidential_introspection_client() => _introspection.ClientType.ShouldEqual(OpenIddictConstants.ClientTypes.Confidential);
+    [Fact] void should_configure_the_mcp_introspection_secret() => _introspection.ClientSecret.ShouldEqual(ResourceSettings.IntrospectionClientSecret);
+    [Fact] void should_only_grant_the_introspection_endpoint() => _introspection.Permissions.Single().ShouldEqual(OpenIddictConstants.Permissions.Endpoints.Introspection);
     [Fact] void should_keep_the_api_indicator() => Resource("direct-api").Indicators.Single().ShouldEqual("https://cratis.direct/v1");
     [Fact] void should_keep_the_mcp_indicator() => Resource("direct-mcp").Indicators.Single().ShouldEqual("https://cratis.direct/mcp");
     [Fact] void should_keep_the_api_scopes() => Resource("direct-api").Scopes.Select(scope => scope.Name).SequenceEqual(["direct:read", "direct:content.write", "direct:work"]).ShouldBeTrue();

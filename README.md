@@ -121,7 +121,9 @@ Everything is under the `Identity` section (environment variables use `Identity_
 | `Tokens:RefreshTokenLifetime` | `30.00:00:00` | Absolute lifetime of a refresh-token family. |
 | `SessionLifetime` | `01:00:00` | The Identity site session cookie; not sliding. |
 | `Resources[]` | Direct | `Audience`, `DisplayName`, `Indicators[]`, `Scopes[]` (`Name`, `Description`), `TenantsCallback` (`Url`, `Secret`, `Timeout`). `Tenants[]` (`Id`, `Name`, `Members[]` as numeric GitHub ids, `AllowAllAccounts`) is Development only and cannot be combined with a callback. Validated at startup: duplicate audiences, indicators or scopes, fragments, and protocol scopes are rejected. Outside Development every resource requires an HTTPS callback and a secret of at least 32 characters. |
-| `IntrospectionClients[]` | none | `ClientId`, `ClientSecret` for resource servers that introspect. |
+| `IntrospectionClients[]` | none | `ClientId`, `ClientSecret` for confidential resource servers that introspect. Use the token's audience as the client id: `direct-mcp` for `direct:mcp:*` tokens, `direct-api` for `direct:*` API tokens. Configure a separate secret for each client through the platform's secret configuration mechanism. |
+
+OpenIddict rejects introspection by a client that is neither the token's audience nor its presenter. Application-specific claims are returned only to a confidential audience client. The integration fixture registers `direct-mcp` with a test-only secret because its default CLI flow requests `direct:mcp:read` and issues tokens for `direct-mcp` with presenter `cratis-cli`.
 
 Clients are declared in code (`ClientDescriptors`) and configuration (introspection clients). The client store is reconciled at startup: undeclared clients are deleted.
 
