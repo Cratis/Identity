@@ -12,6 +12,8 @@ namespace Cratis.Identity.ConsentFlow;
 /// <param name="AuthorizationId">The prepared, operationally guarded authorization.</param>
 /// <param name="CodeClaimed">Whether the one-time permission to issue a code has been consumed.</param>
 /// <param name="PurgeAt">The terminal-row retention deadline; never set on unresolved requests.</param>
+/// <param name="CreatedAt">The immutable creation time from the server clock.</param>
+/// <param name="Selection">The validated approval, retained through recovery.</param>
 internal record ConsentRequest(
     ConsentRequestId Id,
     ConsentBinding Binding,
@@ -20,4 +22,6 @@ internal record ConsentRequest(
     long Revision = 0,
     string? AuthorizationId = null,
     bool CodeClaimed = false,
-    DateTimeOffset? PurgeAt = null);
+    DateTimeOffset? PurgeAt = null,
+    DateTimeOffset CreatedAt = default,
+    ConsentSelection? Selection = null);

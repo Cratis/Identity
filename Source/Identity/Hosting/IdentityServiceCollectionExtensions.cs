@@ -159,6 +159,11 @@ internal static class IdentityServiceCollectionExtensions
         services.TryAddScoped<IConsentEvidence, UnavailableConsentServices>();
         services.TryAddScoped<IRevocationFence, UnavailableConsentServices>();
         services.TryAddScoped<IAuthorizationActivator, UnavailableConsentServices>();
+        services.TryAddScoped<ICurrentConsentSession, UnavailableConsentSession>();
+        services.TryAddScoped<IConsentEligibility, ConsentEligibilityReader>();
+        services.TryAddSingleton<IConsentProof, ConsentProof>();
+        services.TryAddScoped<ConsentCaller>();
+        services.TryAddScoped<ConsentInteraction>();
         services.TryAddScoped<ConsentActivation>();
         services.AddHostedService<ConsentReconciler>();
     }

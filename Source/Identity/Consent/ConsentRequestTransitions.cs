@@ -12,14 +12,21 @@ internal static class ConsentRequestTransitions
     /// <returns>Whether the replacement follows the state machine.</returns>
     internal static bool CanReplace(ConsentRequest before, ConsentRequest after)
     {
-        if (!SameRequest(before, after)) return false;
+        if (!SameRequest(before, after) || !HasSelection(before, after)) return false;
         if (before.State == ConsentRequestState.Active) return IsCodeClaim(before, after);
         if (!HasActivationPayload(after) || !HasRetention(after)) return false;
         return IsAllowedState(before.State, after.State);
     }
 
     static bool SameRequest(ConsentRequest before, ConsentRequest after) =>
-        before.Id == after.Id && before.Binding == after.Binding && before.Deadline == after.Deadline && after.Revision == before.Revision + 1;
+        before.Id == after.Id && before.Binding == after.Binding && before.Deadline == after.Deadline && before.CreatedAt == after.CreatedAt && after.Revision == before.Revision + 1;
+
+    static bool HasSelection(ConsentRequest before, ConsentRequest after) =>
+        (after.State != ConsentRequestState.Decided || after.Selection is not null) &&
+        (after.State != ConsentRequestState.Denied || after.Selection is null) &&
+        (before.State == ConsentRequestState.Pending
+            ? after.State == ConsentRequestState.Decided || after.Selection is null
+            : before.Selection == after.Selection);
 
     static bool IsCodeClaim(ConsentRequest before, ConsentRequest after) =>
         after.State == before.State && !before.CodeClaimed && after.CodeClaimed && after.AuthorizationId == before.AuthorizationId && after.PurgeAt is null;
