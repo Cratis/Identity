@@ -43,7 +43,7 @@ internal class RevokeGrantOnRefreshTokenReuse(IOpenIddictTokenManager tokens, Gr
             string.IsNullOrEmpty(context.TokenId) ||
             string.IsNullOrEmpty(context.AuthorizationId) ||
             await tokens.FindByIdAsync(context.TokenId, context.CancellationToken) is not { } token ||
-            await tokens.HasStatusAsync(token, Statuses.Valid, context.CancellationToken))
+            !await tokens.HasStatusAsync(token, Statuses.Redeemed, context.CancellationToken))
         {
             // Anything else is left to OpenIddict's own token-entry validation.
             return;

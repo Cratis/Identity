@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Revocation;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -23,7 +24,10 @@ namespace Cratis.Identity.Authorization;
 /// <param name="tokens">The <see cref="IOpenIddictTokenManager"/>.</param>
 /// <param name="grants">The <see cref="GrantRevocation"/>.</param>
 /// <param name="timeProvider">The <see cref="TimeProvider"/>.</param>
-internal class RedeemRefreshTokenOnce(IOpenIddictTokenManager tokens, GrantRevocation grants, TimeProvider timeProvider) : IOpenIddictServerHandler<ProcessSignInContext>
+/// <param name="fences">The single-document authority.</param>
+/// <param name="read">The constrained legacy-family repair.</param>
+/// <param name="issuance">The request-scoped successor binding.</param>
+internal class RedeemRefreshTokenOnce(IOpenIddictTokenManager tokens, GrantRevocation grants, TimeProvider timeProvider, IFenceStore fences, ReadRefreshGrant read, RefreshIssuance issuance) : IOpenIddictServerHandler<ProcessSignInContext>
 {
     /// <summary>
     /// Gets the descriptor. It runs just before OpenIddict's redemption handler, whose later attempt to redeem the
@@ -62,15 +66,114 @@ internal class RedeemRefreshTokenOnce(IOpenIddictTokenManager tokens, GrantRevoc
             return;
         }
 
-        // The entry is reloaded after validation: another request may have redeemed it in between. Redeeming an
-        // entry that is no longer valid would succeed against its fresh concurrency token, so check it first.
-        if (await tokens.HasStatusAsync(token, Statuses.Valid, context.CancellationToken) &&
-            await tokens.TryRedeemAsync(token, context.CancellationToken))
+        GrantState? state;
+        try
         {
+            state = await read.Read(authorizationId, tokenId, token, principal!, context.CancellationToken);
+        }
+        catch (Exception)
+        {
+            state = null;
+        }
+
+        if (state is null || state.Fence is not null)
+        {
+            context.Reject(error: Errors.InvalidGrant, description: "The refresh token is no longer valid.");
             return;
         }
 
-        await grants.RevokeAfterReuse(authorizationId, context.CancellationToken);
+        if (await IsRedeemable(context, token, state, tokenId))
+        {
+            await ConsumeAndInstall(context, token, state, tokenId);
+        }
+    }
+
+    async Task<bool> IsRedeemable(ProcessSignInContext context, object token, GrantState state, string tokenId)
+    {
+        var valid = state.CurrentRefreshTokenId == tokenId && await tokens.HasStatusAsync(token, Statuses.Valid, context.CancellationToken);
+        if (valid)
+        {
+            return true;
+        }
+
+        if (await tokens.HasStatusAsync(token, Statuses.Redeemed, context.CancellationToken))
+        {
+            await grants.RevokeAfterReuse(state.GrantId, context.CancellationToken);
+        }
+
         context.Reject(error: Errors.InvalidGrant, description: "The refresh token was already used.");
+        return false;
+    }
+
+    async Task ConsumeAndInstall(ProcessSignInContext context, object token, GrantState state, string tokenId)
+    {
+        var authorizationId = state.GrantId;
+
+        // The one-document CAS, not the later token status write, serializes consume+install with revoke.
+        // A crash after it strands the admitted successor; it never makes the consumed entry current again.
+        var successor = FencedTokenStore.AllocateId();
+        RedeemOutcome outcome;
+        try
+        {
+            outcome = await Install(authorizationId, tokenId, successor, state.Version, context.CancellationToken);
+        }
+        catch (Exception)
+        {
+            outcome = RedeemOutcome.Unknown;
+        }
+
+        if (outcome != RedeemOutcome.Installed)
+        {
+            if (outcome is RedeemOutcome.NotCurrent)
+            {
+                await grants.RevokeAfterReuse(authorizationId, context.CancellationToken);
+            }
+
+            context.Reject(error: outcome == RedeemOutcome.VersionConflict ? Errors.TemporarilyUnavailable : Errors.InvalidGrant, description: "The refresh token is no longer valid.");
+            return;
+        }
+
+        if (!await tokens.TryRedeemAsync(token, context.CancellationToken))
+        {
+            await grants.RevokeAfterReuse(authorizationId, context.CancellationToken);
+            context.Reject(error: Errors.InvalidGrant, description: "The refresh token was already used.");
+            return;
+        }
+
+        issuance.GrantId = authorizationId;
+        issuance.SuccessorId = successor;
+        context.Transaction.SetProperty(typeof(RefreshIssuance).FullName!, successor);
+    }
+
+    async Task<RedeemOutcome> Install(string grantId, string entryId, string successorId, long version, CancellationToken cancellationToken)
+    {
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            var outcome = await fences.RedeemAndInstall(grantId, entryId, successorId, version, cancellationToken);
+            if (outcome != RedeemOutcome.VersionConflict)
+            {
+                return outcome;
+            }
+
+            var current = await fences.Read(grantId, cancellationToken);
+            if (current is null || !GrantStateValidation.IsKnown(current))
+            {
+                return RedeemOutcome.Unknown;
+            }
+
+            if (current.Fence is not null)
+            {
+                return RedeemOutcome.Fenced;
+            }
+
+            if (current.CurrentRefreshTokenId != entryId)
+            {
+                return RedeemOutcome.NotCurrent;
+            }
+
+            version = current.Version;
+        }
+
+        return RedeemOutcome.VersionConflict;
     }
 }

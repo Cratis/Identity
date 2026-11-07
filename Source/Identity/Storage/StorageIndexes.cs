@@ -26,6 +26,7 @@ internal class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddic
     {
         var options = openIddict.CurrentValue;
         await MongoConsentRequestStore.EnsureIndexes(database, cancellationToken);
+        await EnsureGrantFences(cancellationToken);
 
         await database.GetCollection<OpenIddictMongoDbAuthorization>(options.AuthorizationsCollectionName).Indexes.CreateOneAsync(
             new CreateIndexModel<OpenIddictMongoDbAuthorization>(
@@ -61,5 +62,14 @@ internal class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddic
                     new CreateIndexOptions { ExpireAfter = TimeSpan.Zero })
             ],
             cancellationToken);
+    }
+
+    async Task EnsureGrantFences(CancellationToken cancellationToken)
+    {
+        // Mongo's unique _id is the grant/fence identity. Tombstones and outbox intents never receive TTLs.
+        await database.GetCollection<BsonDocument>("grant-fences").Indexes.CreateOneAsync(
+            new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("undelivered"), new CreateIndexOptions { Name = "undelivered_grant_facts" }), cancellationToken: cancellationToken);
+        await database.GetCollection<BsonDocument>("grant-fence-log").Indexes.CreateOneAsync(
+            new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("sequence"), new CreateIndexOptions { Name = "unique_fence_sequence", Unique = true, Sparse = true }), cancellationToken: cancellationToken);
     }
 }

@@ -3,6 +3,7 @@
 
 using System.Security.Claims;
 using Cratis.Identity.Authorization;
+using Cratis.Identity.RevocationSpecs;
 using Microsoft.Extensions.Logging.Abstractions;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;
@@ -27,7 +28,8 @@ public class a_refresh_token_being_validated : Specification
     {
         _tokens = Substitute.For<IOpenIddictTokenManager>();
         _authorizations = Substitute.For<IOpenIddictAuthorizationManager>();
-        _handler = new RevokeGrantOnRefreshTokenReuse(_tokens, new GrantRevocation(_tokens, _authorizations));
+        var fences = FenceDoubles.Store(AuthorizationId, TokenId, DateTimeOffset.UtcNow);
+        _handler = new RevokeGrantOnRefreshTokenReuse(_tokens, new GrantRevocation(_tokens, _authorizations, fences, FenceDoubles.Confirmation(fences)));
         _token = new object();
         _authorization = new object();
 

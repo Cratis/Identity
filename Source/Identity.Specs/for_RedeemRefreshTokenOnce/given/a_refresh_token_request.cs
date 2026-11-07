@@ -4,6 +4,8 @@
 using System.Security.Claims;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.given;
+using Cratis.Identity.Revocation;
+using Cratis.Identity.RevocationSpecs;
 using Microsoft.Extensions.Logging.Abstractions;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;
@@ -20,6 +22,8 @@ public class a_refresh_token_request : Specification
     protected IOpenIddictTokenManager _tokens;
     protected IOpenIddictAuthorizationManager _authorizations;
     private protected RedeemRefreshTokenOnce _handler;
+    private protected IFenceStore _fences;
+    private protected RefreshIssuance _issuance;
     protected FixedTimeProvider _time;
     protected ProcessSignInContext _context;
     protected object _token;
@@ -30,7 +34,10 @@ public class a_refresh_token_request : Specification
         _tokens = Substitute.For<IOpenIddictTokenManager>();
         _authorizations = Substitute.For<IOpenIddictAuthorizationManager>();
         _time = new FixedTimeProvider(KeyMaterial.Now);
-        _handler = new RedeemRefreshTokenOnce(_tokens, new GrantRevocation(_tokens, _authorizations), _time);
+        _fences = FenceDoubles.Store(AuthorizationId, TokenId, _time.GetUtcNow());
+        _issuance = new RefreshIssuance();
+        var grants = new GrantRevocation(_tokens, _authorizations, _fences, FenceDoubles.Confirmation(_fences));
+        _handler = new RedeemRefreshTokenOnce(_tokens, grants, _time, _fences, new ReadRefreshGrant(_fences, _tokens, _authorizations, _time), _issuance);
         _token = new object();
         _authorization = new object();
 

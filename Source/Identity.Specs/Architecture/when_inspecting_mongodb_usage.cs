@@ -24,6 +24,8 @@ public class when_inspecting_mongodb_usage : Specification
 
     static bool Allowed(Type type) => _legacyAllowList.Contains(type) ||
         type.Namespace == "Cratis.Identity.ConsentFlow.Operational" ||
+        type.Namespace == "Cratis.Identity.Revocation.Operational" ||
+        type == typeof(Authorization.FencedTokenStore) || type.DeclaringType == typeof(Authorization.FencedTokenStore) ||
         new[] { "Cratis.Identity.Operational", "Cratis.Identity.Storage", "Cratis.Identity.Keys" }.Any(prefix => type.Namespace?.StartsWith(prefix, StringComparison.Ordinal) == true) ||
         type == typeof(IdentityServiceCollectionExtensions) || type == typeof(MongoClientFactory) || type.DeclaringType == typeof(IdentityServiceCollectionExtensions);
 

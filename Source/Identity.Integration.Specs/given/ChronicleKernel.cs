@@ -31,6 +31,10 @@ public sealed class ChronicleKernel : IAsyncDisposable
     /// <returns>The startup task.</returns>
     public Task Start() => _container.StartAsync();
 
+    /// <summary>Stops the real kernel for outage scenarios; its state is retained for restart.</summary>
+    /// <returns>The stopped container.</returns>
+    public Task Stop() => _container.StopAsync();
+
     /// <inheritdoc/>
     public ValueTask DisposeAsync() => _container.DisposeAsync();
 }

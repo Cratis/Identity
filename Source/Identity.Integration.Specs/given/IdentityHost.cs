@@ -116,6 +116,14 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         }
     }
 
+    /// <summary>Stops the real kernel for a bounded outage scenario.</summary>
+    /// <returns>The stopped kernel.</returns>
+    public Task StopChronicle() => _chronicle.Stop();
+
+    /// <summary>Restarts the same kernel after an outage scenario without replacing its state.</summary>
+    /// <returns>The started kernel.</returns>
+    public Task RestartChronicle() => _chronicle.Start();
+
     /// <summary>
     /// Creates a browser: a client that keeps cookies and surfaces redirects instead of following them.
     /// </summary>
