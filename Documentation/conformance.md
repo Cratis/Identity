@@ -42,6 +42,20 @@ The PRM proof starts with an unauthenticated request to a minimal Kestrel resour
 
 For runnable assertions, `Conformance.Expect` runs unlisted assertions normally. A listed assertion that throws produces a dynamic skip with its reason/issue. A listed assertion that succeeds fails the run, requiring removal from the gap list: stale expected failures cannot remain green. Never add blanket `[Fact(Skip=...)]`. Catalogue meta-specs discover declared instance facts (public and private, including Theory and other derived Fact attributes), require a non-empty tagged fact set and a mapping for every catalogue entry, check known and unique IDs, tagged classes with facts, reasons/issues, absence of static skips, and prohibit MUST-level expected failures. Base classes are contexts; proof facts must be declared on their tagged spec. Focused regression meta-specs reject missing mappings, unknown mapped requirements and empty discovery. Security MUST failures (PKCE, redirect, audience, replay revocation and introspection authentication) fail normally; they are not gap-list candidates.
 
+## Device authorization profile
+
+Device authorization is opt-in through `Identity:Device:Enabled`; the integration fixture explicitly enables it. The shared fixture uses higher bounded account and IP limits so independent scenarios can share one account and peer. Unit specs cover default bounds, shared limit exhaustion, failure-closed admission and logical expiry.
+
+| Id | Source | Obligation | Executable proof |
+| --- | --- | --- | --- |
+| `DEVICE-LIFECYCLE` | RFC 8628 §3.2, §3.5 | Bounded codes, manual verification URI and explicit approval before token issuance. | `for_DeviceGrant/when_a_user_approves_a_device` |
+| `DEVICE-POLLING` | RFC 8628 §3.5 | Pending requests issue no tokens; early polling increases the interval. | `for_DeviceGrant/when_a_device_polls_before_approval` |
+| `DEVICE-DENIAL` | RFC 8628 §3.5 | User denial refuses token issuance. | `for_DeviceGrant/when_a_user_denies_a_device` |
+| `DEVICE-SINGLE-USE` | RFC 8628 §3.5 | A redeemed device code cannot be exchanged again. | `for_DeviceGrant/when_a_redeemed_device_code_is_reused` |
+| `DEVICE-BINDING` | RFC 8628 §3.5 | Only the initiating client can redeem a device code. | `for_DeviceGrant/when_another_client_redeems_a_device_code` |
+
+Rate keys use purpose-separated SHA-256. Guess and issuance counters use atomic MongoDB increment/upsert; polling retains compare-and-swap to preserve the cumulative five-second slowdown and deadline together. TTL cleanup is not expiry enforcement. Verification also checks antiforgery, session-bound confirmation, live account and tenant membership, independent recovery epochs and grant fences. Durable consent events are outside this profile.
+
 ## Running and upgrading
 
 Local gate (never run the integration executable locally):
@@ -73,4 +87,4 @@ Before accepting an upgrade:
 4. Update the two central OpenIddict pins together in the actual dependency PR (normally the grouped Dependabot PR). Run the local gate; require green Build and specs CI, including ordinary integration and conformance. The candidate probe alone does not replace that complete gate.
 5. Update this catalogue if supported behavior intentionally changes. Name its normative reference, proof and any explicitly owned non-MUST gap in review.
 
-Scope deliberately excludes OIDC provider behavior, device flow, logout protocols, DPoP, JAR/PAR, upstream login changes and production key management. Changes to those profiles need their own reviewed requirements.
+Scope deliberately excludes OIDC provider behavior, logout protocols, DPoP, JAR/PAR, upstream login changes and production key management. Changes to those profiles need their own reviewed requirements.

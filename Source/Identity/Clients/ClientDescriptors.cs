@@ -64,6 +64,12 @@ internal class ClientDescriptors(IResourceCatalog resources, IOptions<IdentityOp
             }
         };
 
+        if (options.Value.DeviceGrant.Enabled)
+        {
+            descriptor.Permissions.Add(Permissions.Endpoints.DeviceAuthorization);
+            descriptor.Permissions.Add(Permissions.GrantTypes.DeviceCode);
+        }
+
         foreach (var scope in resources.All.SelectMany(_ => _.Scopes))
         {
             descriptor.Permissions.Add(Permissions.Prefixes.Scope + scope.Name);

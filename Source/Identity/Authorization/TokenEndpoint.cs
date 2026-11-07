@@ -4,6 +4,7 @@
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Contracts;
 using Cratis.Identity.Contracts.Accounts;
+using Cratis.Identity.Device;
 using Cratis.Identity.Resources;
 using Cratis.Identity.Revocation;
 using Cratis.Identity.Tenants;
@@ -27,13 +28,15 @@ namespace Cratis.Identity.Authorization;
 /// <param name="tenants">The <see cref="ITenantDirectory"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
 /// <param name="fences">The primary grant authority.</param>
+/// <param name="deviceAdmission">The device recovery and epoch checks.</param>
 internal class TokenEndpoint(
     IAccountReader accounts,
     IGrantPolicy grantPolicy,
     IResourceCatalog resources,
     ITenantDirectory tenants,
     ILogger<TokenEndpoint> logger,
-    IFenceStore fences)
+    IFenceStore fences,
+    DeviceGrantAdmission deviceAdmission)
 {
     /// <summary>
     /// Handles a token request.
@@ -44,12 +47,17 @@ internal class TokenEndpoint(
     public async Task<IResult> Handle(HttpContext context)
     {
         var request = context.GetOpenIddictServerRequest() ?? throw new OpenIddictRequestMissing(context.Request.Path);
-        if (!request.IsAuthorizationCodeGrantType() && !request.IsRefreshTokenGrantType())
+        if (!request.IsAuthorizationCodeGrantType() && !request.IsRefreshTokenGrantType() && !request.IsDeviceCodeGrantType())
         {
             return OAuthResults.Error(Errors.UnsupportedGrantType, "The grant type is not supported.");
         }
 
         var result = await context.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        if (request.IsDeviceCodeGrantType() && (!result.Succeeded || result.Principal is null || !await deviceAdmission.CanUse(result.Principal, true, context.RequestAborted)))
+        {
+            return OAuthResults.Error(Errors.InvalidGrant, "The device authorization is no longer valid.");
+        }
+
         var granted = result.Principal!;
         var authorizationId = granted.GetAuthorizationId();
 

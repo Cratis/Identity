@@ -3,6 +3,7 @@
 
 using System.Net;
 using Cratis.Identity.Authorization;
+using Cratis.Identity.Device;
 using Cratis.Identity.Hosting;
 using Cratis.Identity.Realm;
 using Microsoft.AspNetCore.Antiforgery;
@@ -29,6 +30,12 @@ public static class IdentityWebApplicationExtensions
         app.UseMiddleware<IdentityRealmMiddleware>();
         app.UseSecurityHeaders();
         app.UseAuthentication();
+
+        if (app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<Cratis.Identity.Configuration.IdentityOptions>>().Value.DeviceGrant.Enabled)
+        {
+            DeviceAuthorizationEndpoint.Map(app);
+            DeviceVerificationEndpoint.Map(app);
+        }
 
         app.MapMethods("/connect/authorize", [HttpMethods.Get, HttpMethods.Post], (HttpContext context, AuthorizationEndpoint endpoint) => endpoint.Handle(context))
             .DisableAntiforgery();

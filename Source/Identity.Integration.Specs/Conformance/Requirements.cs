@@ -31,9 +31,19 @@ public static class Requirements
     public const string RevocationUnknownToken = "REVOCATION-UNKNOWN-TOKEN";
     public const string AsMetadataFromPrm = "AS-METADATA-FROM-PRM";
     public const string KeyRotationOverlap = "KEY-ROTATION-OVERLAP";
+    public const string DeviceLifecycle = "DEVICE-LIFECYCLE";
+    public const string DevicePolling = "DEVICE-POLLING";
+    public const string DeviceDenial = "DEVICE-DENIAL";
+    public const string DeviceSingleUse = "DEVICE-SINGLE-USE";
+    public const string DeviceBinding = "DEVICE-BINDING";
 
     public static IReadOnlyList<Requirement> All { get; } =
     [
+        new(DeviceLifecycle, "RFC 8628 §3.2 and §3.5", "MUST", "Issue bounded device codes and exchange an explicitly approved request."),
+        new(DevicePolling, "RFC 8628 §3.5", "MUST", "Keep unapproved requests pending and enforce polling slowdown across connections."),
+        new(DeviceDenial, "RFC 8628 §3.5", "MUST", "Refuse device requests denied by the user."),
+        new(DeviceSingleUse, "RFC 8628 §3.5; RFC 6749 §5.2", "MUST", "Refuse repeated device-code redemption."),
+        new(DeviceBinding, "RFC 8628 §3.5; RFC 6749 §5.2", "MUST", "Bind device codes to their initiating client."),
         new(PkceRequired, "RFC 9700 §2.1.1; RFC 7636 §4.4.1", "MUST", "Require PKCE for public authorization-code clients."),
         new(PkceS256Only, "RFC 7636 §4.2; RFC 9700 §2.1.1", "MUST", "Use S256, never plain PKCE."),
         new(PkceVerifierBound, "RFC 7636 §4.6", "MUST", "Bind redemption to the PKCE verifier."),

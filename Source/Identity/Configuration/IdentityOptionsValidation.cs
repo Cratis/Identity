@@ -46,8 +46,36 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
             .Where(_ => string.IsNullOrWhiteSpace(_.ClientId) || string.IsNullOrWhiteSpace(_.ClientSecret))
             .Select(_ => $"Introspection client \"{_.ClientId}\" needs both a client id and a client secret."));
 
+        ValidateDeviceGrant(options.DeviceGrant, failures);
         ValidateAccounts(options.Accounts, failures);
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
+    }
+
+    static void ValidateDeviceGrant(DeviceGrantOptions device, List<string> failures)
+    {
+        if (device.UserCodeLength is < 8 or > 32 || string.IsNullOrEmpty(device.UserCodeCharset) ||
+            device.UserCodeCharset.Distinct().Count() != device.UserCodeCharset.Length || device.UserCodeCharset.Length < 20 ||
+            device.UserCodeCharset.Any(_ => !char.IsAsciiLetterUpper(_) && !char.IsAsciiDigit(_)))
+        {
+            failures.Add("Identity:Device user codes require 8–32 characters from at least twenty distinct uppercase ASCII letters or digits.");
+        }
+
+        if (device.CodeLifetime < TimeSpan.FromMinutes(1) || device.CodeLifetime > TimeSpan.FromMinutes(15))
+        {
+            failures.Add("The device code lifetime must be between one and fifteen minutes.");
+        }
+
+        if (device.PollingInterval < TimeSpan.FromSeconds(5) || device.PollingInterval > TimeSpan.FromSeconds(60) || device.PollingInterval.Ticks % TimeSpan.TicksPerSecond != 0)
+        {
+            failures.Add("The device polling interval must be a whole number of seconds between five and sixty.");
+        }
+
+        if (device.VerificationWindow < TimeSpan.FromMinutes(1) || device.VerificationWindow > TimeSpan.FromHours(1) ||
+            device.AttemptsPerCode is < 1 or > 10 || device.AttemptsPerAccount is < 1 or > 100 || device.AttemptsPerIp is < 1 or > 300 ||
+            device.AttemptsGlobally is < 1 or > 1000 || device.IssuancesPerIp is < 1 or > 100)
+        {
+            failures.Add("Device verification needs a one-to-sixty-minute window and bounded positive code, account, IP, global and issuance limits.");
+        }
     }
 
     static IEnumerable<string> ValidateResource(ResourceServerOptions resource)

@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Configuration;
 using Cratis.Identity.ConsentFlow.Operational;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
@@ -15,7 +16,8 @@ namespace Cratis.Identity.Storage;
 /// </summary>
 /// <param name="database">The <see cref="IMongoDatabase"/>.</param>
 /// <param name="openIddict">The <see cref="OpenIddictMongoDbOptions"/>.</param>
-internal class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddictMongoDbOptions> openIddict)
+/// <param name="identity">The opt-in device configuration.</param>
+internal class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddictMongoDbOptions> openIddict, IOptions<IdentityOptions> identity)
 {
     /// <summary>
     /// Ensures all indexes exist.
@@ -62,6 +64,11 @@ internal class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddic
                     new CreateIndexOptions { ExpireAfter = TimeSpan.Zero })
             ],
             cancellationToken);
+        if (identity.Value.DeviceGrant.Enabled)
+        {
+            await database.GetCollection<Device.DeviceGrantState>("device_grant_state").Indexes.CreateOneAsync(
+                new CreateIndexModel<Device.DeviceGrantState>(Builders<Device.DeviceGrantState>.IndexKeys.Ascending(_ => _.ExpiresAt), new CreateIndexOptions { ExpireAfter = TimeSpan.Zero }), cancellationToken: cancellationToken);
+        }
     }
 
     async Task EnsureGrantFences(CancellationToken cancellationToken)

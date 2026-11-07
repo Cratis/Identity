@@ -44,6 +44,10 @@ public class IdentityOptions
     /// </summary>
     public TokenOptions Tokens { get; set; } = new();
 
+    /// <summary>Gets or sets device authorization limits.</summary>
+    [ConfigurationKeyName("Device")]
+    public DeviceGrantOptions DeviceGrant { get; set; } = new();
+
     /// <summary>
     /// Gets or sets the lifetime of the Identity site session cookie.
     /// </summary>

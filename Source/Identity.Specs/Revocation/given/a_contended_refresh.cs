@@ -71,7 +71,7 @@ public class a_contended_refresh : for_RedeemRefreshTokenOnce.given.a_refresh_to
         await using var services = new ServiceCollection().AddSingleton(authentication).BuildServiceProvider();
         var http = new DefaultHttpContext { RequestServices = services };
         http.Features.Set(new OpenIddictServerAspNetCoreFeature { Transaction = _context.Transaction });
-        var endpoint = new TokenEndpoint(accounts, Substitute.For<IGrantPolicy>(), resources, tenants, NullLogger<TokenEndpoint>.Instance, _authority);
+        var endpoint = new TokenEndpoint(accounts, Substitute.For<IGrantPolicy>(), resources, tenants, NullLogger<TokenEndpoint>.Instance, _authority, new Device.DeviceGrantAdmission(new RecoveryGate(), Substitute.For<IIndependentFenceLog>(), _tokens, _authorizations, _authority, accounts));
         return await endpoint.Handle(http);
     }
 

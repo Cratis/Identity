@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Arc;
+using Cratis.Identity.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
@@ -11,6 +12,7 @@ public class when_dispatching_an_identity_request : Specification
 {
     [Theory]
     [InlineData("/connect/token")]
+    [InlineData("/device")]
     [InlineData("/.well-known/openid-configuration")]
     [InlineData("/signin-github")]
     [InlineData("/api/cratis/identity/accounts/mine")]
@@ -24,7 +26,8 @@ public class when_dispatching_an_identity_request : Specification
                 IdentityRealmScope.IsActive.ShouldBeTrue();
                 return Task.CompletedTask;
             },
-            Options.Create(new ArcOptions()));
+            Options.Create(new ArcOptions()),
+            Options.Create(new IdentityOptions { DeviceGrant = new() { Enabled = true } }));
         var context = new DefaultHttpContext();
         context.Request.Path = path;
         await middleware.InvokeAsync(context);

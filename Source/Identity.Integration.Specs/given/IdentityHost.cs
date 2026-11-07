@@ -156,6 +156,13 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     /// <inheritdoc/>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseSetting("Identity:Device:Enabled", "true");
+
+        // This shared fixture runs many independent device scenarios against the same account and peer.
+        builder.UseSetting("Identity:Device:AttemptsPerAccount", "100");
+        builder.UseSetting("Identity:Device:AttemptsPerIp", "300");
+        builder.UseSetting("Identity:Device:IssuancesPerIp", "100");
+
         // AddCratisIdentity reads the secret store from builder.Configuration while the services are registered, which is before
         // ConfigureAppConfiguration applies. Host settings are visible then, so every setting is also given as one.
         foreach (var (key, value) in Settings().Where(_ => _.Value is not null))
@@ -173,6 +180,7 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
             {
                 services.Replace(ServiceDescriptor.Singleton<IEventStoreNamespaceResolver>(provider =>
                     new IdentityRealmNamespaceResolver(new SuppliedTenantNamespace(provider.GetRequiredService<ITenantIdAccessor>()))));
+                services.AddSingleton<IStartupFilter, DeviceTestClientIp>();
                 services.AddSingleton(NativeCommands);
                 services.AddSingleton<NativeSignInInterleaving>();
                 services.AddSingleton<ProtocolCommands>();
