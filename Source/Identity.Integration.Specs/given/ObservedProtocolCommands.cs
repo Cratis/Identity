@@ -18,6 +18,11 @@ internal sealed class ObservedProtocolCommands(ProtocolCommands inner, NativeSig
     {
         var result = await inner.Execute(command, prepare);
         interleaving.Completed(command, result);
+        if (result.HasExceptions)
+        {
+            await Console.Error.WriteLineAsync($"[spec-diagnostic] {command.GetType().Name} failed: {string.Join(" | ", result.ExceptionMessages)}\n{result.ExceptionStackTrace}");
+        }
+
         return result;
     }
 
