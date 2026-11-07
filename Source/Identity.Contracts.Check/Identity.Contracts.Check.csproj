@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Cratis.Identity.Contracts.Check</AssemblyName>
+    <RootNamespace>Cratis.Identity.Contracts.Check</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Identity.Contracts/Identity.Contracts.csproj" />
+    <InternalsVisibleTo Include="Cratis.Identity.Specs" />
+    <EmbeddedResource Include="catalogue/identity-events-v1.json" />
+  </ItemGroup>
+  <Target Name="CheckEventContent" AfterTargets="Build"
+          Inputs="$(TargetPath);$(TargetDir)Cratis.Identity.Contracts.dll"
+          Outputs="$(IntermediateOutputPath)event-content.checked">
+    <Exec Command="dotnet &quot;$(TargetPath)&quot; &quot;$(TargetDir)Cratis.Identity.Contracts.dll&quot;" />
+    <Touch Files="$(IntermediateOutputPath)event-content.checked" AlwaysCreate="true" />
+  </Target>
+</Project>
