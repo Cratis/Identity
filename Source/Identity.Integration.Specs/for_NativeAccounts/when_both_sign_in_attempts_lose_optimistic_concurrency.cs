@@ -36,7 +36,7 @@ public class when_both_sign_in_attempts_lose_optimistic_concurrency(IdentityHost
         var signIn = SignInOutcome.Observe(adapter.SignIn(connection.From(user, FactId.New()), new(null, "Stale On Both Attempts", "stale-on-both-attempts")));
         var first = await run.Next();
         first.Decision.Subject.ShouldEqual(initial.Id);
-        first.Decision.Account!.Name.Value.ShouldEqual(user.Name);
+        first.Decision.Account.Name.Value.ShouldEqual(user.Name);
         run.Results.ShouldBeEmpty();
         (await store.EventLog.Append(initial.Id.Value, new AccountNameChanged("First Competing Writer"))).IsSuccess.ShouldBeTrue();
         first.Release();
@@ -44,7 +44,7 @@ public class when_both_sign_in_attempts_lose_optimistic_concurrency(IdentityHost
         var retry = await run.Next();
         retry.Decision.Subject.ShouldEqual(initial.Id);
         retry.Decision.Authentication.OperationId.ShouldEqual(first.Decision.Authentication.OperationId);
-        retry.Decision.Account!.Name.Value.ShouldEqual("First Competing Writer");
+        retry.Decision.Account.Name.Value.ShouldEqual("First Competing Writer");
         signIn.IsCompleted.ShouldBeFalse();
         (await store.EventLog.Append(initial.Id.Value, new AccountNameChanged("Second Competing Writer"))).IsSuccess.ShouldBeTrue();
         retry.Release();

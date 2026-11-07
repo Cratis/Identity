@@ -15,13 +15,8 @@ namespace Microsoft.AspNetCore.Builder;
 /// </summary>
 public static class IdentityWebApplicationExtensions
 {
-    /// <summary>Establishes the realm scope after routing and before Arc middleware.</summary>
-    /// <param name="app">The application builder.</param>
-    /// <returns>The application builder for continuation.</returns>
-    public static IApplicationBuilder UseCratisIdentity(this IApplicationBuilder app) => app.UseMiddleware<IdentityRealmMiddleware>();
-
     /// <summary>
-    /// Adds the security headers and authentication middleware, then maps the logout, health and root endpoints. Call it
+    /// Adds routing, the Identity realm scope, security headers and authentication middleware, then maps the logout, health and root endpoints. Call it
     /// before the host's own endpoints. The protocol endpoints themselves (discovery, JWKS,
     /// revocation, introspection) are served by OpenIddict; authorization and token requests pass through to
     /// <see cref="AuthorizationEndpoint"/> and <see cref="TokenEndpoint"/> once OpenIddict has validated them.
@@ -30,6 +25,8 @@ public static class IdentityWebApplicationExtensions
     /// <returns>The <see cref="WebApplication"/> for continuation.</returns>
     public static WebApplication MapCratisIdentity(this WebApplication app)
     {
+        app.UseRouting();
+        app.UseMiddleware<IdentityRealmMiddleware>();
         app.UseSecurityHeaders();
         app.UseAuthentication();
 

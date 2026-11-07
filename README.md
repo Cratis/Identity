@@ -45,13 +45,12 @@ builder.AddCratisIdentity();
 
 var app = builder.Build();
 app.MapCratisIdentity();
-app.UseCratisIdentity();
 app.UseCratisArc();
 app.UseCratisChronicle();
 await app.RunAsync();
 ```
 
-`MapCratisIdentity` adds the security headers and authentication middleware before it maps the endpoints, so call it before the host's own endpoints. `Source/Identity.Host` is the sample host and the standalone server that the Docker image runs.
+`MapCratisIdentity` adds routing, the Identity realm scope, security headers and authentication middleware before it maps the endpoints, so call it before the host's own endpoints and any middleware that resolves Identity services. Authentication and generated Identity API routes use the realm namespace; non-Identity routes retain the host's namespace resolver. `Source/Identity.Host` is the sample host and the standalone server that the Docker image runs.
 
 ## What v1 implements
 

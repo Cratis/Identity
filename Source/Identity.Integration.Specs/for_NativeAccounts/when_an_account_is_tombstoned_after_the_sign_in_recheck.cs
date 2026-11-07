@@ -37,8 +37,8 @@ public class when_an_account_is_tombstoned_after_the_sign_in_recheck(IdentityHos
         var signIn = SignInOutcome.Observe(adapter.SignIn(connection.From(user, FactId.New()), new(null, "Stale Sign In Name", "stale-sign-in-login")));
         var paused = await run.Next();
         paused.Decision.Subject.ShouldEqual(initial.Id);
-        paused.Decision.Reservation!.Active.ShouldBeTrue();
-        paused.Decision.Account!.Status.ShouldEqual(AccountStatus.Active);
+        paused.Decision.Reservation.Active.ShouldBeTrue();
+        paused.Decision.Account.Status.ShouldEqual(AccountStatus.Active);
         signIn.IsCompleted.ShouldBeFalse();
         run.Results.ShouldBeEmpty();
 
@@ -62,9 +62,9 @@ public class when_an_account_is_tombstoned_after_the_sign_in_recheck(IdentityHos
     [Fact] void should_make_only_two_fresh_decisions() => _run.Decisions.Count.ShouldEqual(2);
     [Fact] void should_wait_for_projection_catch_up_before_retry() => _run.RetryWaits.ShouldEqual(1);
     [Fact] void should_retry_on_the_original_reserved_subject() => _run.Decisions.Last().Subject.ShouldEqual(_run.Decisions.First().Subject);
-    [Fact] void should_recheck_the_tombstoned_account() => _run.Decisions.Last().Account!.Status.ShouldEqual(AccountStatus.Tombstoned);
-    [Fact] void should_preserve_the_original_reservation() => _run.Decisions.Last().Reservation!.LinkId.ShouldEqual(_run.Decisions.First().Reservation!.LinkId);
-    [Fact] void should_refuse_even_though_the_reservation_remains_active() => _run.Decisions.Last().Reservation!.Active.ShouldBeTrue();
+    [Fact] void should_recheck_the_tombstoned_account() => _run.Decisions.Last().Account.Status.ShouldEqual(AccountStatus.Tombstoned);
+    [Fact] void should_preserve_the_original_reservation() => _run.Decisions.Last().Reservation.LinkId.ShouldEqual(_run.Decisions.First().Reservation.LinkId);
+    [Fact] void should_refuse_even_though_the_reservation_remains_active() => _run.Decisions.Last().Reservation.Active.ShouldBeTrue();
     [Fact] void should_fail_closed_with_the_defined_inactive_account_refusal() => _outcome.Failure.ShouldEqual("account_not_active");
     [Fact] void should_not_return_an_account_for_session_construction() => _outcome.Account.ShouldBeNull();
     [Fact] void should_append_only_the_competing_tombstone_event() => _newEvents.ShouldEqual(1);

@@ -36,8 +36,8 @@ public class when_an_account_is_disabled_after_the_sign_in_recheck(IdentityHost 
         var signIn = SignInOutcome.Observe(adapter.SignIn(connection.From(user, FactId.New()), new(null, "Stale Sign In Name", "stale-sign-in-login")));
         var paused = await run.Next();
         paused.Decision.Subject.ShouldEqual(initial.Id);
-        paused.Decision.Reservation!.Active.ShouldBeTrue();
-        paused.Decision.Account!.Status.ShouldEqual(AccountStatus.Active);
+        paused.Decision.Reservation.Active.ShouldBeTrue();
+        paused.Decision.Account.Status.ShouldEqual(AccountStatus.Active);
         signIn.IsCompleted.ShouldBeFalse();
         run.Results.ShouldBeEmpty();
 
@@ -59,7 +59,7 @@ public class when_an_account_is_disabled_after_the_sign_in_recheck(IdentityHost 
     [Fact] void should_reject_the_pre_disable_decision_with_real_optimistic_concurrency() => _run.Results.First().Result.ValidationResults.Any(validation => validation.Reason == ValidationResultReason.ConcurrencyViolation).ShouldBeTrue();
     [Fact] void should_execute_only_one_fresh_retry() => _run.Results.Count.ShouldEqual(2);
     [Fact] void should_wait_for_projection_catch_up_before_retry() => _run.RetryWaits.ShouldEqual(1);
-    [Fact] void should_recheck_the_disabled_account() => _run.Decisions.Last().Account!.Status.ShouldEqual(AccountStatus.Disabled);
+    [Fact] void should_recheck_the_disabled_account() => _run.Decisions.Last().Account.Status.ShouldEqual(AccountStatus.Disabled);
     [Fact] void should_fail_closed_with_the_defined_inactive_account_refusal() => _outcome.Failure.ShouldEqual("account_not_active");
     [Fact] void should_not_return_an_account_for_session_construction() => _outcome.Account.ShouldBeNull();
     [Fact] void should_append_only_the_competing_disable_event() => _newEvents.ShouldEqual(1);

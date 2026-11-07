@@ -56,7 +56,7 @@ public class when_two_first_sign_ins_race(IdentityHost host) : IAsyncLifetime
         winning.Release();
         var winner = await attempts[winning.Decision.Authentication.OperationId];
         winner.Failure.ShouldBeNull();
-        winner.Account!.Id.ShouldEqual(_winner);
+        winner.Account.Id.ShouldEqual(_winner);
         losing.Release();
         _outcomes = [winner, await attempts[_losingOperation]];
 
@@ -78,7 +78,7 @@ public class when_two_first_sign_ins_race(IdentityHost host) : IAsyncLifetime
     [Fact] void should_reject_the_stale_absence_decision_in_the_real_kernel() => _run.Results.First(attempt => attempt.OperationId == _losingOperation).Result.ValidationResults.Any(validation => validation.Reason == ValidationResultReason.ConcurrencyViolation || (validation.Reason == ValidationResultReason.ConstraintViolation && validation.ReasonDetail == "unique-upstream-key")).ShouldBeTrue();
     [Fact] void should_retry_the_loser_only_once() => _run.Results.Count(attempt => attempt.OperationId == _losingOperation).ShouldEqual(2);
     [Fact] void should_wait_for_catch_up_before_retrying() => _run.RetryWaits.ShouldEqual(1);
-    [Fact] void should_redecide_using_the_winning_reservation() => _run.Decisions.Last().Reservation!.AccountSubject.ShouldEqual(_winner);
+    [Fact] void should_redecide_using_the_winning_reservation() => _run.Decisions.Last().Reservation.AccountSubject.ShouldEqual(_winner);
     [Fact] void should_return_only_the_winning_subject_or_a_defined_refusal() => _outcomes.All(outcome => outcome.Account is { } account ? account.Id == _winner && outcome.Failure is null : new[] { "account_concurrency_conflict", "upstream_key_already_reserved", "temporarily_unavailable" }.Contains(outcome.Failure)).ShouldBeTrue();
     [Fact] void should_commit_exactly_one_registration() => _registrations.ShouldEqual(1);
     [Fact] void should_not_commit_any_events_for_the_losing_subject() => _loserEvents.ShouldBeEmpty();

@@ -18,9 +18,7 @@ builder.AddCratisChronicle(options =>
 builder.AddCratisIdentity();
 
 var app = builder.Build();
-app.UseRouting();
 app.MapCratisIdentity();
-app.UseCratisIdentity();
 app.UseCratisArc();
 app.UseCratisChronicle();
 await app.RunAsync();

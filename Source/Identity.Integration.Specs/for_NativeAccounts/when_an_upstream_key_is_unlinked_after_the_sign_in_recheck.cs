@@ -37,8 +37,8 @@ public class when_an_upstream_key_is_unlinked_after_the_sign_in_recheck(Identity
         var signIn = SignInOutcome.Observe(adapter.SignIn(connection.From(user, FactId.New()), new(null, "Stale Sign In Name", "stale-sign-in-login")));
         var paused = await run.Next();
         paused.Decision.Subject.ShouldEqual(initial.Id);
-        paused.Decision.Reservation!.Active.ShouldBeTrue();
-        paused.Decision.Account!.Status.ShouldEqual(AccountStatus.Active);
+        paused.Decision.Reservation.Active.ShouldBeTrue();
+        paused.Decision.Account.Status.ShouldEqual(AccountStatus.Active);
         paused.Decision.Account.LinkedUpstreamKeys.Single().LinkId.ShouldEqual(paused.Decision.Reservation.LinkId);
         signIn.IsCompleted.ShouldBeFalse();
         run.Results.ShouldBeEmpty();
@@ -63,10 +63,10 @@ public class when_an_upstream_key_is_unlinked_after_the_sign_in_recheck(Identity
     [Fact] void should_make_only_two_fresh_decisions() => _run.Decisions.Count.ShouldEqual(2);
     [Fact] void should_wait_for_projection_catch_up_before_retry() => _run.RetryWaits.ShouldEqual(1);
     [Fact] void should_retry_on_the_original_reserved_subject() => _run.Decisions.Last().Subject.ShouldEqual(_run.Decisions.First().Subject);
-    [Fact] void should_preserve_the_original_reservation() => _run.Decisions.Last().Reservation!.LinkId.ShouldEqual(_run.Decisions.First().Reservation!.LinkId);
-    [Fact] void should_recheck_the_inactive_reservation() => _run.Decisions.Last().Reservation!.Active.ShouldBeFalse();
-    [Fact] void should_recheck_the_removed_link() => _run.Decisions.Last().Account!.LinkedUpstreamKeys.ShouldBeEmpty();
-    [Fact] void should_keep_the_account_active() => _run.Decisions.Last().Account!.Status.ShouldEqual(AccountStatus.Active);
+    [Fact] void should_preserve_the_original_reservation() => _run.Decisions.Last().Reservation.LinkId.ShouldEqual(_run.Decisions.First().Reservation.LinkId);
+    [Fact] void should_recheck_the_inactive_reservation() => _run.Decisions.Last().Reservation.Active.ShouldBeFalse();
+    [Fact] void should_recheck_the_removed_link() => _run.Decisions.Last().Account.LinkedUpstreamKeys.ShouldBeEmpty();
+    [Fact] void should_keep_the_account_active() => _run.Decisions.Last().Account.Status.ShouldEqual(AccountStatus.Active);
     [Fact] void should_fail_closed_with_the_defined_inactive_key_refusal() => _outcome.Failure.ShouldEqual("upstream_key_reserved_but_inactive");
     [Fact] void should_not_return_an_account_for_session_construction() => _outcome.Account.ShouldBeNull();
     [Fact] void should_append_only_the_competing_unlink_event() => _newEvents.ShouldEqual(1);
