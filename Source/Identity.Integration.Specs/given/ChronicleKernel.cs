@@ -29,7 +29,40 @@ public sealed class ChronicleKernel : IAsyncDisposable
 
     /// <summary>Starts the shared kernel once for its owning host fixture.</summary>
     /// <returns>The startup task.</returns>
-    public Task Start() => _container.StartAsync();
+    /// <exception cref="TimeoutException">The kernel did not become ready in time.</exception>
+    public async Task Start()
+    {
+        await _container.StartAsync();
+
+        // The client port accepts TCP before the kernel is ready; its token endpoint answers 503 until then.
+#pragma warning disable MA0039 // Loopback development kernel with a self-signed certificate.
+        using var handler = new HttpClientHandler { CheckCertificateRevocationList = true, ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator };
+#pragma warning restore MA0039
+        using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(5) };
+        var uri = new Uri($"https://{_container.Hostname}:{_container.GetMappedPublicPort(ClientPort)}/connect/token");
+        var deadline = DateTime.UtcNow.AddMinutes(4);
+        while (DateTime.UtcNow < deadline)
+        {
+            try
+            {
+                using var response = await http.PostAsync(uri, new FormUrlEncodedContent([]));
+                if (response.StatusCode != HttpStatusCode.ServiceUnavailable)
+                {
+                    return;
+                }
+            }
+            catch (HttpRequestException)
+            {
+            }
+            catch (TaskCanceledException)
+            {
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(2));
+        }
+
+        throw new TimeoutException("The Chronicle kernel did not become ready.");
+    }
 
     /// <inheritdoc/>
     public ValueTask DisposeAsync() => _container.DisposeAsync();
