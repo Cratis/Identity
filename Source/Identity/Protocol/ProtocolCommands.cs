@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using Cratis.Arc.Commands;
 using Cratis.Chronicle.EventSequences;
@@ -28,12 +29,23 @@ public sealed class ProtocolCommands(IServiceScopeFactory scopes, ICommandPipeli
         using var realm = IdentityRealmScope.Begin();
         await using var child = scopes.CreateAsyncScope();
         prepare?.Invoke(child.ServiceProvider);
-        var appends = new List<AppendedEventWithResult>();
-        using var capture = child.ServiceProvider.GetService<IEventLog>()?.AppendOperations.Subscribe(appends.AddRange);
-        var result = await pipeline.Execute(command, child.ServiceProvider);
-        if (result.IsSuccess && appends.Count != 0)
+        var appends = new ConcurrentQueue<AppendedEventWithResult>();
+        CommandResult result;
+        using (child.ServiceProvider.GetService<IEventLog>()?.AppendOperations.Subscribe(appended =>
         {
-            await child.ServiceProvider.GetRequiredService<ReadModelCatchUp>().AfterCommand(appends, CancellationToken.None);
+            foreach (var append in appended)
+            {
+                appends.Enqueue(append);
+            }
+        }))
+        {
+            result = await pipeline.Execute(command, child.ServiceProvider);
+        }
+
+        var ownAppends = appends.Where(append => append.Result.CorrelationId == result.CorrelationId).ToArray();
+        if (result.IsSuccess && ownAppends.Length != 0)
+        {
+            await child.ServiceProvider.GetRequiredService<ReadModelCatchUp>().AfterCommand(ownAppends, CancellationToken.None);
         }
 
         return result;
