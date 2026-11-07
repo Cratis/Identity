@@ -7,7 +7,8 @@ public class when_replaying_an_uncheckpointed_tail : given.a_recovery_pass
 {
     void Establish()
     {
-        _contains = false;
+        // The commit survived; only progress publication was interrupted.
+        _contains = true;
         _checkpoint = _checkpoint with { AppliedThrough = 0 };
         _custody = _custody with { AppliedThrough = 0 };
     }

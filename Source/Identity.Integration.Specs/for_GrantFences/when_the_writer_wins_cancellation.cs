@@ -14,7 +14,7 @@ public class when_the_writer_wins_cancellation(IdentityHost host) : IAsyncLifeti
 
     public async ValueTask InitializeAsync()
     {
-        var log = await FenceLogDatabase.Create(host.Database);
+        var log = await FenceLogDatabase.Create(host);
         var writer = new MongoFenceStore(host.Database, TimeProvider.System, log);
         var reconciler = new MongoFenceStore(host.Database, TimeProvider.System, log);
         var id = Guid.NewGuid();

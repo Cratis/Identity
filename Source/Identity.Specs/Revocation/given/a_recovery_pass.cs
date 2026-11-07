@@ -11,6 +11,8 @@ public class a_recovery_pass : Specification
     private protected IRecoveryStore _operational;
     private protected IReservationAuthority _authority;
     private protected IRecoveryFactWriter _facts;
+    private protected IRevocationFactWriter _restrictionFacts;
+    private protected DispatchRevocationOutbox _dispatch;
     private protected IFenceStore _fences;
     private protected RecoveryGate _gate;
     private protected RecoverySession _session;
@@ -77,14 +79,20 @@ public class a_recovery_pass : Specification
             _contains = true;
             return Task.CompletedTask;
         });
-        _operational.Save(Arg.Any<RecoveryCheckpoint>(), Arg.Any<CancellationToken>()).Returns(call =>
+        _operational.Save(Arg.Any<RecoveryCheckpoint?>(), Arg.Any<RecoveryCheckpoint>(), Arg.Any<CancellationToken>()).Returns(call =>
         {
-            _checkpoint = call.Arg<RecoveryCheckpoint>();
+            if (_checkpoint != call.ArgAt<RecoveryCheckpoint?>(0))
+            {
+                throw new RevocationPending();
+            }
+
+            _checkpoint = call.ArgAt<RecoveryCheckpoint>(1);
             return Task.CompletedTask;
         });
         _fences.Undelivered(Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(_ => []);
-        var dispatch = new DispatchRevocationOutbox(_fences, new ConfirmFenceLog(_fences, Substitute.For<IFenceLog>()), Substitute.For<IRevocationFactWriter>());
-        _recovery = new(_log, _operational, _authority, new ReconcileReservation(_log, _authority), _facts, dispatch, _gate, _session, _options, TimeProvider.System);
+        _restrictionFacts = Substitute.For<IRevocationFactWriter>();
+        _dispatch = new(_fences, new ConfirmFenceLog(_fences, Substitute.For<IFenceLog>()), _restrictionFacts);
+        _recovery = new(_log, _operational, _authority, new ReconcileReservation(_log, _authority), _facts, _dispatch, _gate, _session, _options, TimeProvider.System);
     }
 
     protected async Task Run() => _failure = await Catch.Exception(() => _recovery.Run(CancellationToken.None));

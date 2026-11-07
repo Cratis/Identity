@@ -16,7 +16,7 @@ public class when_a_restore_identity_is_reused(IdentityHost host) : IAsyncLifeti
 
     public async ValueTask InitializeAsync()
     {
-        var log = await FenceLogDatabase.Create(host.Database);
+        var log = await FenceLogDatabase.Create(host);
         await log.Acquire("host-one", CancellationToken.None);
         _first = await log.RegisterRestore("restore-test", RestoreKind.Operational, "host-one", CancellationToken.None);
         _retry = await log.RegisterRestore("restore-test", RestoreKind.Operational, "host-one", CancellationToken.None);

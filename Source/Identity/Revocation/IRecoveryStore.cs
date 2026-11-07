@@ -29,9 +29,10 @@ internal interface IRecoveryStore
     /// <returns>Replay completion.</returns>
     Task Apply(FenceRecord record, bool resetDelivery, CancellationToken cancellationToken);
 
-    /// <summary>Saves progress after all operational effects are proven.</summary>
+    /// <summary>Conditionally saves progress after all operational effects are proven.</summary>
+    /// <param name="expected">The checkpoint observed before replay; a restore must not be overwritten.</param>
     /// <param name="checkpoint">The complete applied prefix and nonce.</param>
     /// <param name="cancellationToken">Cancellation.</param>
     /// <returns>Checkpoint completion.</returns>
-    Task Save(RecoveryCheckpoint checkpoint, CancellationToken cancellationToken);
+    Task Save(RecoveryCheckpoint? expected, RecoveryCheckpoint checkpoint, CancellationToken cancellationToken);
 }

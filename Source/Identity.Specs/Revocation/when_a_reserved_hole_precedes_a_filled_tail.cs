@@ -17,5 +17,5 @@ public class when_a_reserved_hole_precedes_a_filled_tail : given.a_recovery_pass
 
     [Fact] void should_keep_issuance_closed() => _gate.Ready.ShouldBeFalse();
     [Fact] void should_report_unresolved_progress() => _failure.ShouldBeOfExactType<RevocationPending>();
-    [Fact] void should_not_skip_the_hole() => _operational.DidNotReceive().Save(Arg.Any<RecoveryCheckpoint>(), Arg.Any<CancellationToken>());
+    [Fact] void should_not_skip_the_hole() => _operational.DidNotReceive().Save(Arg.Any<RecoveryCheckpoint?>(), Arg.Any<RecoveryCheckpoint>(), Arg.Any<CancellationToken>());
 }

@@ -22,6 +22,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using Testcontainers.MongoDb;
 
@@ -50,8 +51,11 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     /// The MongoDB container. Pinned to 8.0.14: later 8.0 patch releases refuse to start on Linux kernels 6.19+
     /// (SERVER-121912), which is what Docker Desktop currently ships.
     /// </summary>
-    readonly MongoDbContainer _mongo = new MongoDbBuilder("mongo:8.0.14").Build();
+    readonly MongoDbContainer _mongo = new MongoDbBuilder("mongo:8.0.14").WithReplicaSet().Build();
     readonly string _database = $"identity-specs-{Guid.NewGuid():N}";
+    readonly MongoDbContainer _fenceMongo = new MongoDbBuilder("mongo:8.0.14").WithReplicaSet().Build();
+    readonly string _fenceDatabase = $"identity-fence-log-{Guid.NewGuid():N}";
+    readonly string _fenceInstance = Guid.NewGuid().ToString("N");
     readonly ChronicleKernel _chronicle = new();
 
     /// <summary>
@@ -84,6 +88,12 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     public async ValueTask InitializeAsync()
     {
         await _mongo.StartAsync();
+        await _fenceMongo.StartAsync();
+        using var fenceClient = new MongoClient(_fenceMongo.GetConnectionString());
+        await fenceClient.GetDatabase(_fenceDatabase).GetCollection<BsonDocument>("fence-custody").InsertOneAsync(new BsonDocument
+        {
+            { "_id", "metadata" }, { "instanceId", _fenceInstance }, { "allocated", 0L }, { "epoch", 0L }
+        });
         await _chronicle.Start();
 
         // Start the native client and reconcile all artifacts before any spec runs.
@@ -103,6 +113,7 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         await base.DisposeAsync();
         await _chronicle.DisposeAsync();
         await _mongo.DisposeAsync();
+        await _fenceMongo.DisposeAsync();
     }
 
     /// <inheritdoc/>
@@ -113,6 +124,7 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         {
             _chronicle.DisposeAsync().AsTask().GetAwaiter().GetResult();
             _mongo.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            _fenceMongo.DisposeAsync().AsTask().GetAwaiter().GetResult();
         }
     }
 
@@ -195,6 +207,10 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         ["ConnectionStrings:chronicle"] = _chronicle.ConnectionString,
         ["Identity:MongoDB:ConnectionString"] = _mongo.GetConnectionString(),
         ["Identity:MongoDB:Database"] = _database,
+        ["Identity:FenceLog:ConnectionString"] = _fenceMongo.GetConnectionString(),
+        ["Identity:FenceLog:Database"] = _fenceDatabase,
+        ["Identity:FenceLog:InstanceId"] = _fenceInstance,
+        ["Identity:FenceLog:MinimumSequence"] = "0",
         ["Identity:GitHub:ClientId"] = "unused-in-specs",
         ["Identity:GitHub:ClientSecret"] = "unused-in-specs",
         ["Identity:Resources:0:Tenants:0:Id"] = MemberTenant,

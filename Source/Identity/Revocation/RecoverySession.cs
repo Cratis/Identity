@@ -12,6 +12,9 @@ internal sealed class RecoverySession
     /// <summary>Gets or sets a value indicating whether startup verified the deployment boundary.</summary>
     internal bool Verified { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether this incarnation completed operational recovery.</summary>
+    internal bool Reconciled { get; set; }
+
     /// <summary>Gets or sets a value indicating whether Chronicle custody was bound.</summary>
     internal bool Bound { get; set; }
 

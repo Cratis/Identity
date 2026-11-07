@@ -16,7 +16,7 @@ public class when_revocation_precedes_a_stale_redemption(IdentityHost host) : IA
 
     public async ValueTask InitializeAsync()
     {
-        var log = await FenceLogDatabase.Create(host.Database);
+        var log = await FenceLogDatabase.Create(host);
         var first = new MongoFenceStore(host.Database, TimeProvider.System, log);
         var second = new MongoFenceStore(host.Database, TimeProvider.System, log);
         var grant = Guid.NewGuid().ToString("D");

@@ -38,6 +38,7 @@ internal sealed class ReconcileRecovery(
         catch (Exception)
         {
             gate.Close();
+            session.Reconciled = false;
             throw;
         }
     }
@@ -47,6 +48,7 @@ internal sealed class ReconcileRecovery(
     /// <returns>Epoch intent publication completion.</returns>
     internal async Task PublishEpochs(CancellationToken cancellationToken)
     {
+        await Bind(options.InstanceId, cancellationToken);
         foreach (var intent in await log.EpochIntents(cancellationToken))
         {
             await facts.Publish(intent, cancellationToken);
@@ -110,16 +112,33 @@ internal sealed class ReconcileRecovery(
             return;
         }
 
+        // The previous owner may have advanced custody before the lease changed hands.
+        custody = await ReadCustody(cancellationToken);
         var checkpoint = await operational.Checkpoint(cancellationToken);
         ValidateIdentity(checkpoint, custody);
         BeginRestore(await RolledBack(checkpoint, custody, cancellationToken));
-        await RegisterRestore(cancellationToken);
-        await Bind(custody.InstanceId, cancellationToken);
-        var watermark = await ResolveReservations(cancellationToken);
+        var recovering = !session.Reconciled || session.RestoreId is not null;
+        if (recovering)
+        {
+            gate.Close();
+            await RegisterRestore(cancellationToken);
+        }
+
+        var watermark = recovering ? await ResolveReservations(cancellationToken) : await log.Watermark(cancellationToken);
         RequireProgress(watermark, custody.AppliedThrough, checkpoint?.AppliedThrough ?? 0);
-        await Replay(cancellationToken);
-        await SaveProgress(custody.InstanceId, watermark, cancellationToken);
+        if (recovering)
+        {
+            await Replay(cancellationToken);
+        }
+
+        await SaveProgress(custody.InstanceId, watermark, checkpoint, cancellationToken);
         var final = await ReadCustody(cancellationToken);
+        if (await RolledBack(await operational.Checkpoint(cancellationToken), final, cancellationToken))
+        {
+            throw new RevocationPending();
+        }
+
+        session.Reconciled = true;
         gate.Open(final.ClearedEpoch == final.Epoch);
     }
 
@@ -152,8 +171,9 @@ internal sealed class ReconcileRecovery(
             return true;
         }
 
-        var applied = checkpoint?.AppliedThrough ?? custody.AppliedThrough;
-        foreach (var record in (await log.Read(0, cancellationToken)).Where(record => record.Fence.Sequence <= applied))
+        var watermark = await log.Watermark(cancellationToken);
+        RequireProgress(watermark, custody.AppliedThrough, checkpoint?.AppliedThrough ?? 0);
+        foreach (var record in (await log.Read(0, cancellationToken)).Where(record => record.Fence.Sequence <= watermark))
         {
             if (!await operational.Contains(record, cancellationToken))
             {
@@ -188,9 +208,8 @@ internal sealed class ReconcileRecovery(
 
     async Task Bind(string instanceId, CancellationToken cancellationToken)
     {
-        if (!session.Bound || ChronicleRestored())
+        if (!session.Bound)
         {
-            gate.Close();
             await facts.Bind(instanceId, cancellationToken);
             session.Bound = true;
         }
@@ -236,6 +255,7 @@ internal sealed class ReconcileRecovery(
         if (ChronicleRestored())
         {
             gate.Close();
+            await Bind(options.InstanceId, cancellationToken);
             await dispatch.Dispatch(cancellationToken);
             if (await dispatch.Pending(cancellationToken))
             {
@@ -246,7 +266,7 @@ internal sealed class ReconcileRecovery(
         }
     }
 
-    async Task SaveProgress(string instanceId, long watermark, CancellationToken cancellationToken)
+    async Task SaveProgress(string instanceId, long watermark, RecoveryCheckpoint? expected, CancellationToken cancellationToken)
     {
         if (!await log.Acquire(session.Owner, cancellationToken))
         {
@@ -259,9 +279,18 @@ internal sealed class ReconcileRecovery(
             await log.ConfirmPublication(session.Owner, watermark, cancellationToken);
         }
 
-        var next = new RecoveryCheckpoint(instanceId, watermark, Guid.NewGuid().ToString("N"));
-        await operational.Save(next, cancellationToken);
-        await log.Checkpoint(session.Owner, next, cancellationToken);
+        // One nonce per lease owner, retained across polls. Publish independent evidence first;
+        // never overwrite a checkpoint restored or advanced since this pass read it.
+        var next = new RecoveryCheckpoint(instanceId, watermark, session.Owner);
+        if (next != expected || Diverged(next, await ReadCustody(cancellationToken)))
+        {
+            await log.Checkpoint(session.Owner, next, cancellationToken);
+            await operational.Save(expected, next, cancellationToken);
+        }
+        else if (await operational.Checkpoint(cancellationToken) != next)
+        {
+            throw new RevocationPending();
+        }
         if (session.RestoreId is not null)
         {
             var cleared = options.RestrictionsReestablished && options.RestoreId == session.RestoreId;
@@ -274,32 +303,33 @@ internal sealed class ReconcileRecovery(
 
     async Task Follow(RecoveryCustody custody, CancellationToken cancellationToken)
     {
-        gate.Close();
         if (options.RestoreKind != RestoreKind.None || session.RestoreId is not null)
         {
+            gate.Close();
             return;
         }
 
         var checkpoint = await operational.Checkpoint(cancellationToken);
         ValidateIdentity(checkpoint, custody);
-        if (!MatchesCheckpoint(checkpoint, custody))
+        if (!MatchesCheckpoint(checkpoint, custody) || await RolledBack(checkpoint, custody, cancellationToken))
+        {
+            gate.Close();
+            return;
+        }
+
+        // Live reservations are not recovery gaps. An already-ready follower must not
+        // close admission (or the delivery worker) whenever a request reserves a slot.
+        if (!session.Reconciled && !await CompletePrefix(custody.AppliedThrough, cancellationToken))
         {
             return;
         }
 
-        if (await log.Watermark(cancellationToken) != custody.AppliedThrough || await log.AllocatedThrough(cancellationToken) != custody.AppliedThrough)
-        {
-            return;
-        }
-
-        if (await RolledBack(checkpoint, custody, cancellationToken))
-        {
-            return;
-        }
-
-        await Bind(custody.InstanceId, cancellationToken);
+        session.Reconciled = true;
         gate.Open(true);
     }
+
+    async Task<bool> CompletePrefix(long appliedThrough, CancellationToken cancellationToken) =>
+        await log.Watermark(cancellationToken) == appliedThrough && await log.AllocatedThrough(cancellationToken) == appliedThrough;
 
     void BeginRestore(bool rollback)
     {
@@ -313,6 +343,10 @@ internal sealed class ReconcileRecovery(
             session.RestoreId = options.RestoreId;
             session.Kind = options.RestoreKind;
             session.DeclarationConsumed = true;
+            if (ChronicleRestored())
+            {
+                session.Bound = false;
+            }
         }
         else if (rollback)
         {

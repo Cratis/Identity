@@ -17,5 +17,5 @@ public class when_an_empty_or_truncated_independent_log_is_observed : given.a_re
 
     [Fact] void should_refuse_readiness() => _gate.Ready.ShouldBeFalse();
     [Fact] void should_report_the_continuity_failure() => _failure.ShouldBeOfExactType<RevocationPending>();
-    [Fact] void should_not_reset_the_checkpoint_to_an_empty_log() => _operational.DidNotReceive().Save(Arg.Any<RecoveryCheckpoint>(), Arg.Any<CancellationToken>());
+    [Fact] void should_not_reset_the_checkpoint_to_an_empty_log() => _operational.DidNotReceive().Save(Arg.Any<RecoveryCheckpoint?>(), Arg.Any<RecoveryCheckpoint>(), Arg.Any<CancellationToken>());
 }

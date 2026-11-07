@@ -15,7 +15,7 @@ public class when_a_delayed_writer_arrives_after_void(IdentityHost host) : IAsyn
 
     public async ValueTask InitializeAsync()
     {
-        var log = await FenceLogDatabase.Create(host.Database);
+        var log = await FenceLogDatabase.Create(host);
         var writer = new MongoFenceStore(host.Database, TimeProvider.System, log);
         var id = Guid.NewGuid();
         var grant = Guid.NewGuid().ToString("D");

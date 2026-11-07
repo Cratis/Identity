@@ -16,6 +16,26 @@ internal sealed class RevocationOutboxWorker(IServiceScopeFactory scopes, ILogge
 
     static readonly Action<ILogger, Exception?> _conflict = LoggerMessage.Define(LogLevel.Critical, new EventId(2, "RevocationOutboxConflict"), "Revocation outbox content conflict; delivery is held for operator investigation.");
 
+    /// <summary>Attempts delivery even when a recovery gap keeps admission closed.</summary>
+    /// <param name="recovery">The recovery pass.</param>
+    /// <param name="dispatch">The delivery pass.</param>
+    /// <param name="cancellationToken">Cancellation.</param>
+    /// <returns>The recovery and delivery attempt.</returns>
+    internal static async Task RecoverAndDeliver(ReconcileRecovery recovery, DispatchRevocationOutbox dispatch, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await recovery.Run(cancellationToken);
+        }
+        finally
+        {
+            await recovery.PublishEpochs(cancellationToken);
+            await dispatch.Dispatch(cancellationToken);
+        }
+
+        await recovery.ConfirmPublication(cancellationToken);
+    }
+
     /// <inheritdoc/>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -35,10 +55,7 @@ internal sealed class RevocationOutboxWorker(IServiceScopeFactory scopes, ILogge
                 }
 
                 var recovery = scope.ServiceProvider.GetRequiredService<ReconcileRecovery>();
-                await recovery.Run(stoppingToken);
-                await recovery.PublishEpochs(stoppingToken);
-                await scope.ServiceProvider.GetRequiredService<DispatchRevocationOutbox>().Dispatch(stoppingToken);
-                await recovery.ConfirmPublication(stoppingToken);
+                await RecoverAndDeliver(recovery, scope.ServiceProvider.GetRequiredService<DispatchRevocationOutbox>(), stoppingToken);
                 delaySeconds = 5;
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

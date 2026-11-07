@@ -15,7 +15,7 @@ public class when_voiding_holes_before_a_filled_tail(IdentityHost host) : IAsync
 
     public async ValueTask InitializeAsync()
     {
-        var log = await FenceLogDatabase.Create(host.Database);
+        var log = await FenceLogDatabase.Create(host);
         var store = new MongoFenceStore(host.Database, TimeProvider.System, log);
         var id = Guid.NewGuid();
         var grant = Guid.NewGuid().ToString("D");

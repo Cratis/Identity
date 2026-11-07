@@ -72,14 +72,26 @@ internal sealed class MongoFenceRecovery(IMongoDatabase database, MongoFenceStor
     }
 
     /// <inheritdoc/>
-    public async Task Save(RecoveryCheckpoint checkpoint, CancellationToken cancellationToken)
+    public async Task Save(RecoveryCheckpoint? expected, RecoveryCheckpoint checkpoint, CancellationToken cancellationToken)
     {
-        var result = await _checkpoints.UpdateOneAsync(
-            new BsonDocument("_id", "checkpoint"),
-            new BsonDocument("$set", new BsonDocument("payload", JsonSerializer.Serialize(checkpoint))),
-            new UpdateOptions { IsUpsert = true },
-            cancellationToken);
-        if (!result.IsAcknowledged)
+        var document = new BsonDocument { { "_id", "checkpoint" }, { "payload", JsonSerializer.Serialize(checkpoint) } };
+        if (expected is null)
+        {
+            try
+            {
+                await _checkpoints.InsertOneAsync(document, cancellationToken: cancellationToken);
+            }
+            catch (MongoWriteException exception) when (exception.WriteError.Category == ServerErrorCategory.DuplicateKey)
+            {
+                throw new RevocationPending();
+            }
+
+            return;
+        }
+
+        var filter = new BsonDocument { { "_id", "checkpoint" }, { "payload", JsonSerializer.Serialize(expected) } };
+        var result = await _checkpoints.ReplaceOneAsync(filter, document, cancellationToken: cancellationToken);
+        if (!result.IsAcknowledged || result.MatchedCount != 1)
         {
             throw new RevocationPending();
         }
