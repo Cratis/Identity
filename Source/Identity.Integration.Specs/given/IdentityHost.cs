@@ -6,10 +6,8 @@ using Cratis.Arc.Commands;
 using Cratis.Arc.Tenancy;
 using Cratis.Chronicle;
 using Cratis.Chronicle.Reactors;
-using Cratis.Chronicle.Reducers;
 using Cratis.Chronicle.Registrations;
 using Cratis.Identity.Accounts;
-using Cratis.Identity.Accounts.Linking;
 using Cratis.Identity.Protocol;
 using Cratis.Identity.Realm;
 using Cratis.Identity.Tenants;
@@ -94,7 +92,8 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         registration.IsSuccess.ShouldBeTrue();
         registration.Artifacts.ShouldNotBeEmpty();
         await store.Reactors.WaitTillSubscribed<AccountPublications>(TimeSpan.FromSeconds(30));
-        await store.Reducers.WaitTillSubscribed<AccountLinkStateReducer>(TimeSpan.FromSeconds(30));
+
+        // AccountLinkStateReducer is [Passive] (folded on demand), so it never subscribes; waiting for it would always time out.
     }
 
     /// <inheritdoc/>
