@@ -22,9 +22,9 @@ public sealed class LegacyAccountStoreProbe : ILegacyAccountStoreProbe
     {
         using var overall = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         overall.CancelAfter(_overallTimeout);
+        var settings = CreateSettings(connectionString);
         try
         {
-            var settings = MongoClientSettings.FromConnectionString(connectionString);
             settings.ServerSelectionTimeout = _driverTimeout;
             settings.ConnectTimeout = _driverTimeout;
             settings.SocketTimeout = _driverTimeout;
@@ -51,6 +51,22 @@ public sealed class LegacyAccountStoreProbe : ILegacyAccountStoreProbe
         catch (Exception exception)
         {
             throw new LegacyStoreProbeFailed(Classify(exception), exception);
+        }
+    }
+
+    /// <summary>Parses the connection string; the driver's parse errors can quote it, so the original exception is deliberately not kept.</summary>
+    /// <param name="connectionString">The connection string to parse.</param>
+    /// <returns>The parsed client settings.</returns>
+    /// <exception cref="LegacyStoreProbeFailed">The connection string is not valid.</exception>
+    static MongoClientSettings CreateSettings(string connectionString)
+    {
+        try
+        {
+            return MongoClientSettings.FromConnectionString(connectionString);
+        }
+        catch (Exception)
+        {
+            throw new LegacyStoreProbeFailed(LegacyStoreFailure.Error, null);
         }
     }
 
