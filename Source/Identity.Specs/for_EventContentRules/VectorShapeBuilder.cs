@@ -57,6 +57,9 @@ internal static class VectorShapeBuilder
         var entry = Definition(registry, type);
         var pii = Flag(value, "pii") || (definition.ValueKind == JsonValueKind.Object && definition.TryGetProperty("attributes", out var attributes) &&
             attributes.EnumerateArray().Any(attribute => attribute.GetString() == "Cratis.Chronicle.Compliance.GDPR.PIIAttribute"));
+
+        // These descriptors cover the vector vocabulary, not CLR inheritance or generic containers.
+        // Reflection fixtures exercise the complete ForbiddenType/OpenShape classification.
         return new(
             Text(value, "name"),
             Text(value, "wireName") ?? Text(value, "name"),

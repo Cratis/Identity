@@ -36,12 +36,18 @@ internal static class ReflectionShapeBuilder
     }
 
     /// <summary>Discovers current, prior, and explicitly registered event artifacts.</summary>
-    /// <param name="assembly">The Contracts assembly.</param>
+    /// <param name="assembly">An Identity assembly.</param>
     /// <param name="registered">Additional explicit event artifacts.</param>
     /// <returns>The discovered types.</returns>
     internal static IReadOnlyList<Type> Discover(Assembly assembly, IEnumerable<Type>? registered = null) =>
         assembly.GetTypes().Where(type => type.IsDefined(typeof(EventTypeAttribute)) || type.IsDefined(typeof(EventTypeGenerationForAttribute)))
             .Concat(registered ?? []).Distinct().OrderBy(type => type.FullName, StringComparer.Ordinal).ToArray();
+
+    /// <summary>Discovers event registrations across all production outputs.</summary>
+    /// <param name="assemblies">Every production Identity assembly.</param>
+    /// <returns>The discovered types, including non-exported registrations.</returns>
+    internal static IReadOnlyList<Type> Discover(IEnumerable<Assembly> assemblies) => assemblies.SelectMany(assembly => Discover(assembly))
+        .Distinct().OrderBy(type => type.FullName, StringComparer.Ordinal).ToArray();
 
     /// <summary>Identifies a serialized primitive for registry comparison.</summary>
     /// <param name="type">The underlying type.</param>

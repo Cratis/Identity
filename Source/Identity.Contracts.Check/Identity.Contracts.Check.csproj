@@ -9,13 +9,13 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Identity.Contracts/Identity.Contracts.csproj" />
+    <ProjectReference Include="../Identity/Identity.csproj" />
+    <ProjectReference Include="../Identity.Host/Identity.Host.csproj" />
     <InternalsVisibleTo Include="Cratis.Identity.Specs" />
     <EmbeddedResource Include="catalogue/identity-events-v1.json" />
   </ItemGroup>
-  <Target Name="CheckEventContent" AfterTargets="Build"
-          Inputs="$(TargetPath);$(TargetDir)Cratis.Identity.Contracts.dll"
-          Outputs="$(IntermediateOutputPath)event-content.checked">
-    <Exec Command="dotnet &quot;$(TargetPath)&quot; &quot;$(TargetDir)Cratis.Identity.Contracts.dll&quot;" />
-    <Touch Files="$(IntermediateOutputPath)event-content.checked" AlwaysCreate="true" />
+  <!-- Always run: a solution/project change must not reuse a stale coverage result. -->
+  <Target Name="CheckEventContent" AfterTargets="Build">
+    <Exec Command="dotnet &quot;$(TargetPath)&quot; @(_ResolvedProjectReferencePaths->'&quot;%(FullPath)&quot;', ' ') &quot;$(MSBuildThisFileDirectory)../../Identity.slnx&quot;" />
   </Target>
 </Project>

@@ -48,7 +48,7 @@ internal static class CatalogueChecker
         if (row.TypeId is null) result.Add(new("$", "event_id_not_allocated"));
         if (shape.TypeId != row.TypeId || !Guid.TryParse(shape.TypeId, out var id) || id == Guid.Empty || id.Version != 4)
             result.Add(new("$", "event_type_id_mismatch"));
-        if (shape.Generation != 1 || shape.Marker != "EventType") result.Add(new("$", "event_marker_mismatch"));
+        if (shape.Generation == 0 || shape.Marker is not ("EventType" or "EventTypeGenerationFor")) result.Add(new("$", "event_marker_mismatch"));
         if (shape.Visibility != row.Visibility) result.Add(new("$", "event_visibility_mismatch"));
         var expected = row.Fields.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToDictionary(field => field.TrimEnd('†', '‡'), field => field.EndsWith('†') || field.EndsWith('‡'));
         if (!shape.Members.Select(member => member.ClrName).ToHashSet(StringComparer.Ordinal).SetEquals(expected.Keys))

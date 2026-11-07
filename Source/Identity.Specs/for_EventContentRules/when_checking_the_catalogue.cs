@@ -55,7 +55,15 @@ public class when_checking_the_catalogue : Specification
     public void should_reject_marker_changes() => Check(Shape() with { Marker = "Unmarked" }).ShouldContain(new Violation("$", "event_marker_mismatch"));
 
     [Fact]
-    public void should_reject_generation_changes() => Check(Shape() with { Generation = 2 }).ShouldContain(new Violation("$", "event_marker_mismatch"));
+    public void should_reject_generation_zero() => Check(Shape() with { Generation = 0 }).ShouldContain(new Violation("$", "event_marker_mismatch"));
+
+    [Theory]
+    [InlineData(1u, "EventType")]
+    [InlineData(2u, "EventType")]
+    [InlineData(1u, "EventTypeGenerationFor")]
+    [InlineData(2u, "EventTypeGenerationFor")]
+    public void should_accept_current_and_previous_generation_markers(uint generation, string marker) =>
+        Check(Shape() with { Generation = generation, Marker = marker }).ShouldBeEmpty();
 
     [Fact]
     public void should_reject_field_changes() => Check(Shape() with { Members = [] }).ShouldContain(new Violation("$", "event_fields_mismatch"));

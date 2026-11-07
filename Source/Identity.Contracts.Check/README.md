@@ -4,23 +4,33 @@
 # Event content check
 
 The ordinary solution build runs this non-packable executable after compiling
-Contracts. A content violation returns exit code 1 and fails MSBuild. No service,
+all production projects (Contracts, Identity, and Host). A content violation returns exit code 1 and fails MSBuild. No service,
 database, Docker container, or secret-store access is needed.
 
 ```sh
 dotnet build Identity.slnx -c Release -warnaserror
 ```
 
-For a previously built Release assembly, run the same checker directly:
+For previously built Release assemblies, run the same checker directly from the
+repository root. Supply every production output, followed by the solution path:
 
 ```sh
-dotnet Source/Identity.Contracts.Check/bin/Release/net10.0/Cratis.Identity.Contracts.Check.dll Source/Identity.Contracts.Check/bin/Release/net10.0/Cratis.Identity.Contracts.dll
+dotnet Source/Identity.Contracts.Check/bin/Release/net10.0/Cratis.Identity.Contracts.Check.dll \
+  Source/Identity.Contracts/bin/Release/net10.0/Cratis.Identity.Contracts.dll \
+  Source/Identity/bin/Release/net10.0/Cratis.Identity.dll \
+  Source/Identity.Host/bin/Release/net10.0/Cratis.Identity.Host.dll \
+  Identity.slnx
 ```
 
-The successful build stamp depends on both compiled assemblies. Changing the
-checker, its embedded catalogue, or Contracts invalidates that stamp. Failed
-checks never update it. The dependency graph is Contracts → Check → Specs; the
-Contracts package does not depend on the executable.
+The checker runs on every build, including incremental builds, so solution or
+project changes cannot reuse a stale coverage result. Its project references
+supply the assembly paths to MSBuild. A solution-level guard requires an output
+for every project except the checker itself and `*.Specs.csproj` projects.
+When adding a production project to `Identity.slnx`, also add a project reference
+in `Identity.Contracts.Check.csproj`; otherwise the build fails with
+`production_assembly_not_scanned`, even if the new project has no events yet.
+An event registered outside Contracts fails catalogue validation. The Contracts
+package does not depend on the executable.
 
 ## Adding an event
 
@@ -73,4 +83,6 @@ dotnet test Source/Identity.Specs/Identity.Specs.csproj -c Release --filter Full
 
 The locked content and PII vectors and reflected fixtures use the same pure rule
 engine. Runner specs assert nonzero status for violations and empty discovery;
-catalogue specs cover identity, visibility, field, protection, and generation drift.
+catalogue specs cover identity, visibility, field, protection, and invalid generation
+markers. Discovery specs cover registrations in a second assembly, missing production
+outputs, and allocated catalogue rows without registrations.
