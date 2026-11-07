@@ -17,6 +17,10 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
     public ValidateOptionsResult Validate(string? name, IdentityOptions options)
     {
         var failures = new List<string>();
+        if (options.SecurityOwners.Any(string.IsNullOrWhiteSpace))
+        {
+            failures.Add("Identity:SecurityOwners must contain only non-empty subjects.");
+        }
 
         if (!string.IsNullOrWhiteSpace(options.Issuer))
         {
@@ -60,6 +64,11 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
         if (resource.Indicators.Count == 0)
         {
             yield return $"Resource server \"{resource.Audience}\" has no resource indicators.";
+        }
+
+        if (resource.Indicators.Count > 1)
+        {
+            yield return $"Resource server \"{resource.Audience}\" must have exactly one resource indicator.";
         }
 
         foreach (var indicator in resource.Indicators.Where(_ => ResourceIndicator.Normalize(_) is null))

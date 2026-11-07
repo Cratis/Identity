@@ -34,6 +34,7 @@
   <ItemGroup>
     <ProjectReference Include="../Identity/Identity.csproj" />
     <None Include="Vectors/**" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../Identity.Host/appsettings.json" Link="Identity.appsettings.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

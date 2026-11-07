@@ -33,9 +33,9 @@ Each realm MUST have its own Chronicle event store. Context and delivery MUST pr
 | Account | Account subject | Exactly the immutable lowercase UUID v4 in contract v1 §2.1. Link proposals and confirmed links remain on the target account stream. |
 | Grant | GrantId | Opaque, generated, never-reassigned UUID v4; one authorization grant, not a token. |
 | Family | FamilyId | Opaque, generated, never-reassigned UUID v4; one refresh-token family, not a refresh-token value. |
-| Client | ClientRegistrationId | Opaque UUID v4, distinct from a client's externally registered OAuth identifier or CIMD URL. |
+| Client | ClientRegistrationId | Opaque UUID v4, distinct from a client's externally registered OAuth identifier or CIMD URL. Immutable across configuration changes; never derive the stream id from a client id or URL. |
 | Signing key | SigningKeyId | Opaque UUID v4 identifying a secret-store/KMS record; not key material. |
-| Resource | ResourceId | Opaque UUID v4 referencing the contract v1 resource catalog entry. |
+| Resource | ResourceId | Opaque UUID v4 referencing the contract v1 resource catalog entry. Immutable across configuration changes; never derive the stream id from the indicator or audience. |
 | Organisation | OrganisationId | Opaque Access id; syntax/ownership per D5 (Identity #23). |
 | Binding | BindingId | Opaque UUID v4 for a registered `(resource, installation, tenant, environment, organisation)` binding; per D5 (Identity #23). |
 | Connection | ConnectionId | Opaque UUID v4 for an approved upstream connection; ownership per D5 (Identity #23). |
@@ -165,6 +165,8 @@ D18 excludes individual refresh rotations, codes, `state`/nonce, `jti`/replay ca
 Revocation/disable fences, tombstones, account/grant epochs and pending outbox entries are authoritative operational state, durably committed before acknowledgement with the independently retained fence log. The corresponding §8 events report completed business facts asynchronously; they are not the fence itself and their projection is never a prerequisite to refusing revoked credentials. `FenceId`, `FenceSequence`, epochs and outbox-derived event identity permit idempotent recovery; replay MUST NOT resurrect credentials. Names/fields marked **align with identity-revocation-v1** follow [identity-revocation-v1](identity-revocation-v1.md) (§9 point 7).
 
 Access projection freshness/heartbeat transport is operational, not a periodic domain event in this catalogue. A policy change with a new epoch is a domain fact. D20's freshness/epoch-before-policy protocol remains a separate contract; this catalogue MUST NOT manufacture authority from a transport heartbeat.
+
+The client/resource registration configuration boundary currently provides validation and an explicit, deny-by-default `issuer-security-owner` policy only. It does not append client, resource or scope facts. Event-sourced mutation handlers, read-your-writes barriers and explicit event type ids remain follow-up work; the catalogue's unassigned ids below are not registrations. Accepted facts must never persist client secrets or redeemable values (§6).
 
 ## 8. Event catalogue v1
 
