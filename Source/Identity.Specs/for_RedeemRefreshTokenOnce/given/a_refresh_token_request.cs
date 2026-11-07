@@ -19,7 +19,7 @@ public class a_refresh_token_request : Specification
 
     protected IOpenIddictTokenManager _tokens;
     protected IOpenIddictAuthorizationManager _authorizations;
-    protected RedeemRefreshTokenOnce _handler;
+    private protected RedeemRefreshTokenOnce _handler;
     protected FixedTimeProvider _time;
     protected ProcessSignInContext _context;
     protected object _token;

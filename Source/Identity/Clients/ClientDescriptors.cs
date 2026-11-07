@@ -15,7 +15,7 @@ namespace Cratis.Identity.Clients;
 /// </summary>
 /// <param name="resources">The <see cref="IResourceCatalog"/>.</param>
 /// <param name="options">The <see cref="IdentityOptions"/>.</param>
-public class ClientDescriptors(IResourceCatalog resources, IOptions<IdentityOptions> options)
+internal class ClientDescriptors(IResourceCatalog resources, IOptions<IdentityOptions> options)
 {
     /// <summary>
     /// The client identifier of the first-party Cratis CLI.

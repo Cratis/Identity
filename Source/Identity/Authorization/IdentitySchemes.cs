@@ -6,7 +6,7 @@ namespace Cratis.Identity.Authorization;
 /// <summary>
 /// Holds the authentication scheme names Identity registers.
 /// </summary>
-public static class IdentitySchemes
+internal static class IdentitySchemes
 {
     /// <summary>
     /// The cookie scheme for the Identity site session. It is only ever read by Identity itself.

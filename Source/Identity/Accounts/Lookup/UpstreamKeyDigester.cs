@@ -10,7 +10,7 @@ namespace Cratis.Identity.Accounts.Lookup;
 
 /// <summary>Domain-separated, length-framed HMAC over exact immutable upstream values.</summary>
 /// <param name="keys">The lookup key source.</param>
-public class UpstreamKeyDigester(IUpstreamLookupKeys keys)
+internal class UpstreamKeyDigester(IUpstreamLookupKeys keys)
 {
     /// <summary>Computes a revision-prefixed keyed pseudonym.</summary>
     /// <param name="issuer">The exact authority.</param>

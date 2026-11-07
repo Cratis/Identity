@@ -13,7 +13,7 @@ namespace Cratis.Identity.Clients;
 /// </summary>
 /// <param name="scopes">The <see cref="IServiceScopeFactory"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
-public class ClientRegistrations(IServiceScopeFactory scopes, ILogger<ClientRegistrations> logger) : IHostedService
+internal class ClientRegistrations(IServiceScopeFactory scopes, ILogger<ClientRegistrations> logger) : IHostedService
 {
     /// <inheritdoc/>
     public async Task StartAsync(CancellationToken cancellationToken)

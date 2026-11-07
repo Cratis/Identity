@@ -10,7 +10,7 @@ namespace Cratis.Identity.Authorization;
 /// Extracts the OAuth parameters of an authorization request so they can be carried through upstream login
 /// and the consent form unchanged.
 /// </summary>
-public static class AuthorizationParameters
+internal static class AuthorizationParameters
 {
     /// <summary>
     /// Gets the names of the consent form fields, which are not OAuth parameters.

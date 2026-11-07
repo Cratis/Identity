@@ -12,7 +12,7 @@ namespace Cratis.Identity.Upstream;
 /// <summary>
 /// Extension methods for registering GitHub as upstream login.
 /// </summary>
-public static class GitHubUpstreamExtensions
+internal static class GitHubUpstreamExtensions
 {
     /// <summary>
     /// The path GitHub redirects back to after login. Register it as the OAuth app callback URL.

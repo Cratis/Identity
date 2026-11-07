@@ -24,7 +24,7 @@ namespace Cratis.Identity.Authorization;
 /// <param name="consentPages">The <see cref="ConsentPages"/>.</param>
 /// <param name="applications">The <see cref="IOpenIddictApplicationManager"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
-public class AuthorizationEndpoint(
+internal class AuthorizationEndpoint(
     SignedInAccounts signedInAccounts,
     IGrantPolicy grantPolicy,
     ITenantDirectory tenants,

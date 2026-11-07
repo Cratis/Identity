@@ -10,7 +10,7 @@ namespace Cratis.Identity.Accounts;
 /// </summary>
 /// <param name="database">The <see cref="IMongoDatabase"/>.</param>
 /// <param name="timeProvider">The <see cref="TimeProvider"/>.</param>
-public class Accounts(IMongoDatabase database, TimeProvider timeProvider) : IAccounts
+internal class Accounts(IMongoDatabase database, TimeProvider timeProvider) : IAccounts
 {
     /// <summary>
     /// The name of the collection accounts are stored in.

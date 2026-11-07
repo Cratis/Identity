@@ -6,4 +6,4 @@ namespace Cratis.Identity.Authorization;
 /// <summary>
 /// Represents the outcome of evaluating a <see cref="GrantRequest"/>.
 /// </summary>
-public abstract record GrantEvaluation;
+internal abstract record GrantEvaluation;

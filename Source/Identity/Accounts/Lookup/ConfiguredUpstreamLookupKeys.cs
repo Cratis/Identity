@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 namespace Cratis.Identity.Accounts.Lookup;
 
 /// <summary>A configuration-backed key source. Outside Development a configured lookup key is required.</summary>
-public sealed class ConfiguredUpstreamLookupKeys : IUpstreamLookupKeys
+internal sealed class ConfiguredUpstreamLookupKeys : IUpstreamLookupKeys
 {
     static readonly byte[] _developmentKey = RandomNumberGenerator.GetBytes(32);
 

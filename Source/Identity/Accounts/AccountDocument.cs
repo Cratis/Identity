@@ -8,7 +8,7 @@ namespace Cratis.Identity.Accounts;
 /// <summary>
 /// Represents the stored shape of an <see cref="Account"/>.
 /// </summary>
-public class AccountDocument
+internal class AccountDocument
 {
     /// <summary>
     /// Gets or sets the canonical account identifier.

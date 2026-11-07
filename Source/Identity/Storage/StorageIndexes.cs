@@ -15,7 +15,7 @@ namespace Cratis.Identity.Storage;
 /// </summary>
 /// <param name="database">The <see cref="IMongoDatabase"/>.</param>
 /// <param name="openIddict">The <see cref="OpenIddictMongoDbOptions"/>.</param>
-public class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddictMongoDbOptions> openIddict)
+internal class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddictMongoDbOptions> openIddict)
 {
     /// <summary>
     /// Ensures all indexes exist.

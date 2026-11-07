@@ -53,7 +53,7 @@ public class a_contract_vector : an_account_store
         await Refresh();
     }
 
-    protected VerifiedAuthentication VectorProof(FactId operation, ClaimsPrincipal? session = null)
+    private protected VerifiedAuthentication VectorProof(FactId operation, ClaimsPrincipal? session = null)
     {
         var proof = _when.GetProperty("verified_authentication");
         _clock.Now = DateTimeOffset.FromUnixTimeSeconds(proof.GetProperty("auth_time").GetInt64());

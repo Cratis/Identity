@@ -9,7 +9,7 @@ namespace Cratis.Identity.Authorization;
 /// Serves the consent page and validates its submissions.
 /// </summary>
 /// <param name="antiforgery">The <see cref="IAntiforgery"/>.</param>
-public class ConsentPages(IAntiforgery antiforgery)
+internal class ConsentPages(IAntiforgery antiforgery)
 {
     /// <summary>
     /// Renders the consent page for a request.

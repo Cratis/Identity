@@ -11,7 +11,7 @@ namespace Cratis.Identity.Accounts;
 /// <summary>
 /// Creates the principal stored in the Identity site session cookie.
 /// </summary>
-public static class SessionPrincipal
+internal static class SessionPrincipal
 {
     /// <summary>
     /// Creates the session principal for an account.

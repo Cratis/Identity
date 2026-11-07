@@ -6,7 +6,7 @@ namespace Cratis.Identity.Authorization;
 /// <summary>
 /// Holds the names and values of the consent form fields.
 /// </summary>
-public static class ConsentForm
+internal static class ConsentForm
 {
     /// <summary>
     /// The field carrying the user decision.

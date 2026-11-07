@@ -8,8 +8,8 @@ namespace Cratis.Identity.Accounts.for_LookupRevisionGuard.given;
 
 public class a_revision_guard : Specification
 {
-    protected UpstreamLookupKey _key;
-    protected IMongoCollection<LookupRevision> _collection;
+    private protected UpstreamLookupKey _key;
+    private protected IMongoCollection<LookupRevision> _collection;
     protected Exception _error;
     LookupRevisionGuard _guard;
 
@@ -28,7 +28,7 @@ public class a_revision_guard : Specification
         _guard = new(_collection, keys);
     }
 
-    protected void Stored(LookupRevision[] before, LookupRevision[] after)
+    private protected void Stored(LookupRevision[] before, LookupRevision[] after)
     {
         var beforeCursor = Cursor(before);
         var afterCursor = Cursor(after);

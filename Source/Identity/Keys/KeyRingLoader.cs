@@ -19,7 +19,7 @@ namespace Cratis.Identity.Keys;
 /// <c language="text">data-protection.&lt;name&gt;.xml</c>. Certificates are PEM, keys are unencrypted PKCS#8 PEM.
 /// Signing keys are RSA of at least 2048 bits or ECDSA P-256, encryption keys are RSA of at least 2048 bits.
 /// </remarks>
-public static class KeyRingLoader
+internal static class KeyRingLoader
 {
     const string Signing = "signing";
     const string Encryption = "encryption";

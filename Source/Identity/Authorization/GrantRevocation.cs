@@ -16,7 +16,7 @@ namespace Cratis.Identity.Authorization;
 /// </remarks>
 /// <param name="tokens">The <see cref="IOpenIddictTokenManager"/>.</param>
 /// <param name="authorizations">The <see cref="IOpenIddictAuthorizationManager"/>.</param>
-public class GrantRevocation(IOpenIddictTokenManager tokens, IOpenIddictAuthorizationManager authorizations)
+internal class GrantRevocation(IOpenIddictTokenManager tokens, IOpenIddictAuthorizationManager authorizations)
 {
     const int RevocationAttempts = 3;
 

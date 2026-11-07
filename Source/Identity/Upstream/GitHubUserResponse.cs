@@ -9,7 +9,7 @@ namespace Cratis.Identity.Upstream;
 /// <summary>
 /// Reads the GitHub REST API <c language="text">GET /user</c> response.
 /// </summary>
-public static class GitHubUserResponse
+internal static class GitHubUserResponse
 {
     /// <summary>
     /// Reads a <see cref="GitHubUser"/> from a <c language="text">GET /user</c> response.

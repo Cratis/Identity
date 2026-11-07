@@ -6,4 +6,4 @@ namespace Cratis.Identity.Accounts.Lookup;
 /// <summary>Durable key-check metadata, separate from event payloads and never secret material.</summary>
 /// <param name="Id">The one retained revision.</param>
 /// <param name="Check">The domain-separated key check.</param>
-public record LookupRevision(int Id, string Check);
+internal record LookupRevision(int Id, string Check);

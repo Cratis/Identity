@@ -11,7 +11,7 @@ namespace Cratis.Identity.Configuration;
 /// service instead of silently narrowing or widening what tokens can carry.
 /// </summary>
 /// <param name="environment">The host environment; configured tenants are Development fixtures only.</param>
-public class IdentityOptionsValidation(IHostEnvironment environment) : IValidateOptions<IdentityOptions>
+internal class IdentityOptionsValidation(IHostEnvironment environment) : IValidateOptions<IdentityOptions>
 {
     /// <inheritdoc/>
     public ValidateOptionsResult Validate(string? name, IdentityOptions options)

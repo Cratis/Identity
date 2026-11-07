@@ -11,8 +11,8 @@ namespace Cratis.Identity.for_AccessTokenIdentity.given;
 public class an_account_and_a_grant : Specification
 {
     protected const string ClientId = "cratis-cli";
-    protected Account _account;
-    protected Grant _grant;
+    private protected Account _account;
+    private protected Grant _grant;
 
     void Establish()
     {

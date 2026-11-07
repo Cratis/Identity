@@ -12,7 +12,7 @@ namespace Cratis.Identity.Keys;
 /// </remarks>
 /// <param name="file">The file the problem was found in.</param>
 /// <param name="reason">Why the file was refused.</param>
-public class InvalidKeyMaterial(string file, string reason) : Exception($"Secret store file \"{file}\" is refused: {reason}")
+internal class InvalidKeyMaterial(string file, string reason) : Exception($"Secret store file \"{file}\" is refused: {reason}")
 {
     /// <summary>
     /// Gets the file the problem was found in.

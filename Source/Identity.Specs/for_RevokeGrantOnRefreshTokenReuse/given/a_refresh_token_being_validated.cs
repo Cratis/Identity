@@ -18,7 +18,7 @@ public class a_refresh_token_being_validated : Specification
 
     protected IOpenIddictTokenManager _tokens;
     protected IOpenIddictAuthorizationManager _authorizations;
-    protected RevokeGrantOnRefreshTokenReuse _handler;
+    private protected RevokeGrantOnRefreshTokenReuse _handler;
     protected ValidateTokenContext _context;
     protected object _token;
     protected object _authorization;

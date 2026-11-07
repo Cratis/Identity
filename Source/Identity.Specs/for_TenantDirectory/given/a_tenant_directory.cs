@@ -17,7 +17,7 @@ public class a_tenant_directory : Specification
     protected IdentityOptions options;
     protected HostingEnvironment environment;
     protected CallbackHandler handler;
-    protected TenantLookup result;
+    private protected TenantLookup result;
 
     void Establish()
     {

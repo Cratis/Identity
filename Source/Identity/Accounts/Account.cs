@@ -10,4 +10,4 @@ namespace Cratis.Identity.Accounts;
 /// <param name="GitHubId">The numeric GitHub user identifier the account is linked to.</param>
 /// <param name="GitHubLogin">The GitHub login at the most recent sign-in.</param>
 /// <param name="Name">The display name at the most recent sign-in.</param>
-public record Account(string Id, long GitHubId, string GitHubLogin, string Name);
+internal record Account(string Id, long GitHubId, string GitHubLogin, string Name);

@@ -24,7 +24,7 @@ namespace Cratis.Identity.Authorization;
 /// <param name="resources">The <see cref="IResourceCatalog"/>.</param>
 /// <param name="tenants">The <see cref="ITenantDirectory"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
-public class TokenEndpoint(
+internal class TokenEndpoint(
     IAccounts accounts,
     IGrantPolicy grantPolicy,
     IResourceCatalog resources,

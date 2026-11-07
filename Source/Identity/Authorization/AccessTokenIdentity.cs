@@ -19,7 +19,7 @@ namespace Cratis.Identity.Authorization;
 /// Only the claims listed in <see cref="AccessTokenClaimTypes"/> reach the access token. Everything else stays
 /// in the encrypted authorization code and refresh token, which only Identity can read.
 /// </remarks>
-public static class AccessTokenIdentity
+internal static class AccessTokenIdentity
 {
     /// <summary>
     /// Gets the claim types written to access tokens, in addition to those OpenIddict writes itself

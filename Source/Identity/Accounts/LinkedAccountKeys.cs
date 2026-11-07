@@ -20,7 +20,7 @@ namespace Cratis.Identity.Accounts;
 /// <param name="LinkedAt">The confirmation time, absent before confirmation.</param>
 /// <param name="State">The proposal or confirmed-link state.</param>
 [ReadModel]
-public record LinkedAccountKeys(LinkId LinkId, ConnectionId ConnectionId, UpstreamIssuer IdpIssuer, Login? DisplayIdentifier, DateTimeOffset? LinkedAt, string State = "confirmed")
+internal record LinkedAccountKeys(LinkId LinkId, ConnectionId ConnectionId, UpstreamIssuer IdpIssuer, Login? DisplayIdentifier, DateTimeOffset? LinkedAt, string State = "confirmed")
 {
     /// <summary>Gets only active keys belonging to the authenticated account, never a supplied target subject.</summary>
     /// <param name="context">The authenticated request.</param>

@@ -21,7 +21,7 @@ namespace Cratis.Identity.Authorization;
 /// <param name="tokens">The <see cref="IOpenIddictTokenManager"/>.</param>
 /// <param name="authorizations">The <see cref="IOpenIddictAuthorizationManager"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
-public class RevokeGrantOnRefreshTokenRevocation(
+internal class RevokeGrantOnRefreshTokenRevocation(
     IOpenIddictTokenManager tokens,
     IOpenIddictAuthorizationManager authorizations,
     ILogger<RevokeGrantOnRefreshTokenRevocation> logger) : IOpenIddictServerHandler<HandleRevocationRequestContext>

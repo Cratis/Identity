@@ -9,7 +9,7 @@ namespace Cratis.Identity.for_GrantPolicy.given;
 
 public class a_grant_policy : Specification
 {
-    protected GrantPolicy _policy;
+    private protected GrantPolicy _policy;
 
     void Establish() => _policy = new GrantPolicy(new ResourceCatalog(Configurations.TwoResourceServers().AsOptions()));
 }

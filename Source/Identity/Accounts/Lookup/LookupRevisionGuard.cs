@@ -8,7 +8,7 @@ namespace Cratis.Identity.Accounts.Lookup;
 /// <summary>Fails closed if a revision is changed, removed or reused with different key material.</summary>
 /// <param name="collection">The development metadata collection.</param>
 /// <param name="keys">The configured key.</param>
-public class LookupRevisionGuard(IMongoCollection<LookupRevision> collection, IUpstreamLookupKeys keys) : IHostedService
+internal class LookupRevisionGuard(IMongoCollection<LookupRevision> collection, IUpstreamLookupKeys keys) : IHostedService
 {
     /// <inheritdoc/>
     /// <exception cref="AccountOperationRefused">The durable revision does not match the configured key.</exception>

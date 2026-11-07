@@ -13,10 +13,10 @@ public class a_tenants_callback : Specification
     protected CallbackHandler handler;
     private protected ProductTenantsCallback callback;
     private protected CallbackLogger<ProductTenantsCallback> logger;
-    protected Account account;
-    protected ResourceServer resource;
+    private protected Account account;
+    private protected ResourceServer resource;
     protected TenantsCallbackOptions options;
-    protected TenantLookup result;
+    private protected TenantLookup result;
 
     void Establish()
     {

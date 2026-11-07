@@ -7,7 +7,7 @@ namespace Cratis.Identity.Resources;
 /// Normalizes RFC 8707 resource indicators so configured and requested values compare the same way
 /// OpenIddict compares them.
 /// </summary>
-public static class ResourceIndicator
+internal static class ResourceIndicator
 {
     /// <summary>
     /// Normalizes a resource indicator.

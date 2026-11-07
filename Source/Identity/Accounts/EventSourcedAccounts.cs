@@ -14,7 +14,7 @@ namespace Cratis.Identity.Accounts;
 /// <param name="lookups">The immutable-key lookup.</param>
 /// <param name="digester">The keyed digester.</param>
 /// <param name="time">The trusted clock.</param>
-public class EventSourcedAccounts(AccountStore store, UpstreamLookups lookups, UpstreamKeyDigester digester, TimeProvider time)
+internal class EventSourcedAccounts(AccountStore store, UpstreamLookups lookups, UpstreamKeyDigester digester, TimeProvider time)
 {
     /// <summary>Finds only by exact verified upstream pair, or atomically allocates and claims a new subject.</summary>
     /// <param name="authentication">The adapter-verified immutable key.</param>

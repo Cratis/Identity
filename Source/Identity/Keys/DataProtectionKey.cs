@@ -12,4 +12,4 @@ namespace Cratis.Identity.Keys;
 /// <param name="Element">The key's XML element, as the Data Protection key manager reads it.</param>
 /// <param name="ActivationDate">When the key may start protecting payloads.</param>
 /// <param name="ExpirationDate">When the key stops being used to protect payloads.</param>
-public record DataProtectionKey(string Name, XElement Element, DateTimeOffset ActivationDate, DateTimeOffset ExpirationDate);
+internal record DataProtectionKey(string Name, XElement Element, DateTimeOffset ActivationDate, DateTimeOffset ExpirationDate);

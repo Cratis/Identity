@@ -15,7 +15,7 @@ namespace Cratis.Identity.Upstream;
 /// </summary>
 /// <param name="accounts">The <see cref="IAccounts"/>.</param>
 /// <param name="upstream">The <see cref="UpstreamLoginOptions"/>.</param>
-public class SignedInAccounts(IAccounts accounts, IOptions<UpstreamLoginOptions> upstream)
+internal class SignedInAccounts(IAccounts accounts, IOptions<UpstreamLoginOptions> upstream)
 {
     /// <summary>
     /// Finds the account signed in to the Identity site for an authorization request.

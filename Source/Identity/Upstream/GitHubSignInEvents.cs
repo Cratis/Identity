@@ -16,7 +16,7 @@ namespace Cratis.Identity.Upstream;
 /// </summary>
 /// <param name="accounts">The <see cref="IAccounts"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
-public class GitHubSignInEvents(IAccounts accounts, ILogger<GitHubSignInEvents> logger) : OAuthEvents
+internal class GitHubSignInEvents(IAccounts accounts, ILogger<GitHubSignInEvents> logger) : OAuthEvents
 {
     /// <inheritdoc/>
     public override Task AccessDenied(AccessDeniedContext context)

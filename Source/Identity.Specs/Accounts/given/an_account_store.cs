@@ -23,13 +23,13 @@ public class an_account_store : Specification
     protected EventStoreForTesting _events;
     protected AccountClock _clock;
     protected IdentityOptions _options;
-    protected UpstreamKeyDigester _digester;
-    protected EventSourcedAccounts _accounts;
-    protected UpstreamKeyLinking _linking;
-    protected GitHubConnection _github;
-    protected UpstreamLookups _lookups;
-    protected ReadModelScenario<AccountLinkState> _states;
-    protected ReadModelScenario<UpstreamKeyLookup> _reservations;
+    private protected UpstreamKeyDigester _digester;
+    private protected EventSourcedAccounts _accounts;
+    private protected UpstreamKeyLinking _linking;
+    private protected GitHubConnection _github;
+    private protected UpstreamLookups _lookups;
+    private protected ReadModelScenario<AccountLinkState> _states;
+    private protected ReadModelScenario<UpstreamKeyLookup> _reservations;
 
     readonly HashSet<AccountSubject> _subjects = [];
 
@@ -52,14 +52,14 @@ public class an_account_store : Specification
         _events.Dispose();
     }
 
-    protected VerifiedAuthentication GitHub(long id)
+    private protected VerifiedAuthentication GitHub(long id)
     {
         var operation = FactId.New();
         _subjects.Add(new(operation.Value.ToString("D")));
         return _github.From(new(id, "display", "Person"), operation);
     }
 
-    protected VerifiedAuthentication GitHubForLink(long id, ClaimsPrincipal session) => _github.ForLink(new(id, "display", "Person"), session, FactId.New());
+    private protected VerifiedAuthentication GitHubForLink(long id, ClaimsPrincipal session) => _github.ForLink(new(id, "display", "Person"), session, FactId.New());
 
     /// <summary>
     /// Vectors assume a verified adapter response. This test-only construction bypasses transport verification,
@@ -70,7 +70,7 @@ public class an_account_store : Specification
     /// <param name="operation">The accepted operation reference retained for retries.</param>
     /// <param name="session">The existing account session for a link ceremony.</param>
     /// <returns>The vector's adapter proof fixture.</returns>
-    protected VerifiedAuthentication Verified(UpstreamIssuer issuer, UpstreamSubject subject, FactId operation, ClaimsPrincipal? session = null)
+    private protected VerifiedAuthentication Verified(UpstreamIssuer issuer, UpstreamSubject subject, FactId operation, ClaimsPrincipal? session = null)
     {
         _subjects.Add(new(operation.Value.ToString("D")));
         var proof = (VerifiedAuthentication)Activator.CreateInstance(

@@ -9,7 +9,7 @@ namespace Cratis.Identity.for_KeyRingLoader.given;
 public class a_secret_store : Specification
 {
     protected StoreFiles _files;
-    protected KeyRing _ring;
+    private protected KeyRing _ring;
     protected Exception _exception;
 
     void Establish() => _files = new StoreFiles()
@@ -19,5 +19,5 @@ public class a_secret_store : Specification
 
     protected void Load() => _exception = Catch.Exception(() => _ring = KeyRingLoader.Load(_files));
 
-    protected InvalidKeyMaterial Refusal => (InvalidKeyMaterial)_exception;
+    private protected InvalidKeyMaterial Refusal => (InvalidKeyMaterial)_exception;
 }

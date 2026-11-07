@@ -23,7 +23,7 @@ namespace Cratis.Identity.Authorization;
 /// <param name="tokens">The <see cref="IOpenIddictTokenManager"/>.</param>
 /// <param name="grants">The <see cref="GrantRevocation"/>.</param>
 /// <param name="timeProvider">The <see cref="TimeProvider"/>.</param>
-public class RedeemRefreshTokenOnce(IOpenIddictTokenManager tokens, GrantRevocation grants, TimeProvider timeProvider) : IOpenIddictServerHandler<ProcessSignInContext>
+internal class RedeemRefreshTokenOnce(IOpenIddictTokenManager tokens, GrantRevocation grants, TimeProvider timeProvider) : IOpenIddictServerHandler<ProcessSignInContext>
 {
     /// <summary>
     /// Gets the descriptor. It runs just before OpenIddict's redemption handler, whose later attempt to redeem the

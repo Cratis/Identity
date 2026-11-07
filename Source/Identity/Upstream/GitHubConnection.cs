@@ -12,7 +12,7 @@ namespace Cratis.Identity.Upstream;
 /// <summary>The GitHub immutable-id adapter; login is never an identity key.</summary>
 /// <param name="connectionId">The configured connection.</param>
 /// <param name="time">The trusted clock.</param>
-public class GitHubConnection(ConnectionId connectionId, TimeProvider time)
+internal class GitHubConnection(ConnectionId connectionId, TimeProvider time)
 {
     /// <summary>Binds a verified provider response to the existing account session's link ceremony.</summary>
     /// <param name="user">The verified provider response.</param>

@@ -15,7 +15,7 @@ namespace Cratis.Identity.Tenants;
 /// tenant explicitly allows all accounts.
 /// </summary>
 /// <param name="options">The <see cref="IdentityOptions"/>.</param>
-public class ConfiguredTenantDirectory(IOptionsMonitor<IdentityOptions> options) : ITenantDirectory
+internal class ConfiguredTenantDirectory(IOptionsMonitor<IdentityOptions> options) : ITenantDirectory
 {
     /// <inheritdoc/>
     public Task<TenantLookup> SelectableTenants(Account account, ResourceServer resource, CancellationToken cancellationToken = default)

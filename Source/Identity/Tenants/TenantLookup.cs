@@ -6,4 +6,4 @@ namespace Cratis.Identity.Tenants;
 /// <summary>
 /// Represents the outcome of looking up selectable tenants.
 /// </summary>
-public abstract record TenantLookup;
+internal abstract record TenantLookup;

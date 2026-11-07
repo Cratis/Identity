@@ -21,7 +21,7 @@ namespace Cratis.Identity.Authorization;
 /// </remarks>
 /// <param name="tokens">The <see cref="IOpenIddictTokenManager"/>.</param>
 /// <param name="grants">The <see cref="GrantRevocation"/>.</param>
-public class RevokeGrantOnRefreshTokenReuse(IOpenIddictTokenManager tokens, GrantRevocation grants) : IOpenIddictServerHandler<ValidateTokenContext>
+internal class RevokeGrantOnRefreshTokenReuse(IOpenIddictTokenManager tokens, GrantRevocation grants) : IOpenIddictServerHandler<ValidateTokenContext>
 {
     /// <summary>
     /// Gets the descriptor. It carries the same filters as OpenIddict's token-entry validation and runs just before it.

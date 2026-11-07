@@ -14,7 +14,7 @@ namespace Cratis.Identity.Accounts.Linking;
 /// <param name="ProposedAt">The server-observed proposal instant.</param>
 /// <param name="HoldNotBefore">The hold boundary.</param>
 /// <param name="State">The lifecycle state.</param>
-public record LinkProposal(LinkProposalId Id, ConnectionId Connection, UpstreamIssuer Issuer, UpstreamSubject Subject, DateTimeOffset ProposedAt, DateTimeOffset HoldNotBefore, string State)
+internal record LinkProposal(LinkProposalId Id, ConnectionId Connection, UpstreamIssuer Issuer, UpstreamSubject Subject, DateTimeOffset ProposedAt, DateTimeOffset HoldNotBefore, string State)
 {
     /// <summary>Gets whether the proposal can never progress.</summary>
     internal bool Terminal => State == "confirmed" || State == "rejected";

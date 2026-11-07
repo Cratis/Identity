@@ -6,7 +6,7 @@ namespace Cratis.Identity.Accounts;
 /// <summary>
 /// Defines the store of Cratis accounts.
 /// </summary>
-public interface IAccounts
+internal interface IAccounts
 {
     /// <summary>
     /// Records a GitHub sign-in, creating the account the first time the GitHub user signs in.

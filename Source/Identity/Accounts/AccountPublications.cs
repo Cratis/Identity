@@ -14,7 +14,7 @@ namespace Cratis.Identity.Accounts;
 /// <param name="eventStore">The outbox owner.</param>
 /// <param name="logger">Operational errors only.</param>
 [Reactor("identity-account-publications")]
-public partial class AccountPublications(IEventStore eventStore, ILogger<AccountPublications> logger) : IReactor
+internal partial class AccountPublications(IEventStore eventStore, ILogger<AccountPublications> logger) : IReactor
 {
     /// <summary>Publishes registration.</summary>
     /// <param name="event">The source fact.</param>

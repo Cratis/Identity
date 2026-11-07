@@ -10,7 +10,7 @@ namespace Cratis.Identity.Authorization;
 /// <summary>
 /// Renders the consent page as self-contained HTML with no scripts.
 /// </summary>
-public static class ConsentPage
+internal static class ConsentPage
 {
     const string Style =
         "body{font-family:system-ui,sans-serif;max-width:36rem;margin:3rem auto;padding:0 1rem;color:#1b1b1f;line-height:1.5}" +

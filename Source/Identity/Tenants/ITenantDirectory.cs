@@ -15,7 +15,7 @@ namespace Cratis.Identity.Tenants;
 /// membership themselves. Identity obtains selectable tenants from the product callback without caching.
 /// A failed lookup means no selection can proceed. Configured tenants are Development fixtures only.
 /// </remarks>
-public interface ITenantDirectory
+internal interface ITenantDirectory
 {
     /// <summary>
     /// Gets the tenants an account can select for a resource server.

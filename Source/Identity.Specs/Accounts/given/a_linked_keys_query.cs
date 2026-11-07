@@ -17,9 +17,9 @@ namespace Cratis.Identity.Accounts.given;
 
 public class a_linked_keys_query : a_link_proposal
 {
-    protected QueryScenario<LinkedAccountKeys> _query;
+    private protected QueryScenario<LinkedAccountKeys> _query;
     protected QueryResult _result;
-    protected IEnumerable<LinkedAccountKeys> Keys => ((IEnumerable<object>)_result.Data).Cast<LinkedAccountKeys>();
+    private protected IEnumerable<LinkedAccountKeys> Keys => ((IEnumerable<object>)_result.Data).Cast<LinkedAccountKeys>();
     protected virtual ClaimsPrincipal Principal => Session(_account);
     protected virtual bool Enabled => true;
     protected virtual bool Quarantine => false;

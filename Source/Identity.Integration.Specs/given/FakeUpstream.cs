@@ -19,7 +19,7 @@ namespace Cratis.Identity.Integration.given;
 /// <param name="logger">The logger factory.</param>
 /// <param name="encoder">The URL encoder.</param>
 /// <param name="accounts">The <see cref="IAccounts"/>.</param>
-public class FakeUpstream(
+internal class FakeUpstream(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
     UrlEncoder encoder,

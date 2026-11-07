@@ -6,7 +6,7 @@ namespace Cratis.Identity.Resources;
 /// <summary>
 /// Defines the catalog of resource servers tokens can be issued for.
 /// </summary>
-public interface IResourceCatalog
+internal interface IResourceCatalog
 {
     /// <summary>
     /// Gets all resource servers.

@@ -10,7 +10,7 @@ namespace Cratis.Identity.Resources;
 /// <param name="DisplayName">The human-readable name shown on the consent page.</param>
 /// <param name="Indicators">The normalized RFC 8707 resource indicators that map to the audience.</param>
 /// <param name="Scopes">The scopes that belong to the resource server.</param>
-public record ResourceServer(string Audience, string DisplayName, IEnumerable<string> Indicators, IEnumerable<ScopeDefinition> Scopes)
+internal record ResourceServer(string Audience, string DisplayName, IEnumerable<string> Indicators, IEnumerable<ScopeDefinition> Scopes)
 {
     /// <summary>
     /// Checks whether a scope belongs to the resource server.
