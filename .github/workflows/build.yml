@@ -65,6 +65,12 @@ jobs:
             echo "The generated proxies are out of date. Build locally and commit them."
             exit 1
           fi
+          proxy_count=$(find Source/JavaScript/Identity -type f -name '*.ts' -not -name index.ts -not -path '*/node_modules/*' | wc -l)
+          if [ "$proxy_count" -eq 0 ]; then
+            echo "No generated proxy files were found. Build locally and verify proxy generation."
+            exit 1
+          fi
+          echo "Generated proxy file count: $proxy_count"
 
       - name: Pack npm
         working-directory: Source/JavaScript/Identity
