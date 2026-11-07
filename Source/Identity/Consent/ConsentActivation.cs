@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.CodeAnalysis;
+using Cratis.Identity.Revocation;
 using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.ConsentFlow;
@@ -13,13 +14,15 @@ namespace Cratis.Identity.ConsentFlow;
 /// <param name="authorizations">The dormant authorization adapter.</param>
 /// <param name="timeProvider">The clock.</param>
 /// <param name="options">The validated deadlines.</param>
+/// <param name="gate">The independent recovery continuity guard.</param>
 internal sealed class ConsentActivation(
     IConsentRequestStore store,
     IConsentEvidence evidence,
     IRevocationFence fence,
     IAuthorizationActivator authorizations,
     TimeProvider timeProvider,
-    IOptions<ConsentActivationOptions> options)
+    IOptions<ConsentActivationOptions> options,
+    RecoveryGate gate)
 {
     /// <summary>Creates a request from already validated server-side authorization parameters.</summary>
     /// <param name="binding">The immutable binding.</param>
@@ -28,7 +31,8 @@ internal sealed class ConsentActivation(
     /// <exception cref="InvalidOperationException">The generated request identity already exists.</exception>
     public async Task<ConsentRequest> Create(ConsentBinding binding, CancellationToken cancellationToken)
     {
-        var request = new ConsentRequest(ConsentRequestId.New(), binding, timeProvider.GetUtcNow() + options.Value.ActivationDeadline);
+        gate.Demand(RestrictionClass.Consent);
+        var request = new ConsentRequest(ConsentRequestId.New(), binding, timeProvider.GetUtcNow() + options.Value.ActivationDeadline, RecoveryEpoch: gate.Epoch);
         if (!await store.Create(request, cancellationToken))
         {
             throw new InvalidOperationException("The consent request identity already exists.");
@@ -48,7 +52,7 @@ internal sealed class ConsentActivation(
         for (var attempt = 0; attempt < 8; attempt++)
         {
             var request = await store.Read(id, cancellationToken);
-            if (request is null || request.Binding != binding) return null;
+            if (request is null || request.Binding != binding || !gate.Accepts(request.RecoveryEpoch)) return null;
             if (request.State != ConsentRequestState.Pending) return request;
             var state = DecisionState(request, approve);
             if (await Move(request, state, cancellationToken)) return await store.Read(id, cancellationToken);
@@ -66,7 +70,7 @@ internal sealed class ConsentActivation(
         for (var attempt = 0; attempt < 8; attempt++)
         {
             var request = await store.Read(id, cancellationToken);
-            if (request is null) return null;
+            if (request is null || !gate.Accepts(request.RecoveryEpoch)) return null;
             if (!await Advance(request, cancellationToken)) return await store.Read(id, cancellationToken);
         }
 
@@ -161,10 +165,10 @@ internal sealed class ConsentActivation(
 
     async Task<bool> Eligible(ConsentRequest request, CancellationToken cancellationToken)
     {
-        if (timeProvider.GetUtcNow() >= request.Deadline) return false;
+        if (!gate.Accepts(request.RecoveryEpoch) || timeProvider.GetUtcNow() >= request.Deadline) return false;
         try
         {
-            return await fence.IsClear(request, cancellationToken) && timeProvider.GetUtcNow() < request.Deadline;
+            return await fence.IsClear(request, cancellationToken) && gate.Accepts(request.RecoveryEpoch) && timeProvider.GetUtcNow() < request.Deadline;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -178,6 +182,7 @@ internal sealed class ConsentActivation(
 
     Task<bool> Move(ConsentRequest request, ConsentRequestState state, CancellationToken cancellationToken)
     {
+        if (!gate.Accepts(request.RecoveryEpoch)) return Task.FromResult(false);
         var replacement = request with
         {
             State = state,

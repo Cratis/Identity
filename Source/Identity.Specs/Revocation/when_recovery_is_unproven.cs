@@ -4,6 +4,7 @@
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Revocation;
 using Microsoft.Extensions.Logging.Abstractions;
+using OpenIddict.Abstractions;
 using OpenIddict.Server;
 using static OpenIddict.Server.OpenIddictServerEvents;
 
@@ -21,7 +22,7 @@ public class when_recovery_is_unproven : Specification
 
     void Establish()
     {
-        _handler = new(new RecoveryGate(), Substitute.For<IRecoveryLog>());
+        _handler = new(new RecoveryGate(), Substitute.For<IRecoveryLog>(), Substitute.For<IOpenIddictTokenManager>(), Substitute.For<IOpenIddictAuthorizationManager>());
         _authorization = new(Transaction(OpenIddictServerEndpointType.Authorization));
         _token = new(Transaction(OpenIddictServerEndpointType.Token));
         _introspection = new(Transaction(OpenIddictServerEndpointType.Introspection));

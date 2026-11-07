@@ -19,7 +19,8 @@ internal static class ConsentRequestTransitions
     }
 
     static bool SameRequest(ConsentRequest before, ConsentRequest after) =>
-        before.Id == after.Id && before.Binding == after.Binding && before.Deadline == after.Deadline && after.Revision == before.Revision + 1;
+        before.Id == after.Id && before.Binding == after.Binding && before.Deadline == after.Deadline &&
+        before.RecoveryEpoch == after.RecoveryEpoch && after.Revision == before.Revision + 1;
 
     static bool IsCodeClaim(ConsentRequest before, ConsentRequest after) =>
         after.State == before.State && !before.CodeClaimed && after.CodeClaimed && after.AuthorizationId == before.AuthorizationId && after.PurgeAt is null;

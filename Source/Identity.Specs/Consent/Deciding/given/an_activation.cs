@@ -1,12 +1,14 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Revocation;
 using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.ConsentFlow.Deciding.given;
 
 public class an_activation : Specification
 {
+    internal readonly RecoveryGate gate = new();
     internal readonly MemoryRequests store = new();
     internal readonly MemoryEvidence evidence = new();
     internal readonly MemoryFence fence = new();
@@ -19,12 +21,13 @@ public class an_activation : Specification
 
     async Task Establish()
     {
+        gate.Open(true);
         store.Clock = clock;
         activation = Restart();
         request = await activation.Create(binding, CancellationToken.None);
     }
 
-    internal ConsentActivation Restart() => new(store, evidence, fence, authorizations, clock, Options.Create(options));
+    internal ConsentActivation Restart() => new(store, evidence, fence, authorizations, clock, Options.Create(options), gate);
 
     internal Task<ConsentRequest?> Approve() => activation.Decide(request.Id, binding, true, CancellationToken.None);
     internal Task<ConsentRequest?> Resume() => activation.Resume(request.Id, CancellationToken.None);

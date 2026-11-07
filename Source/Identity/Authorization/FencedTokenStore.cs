@@ -1,6 +1,8 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Immutable;
+using System.Text.Json;
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Revocation;
 using Microsoft.Extensions.Options;
@@ -18,12 +20,14 @@ namespace Cratis.Identity.Authorization;
 /// <param name="options">The stock options.</param>
 /// <param name="fences">The authoritative grant store.</param>
 /// <param name="issuance">The request-scoped preallocated successor.</param>
-internal sealed class FencedTokenStore(IOpenIddictMongoDbContext context, IOptionsMonitor<OpenIddictMongoDbOptions> options, IFenceStore fences, RefreshIssuance issuance)
+/// <param name="gate">The recovery continuity guard.</param>
+internal sealed class FencedTokenStore(IOpenIddictMongoDbContext context, IOptionsMonitor<OpenIddictMongoDbOptions> options, IFenceStore fences, RefreshIssuance issuance, RecoveryGate gate)
     : OpenIddictMongoDbTokenStore<OpenIddictMongoDbToken>(context, options)
 {
     /// <inheritdoc/>
     public override async ValueTask CreateAsync(OpenIddictMongoDbToken token, CancellationToken cancellationToken)
     {
+        token.Properties = RecoveryEpochStamp.Create(token.Properties, gate, RestrictionClass.Tokens);
         if (token.Type != TokenTypeHints.RefreshToken)
         {
             await base.CreateAsync(token, cancellationToken);
@@ -72,6 +76,22 @@ internal sealed class FencedTokenStore(IOpenIddictMongoDbContext context, IOptio
         await base.CreateAsync(token, cancellationToken);
 
         // A later revoke still wins future admission because the tombstone clears CurrentRefreshTokenId.
+    }
+
+    /// <inheritdoc/>
+    public override async ValueTask SetPropertiesAsync(OpenIddictMongoDbToken token, ImmutableDictionary<string, JsonElement> properties, CancellationToken cancellationToken)
+    {
+        var original = token.Properties;
+        await base.SetPropertiesAsync(token, RecoveryEpochStamp.Preserve(original, properties), cancellationToken);
+        token.Properties = RecoveryEpochStamp.Reapply(original, token.Properties);
+    }
+
+    /// <inheritdoc/>
+    public override async ValueTask UpdateAsync(OpenIddictMongoDbToken token, CancellationToken cancellationToken)
+    {
+        var existing = await FindByIdAsync(token.Id.ToString(), cancellationToken) ?? throw new RevocationPending();
+        RecoveryEpochStamp.DemandUnchanged(existing.Properties, token.Properties);
+        await base.UpdateAsync(token, cancellationToken);
     }
 
     /// <summary>Allocates an entry ID without exposing Mongo types in request state.</summary>

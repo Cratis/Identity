@@ -31,7 +31,9 @@ public class a_token_store : Specification
         monitor.CurrentValue.Returns(options);
         _fences = new SharedFenceStore();
         _issuance = new RefreshIssuance();
-        _store = new(context, monitor, _fences, _issuance);
+        var gate = new Revocation.RecoveryGate();
+        gate.Open(true);
+        _store = new(context, monitor, _fences, _issuance, gate);
         _entry = new OpenIddictMongoDbToken
         {
             Id = ObjectId.Parse("65ab56ef0123456789012345"),

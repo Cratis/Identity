@@ -57,6 +57,9 @@ internal sealed class MongoConsentRequestStore(IMongoDatabase database) : IConse
         if (!ConsentRequestTransitions.CanReplace(expected, replacement)) return false;
         var filter = Builders<BsonDocument>.Filter;
         var condition = filter.Eq("_id", expected.Id.Value.ToString("D")) & filter.Eq("Revision", expected.Revision) & filter.Eq("State", expected.State.ToString());
+        condition &= expected.RecoveryEpoch == 0
+            ? filter.Eq("RecoveryEpoch", 0L) | filter.Exists("RecoveryEpoch", false)
+            : filter.Eq("RecoveryEpoch", expected.RecoveryEpoch);
         if (replacement.State == ConsentRequestState.Active)
         {
             condition &= filter.Gt("Deadline", new BsonDateTime(now.UtcDateTime)) &
@@ -98,6 +101,7 @@ internal sealed class MongoConsentRequestStore(IMongoDatabase database) : IConse
             ["Deadline"] = new BsonDateTime(request.Deadline.UtcDateTime),
             ["State"] = request.State.ToString(),
             ["Revision"] = request.Revision,
+            ["RecoveryEpoch"] = request.RecoveryEpoch,
             ["CodeClaimed"] = request.CodeClaimed,
             ["AuthorizationId"] = request.AuthorizationId is null ? BsonNull.Value : new BsonString(request.AuthorizationId)
         };
@@ -113,5 +117,6 @@ internal sealed class MongoConsentRequestStore(IMongoDatabase database) : IConse
         document["Revision"].AsInt64,
         document["AuthorizationId"].IsBsonNull ? null : document["AuthorizationId"].AsString,
         document["CodeClaimed"].AsBoolean,
-        document.TryGetValue("PurgeAt", out var purgeAt) ? new DateTimeOffset(purgeAt.ToUniversalTime()) : null);
+        document.TryGetValue("PurgeAt", out var purgeAt) ? new DateTimeOffset(purgeAt.ToUniversalTime()) : null,
+        document.TryGetValue("RecoveryEpoch", out var epoch) ? epoch.AsInt64 : 0);
 }

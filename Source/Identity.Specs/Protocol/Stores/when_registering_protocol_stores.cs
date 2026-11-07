@@ -8,7 +8,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Internal;
 using OpenIddict.Abstractions;
-using OpenIddict.MongoDb;
 using OpenIddict.MongoDb.Models;
 
 namespace Cratis.Identity.Protocol.Stores;
@@ -48,7 +47,7 @@ public class when_registering_protocol_stores : Specification
     [Fact] void should_use_the_configuration_entity_in_the_real_manager() => _client.ShouldBeOfExactType<ClientApplication>();
     [Fact] void should_resolve_the_configuration_application_store() => _applications.ShouldBeOfExactType<ConfigurationApplicationStore>();
     [Fact] void should_resolve_the_configuration_scope_store() => _scopes.ShouldBeOfExactType<ConfigurationScopeStore>();
-    [Fact] void should_keep_the_mongo_authorization_store() => _authorizations.ShouldBeOfExactType<OpenIddictMongoDbAuthorizationStore<OpenIddictMongoDbAuthorization>>();
+    [Fact] void should_use_the_fenced_mongo_authorization_store() => _authorizations.ShouldBeOfExactType<Authorization.FencedAuthorizationStore>();
     [Fact] void should_use_the_fenced_mongo_token_store() => _tokens.ShouldBeOfExactType<Authorization.FencedTokenStore>();
 
     async Task Destroy()
