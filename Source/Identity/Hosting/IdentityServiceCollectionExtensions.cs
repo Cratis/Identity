@@ -161,7 +161,7 @@ internal static class IdentityServiceCollectionExtensions
     {
         // Must stay first: hosted services start in registration order and nothing may write to MongoDB before the guard has looked.
         services.AddLegacyAccountStoreGuard();
-        services.AddSingleton<IMongoClient>(sp => MongoClientFactory.Create(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.ConnectionString));
+        services.AddSingleton(sp => MongoClientFactory.Create(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.ConnectionString));
         services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.Database));
         services.AddSingleton<StorageIndexes>();
 
