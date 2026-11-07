@@ -42,6 +42,7 @@ internal static class IdentityServiceCollectionExtensions
     /// <exception cref="KeysInConfiguration">Thrown when a signing or encryption certificate is still configured.</exception>
     /// <exception cref="SecretStoreNotConfigured">Thrown outside development without a secret store.</exception>
     /// <exception cref="ChronicleNotConfigured">The native account path has no configured Chronicle client.</exception>
+    /// <exception cref="InvalidMongoDBConnectionString">Thrown when the MongoDB client is first resolved with a connection string that cannot be parsed.</exception>
     internal static IServiceCollection AddCratisIdentity(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         var section = configuration.GetSection(IdentityOptions.SectionName);
@@ -160,7 +161,7 @@ internal static class IdentityServiceCollectionExtensions
     {
         // Must stay first: hosted services start in registration order and nothing may write to MongoDB before the guard has looked.
         services.AddLegacyAccountStoreGuard();
-        services.AddSingleton<IMongoClient>(sp => new MongoClient(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.ConnectionString));
+        services.AddSingleton<IMongoClient>(sp => MongoClientFactory.Create(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.ConnectionString));
         services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDatabase(sp.GetRequiredService<IOptions<IdentityOptions>>().Value.MongoDB.Database));
         services.AddSingleton<StorageIndexes>();
 
