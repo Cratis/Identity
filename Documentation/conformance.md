@@ -34,7 +34,7 @@ Levels describe the supported profile. Exact single-audience selection and IP-li
 | AS-METADATA-FROM-PRM | RFC 9728 §3; RFC 8414 §3.1, §3.3 / MUST | Resource challenge → PRM → issuer → AS metadata → JWKS → PKCE → audience validation | `for_Conformance/when_discovering_identity_from_a_protected_resource` | Pass |
 | KEY-ROTATION-OVERLAP | RFC 8414 §2 (jwks_uri); operational policy / SHOULD | Retain both signing keys during rotation overlap | `for_Conformance/when_rotating_signing_keys` | Pass |
 
-The PRM proof starts with an unauthenticated request to a minimal Kestrel resource double. Its challenge identifies the metadata URL. That metadata advertises the registered canonical Direct MCP resource and Identity issuer; the client discovers AS endpoints and JWKS, completes real code + S256 consent and redemption, and sends the resulting token to the double. It validates signature, issuer, `at+jwt` type and `direct-mcp` audience, and rejects a genuine same-issuer Studio token. Loopback HTTP is only the double's test transport; it does not claim to implement Direct/MCP or register a new audience.
+The PRM proof starts with an unauthenticated request to a minimal Kestrel resource double. Its challenge identifies the metadata URL. That metadata advertises the registered canonical Direct MCP resource and Identity issuer; the client discovers AS endpoints and JWKS, completes real code + S256 consent and redemption, and sends the resulting token to the double. It validates signature, issuer, `at+jwt` type and `direct-api` audience, and rejects a genuine same-issuer Studio token. Loopback HTTP is only the double's test transport; it does not claim to implement Direct/MCP or register a new audience.
 
 ## Expected failures and catalogue checks
 

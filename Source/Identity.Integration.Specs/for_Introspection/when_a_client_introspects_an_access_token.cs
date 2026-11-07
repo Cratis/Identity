@@ -26,7 +26,7 @@ public class when_a_client_introspects_an_access_token(IdentityHost host) : IAsy
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
-    [Fact] void should_report_the_mcp_audience() => _confidential.Body.GetProperty("aud").GetString().ShouldEqual("direct-mcp");
+    [Fact] void should_report_the_mcp_audience() => _confidential.Body.GetProperty("aud").GetString().ShouldEqual("direct-api");
     [Fact] void should_report_the_cli_presenter() => _confidential.Body.GetProperty("client_id").GetString().ShouldEqual("cratis-cli");
     [Fact] void should_let_the_authenticated_resource_server_introspect() => _confidential.Body.GetProperty("active").GetBoolean().ShouldBeTrue();
     [Fact] void should_not_let_a_public_client_introspect() => (_public.Status != HttpStatusCode.OK).ShouldBeTrue();

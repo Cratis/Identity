@@ -20,7 +20,7 @@ public class when_validating_the_caller_of_an_mcp_access_token : Specification
     {
         var handler = new OpenIddictServerHandlers.Introspection.ValidateAuthorizedParty();
         _mcp = Context(ResourceSettings.IntrospectionClientId);
-        _api = Context("direct-api");
+        _api = Context("direct-v1");
         await handler.HandleAsync(_mcp);
         await handler.HandleAsync(_api);
     }
@@ -38,7 +38,7 @@ public class when_validating_the_caller_of_an_mcp_access_token : Specification
     {
         GenericTokenPrincipal = new ClaimsPrincipal(new ClaimsIdentity("test"))
             .SetTokenType(TokenTypeIdentifiers.AccessToken)
-            .SetAudiences("direct-mcp")
+            .SetAudiences("direct-api")
             .SetPresenters("cratis-cli")
     };
 }
