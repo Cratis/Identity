@@ -15,7 +15,7 @@ namespace Cratis.Identity.Device;
 /// <param name="logger">The outcome-only logger.</param>
 internal sealed class DeviceGrantRateLimiter(IDeviceGrantStateStore store, IOptions<IdentityOptions> options, TimeProvider time, ILogger<DeviceGrantRateLimiter> logger)
 {
-    /// <summary>Consumes all verification budgets before any code lookup.</summary>
+    /// <summary>Consumes verification budgets in order until refused, before any code lookup.</summary>
     /// <param name="code">The untrusted entered code.</param>
     /// <param name="account">The trusted session account.</param>
     /// <param name="ip">The host-resolved client IP.</param>
@@ -27,11 +27,10 @@ internal sealed class DeviceGrantRateLimiter(IDeviceGrantStateStore store, IOpti
         try
         {
             var limits = options.Value.DeviceGrant;
-            var accountAllowed = await Attempt("account", account, limits.AttemptsPerAccount, limits.VerificationWindow, cancellationToken);
-            var ipAllowed = await Attempt("ip", ip, limits.AttemptsPerIp, limits.VerificationWindow, cancellationToken);
-            var codeAllowed = await Attempt("code", Normalize(code) ?? "malformed", limits.AttemptsPerCode, limits.VerificationWindow, cancellationToken);
-            var globalAllowed = await Attempt("global", "verification", limits.AttemptsGlobally, limits.VerificationWindow, cancellationToken);
-            return (accountAllowed && ipAllowed && codeAllowed && globalAllowed) || Refused();
+            return (await Attempt("ip", ip, limits.AttemptsPerIp, limits.VerificationWindow, cancellationToken) &&
+                await Attempt("account", account, limits.AttemptsPerAccount, limits.VerificationWindow, cancellationToken) &&
+                await Attempt("code", Normalize(code) ?? "malformed", limits.AttemptsPerCode, limits.VerificationWindow, cancellationToken) &&
+                await Attempt("global", "verification", limits.AttemptsGlobally, limits.VerificationWindow, cancellationToken)) || Refused();
         }
         catch (Exception)
         {
@@ -62,7 +61,7 @@ internal sealed class DeviceGrantRateLimiter(IDeviceGrantStateStore store, IOpti
     }
 
     /// <summary>Consumes the polling window and retains the five-second slowdown increment.</summary>
-    /// <param name="code">The opaque device code.</param>
+    /// <param name="code">The validated device code's token identifier.</param>
     /// <param name="cancellationToken">The request cancellation.</param>
     /// <returns>Null on failure, otherwise whether this request must receive slow_down.</returns>
     public async Task<bool?> Poll(string code, CancellationToken cancellationToken)

@@ -321,6 +321,7 @@ internal static class IdentityServiceCollectionExtensions
                         .AddEventHandler(RedeemDeviceCodeOnce.Descriptor)
                         .AddEventHandler(BindDeviceAuthorization.Descriptor)
                         .AddEventHandler(DeviceVerificationGuard.Descriptor)
+                        .AddEventHandler(DevicePollingAdmissionGuard.Descriptor)
                         .AddEventHandler(DevicePollingGuard.Descriptor)
                         .AddEventHandler(DeviceAuthorizationResponse.Descriptor)
                         .AddEventHandler(DeviceVerificationResponse.Descriptor)
