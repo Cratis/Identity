@@ -11,9 +11,9 @@ Supersedes: None
 
 ## 1. Status and scope
 
-This is a **Draft** proposal. It is not accepted and it changes nothing by itself. It batches every contract change found since the v1 lock into one review, to be read together with [Identity #99](https://github.com/Cratis/Identity/pull/99). The Locked v1 specifications stay authoritative until the owners decide each item in [Identity #14](https://github.com/Cratis/Identity/issues/14). An accepted item then lands as a new version file of each specification it alters, as the [conventions](README.md#conventions) require; the v1 files and their vectors stay unchanged.
+This is a **Draft** proposal. It is not accepted and it changes nothing by itself. It batches every contract change found since the v1 lock into one review, to be read together with [Identity #99](https://github.com/Cratis/Identity/pull/99). The signed-off v1 specifications (owner confirmation pending, #14) stay authoritative until the owners decide each item in [Identity #14](https://github.com/Cratis/Identity/issues/14). An accepted item then lands as a new version file of each specification it alters, as the [conventions](README.md#conventions) require; the v1 files and their vectors stay unchanged.
 
-RFC 2119 keywords below describe the proposed contract, not deployed behavior. For each item: the proposed change, why (the evidence), and the Locked sections it alters. Unresolved points are open questions in section 7, not decisions.
+RFC 2119 keywords below describe the proposed contract, not deployed behavior. For each item: the proposed change, why (the evidence), and the signed-off sections it alters. Unresolved points are open questions in section 7, not decisions.
 
 | Item | Source | Alters |
 |---|---|---|
@@ -61,7 +61,7 @@ Add to §7 step 1: "A raw external token that does not meet the direct-mode cond
 
 **Change.** The barrier itself (Pending → Decided → EvidenceRecorded → Active, each a compare-and-set in the operational store, no usable grant or authorization code before durable evidence) stays in the design and module outline (S4). The contract change is the evidence identity in identity-events-v1. Two options:
 
-- **A (recommended, keeps the Locked placements).** `ConsentGranted` stays on Account and `AuthorizationGrantRecorded` on Grant. Both facts take a `FactId` derived deterministically from the server-generated `ConsentRequestId` (one derivation per fact kind), used as the Chronicle idempotency key. §4.1 point 3 adds: "For grant creation, `FactId` is derived from the consent request." Evidence counts as recorded only when both facts are confirmed.
+- **A (recommended, keeps the signed-off placements).** `ConsentGranted` stays on Account and `AuthorizationGrantRecorded` on Grant. Both facts take a `FactId` derived deterministically from the server-generated `ConsentRequestId` (one derivation per fact kind), used as the Chronicle idempotency key. §4.1 point 3 adds: "For grant creation, `FactId` is derived from the consent request." Evidence counts as recorded only when both facts are confirmed.
 - **B (as written in C3).** Both facts share one event source derived from `ConsentRequestId`. This changes the §8 event-source column for both rows and breaks §4.1's rule that a source fact sits on its Public contract's event source.
 
 Also: a deny MUST append nothing usable, and evidence resolution MUST distinguish recorded, not recorded (permanently sealed against later appends) and unknown, as implemented dormant in #100.
@@ -130,28 +130,28 @@ Alternative: the canceller claims the writer's Chronicle idempotency key (`FactI
 
 ## 6. Activation abandonment reason (Identity #99, #100)
 
-**Finding.** C3 says that when activation can no longer happen, the reconciler appends the existing withdrawal fact with a system cause and the reason `ActivationAbandoned`, and asks whether the Locked catalogue allows that. `ConsentWithdrawn` carries `ConsentId, ReasonId, WithdrawnAt` and describes a person's withdrawal. Identity #100 (dormant, branch `identity-100-grant-activation`) narrowed the case. When evidence is confirmed absent and sealed, the request ends `Abandoned` and no fact is needed. When evidence is recorded but activation is forbidden (expiry, ended session, fence), the request ends `EvidenceWithheld` with **no** Chronicle fact; the published `AuthorizationGranted` then describes a grant that was never usable, and the 30-day terminal row retention may delete the only operational record before a closing fact exists.
+**Finding.** C3 says that when activation can no longer happen, the reconciler appends the existing withdrawal fact with a system cause and the reason `ActivationAbandoned`, and asks whether the signed-off catalogue allows that. `ConsentWithdrawn` carries `ConsentId, ReasonId, WithdrawnAt` and describes a person's withdrawal. Identity #100 (on train 20, not wired to the authorize endpoint) narrowed the case. When evidence is confirmed absent and sealed, the request ends `Abandoned` and no fact is needed. When evidence is recorded but activation is forbidden (expiry, ended session, fence), the request ends `EvidenceWithheld` with **no** Chronicle fact; the published `AuthorizationGranted` then describes a grant that was never usable, and the 30-day terminal row retention may delete the only operational record before a closing fact exists.
 
 **Change.** Option A is recommended:
 
 - **A.** Allow a system cause. `ConsentWithdrawn` notes: "Written for a person's withdrawal or, with `ReasonId` `activation_abandoned`, by the consent reconciler for a request whose evidence was recorded but which never became active." The matching grant closes through `AuthorizationRevoked` with the same reason, under the normal fence, so consumers see one closing contract. identity-revocation-v1 §7 (consent withdrawal fences all affected grants) applies unchanged.
 - **B.** A new Internal fact `AuthorizationGrantAbandoned` (Grant, `FactId`, `ReasonId`, `AbandonedAt`) with a Public contract, leaving `ConsentWithdrawn` person-only.
 
-For both: the closing facts are written only from `EvidenceWithheld`, never when evidence is absent, with a `FactId` derived from the consent request (item 2.3), and an `EvidenceWithheld` row MUST NOT be TTL-deleted until they are confirmed. Reason ids are snake case, like the other reason ids in identity-events (`activation_abandoned`, not `ActivationAbandoned`).
+For both: the closing facts are written only from `EvidenceWithheld`, never when evidence is absent, with a `FactId` derived from the consent request (item 2.3), and an `EvidenceWithheld` row MUST NOT be TTL-deleted until they are confirmed. Reason ids are snake case, like the reason ids in code (`activation_abandoned`, not `ActivationAbandoned`).
 
 **Alters.** identity-events-v1 §8 rows `ConsentWithdrawn` and `AuthorizationRevoked` (notes; option B adds rows and a source-fact table entry); identity-revocation-v1 §7 (consent withdrawal paragraph) for the system cause.
 
 ## 7. Open questions
 
-1. **File naming.** The conventions name versions `-v<major>`. Do accepted items land as new major files (`identity-events-v2.md`, `arc-delegation-v2.md`, …) or is a v1.1 minor version allowed? This Draft is not added to the index until that is decided.
-2. **C2.** With one hop and no exchange, does v1.1 still issue delegated tokens with `act`, or does the agent act only under product-local task authority? Which grant-record fields stay required?
-3. **C3.** Is a Chronicle `AppendMany` across two event sources (Account and Grant) atomic? If not, option A needs per-fact confirmation, or option B.
-4. **#107.** One wide `ClientRegistered`, or a separate permissions event so permissions can change without re-registration? May Public resource events carry `DisplayName` and `Description`, or must consent text stay Internal? Is `ResourceIndicator` one value or a normalized set? Can anyone with production access confirm that no store holds client or resource events, so generation 1 is acceptable?
-5. **Item 4.** Does any store hold `UpstreamKeyLinkQuarantined` generation 1 (deciding generation 2 versus an in-place correction)? Is lifting a hold (`UpstreamKeyLinkCleared`) in recovery scope?
-6. **Item 5.** Guarded cancellation fact or idempotency-key claim? Needs a real-kernel check of keyed appends with the decision guard and constraints. Should foreign writers appending account facts directly to Chronicle be forbidden by contract, since custody cannot cover them?
-7. **Item 6.** Option A or B, and should `AuthorizationGranted` publication be visible to connected apps before activation at all?
-8. **Lock order.** The audit recommends not locking v1.1 until #110 slice 2 and #107 show it is sufficient. Is that the review plan?
-9. **`name` claim.** See section 8: confirm the deviation or restore the v1 prohibition.
+1. **File naming.** *Decided: land accepted items as new major files (`-v2`); reason: the conventions and vector directories already require `-v<major>`.* The conventions name versions `-v<major>`. Do accepted items land as new major files (`identity-events-v2.md`, `arc-delegation-v2.md`, …) or is a v1.1 minor version allowed? This Draft is not added to the index until that is decided.
+2. **C2.** *Decided: v1.1 issues no delegated `act` tokens; agents act under product-local task authority and grant-record fields above depth 1 stay reserved; reason: no `act` claim or token exchange exists in code.* With one hop and no exchange, does v1.1 still issue delegated tokens with `act`, or does the agent act only under product-local task authority? Which grant-record fields stay required?
+3. **C3.** *Decided: do not rely on cross-stream atomicity; option A with per-fact confirmation through `FactId` idempotency keys; reason: the writer already uses keyed per-stream appends.* Is a Chronicle `AppendMany` across two event sources (Account and Grant) atomic? If not, option A needs per-fact confirmation, or option B.
+4. **#107.** *Decided: one wide `ClientRegistered` generation 1 with explicit closed sets, permission changes through later dedicated events, `DisplayName` and `Description` stay on Internal facts, `ResourceIndicator` is one value per resource; reason: no CLR type exists for these events, so no store can hold them.* One wide `ClientRegistered`, or a separate permissions event so permissions can change without re-registration? May Public resource events carry `DisplayName` and `Description`, or must consent text stay Internal? Is `ResourceIndicator` one value or a normalized set? Can anyone with production access confirm that no store holds client or resource events, so generation 1 is acceptable?
+5. **Item 4.** *Decided: generation 2 with an upcast from `EvidenceId`, without relying on "no store holds it"; lifting a hold (`UpstreamKeyLinkCleared`) is out of v1.1 recovery scope; reason: re-imposing a hold after a restore fails closed.* Does any store hold `UpstreamKeyLinkQuarantined` generation 1 (deciding generation 2 versus an in-place correction)? Is lifting a hold (`UpstreamKeyLinkCleared`) in recovery scope?
+6. **Item 5.** *Decided: guarded cancellation fact on the account stream, and foreign writers appending account facts are forbidden by contract; reason: it matches the existing guarded append.* Guarded cancellation fact or idempotency-key claim? Needs a real-kernel check of keyed appends with the decision guard and constraints. Should foreign writers appending account facts directly to Chronicle be forbidden by contract, since custody cannot cover them?
+7. **Item 6.** *Decided: option B (new Internal `AuthorizationGrantAbandoned`), and no `AuthorizationGranted` publication before Active; reason: additive and reversible, and `ConsentWithdrawn` stays person-only.* Option A or B, and should `AuthorizationGranted` publication be visible to connected apps before activation at all?
+8. **Lock order.** *Decided: yes, keep v1.1 Draft until #110 slice 2 and #107 land; reason: nothing in code consumes the new facts yet.* The audit recommends not locking v1.1 until #110 slice 2 and #107 show it is sufficient. Is that the review plan?
+9. **`name` claim.** *Decided: option A, display-only with no authorization meaning, recorded as a deviation; reason: reversible by dropping it in a later token version, and code and resource proxies already depend on it.* See section 8: confirm the deviation or restore the v1 prohibition.
 
 ## 8. Display name `name` in access tokens (idp-claims delivery)
 
@@ -163,3 +163,36 @@ For both: the closing facts are written only from `EvidenceWithheld`, never when
 - **B.** Keep the v1 prohibition and drop `name` again, leaving it to the user-info or profile surface.
 
 **Alters.** identity-contract-v1 §5 (the sentence listing display name among the claims that MUST NOT appear in access tokens).
+
+## 9. Further contract deltas already on train 20
+
+These changes exist on the train or are relied on by it and are not covered by sections 2 to 8. They are recorded here so the review sees them.
+
+- **Refresh-family facts.** `RefreshTokenFamilyStarted` and `RefreshTokenReuseDetected` are appended on the Grant stream (event source `GrantId`, not the family), in area Revocation, and carry a `FactId`. identity-events-v1 §8 still has older rows (event source Family, area Authorization, no `FactId`) that must be removed in the next version.
+- **Access-token lifetime (open deviation).** identity-access-token-v1 requires `0 < exp - iat <= 600` seconds. The `Identity.Host` default is 15 minutes (900 seconds); only the hosted-shared profile caps at 5 minutes. A validator that follows the spec rejects Identity.Host tokens. Resolution: lower the default to 300 seconds. The code is not changed by this document.
+- **Edge introspection.** Decided 2026-11-08: positive cache of at most 30 seconds, no negative cache, fail closed on `/mcp` (AuthProxy#255). This does not amend identity-revocation-v1. Identity #69 is still open and carries only the earlier option C decision, so the 2026-11-08 decision needs its own citable record.
+- **New normative prose.** identity-events-v1 (replay and registration text, §6.1.1) and identity-revocation-v1 §9.1 gained normative text after sign-off. Treat it as part of this review, or move it to design notes.
+
+## 10. Decided by agents (woksin delegation 2026-11-08), einari to review post-hoc
+
+The answers to the section 7 questions are marked `Decided` in place. Summary, each as decision and reason:
+
+1. File naming: new major files (`-v2`); the convention already requires it.
+2. C2 `act`: no delegated `act` tokens in v1.1; none exist in code.
+3. C3: no cross-stream atomicity, option A with `FactId` confirmation; the writer is already keyed per stream.
+4. #107: one wide `ClientRegistered` generation 1 with closed sets; no store can hold it yet.
+5. Item 4: generation 2 with upcast; absence of data is only shown for declared deployments.
+6. Item 5: guarded cancellation fact, foreign writers forbidden; matches the existing guarded append.
+7. Item 6: option B, `AuthorizationGrantAbandoned`; additive and reversible.
+8. Lock order: keep Draft until #110 slice 2 and #107 land; nothing consumes the facts yet.
+9. `name` claim: option A, display-only deviation; reversible later.
+
+D-decisions confirmed as recommended in the review:
+
+- D1 (#21): confirmed; the realm is pinned to Default in code.
+- D5 (#23): confirmed; no `org` claim is emitted.
+- D13 (#15): confirmed; products-realm production issuance stays blocked until the drills (Infrastructure #299) are done.
+- D18 (#16): confirmed; code matches the Chronicle facts and operational store split.
+- D19 (#17): confirmed; hosted-shared limits are enforced in configuration.
+- D20 (#69): stays "decided as option C"; the separate 2026-11-08 edge-introspection decision is recorded in section 9. Close #69 only when the owner agrees.
+- #20: role holder recorded (woksin, PR #91), but patch budget and drill schedule are unconfirmed. Outline section 8 points to `Identity:SecurityOwners` (empty denies all), and a follow-up covers the budget and schedule.
