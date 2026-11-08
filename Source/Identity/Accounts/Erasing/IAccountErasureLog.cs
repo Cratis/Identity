@@ -9,7 +9,8 @@ namespace Cratis.Identity.Accounts.Erasing;
 /// The account-stream seam of the erasure workflow. A real implementation MUST append with optimistic concurrency
 /// guarded by the state it read, or as a one-time append keyed on the erasure, so concurrent coordinators cannot
 /// both record completion or duplicate a request/failure.
-/// TODO(#51): the Chronicle-backed implementation must provide that guard (decision read / idempotency key); none exists yet.
+/// <see cref="ChronicleAccountErasureLog"/> provides that guard with kernel-keyed one-time appends.
+/// TODO(#51): nothing registers the log, the stages, the coordinator or an enabling policy in production; erasure stays fail-closed until the boundary is approved.
 /// </summary>
 internal interface IAccountErasureLog
 {
