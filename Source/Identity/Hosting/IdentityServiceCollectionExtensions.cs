@@ -85,8 +85,27 @@ internal static class IdentityServiceCollectionExtensions
         services.AddConsentActivation(configuration.GetSection("Identity:ConsentActivation"));
 
         services.AddSessionAndUpstreamLogin(environment);
+        services.AddIdentityAuthorization();
         services.AddAuthorizationServer(startupOptions, environment);
 
+        return services;
+    }
+
+    /// <summary>Adds the explicit issuer security owner authorization policy.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The service collection for further configuration.</returns>
+    internal static IServiceCollection AddIdentityAuthorization(this IServiceCollection services)
+    {
+        services.AddAuthorization();
+        services.AddOptions<Microsoft.AspNetCore.Authorization.AuthorizationOptions>()
+            .Configure<IOptions<IdentityOptions>>((authorization, identity) =>
+                authorization.AddPolicy(IdentityPolicies.IssuerSecurityOwner, policy => policy
+                    .AddAuthenticationSchemes(IdentitySchemes.Session)
+                    .RequireAuthenticatedUser()
+                    .RequireAssertion(context => context.User.Identities
+                        .Where(_ => _.IsAuthenticated)
+                        .SelectMany(_ => _.FindAll(Claims.Subject))
+                        .Any(subject => identity.Value.SecurityOwners.Contains(subject.Value, StringComparer.Ordinal)))));
         return services;
     }
 

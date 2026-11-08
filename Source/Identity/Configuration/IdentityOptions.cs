@@ -21,6 +21,12 @@ public class IdentityOptions
     /// </remarks>
     public string Issuer { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets the subjects explicitly authorized to administer issuer client and resource registrations.
+    /// An empty list grants no administrative authority.
+    /// </summary>
+    public IList<string> SecurityOwners { get; set; } = [];
+
     /// <summary>Gets or sets the native account options.</summary>
     public AccountsOptions Accounts { get; set; } = new();
 

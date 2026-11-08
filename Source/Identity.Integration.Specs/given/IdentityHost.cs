@@ -32,8 +32,8 @@ namespace Cratis.Identity.Integration.given;
 /// </summary>
 /// <remarks>
 /// Everything else is the production pipeline: OpenIddict, the MongoDB stores, the consent page, antiforgery and
-/// the token endpoint. The configuration mirrors the shipped one and adds a second resource server so resource
-/// binding can be exercised, a tenant the default user is a member of, and a confidential introspection client.
+/// the token endpoint. The configuration preserves both shipped Direct resources and adds Studio and Stage so resource
+/// binding can be exercised, tenants the default user is a member of, and a confidential introspection client.
 /// </remarks>
 public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
 {
@@ -41,8 +41,8 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     public const string DirectMcp = "https://cratis.direct/mcp";
     public const string DirectV1 = "https://cratis.direct/v1";
     public const string StudioMcp = "https://cratis.studio/mcp";
-    public const string IntrospectionClientId = "direct-api";
-    public const string IntrospectionClientSecret = "introspection-secret-for-specs";
+    public const string IntrospectionClientId = ResourceSettings.IntrospectionClientId;
+    public const string IntrospectionClientSecret = ResourceSettings.IntrospectionClientSecret;
     public const string MemberTenant = "cratis";
     public const string OtherMemberTenant = "second";
 
@@ -240,7 +240,7 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     /// Gets the in-memory configuration of the host.
     /// </summary>
     /// <returns>The settings.</returns>
-    protected virtual Dictionary<string, string?> Settings() => new()
+    protected virtual Dictionary<string, string?> Settings() => new(ResourceSettings.Create(MemberTenant, OtherMemberTenant, FakeUpstream.DefaultUserId.ToString(CultureInfo.InvariantCulture)))
     {
         ["Identity:Issuer"] = Issuer,
         ["Identity:Accounts:LookupKey"] = Convert.ToBase64String(Enumerable.Range(0, 32).Select(value => (byte)value).ToArray()),
@@ -254,27 +254,6 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         ["Identity:FenceLog:InstanceId"] = _fenceInstance,
         ["Identity:FenceLog:MinimumSequence"] = "0",
         ["Identity:GitHub:ClientId"] = "unused-in-specs",
-        ["Identity:GitHub:ClientSecret"] = "unused-in-specs",
-        ["Identity:Resources:0:Tenants:0:Id"] = MemberTenant,
-        ["Identity:Resources:0:Tenants:0:Name"] = "Cratis",
-        ["Identity:Resources:0:Tenants:0:Members:0"] = FakeUpstream.DefaultUserId.ToString(CultureInfo.InvariantCulture),
-        ["Identity:Resources:0:Tenants:1:Id"] = OtherMemberTenant,
-        ["Identity:Resources:0:Tenants:1:Name"] = "Second tenant",
-        ["Identity:Resources:0:Tenants:1:Members:0"] = FakeUpstream.DefaultUserId.ToString(CultureInfo.InvariantCulture),
-        ["Identity:Resources:1:Audience"] = "studio-api",
-        ["Identity:Resources:1:DisplayName"] = "Cratis Studio",
-        ["Identity:Resources:1:Indicators:0"] = StudioMcp,
-        ["Identity:Resources:1:Scopes:0:Name"] = "studio:read",
-        ["Identity:Resources:1:Scopes:0:Description"] = "Read Studio",
-        ["Identity:Resources:1:Tenants:0:Id"] = "studio",
-        ["Identity:Resources:1:Tenants:0:AllowAllAccounts"] = "true",
-        ["Identity:Resources:2:Audience"] = "stage-api",
-        ["Identity:Resources:2:DisplayName"] = "Stage",
-        ["Identity:Resources:2:Indicators:0"] = "https://stage.example/api",
-        ["Identity:Resources:2:Scopes:0:Name"] = "stage:read",
-        ["Identity:Resources:2:Scopes:0:Description"] = "Read Stage",
-        ["Identity:Resources:2:TenantsCallback:Url"] = "https://products.example/tenants",
-        ["Identity:IntrospectionClients:0:ClientId"] = IntrospectionClientId,
-        ["Identity:IntrospectionClients:0:ClientSecret"] = IntrospectionClientSecret
+        ["Identity:GitHub:ClientSecret"] = "unused-in-specs"
     };
 }
