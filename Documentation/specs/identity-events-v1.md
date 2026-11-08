@@ -90,7 +90,7 @@ Source facts are named `<Public contract subject><noun>Recorded` and listed here
 | AccountDisabled | AccountDisablementRecorded | e26026d0-d445-4647-ba9f-f7f1d868c8ac |
 | AccountEnabled | AccountEnablementRecorded | 46c54931-10f5-4069-9c22-b059008b3fc1 |
 | AccountTombstoned | AccountTombstoneRecorded | f67aa184-1052-4a3e-863a-13059de335e0 |
-| AccountErased | AccountErasureRecorded | assigned at implementation |
+| AccountErased | AccountErasureRecorded | 213861f1-a227-4f67-acae-a0619f4eb946 |
 | UpstreamKeyLinked | UpstreamKeyLinkRecorded | 0948769e-d249-472e-abb3-93e8743379da |
 | UpstreamKeyUnlinked | UpstreamKeyUnlinkRecorded | de708442-c9b3-4d8b-b677-01450ef9248e |
 | ConsentWithdrawn | ConsentWithdrawalRecorded | assigned at implementation |
@@ -184,9 +184,9 @@ All names, fields, writer assignments and Public/Internal choices are decided in
 | AccountDisabled | 8e1e68fd-e4fb-456a-9af4-f95185be950b | Accounts | Public | Account | ReasonId, AccountEpoch, FenceId, FenceSequence | Identity | align with identity-revocation-v1; fence precedes acknowledgement. |
 | AccountEnabled | 4fa5a4be-c0e1-4ad1-81d4-4eb304aab74d | Accounts | Public | Account | AccountEpoch, EnabledAt | Identity | Does not restore old grants or remove a tombstone. |
 | AccountTombstoned | 6d6b4f99-5ac3-4493-b892-13a5e44c6518 | Accounts | Public | Account | TombstonedAt | Identity | Permanent subject reservation; no upstream/profile fields. |
-| AccountErasureRequested | assigned at implementation | Accounts | Internal | Account | ErasureId, RequestedAt | Identity | Accepted user/legal request, not a retry signal. |
-| AccountErasureFailed | assigned at implementation | Accounts | Internal | Account | ErasureId, StageId, ReasonId | Identity | Real failed workflow transition; no error payload or repeating retry events. |
-| AccountErased | assigned at implementation | Accounts | Public | Account | ErasureId, CompletedAt, BoundaryVersion | Identity | Consumer cleanup acknowledgements and approved completion boundary (§5). |
+| AccountErasureRequested | 6959b7dd-2e06-4d26-9c28-f92c234ef92f | Accounts | Internal | Account | ErasureId, RequestedAt | Identity | Accepted user/legal request, not a retry signal. |
+| AccountErasureFailed | af2d3634-9adc-48eb-b00d-6565df2a38e8 | Accounts | Internal | Account | ErasureId, StageId, ReasonId | Identity | Real failed workflow transition; no error payload or repeating retry events. |
+| AccountErased | a87a0deb-fa35-4ae3-bb91-1b1db8f1b5fe | Accounts | Public | Account | ErasureId, CompletedAt, BoundaryVersion | Identity | Consumer cleanup acknowledgements and approved completion boundary (§5). |
 | UpstreamKeyLinkProposed | b49850a5-1179-489b-bd37-96a4bb25ff69 | Accounts | Internal | Account | LinkProposalId, ConnectionId, IdpIssuer, IdpSub† | Identity | Accepted intent; pending_proof, never provisional access. |
 | UpstreamKeyLinkQuarantined | a407f6de-7435-47b3-bcc8-ae3498010e71 | Accounts | Internal | Account | LinkProposalId, ReasonId, EvidenceId, HoldNotBefore | Identity | Proof/conflict transition; hold and fresh proof per contract v1. |
 | UpstreamKeyLinkCleared | 0f4ff8c1-a7e4-48e4-9bd1-65abbe2b465d | Accounts | Internal | Account | LinkProposalId, ResolutionId, EvidenceId, ReasonId | Identity | Authorized resolver's clearance, not waived proof or uniqueness. |
