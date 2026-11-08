@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Authorization.TokenExchange;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.Resources;
 using Microsoft.Extensions.Options;
@@ -26,7 +27,7 @@ internal class ClientDescriptors(IResourceCatalog resources, IOptions<IdentityOp
     /// </summary>
     /// <returns>The <see cref="OpenIddictApplicationDescriptor"/> instances.</returns>
     public IEnumerable<OpenIddictApplicationDescriptor> All() =>
-        [CratisCliDescriptor(), .. options.Value.IntrospectionClients.Select(IntrospectionClient)];
+        [CratisCliDescriptor(), .. options.Value.IntrospectionClients.Select(IntrospectionClient), .. options.Value.TokenExchange.Clients.Select(ExchangeClient)];
 
     /// <summary>
     /// Creates the descriptor of the first-party Cratis CLI: a public native client (no secret) using the
@@ -92,4 +93,46 @@ internal class ClientDescriptors(IResourceCatalog resources, IOptions<IdentityOp
         DisplayName = client.ClientId,
         Permissions = { Permissions.Endpoints.Introspection }
     };
+
+    /// <summary>
+    /// Creates the descriptor of a token-exchange client: confidential, token endpoint and the exchange grant only,
+    /// so it can neither redeem a code nor hold a refresh token, limited to its resources and scope ceiling.
+    /// </summary>
+    /// <param name="client">The <see cref="TokenExchangeClientOptions"/>.</param>
+    /// <returns>The <see cref="OpenIddictApplicationDescriptor"/>.</returns>
+    /// <exception cref="InvalidOperationException">The descriptor violates the registration rules.</exception>
+    OpenIddictApplicationDescriptor ExchangeClient(TokenExchangeClientOptions client)
+    {
+        var descriptor = new OpenIddictApplicationDescriptor
+        {
+            ClientId = client.ClientId,
+            ClientSecret = client.ClientSecret,
+            ClientType = ClientTypes.Confidential,
+            DisplayName = client.ClientId,
+            Permissions =
+            {
+                Permissions.Endpoints.Token,
+                Permissions.Prefixes.GrantType + TokenExchangeConstants.GrantType
+            }
+        };
+
+        var allowed = client.Resources.Select(resources.FindByAudience).OfType<ResourceServer>().ToArray();
+        foreach (var scope in client.Scopes.Count > 0 ? client.Scopes : [.. allowed.SelectMany(_ => _.Scopes).Select(_ => _.Name)])
+        {
+            descriptor.Permissions.Add(Permissions.Prefixes.Scope + scope);
+        }
+
+        foreach (var indicator in allowed.SelectMany(_ => _.Indicators))
+        {
+            descriptor.Permissions.Add(Permissions.Prefixes.Resource + indicator);
+        }
+
+        var validation = ClientRegistrationRules.Validate(descriptor, [CodeChallengeMethods.Sha256]);
+        if (!validation.IsValid)
+        {
+            throw new InvalidOperationException(string.Join(' ', validation.Refusals));
+        }
+
+        return descriptor;
+    }
 }
