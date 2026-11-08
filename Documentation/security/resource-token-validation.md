@@ -11,7 +11,7 @@ Cratis ID access tokens are checked in two places: each resource server verifies
    - It fails closed on `/mcp` when introspection is unavailable.
 3. **Resources behind the edge rely on AuthProxy.** What reaches a resource depends on AuthProxy's header handling: since AuthProxy 2.50.1 the `Authorization` header is stripped on anonymous routes, and forwarding it is an opt-in (`Service.PassCallerAuthorizationPaths`, AuthProxy issue 283).
 
-Consequence: a revoked token is denied at the edge within the cache window, not at the 15 minute access-token expiry.
+Consequence: a revoked token is denied at the edge within the cache window, not at access-token expiry (15 minutes on Identity.Host, at most 5 minutes on hosted-shared).
 
 ## Status
 
@@ -35,12 +35,12 @@ Revoking a grant marks its authorization revoked, and the fence stores on the tr
 | Situation | Behavior | Status |
 |---|---|---|
 | Introspection unavailable at the edge | `/mcp` is denied (fail closed). Other bearer routes follow the AuthProxy route setting. | Decided, pending delivery |
-| Token revoked while cached | Still accepted until the positive cache entry expires, at most 30 seconds by default. | Decided, pending delivery |
+| Token revoked while cached | Still accepted until the positive cache entry expires, at most the configured cache window (30 seconds or less). | Decided, pending delivery |
 | Token revoked, then introspected after the cache window | Denied; negative results are never cached. | Decided, pending delivery |
 | Unknown membership or tenant | Denied. | Decided; resource check not verified in code |
 | Clock skew between edge, resource and Identity | Expiry checks use each host's clock, so skew shifts the effective expiry; keep hosts on synchronized time. Skew does not extend the revocation window, which is cache time. | Not verified in code |
 | JWKS rotation | Resources fetch the Identity JWKS; a token signed with a retired key is refused once the key leaves the set. Identity publishes keys through JWKS (`Source/Identity/Keys/`). | Resource-side refresh behavior not verified in code |
-| Resource reached without the edge | Only local JWT checks apply, so a revoked token stays accepted until it expires, up to 15 minutes. Route resources through AuthProxy. | Follows from the contract |
+| Resource reached without the edge | Only local JWT checks apply, so a revoked token stays accepted until it expires (15 minutes on Identity.Host, at most 5 minutes on hosted-shared). Route resources through AuthProxy. | Follows from the contract |
 
 ## Where this appears in the readiness checklist
 
