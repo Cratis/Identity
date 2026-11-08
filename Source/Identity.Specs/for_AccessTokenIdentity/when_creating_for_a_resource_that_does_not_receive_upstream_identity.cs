@@ -27,7 +27,7 @@ public class when_creating_for_a_resource_that_does_not_receive_upstream_identit
     [Fact] void should_not_carry_the_github_id() => _identity.FindFirst(IdentityClaims.GitHubId).ShouldBeNull();
     [Fact] void should_not_carry_the_github_login() => _identity.FindFirst(IdentityClaims.GitHubLogin).ShouldBeNull();
     [Fact] void should_not_carry_the_preferred_username() => _identity.FindFirst(Claims.PreferredUsername).ShouldBeNull();
-    [Fact] void should_not_carry_the_display_name() => _identity.FindFirst(Claims.Name).ShouldBeNull();
+    [Fact] void should_still_carry_the_display_name_as_name() => _identity.GetClaim(Claims.Name).ShouldEqual("Einar Ingebrigtsen");
     [Fact] void should_still_carry_the_subject() => _identity.GetClaim(Claims.Subject).ShouldEqual(_account.Id.Value);
     [Fact] void should_still_carry_the_idp() => _identity.GetClaim(IdentityClaims.Idp).ShouldEqual("https://github.com");
     [Fact] void should_still_carry_the_authentication_time() => _identity.GetClaim("auth_time").ShouldEqual("1700000000");

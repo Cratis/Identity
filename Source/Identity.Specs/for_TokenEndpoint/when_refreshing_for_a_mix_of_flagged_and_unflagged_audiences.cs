@@ -17,7 +17,7 @@ public class when_refreshing_for_a_mix_of_flagged_and_unflagged_audiences : Revo
     [Fact] void should_not_carry_the_idp_sub() => _principal.FindFirst(IdentityClaims.IdpSub).ShouldBeNull();
     [Fact] void should_not_carry_the_github_id() => _principal.FindFirst(IdentityClaims.GitHubId).ShouldBeNull();
     [Fact] void should_not_carry_the_preferred_username() => _principal.FindFirst(Claims.PreferredUsername).ShouldBeNull();
-    [Fact] void should_not_carry_the_display_name() => _principal.FindFirst(Claims.Name).ShouldBeNull();
+    [Fact] void should_still_carry_the_display_name_as_name() => _principal.FindFirst(Claims.Name).Value.ShouldEqual("Member");
     [Fact] void should_keep_the_idp() => _principal.FindFirst(IdentityClaims.Idp).ShouldNotBeNull();
     [Fact] void should_keep_the_original_authentication_time() => _principal.FindFirst(Claims.AuthenticationTime).Value.ShouldEqual("1700000000");
 }

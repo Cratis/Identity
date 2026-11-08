@@ -34,6 +34,7 @@ internal static class AccessTokenIdentity
     public static IEnumerable<string> AccessTokenClaimTypes { get; } =
     [
         Claims.Subject,
+        Claims.Name,
         Claims.PreferredUsername,
         Claims.AuthorizedParty,
         IdentityClaims.Idp,
@@ -100,10 +101,11 @@ internal static class AccessTokenIdentity
     {
         // TODO: idp is hard-wired to GitHub; it must come from the verified authentication once a second provider exists.
         // Only registered upstream-identity consumers get the upstream subject, GitHub claims and preferred_username; everything else fails closed.
-        // The display name never appears in an access token (contract v1 §5), so a name carried by an older grant is removed too.
+        // Deviation from identity-contract-v1.md:148 (name MUST NOT appear in access tokens): resource proxies use it as the identity name;
+        // tracked for the v1.1 amendment (#111).
         identity
             .SetClaim(Claims.Subject, account.Id.Value)
-            .SetClaim(Claims.Name, (string?)null)
+            .SetClaim(Claims.Name, account.Name.Value)
             .SetClaim(Claims.PreferredUsername, receivesUpstreamIdentity ? account.GitHubLogin.Value : null)
             .SetClaim(IdentityClaims.Idp, GitHubConnection.Issuer)
             .SetClaim(IdentityClaims.IdpSub, receivesUpstreamIdentity ? account.GitHubId.Value : null)

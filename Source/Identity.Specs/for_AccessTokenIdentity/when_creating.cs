@@ -30,7 +30,8 @@ public class when_creating : given.an_account_and_a_grant
     [Fact] void should_send_idp_sub_only_to_the_access_token() => _identity.FindFirst(IdentityClaims.IdpSub).GetDestinations().ShouldContainOnly("access_token");
     [Fact] void should_carry_the_preferred_username_for_an_upstream_identity_consumer() => _identity.GetClaim(Claims.PreferredUsername).ShouldEqual("einari");
     [Fact] void should_send_the_preferred_username_only_to_the_access_token() => _identity.FindFirst(Claims.PreferredUsername).GetDestinations().ShouldContainOnly("access_token");
-    [Fact] void should_never_carry_the_display_name() => _identity.FindFirst(Claims.Name).ShouldBeNull();
+    [Fact] void should_carry_the_display_name_as_name() => _identity.GetClaim(Claims.Name).ShouldEqual("Einar Ingebrigtsen");
+    [Fact] void should_send_the_name_only_to_the_access_token() => _identity.FindFirst(Claims.Name).GetDestinations().ShouldContainOnly("access_token");
     [Fact] void should_carry_the_github_login() => _identity.GetClaim(IdentityClaims.GitHubLogin).ShouldEqual("einari");
     [Fact] void should_carry_the_selected_tenant() => _identity.GetClaim(IdentityClaims.TenantId).ShouldEqual("cratis");
     [Fact] void should_carry_the_client_as_authorized_party() => _identity.GetClaim("azp").ShouldEqual(ClientId);

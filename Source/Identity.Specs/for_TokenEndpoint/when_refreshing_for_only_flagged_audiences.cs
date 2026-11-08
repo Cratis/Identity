@@ -17,5 +17,5 @@ public class when_refreshing_for_only_flagged_audiences : RevocationSpecs.given.
     [Fact] void should_carry_the_idp_sub() => _principal.FindFirst(IdentityClaims.IdpSub).Value.ShouldEqual("42");
     [Fact] void should_carry_the_github_id() => _principal.FindFirst(IdentityClaims.GitHubId).Value.ShouldEqual("42");
     [Fact] void should_carry_the_preferred_username() => _principal.FindFirst(Claims.PreferredUsername).Value.ShouldEqual("member");
-    [Fact] void should_never_carry_the_display_name() => _principal.FindFirst(Claims.Name).ShouldBeNull();
+    [Fact] void should_carry_the_display_name_as_name() => _principal.FindFirst(Claims.Name).Value.ShouldEqual("Member");
 }
