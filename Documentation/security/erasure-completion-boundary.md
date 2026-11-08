@@ -23,7 +23,7 @@ Legend: **PII** means the value type carries `[PII]`, so Chronicle crypto-shredd
 | Fence log, tombstones, outbox | Pseudonymous ids and sequences | Not personal data by design | identity-events-v1 §7; [storage note](../design/identity-package-and-storage-v1.md) §2 |
 | Backups, exports, consumer stores, logs | Anything the stores above held at copy time | Outside the workflow | identity-events-v1 §5 |
 
-No erasure event, command or call to `PII.DeleteEncryptionKeyFor` exists in `Source/`. `AccountErased` and the `AccountErasure*` events are catalogued in identity-events-v1 (§4 and §8) but have no contract type yet.
+The `AccountErased` and `AccountErasure*` events are catalogued in identity-events-v1 (§4 and §8). The request command, the coordinator and the key-destruction stage (`PII.DeleteEncryptionKeyFor` per namespace) exist under `Source/Identity/Accounts/Erasing/` with fail-closed defaults; nothing is registered in production yet.
 
 ## 2. Completion boundary
 
