@@ -154,6 +154,17 @@ WWW-Authenticate: Bearer error="insufficient_scope", scope="direct:write", resou
 
 Executable conformance coverage MUST verify the actual OpenIddict output, including catalog mapping, unknown-resource `invalid_target`, required client id on every issuance path, single-string audience serialization, no JWE, and rotation/reuse behavior. A setter call alone is not evidence that the final handler emits this profile.
 
+### Token-exchange issuance profile
+
+An access token issued by RFC 8693 token exchange (see [Token exchange](../token-exchange.md)) follows this profile with these rules:
+
+- `aud` is the single catalog audience of the requested resource, never the subject token's audience.
+- `tid` is the tenant the client requested, and only when the product lists it for the person on that resource at issue time.
+- `sub` is the Identity account subject; `azp` and `client_id` are the exchange client.
+- `idp` is the configured external issuer that signed the subject token.
+- `auth_time` is copied only when the subject token carried one; it is never invented.
+- There is no `act` or `cnf` claim and no refresh token.
+
 ## 9. Decisions recorded at sign-off
 
 - **Audience representation:** aud as catalog slug vs resource-indicator URI (MCP 2026-07-28 requires only that the server validates tokens were issued for it; slug chosen by design N1). Decided in Identity #14: one exact catalog slug, preserving contract v1, with the mapping and OpenIddict handler ordering as specified here.

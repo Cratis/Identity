@@ -22,6 +22,7 @@ public class when_exporting_types : Specification
             typeof(IdentityHostApplicationBuilderExtensions),
             typeof(IdentityWebApplicationExtensions),
             typeof(AccountsOptions),
+            typeof(ExternalIssuerOptions),
             typeof(GitHubOptions),
             typeof(IdentityOptions),
             typeof(IntrospectionClientOptions),
@@ -31,6 +32,8 @@ public class when_exporting_types : Specification
             typeof(SecretStoreOptions),
             typeof(TenantOptions),
             typeof(TenantsCallbackOptions),
+            typeof(TokenExchangeClientOptions),
+            typeof(TokenExchangeOptions),
             typeof(TokenOptions),
             typeof(UpstreamLoginOptions),
 

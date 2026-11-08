@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Security.Claims;
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Contracts;
+using Cratis.Identity.Resources;
 using Cratis.Identity.Tenants;
 using Cratis.Identity.Upstream;
 using Microsoft.IdentityModel.Tokens;
@@ -26,6 +27,11 @@ internal static class AccessTokenIdentity
     /// The assurance level the contract assigns when no connection mapping vouches for a stronger one.
     /// </summary>
     public const string BasicAssurance = "basic";
+
+    /// <summary>
+    /// The shortest lifetime an exchanged access token is issued with.
+    /// </summary>
+    public static readonly TimeSpan MinimumExchangeLifetime = TimeSpan.FromSeconds(5);
 
     /// <summary>
     /// Gets the claim types written to access tokens, in addition to those OpenIddict writes itself
@@ -80,6 +86,55 @@ internal static class AccessTokenIdentity
     {
         var identity = new ClaimsIdentity(granted.Claims, TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
         Apply(identity, account, clientId, receivesUpstreamIdentity);
+        return identity;
+    }
+
+    /// <summary>
+    /// Creates the identity for an RFC 8693 token exchange. No grant, refresh token or delegation is involved: the
+    /// token is bound to one resource, one tenant and the scopes the caller was allowed, and carries the external
+    /// issuer as <c language="text">idp</c>. An authentication time is copied only when the subject token had one.
+    /// </summary>
+    /// <param name="account">The resolved <see cref="Account"/>.</param>
+    /// <param name="clientId">The exchange client.</param>
+    /// <param name="resource">The <see cref="ResourceServer"/> the token is for.</param>
+    /// <param name="tenantId">The listed tenant the token is bound to.</param>
+    /// <param name="scopes">The granted scopes.</param>
+    /// <param name="externalIssuer">The configured external issuer that vouched for the subject.</param>
+    /// <param name="externalSubject">The subject at the external issuer.</param>
+    /// <param name="authTime">The subject token's authentication time in Unix seconds, if it carried one.</param>
+    /// <param name="accessTokenLifetime">The lifetime of the access token; floored at <see cref="MinimumExchangeLifetime"/>.</param>
+    /// <returns>The <see cref="ClaimsIdentity"/> to sign in with.</returns>
+    public static ClaimsIdentity Exchange(
+        Account account,
+        string clientId,
+        ResourceServer resource,
+        string tenantId,
+        IEnumerable<string> scopes,
+        string externalIssuer,
+        string externalSubject,
+        long? authTime,
+        TimeSpan accessTokenLifetime)
+    {
+        var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
+        identity.SetScopes(scopes.Where(_ => !string.Equals(_, Scopes.OfflineAccess, StringComparison.Ordinal)));
+        identity.SetResources(resource.Audience);
+        identity
+            .SetClaim(Claims.Subject, account.Id.Value)
+            .SetClaim(Claims.Name, account.Name.Value)
+            .SetClaim(Claims.PreferredUsername, resource.ReceivesUpstreamIdentity && string.Equals(externalIssuer, GitHubConnection.Issuer, StringComparison.Ordinal) ? account.GitHubLogin.Value : null)
+            .SetClaim(IdentityClaims.Idp, externalIssuer)
+            .SetClaim(IdentityClaims.IdpSub, resource.ReceivesUpstreamIdentity ? externalSubject : null)
+            .SetClaim(Claims.AuthenticationContextReference, BasicAssurance)
+            .SetClaim(Claims.AuthorizedParty, clientId)
+            .SetClaim(IdentityClaims.TenantId, tenantId);
+
+        if (authTime is { } seconds)
+        {
+            SetAuthTime(identity, seconds);
+        }
+
+        identity.SetDestinations(claim => AccessTokenClaimTypes.Contains(claim.Type, StringComparer.Ordinal) ? [Destinations.AccessToken] : []);
+        new ClaimsPrincipal(identity).SetAccessTokenLifetime(accessTokenLifetime < MinimumExchangeLifetime ? MinimumExchangeLifetime : accessTokenLifetime);
         return identity;
     }
 

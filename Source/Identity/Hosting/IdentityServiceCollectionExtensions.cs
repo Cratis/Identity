@@ -6,6 +6,7 @@ using Cratis.Identity.Accounts;
 using Cratis.Identity.Accounts.Linking;
 using Cratis.Identity.Accounts.Lookup;
 using Cratis.Identity.Authorization;
+using Cratis.Identity.Authorization.TokenExchange;
 using Cratis.Identity.Clients;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.ConsentFlow;
@@ -139,6 +140,7 @@ internal static class IdentityServiceCollectionExtensions
         services.AddSingleton<VerifiedKeyGate>();
         services.AddScoped<AccountStore>();
         services.AddScoped<UpstreamLookups>();
+        services.AddScoped<IUpstreamKeyResolver, UpstreamKeyResolver>();
         services.AddScoped<AccountReader>();
         services.AddScoped<IAccountReader>(provider => provider.GetRequiredService<AccountReader>());
         services.AddScoped<EventSourcedAccountAdapter>();
@@ -277,6 +279,13 @@ internal static class IdentityServiceCollectionExtensions
         services.AddScoped<ConsentPages>();
         services.AddScoped<AuthorizationEndpoint>();
         services.AddScoped<TokenEndpoint>();
+        services.AddScoped<TokenExchangeGrant>();
+        services.AddSingleton<SubjectTokenReplayGuard>();
+        services.AddSingleton<ISubjectTokenValidator, SubjectTokenValidator>();
+        services.AddSingleton<IExternalIssuerKeys, ExternalIssuerKeys>();
+        services.AddHttpClient(ExternalIssuerKeys.HttpClientName)
+            .ConfigurePrimaryHttpMessageHandler(ExternalIssuerKeys.CreateHandler)
+            .RemoveAllLoggers();
         services.AddSingleton(configuration.GetSection("Identity:FenceLog").Get<FenceLogOptions>() ?? new FenceLogOptions());
         services.AddSingleton<IndependentFenceLogConnection>();
         services.AddSingleton(sp => new MongoIndependentFenceLog(() => sp.GetRequiredService<IndependentFenceLogConnection>().Database, sp.GetRequiredService<TimeProvider>(), () => sp.GetRequiredService<RecoverySession>().Verified));
@@ -325,6 +334,7 @@ internal static class IdentityServiceCollectionExtensions
                     .SetIntrospectionEndpointUris("connect/introspect")
                     .AllowAuthorizationCodeFlow()
                     .AllowRefreshTokenFlow()
+                    .AddTokenExchangeFlow(startupOptions)
                     .RequireProofKeyForCodeExchange()
                     .DisableSlidingRefreshTokenExpiration()
                     .SetRefreshTokenReuseLeeway(null)

@@ -62,6 +62,41 @@ public static class Configurations
         return options;
     }
 
+    public const string ExchangeClientId = "authproxy";
+    public const string ExchangeClientSecret = "exchange-client-secret-0123456789abcdef";
+    public const string ExternalIssuer = "https://login.partner.example";
+    public const string ExternalAudience = "https://identity.example/exchange";
+
+    public static IdentityOptions WithTokenExchange()
+    {
+        var options = CallbackResources();
+        options.Issuer = "https://identity.example/";
+        options.TokenExchange = new()
+        {
+            Issuers =
+            [
+                new ExternalIssuerOptions
+                {
+                    Issuer = ExternalIssuer,
+                    JwksUri = $"{ExternalIssuer}/.well-known/jwks.json",
+                    Audiences = [ExternalAudience]
+                }
+            ],
+            Clients =
+            [
+                new TokenExchangeClientOptions
+                {
+                    ClientId = ExchangeClientId,
+                    ClientSecret = ExchangeClientSecret,
+                    Issuers = [ExternalIssuer],
+                    Resources = [DirectAudience],
+                    Scopes = ["direct:read"]
+                }
+            ]
+        };
+        return options;
+    }
+
     public static IOptions<IdentityOptions> AsOptions(this IdentityOptions options) => Options.Create(options);
 
     public static IOptionsMonitor<IdentityOptions> AsMonitor(this IdentityOptions options)
