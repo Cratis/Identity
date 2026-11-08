@@ -40,6 +40,12 @@ internal partial class AccountPublications(IEventStore eventStore, ILogger<Accou
     /// <returns>The publication.</returns>
     public Task Publish(AccountTombstoneRecorded @event, EventContext context) => Publish(new AccountTombstoned(@event.TombstonedAt), context, @event.FactId);
 
+    /// <summary>Publishes completed erasure.</summary>
+    /// <param name="event">The source fact.</param>
+    /// <param name="context">The source identity.</param>
+    /// <returns>The publication.</returns>
+    public Task Publish(AccountErasureRecorded @event, EventContext context) => Publish(new AccountErased(@event.ErasureId, @event.CompletedAt, @event.BoundaryVersion), context, @event.FactId);
+
     /// <summary>Publishes linking, never raw upstream subject or display identifier.</summary>
     /// <param name="event">The source fact.</param>
     /// <param name="context">The source identity.</param>
