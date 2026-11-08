@@ -26,12 +26,12 @@ public class when_logging_in_with_pkce_on_an_arbitrary_loopback_port(IdentityHos
         _consentPage = await page.Content.ReadAsStringAsync();
 
         using var redirect = await browser.Consent(_consentPage);
-        _callback = redirect.Headers.Location!;
+        _callback = redirect.Headers.Location;
 
         var code = QueryHelpers.ParseQuery(_callback.Query)["code"].ToString();
         (_tokenStatus, _tokens) = await browser.RedeemCode(code, verifier);
-        _accessToken = await AccessTokens.Validate(browser, _tokens.GetProperty("access_token").GetString()!);
-        (_, _introspection) = await browser.Introspect(_tokens.GetProperty("access_token").GetString()!);
+        _accessToken = await AccessTokens.Validate(browser, _tokens.GetProperty("access_token").GetString());
+        (_, _introspection) = await browser.Introspect(_tokens.GetProperty("access_token").GetString());
     }
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
@@ -47,9 +47,11 @@ public class when_logging_in_with_pkce_on_an_arbitrary_loopback_port(IdentityHos
     [Fact] void should_issue_an_access_token_valid_for_the_audience() => _accessToken.IsValid.ShouldBeTrue();
     [Fact] void should_carry_a_canonical_account_subject() => Guid.TryParse((string)_accessToken.Claims["sub"], out _).ShouldBeTrue();
     [Fact] void should_carry_the_github_id() => _accessToken.Claims["github_id"].ShouldEqual("134365");
+    [Fact] void should_carry_the_idp() => _accessToken.Claims["idp"].ShouldEqual("https://github.com");
+    [Fact] void should_carry_the_idp_sub() => _accessToken.Claims["idp_sub"].ShouldEqual("134365");
     [Fact] void should_carry_the_github_login() => _accessToken.Claims["github_login"].ShouldEqual("einari");
     [Fact] void should_carry_the_selected_tenant() => _accessToken.Claims["tid"].ShouldEqual(IdentityHost.MemberTenant);
     [Fact] void should_carry_the_client_as_authorized_party() => _accessToken.Claims["azp"].ShouldEqual(Browser.ClientId);
-    [Fact] void should_carry_the_granted_scope() => ((string)_accessToken.Claims["scope"]).Split(' ').ShouldContain("direct:read");
+    [Fact] void should_carry_the_granted_scope() => ((string)_accessToken.Claims["scope"]).Split(' ').ShouldContain("direct:mcp:read");
     [Fact] void should_be_active_when_introspected() => _introspection.GetProperty("active").GetBoolean().ShouldBeTrue();
 }

@@ -24,7 +24,7 @@ namespace Cratis.Identity.Storage;
 /// <param name="scopes">The <see cref="IServiceScopeFactory"/>.</param>
 /// <param name="options">The <see cref="IdentityOptions"/>.</param>
 /// <param name="timeProvider">The <see cref="TimeProvider"/>.</param>
-public class TokenPruning(IServiceScopeFactory scopes, IOptions<IdentityOptions> options, TimeProvider timeProvider) : BackgroundService
+internal class TokenPruning(IServiceScopeFactory scopes, IOptions<IdentityOptions> options, TimeProvider timeProvider) : BackgroundService
 {
     static readonly TimeSpan _interval = TimeSpan.FromHours(1);
 

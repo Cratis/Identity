@@ -6,7 +6,7 @@ namespace Cratis.Identity.Tenants;
 /// <summary>
 /// Defines the failure categories of a tenants lookup.
 /// </summary>
-public enum TenantsUnavailableReason
+internal enum TenantsUnavailableReason
 {
     /// <summary>No product callback is configured.</summary>
     NotConfigured = 0,

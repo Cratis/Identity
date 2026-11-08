@@ -34,7 +34,7 @@ public partial class when_signing_out(IdentityHost host) : IAsyncLifetime
 
         var parameters = Browser.CliAuthorization(challenge).Append(new("prompt", "none"));
         using var response = await browser.Authorize(parameters);
-        _authorizationError = QueryHelpers.ParseQuery(response.Headers.Location!.Query)["error"].ToString();
+        _authorizationError = QueryHelpers.ParseQuery(response.Headers.Location.Query)["error"].ToString();
     }
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;

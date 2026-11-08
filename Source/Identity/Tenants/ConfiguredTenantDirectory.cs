@@ -1,7 +1,6 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Globalization;
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.Resources;
@@ -15,12 +14,12 @@ namespace Cratis.Identity.Tenants;
 /// tenant explicitly allows all accounts.
 /// </summary>
 /// <param name="options">The <see cref="IdentityOptions"/>.</param>
-public class ConfiguredTenantDirectory(IOptionsMonitor<IdentityOptions> options) : ITenantDirectory
+internal class ConfiguredTenantDirectory(IOptionsMonitor<IdentityOptions> options) : ITenantDirectory
 {
     /// <inheritdoc/>
     public Task<TenantLookup> SelectableTenants(Account account, ResourceServer resource, CancellationToken cancellationToken = default)
     {
-        var gitHubId = account.GitHubId.ToString(CultureInfo.InvariantCulture);
+        var gitHubId = account.GitHubId.Value;
         var tenants = options.CurrentValue.Resources
             .Where(_ => string.Equals(_.Audience, resource.Audience, StringComparison.Ordinal))
             .SelectMany(_ => _.Tenants)

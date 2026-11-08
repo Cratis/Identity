@@ -13,7 +13,7 @@ namespace Cratis.Identity.Keys;
 /// <param name="Certificate">The <see cref="X509Certificate2"/> including its private key.</param>
 /// <param name="Purpose">The <see cref="KeyPurpose"/>.</param>
 /// <param name="Algorithm">The JOSE algorithm the key is used with.</param>
-public record RealmKey(string Name, string Kid, X509Certificate2 Certificate, KeyPurpose Purpose, string Algorithm)
+internal record RealmKey(string Name, string Kid, X509Certificate2 Certificate, KeyPurpose Purpose, string Algorithm)
 {
     /// <summary>
     /// Gets the start of the certificate's validity.

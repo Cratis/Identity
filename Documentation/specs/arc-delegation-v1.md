@@ -3,8 +3,8 @@
 ```text
 Spec id: arc-delegation
 Version: 1
-Status: Locked
-Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
+Status: Signed off
+Signed off: 2026-11-05 by woksin, https://github.com/Cratis/Identity/issues/14; owner confirmation pending
 Issue: https://github.com/Cratis/Arc/issues/3702
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -108,4 +108,4 @@ Decided in Identity #14 (2026-11-05) with the recommended answers from the sign-
 
 ## Versioning
 
-A Locked spec MUST change only through a new version file. Unknown grant versions MUST be refused. A change to depth, destinations, mappings, budgets, or expiry MUST NOT widen an existing grant silently; any broader authority MUST require new consent and current product authorization.
+This spec MUST change only through a new version file. Unknown grant versions MUST be refused. A change to depth, destinations, mappings, budgets, or expiry MUST NOT widen an existing grant silently; any broader authority MUST require new consent and current product authorization.

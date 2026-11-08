@@ -16,7 +16,7 @@ public class when_rendering_untrusted_values : Specification
 
     void Because()
     {
-        var direct = new ResourceCatalog(Configurations.TwoResourceServers().AsOptions()).FindByAudience(Configurations.DirectAudience)!;
+        var direct = new ResourceCatalog(Configurations.TwoResourceServers().AsOptions()).FindByAudience(Configurations.DirectAudience);
         _html = ConsentPage.Render(
             new Consent(
                 "cratis-cli",
@@ -24,7 +24,7 @@ public class when_rendering_untrusted_values : Specification
                 new Uri("http://127.0.0.1:53123/callback"),
                 new Grant(direct, ["direct:read"]),
                 [new SelectableTenant("cratis", Script)],
-                new Account("a", 1, Script, "Name"),
+                new Account(new("7d9d5c9e-0000-4000-8000-000000000001"), "Name", null, "1", Script, AccountStatus.Active, []),
                 [new("state", "\"><script>alert(2)</script>")]),
             "token");
     }

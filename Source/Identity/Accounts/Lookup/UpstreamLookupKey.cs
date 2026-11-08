@@ -7,7 +7,7 @@ using System.Text;
 namespace Cratis.Identity.Accounts.Lookup;
 
 /// <summary>One development lookup key; its secret is never formatted.</summary>
-public sealed class UpstreamLookupKey
+internal sealed class UpstreamLookupKey
 {
     readonly byte[] _key;
 

@@ -7,5 +7,5 @@ namespace Cratis.Identity.Authorization;
 /// The exception that is thrown when a client OpenIddict already validated can no longer be found in the store.
 /// </summary>
 /// <param name="clientId">The client identifier.</param>
-public class ClientNotRegistered(string clientId)
+internal class ClientNotRegistered(string clientId)
     : Exception($"The client \"{clientId}\" is not registered.");

@@ -6,7 +6,7 @@ using Cratis.Identity.Contracts.Accounts;
 namespace Cratis.Identity.Upstream;
 
 /// <summary>Immutable key vouched for by a connection adapter, not by arbitrary claims.</summary>
-public sealed class VerifiedAuthentication
+internal sealed class VerifiedAuthentication
 {
     /// <summary>Initializes a new instance of the <see cref="VerifiedAuthentication"/> class.</summary>
     /// <param name="connectionId">The trusted connection.</param>

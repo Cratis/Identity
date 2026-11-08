@@ -7,4 +7,4 @@ namespace Cratis.Identity.Accounts.Linking;
 /// <param name="Explicit">Whether linking was explicitly requested.</param>
 /// <param name="EmailOnlyProof">Whether only an email hint was supplied, which is insufficient.</param>
 /// <param name="SoftDisabledConnection">Whether resolver clearance is required.</param>
-public record LinkIntent(bool Explicit, bool EmailOnlyProof = false, bool SoftDisabledConnection = false);
+internal record LinkIntent(bool Explicit, bool EmailOnlyProof = false, bool SoftDisabledConnection = false);

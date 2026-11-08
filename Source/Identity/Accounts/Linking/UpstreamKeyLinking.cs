@@ -17,7 +17,7 @@ namespace Cratis.Identity.Accounts.Linking;
 /// <param name="digester">The immutable key digester.</param>
 /// <param name="options">The realm hold policy.</param>
 /// <param name="time">The trusted clock.</param>
-public class UpstreamKeyLinking(AccountStore store, UpstreamLookups lookups, UpstreamKeyDigester digester, IOptions<IdentityOptions> options, TimeProvider time)
+internal class UpstreamKeyLinking(AccountStore store, UpstreamLookups lookups, UpstreamKeyDigester digester, IOptions<IdentityOptions> options, TimeProvider time)
 {
     /// <summary>Records explicit intent only after both session-bound proofs are present.</summary>
     /// <param name="session">The existing authenticated account session.</param>

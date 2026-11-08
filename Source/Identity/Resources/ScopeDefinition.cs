@@ -8,4 +8,4 @@ namespace Cratis.Identity.Resources;
 /// </summary>
 /// <param name="Name">The scope name.</param>
 /// <param name="Description">The description shown on the consent page.</param>
-public record ScopeDefinition(string Name, string Description);
+internal record ScopeDefinition(string Name, string Description);

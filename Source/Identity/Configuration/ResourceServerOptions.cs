@@ -19,9 +19,16 @@ public class ResourceServerOptions
     public string DisplayName { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the RFC 8707 resource indicators that map to the audience.
+    /// Gets or sets the single RFC 8707 resource indicator that maps to the audience.
+    /// Separate API and MCP surfaces require separate resource entries.
     /// </summary>
     public IList<string> Indicators { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the resource is a registered upstream-identity consumer, the only kind of
+    /// audience whose access tokens carry <c language="text">idp_sub</c>, <c language="text">github_id</c> and <c language="text">github_login</c>.
+    /// </summary>
+    public bool ReceivesUpstreamIdentity { get; set; }
 
     /// <summary>
     /// Gets or sets the scopes that belong to the resource server.

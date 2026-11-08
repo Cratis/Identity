@@ -14,9 +14,9 @@ public class a_data_protection_ring : Specification
 {
     protected string _directory;
     protected StoreFiles _files;
-    protected SecretStoreKeys _keys;
+    private protected SecretStoreKeys _keys;
     protected FixedTimeProvider _time;
-    protected SecretStoreXmlRepository _repository;
+    private protected SecretStoreXmlRepository _repository;
     protected Exception _exception;
 
     void Establish()

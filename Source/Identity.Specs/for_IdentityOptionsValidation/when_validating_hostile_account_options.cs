@@ -15,18 +15,18 @@ public class when_validating_hostile_account_options
     [InlineData("not-base64!")]
     [InlineData("AA==")]
     [InlineData("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==")]
-    void should_refuse_malformed_or_short_key_material(string key) => Validate(new() { EventSourced = true, LookupKey = key }).Failures.ShouldContain("Account lookup key must be base64 with at least 256 bits of key material.");
+    void should_refuse_malformed_or_short_key_material(string key) => Validate(new() { LookupKey = key }).Failures.ShouldContain("Account lookup key must be base64 with at least 256 bits of key material.");
 
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    void should_refuse_invalid_revisions(int revision) => Validate(new() { EventSourced = true, LookupKeyRevision = revision }).Failures.ShouldContain("Account lookup revision and link hold must be valid.");
+    void should_refuse_invalid_revisions(int revision) => Validate(new() { LookupKeyRevision = revision }).Failures.ShouldContain("Account lookup revision and link hold must be valid.");
 
     [Fact]
-    void should_refuse_a_negative_hold() => Validate(new() { EventSourced = true, LinkHoldMinimum = TimeSpan.FromTicks(-1) }).Failures.ShouldContain("Account lookup revision and link hold must be valid.");
+    void should_refuse_a_negative_hold() => Validate(new() { LinkHoldMinimum = TimeSpan.FromTicks(-1) }).Failures.ShouldContain("Account lookup revision and link hold must be valid.");
 
     [Fact]
-    void should_accept_explicit_minimum_key_material() => Validate(new() { EventSourced = true, LookupKey = Convert.ToBase64String(new byte[32]) }).Succeeded.ShouldBeTrue();
+    void should_accept_explicit_minimum_key_material() => Validate(new() { LookupKey = Convert.ToBase64String(new byte[32]) }).Succeeded.ShouldBeTrue();
 
     static ValidateOptionsResult Validate(AccountsOptions accounts)
     {

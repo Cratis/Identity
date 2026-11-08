@@ -20,7 +20,7 @@ public class when_the_connection_string_is_malformed : Specification
 
     List<Exception> _exceptions = [];
 
-    void Because() => _exceptions = [.. _malformed.Select(_ => Catch.Exception(() => MongoClientFactory.Create(_))!)];
+    void Because() => _exceptions = [.. _malformed.Select(_ => Catch.Exception(() => MongoClientFactory.Create(_)))];
 
     [Fact] void should_refuse_every_malformed_string() => _exceptions.TrueForAll(_ => _ is InvalidMongoDBConnectionString).ShouldBeTrue();
     [Fact] void should_name_the_setting() => _exceptions.TrueForAll(_ => _.Message.Contains("Identity:MongoDB:ConnectionString")).ShouldBeTrue();

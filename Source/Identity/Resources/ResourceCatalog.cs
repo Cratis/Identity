@@ -10,7 +10,7 @@ namespace Cratis.Identity.Resources;
 /// Represents an implementation of <see cref="IResourceCatalog"/> backed by configuration.
 /// </summary>
 /// <param name="options">The <see cref="IdentityOptions"/>.</param>
-public class ResourceCatalog(IOptions<IdentityOptions> options) : IResourceCatalog
+internal class ResourceCatalog(IOptions<IdentityOptions> options) : IResourceCatalog
 {
     readonly ResourceServer[] _resources = [.. options.Value.Resources.Select(ToResourceServer)];
 
@@ -35,5 +35,6 @@ public class ResourceCatalog(IOptions<IdentityOptions> options) : IResourceCatal
         resource.Audience,
         string.IsNullOrWhiteSpace(resource.DisplayName) ? resource.Audience : resource.DisplayName,
         [.. resource.Indicators.Select(ResourceIndicator.Normalize).OfType<string>()],
-        [.. resource.Scopes.Select(_ => new ScopeDefinition(_.Name, _.Description))]);
+        [.. resource.Scopes.Select(_ => new ScopeDefinition(_.Name, _.Description))],
+        resource.ReceivesUpstreamIdentity);
 }

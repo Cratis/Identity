@@ -12,8 +12,8 @@ public static class IdentityHostApplicationBuilderExtensions
 {
     /// <summary>
     /// Adds Cratis Identity: storage, upstream login, the OpenIddict authorization server and the endpoints. Options are
-    /// bound from the <c language="text">Identity</c> configuration section. Once Identity has commands and queries, call
-    /// this next to <c language="text">AddCratisArc</c>.
+    /// bound from the <c language="text">Identity</c> configuration section. Call this after
+    /// <c language="text">AddCratisArc</c> and <c language="text">AddCratisChronicle</c>.
     /// </summary>
     /// <typeparam name="TBuilder">The type of the host application builder.</typeparam>
     /// <param name="builder">The <typeparamref name="TBuilder"/>.</param>

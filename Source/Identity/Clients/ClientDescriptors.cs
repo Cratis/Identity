@@ -10,12 +10,11 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 namespace Cratis.Identity.Clients;
 
 /// <summary>
-/// Declares the clients Identity knows. In v1 every client is declared here; the store is reconciled against
-/// this list at startup.
+/// Declares the clients Identity knows. In v1 the read-only application store serves these descriptors directly.
 /// </summary>
 /// <param name="resources">The <see cref="IResourceCatalog"/>.</param>
 /// <param name="options">The <see cref="IdentityOptions"/>.</param>
-public class ClientDescriptors(IResourceCatalog resources, IOptions<IdentityOptions> options)
+internal class ClientDescriptors(IResourceCatalog resources, IOptions<IdentityOptions> options)
 {
     /// <summary>
     /// The client identifier of the first-party Cratis CLI.
@@ -36,6 +35,7 @@ public class ClientDescriptors(IResourceCatalog resources, IOptions<IdentityOpti
     /// the IP literals are registered and <c language="text">localhost</c> is refused.
     /// </summary>
     /// <returns>The <see cref="OpenIddictApplicationDescriptor"/>.</returns>
+    /// <exception cref="InvalidOperationException">The built-in descriptor violates the registration rules.</exception>
     public OpenIddictApplicationDescriptor CratisCliDescriptor()
     {
         var descriptor = new OpenIddictApplicationDescriptor
@@ -73,6 +73,12 @@ public class ClientDescriptors(IResourceCatalog resources, IOptions<IdentityOpti
         foreach (var indicator in resources.All.SelectMany(_ => _.Indicators))
         {
             descriptor.Permissions.Add(Permissions.Prefixes.Resource + indicator);
+        }
+
+        var validation = ClientRegistrationRules.Validate(descriptor, [CodeChallengeMethods.Sha256]);
+        if (!validation.IsValid)
+        {
+            throw new InvalidOperationException(string.Join(' ', validation.Refusals));
         }
 
         return descriptor;

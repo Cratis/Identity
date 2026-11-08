@@ -22,7 +22,7 @@ public class when_starting_the_host(IdentityHost host) : IAsyncLifetime
         return ValueTask.CompletedTask;
     }
 
-    [Fact] void should_answer_the_health_check() => (_response.StatusCode == System.Net.HttpStatusCode.OK && _body == "ok").ShouldBeTrue();
+    [Fact] void should_answer_the_health_check() => (_response.StatusCode == HttpStatusCode.OK && _body == "ok").ShouldBeTrue();
     [Fact] void should_send_no_sniff() => _response.Headers.GetValues("X-Content-Type-Options").ShouldContainOnly("nosniff");
     [Fact] void should_refuse_framing() => _response.Headers.GetValues("X-Frame-Options").ShouldContainOnly("DENY");
 }

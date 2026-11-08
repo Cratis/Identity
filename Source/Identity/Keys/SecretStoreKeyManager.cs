@@ -15,7 +15,7 @@ namespace Cratis.Identity.Keys;
 /// </remarks>
 /// <param name="inner">The wrapped <see cref="IKeyManager"/>.</param>
 /// <param name="keys">The <see cref="SecretStoreKeys"/>.</param>
-public class SecretStoreKeyManager(IKeyManager inner, SecretStoreKeys keys) : IKeyManager
+internal class SecretStoreKeyManager(IKeyManager inner, SecretStoreKeys keys) : IKeyManager
 {
     /// <inheritdoc/>
     public IKey CreateNewKey(DateTimeOffset activationDate, DateTimeOffset expirationDate) => inner.CreateNewKey(activationDate, expirationDate);

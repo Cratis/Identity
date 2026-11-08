@@ -5,10 +5,8 @@ using System.Security.Claims;
 using Cratis.Arc.Queries.ModelBound;
 using Cratis.Chronicle.ReadModels;
 using Cratis.Identity.Accounts.Linking;
-using Cratis.Identity.Configuration;
 using Cratis.Identity.Contracts.Accounts;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.Accounts;
 
@@ -20,22 +18,17 @@ namespace Cratis.Identity.Accounts;
 /// <param name="LinkedAt">The confirmation time, absent before confirmation.</param>
 /// <param name="State">The proposal or confirmed-link state.</param>
 [ReadModel]
-public record LinkedAccountKeys(LinkId LinkId, ConnectionId ConnectionId, UpstreamIssuer IdpIssuer, Login? DisplayIdentifier, DateTimeOffset? LinkedAt, string State = "confirmed")
+internal record LinkedAccountKeys(LinkId LinkId, ConnectionId ConnectionId, UpstreamIssuer IdpIssuer, Login? DisplayIdentifier, DateTimeOffset? LinkedAt, string State = "confirmed")
 {
     /// <summary>Gets only active keys belonging to the authenticated account, never a supplied target subject.</summary>
     /// <param name="context">The authenticated request.</param>
-    /// <param name="readModels">The passive account fold.</param>
-    /// <param name="options">The explicit account experiment switch.</param>
+    /// <param name="readModels">The separate pending-proposal read model.</param>
+    /// <param name="accounts">The canonical account reader.</param>
     /// <returns>The current account's linked keys.</returns>
-    /// <exception cref="AccountOperationRefused">The experiment or authenticated account is unavailable.</exception>
+    /// <exception cref="AccountOperationRefused">The authenticated account is unavailable.</exception>
     [Authorize]
-    public static async Task<IEnumerable<LinkedAccountKeys>> ForCurrentAccount(IHttpContextAccessor context, IReadModels readModels, IOptions<IdentityOptions> options)
+    public static async Task<IEnumerable<LinkedAccountKeys>> ForCurrentAccount(IHttpContextAccessor context, IReadModels readModels, AccountReader accounts)
     {
-        if (!options.Value.Accounts.EventSourced)
-        {
-            throw new AccountOperationRefused("event_sourced_accounts_not_enabled");
-        }
-
         var principal = context.HttpContext?.User;
         if (principal?.Identity?.IsAuthenticated != true)
         {
@@ -47,10 +40,14 @@ public record LinkedAccountKeys(LinkId LinkId, ConnectionId ConnectionId, Upstre
             return [];
         }
 
-        var state = await readModels.GetInstanceById<AccountLinkState>(new ReadModelKey(account!.Value));
-        UpstreamKeyLinking.RequireActive(state);
-        var links = state.Links.Values.Select(link => new LinkedAccountKeys(link.LinkId, link.ConnectionId, link.IdpIssuer, state.Logins.GetValueOrDefault(link.LinkId.Value), link.LinkedAt));
-        var proposals = state.Proposals.Values.Where(proposal => !proposal.Terminal)
+        var owner = await accounts.FindActive(account!) ?? throw new AccountOperationRefused("account_not_active");
+
+        var links = owner.LinkedUpstreamKeys.Select(link => new LinkedAccountKeys(link.LinkId, link.ConnectionId, link.IdpIssuer, link.Login, link.LinkedAt));
+
+        // The S2 linking fold remains an explicit pending-proposal source only. Confirmed key
+        // identity, profile and lifecycle all come from the canonical Account projection.
+        var pending = await readModels.GetInstanceById<AccountLinkState>(new ReadModelKey(account!.Value));
+        var proposals = (pending?.Proposals.Values ?? []).Where(proposal => !proposal.Terminal)
             .Select(proposal => new LinkedAccountKeys(new(proposal.Id.Value), proposal.Connection, proposal.Issuer, null, null, proposal.State));
         return links.Concat(proposals).ToArray();
     }

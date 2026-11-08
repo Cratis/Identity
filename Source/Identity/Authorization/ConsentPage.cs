@@ -10,7 +10,7 @@ namespace Cratis.Identity.Authorization;
 /// <summary>
 /// Renders the consent page as self-contained HTML with no scripts.
 /// </summary>
-public static class ConsentPage
+internal static class ConsentPage
 {
     const string Style =
         "body{font-family:system-ui,sans-serif;max-width:36rem;margin:3rem auto;padding:0 1rem;color:#1b1b1f;line-height:1.5}" +
@@ -31,7 +31,7 @@ public static class ConsentPage
             .Append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><meta name=\"referrer\" content=\"no-referrer\">")
             .Append("<title>Authorize ").Append(E(consent.ClientName)).Append(" - Cratis</title><style>").Append(Style).Append("</style></head><body>")
             .Append("<h1>Authorize ").Append(E(consent.ClientName)).Append("?</h1>")
-            .Append("<p>Signed in as <strong>").Append(E(consent.Account.GitHubLogin)).Append("</strong> (GitHub).</p>")
+            .Append("<p>Signed in as <strong>").Append(E(consent.Account.GitHubLogin.Value)).Append("</strong> (GitHub).</p>")
             .Append("<p class=\"warn\">Only continue if you started this sign-in yourself. The client identifies itself as <code>")
             .Append(E(consent.ClientId)).Append("</code>; Identity cannot prove which program is asking.</p>")
             .Append("<dl><dt>Access will be sent to</dt><dd>").Append(E(DescribeRedirect(consent.RedirectUri))).Append("</dd>")

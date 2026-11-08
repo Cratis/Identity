@@ -17,7 +17,7 @@ namespace Cratis.Identity.Keys;
 /// <see cref="KeyEligibility"/> selected to the front.
 /// </remarks>
 /// <param name="keys">The <see cref="SecretStoreKeys"/>.</param>
-public class ConfigureServerKeys(SecretStoreKeys keys) : IConfigureOptions<OpenIddictServerOptions>, IPostConfigureOptions<OpenIddictServerOptions>
+internal class ConfigureServerKeys(SecretStoreKeys keys) : IConfigureOptions<OpenIddictServerOptions>, IPostConfigureOptions<OpenIddictServerOptions>
 {
     /// <inheritdoc/>
     public void Configure(OpenIddictServerOptions options)

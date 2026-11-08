@@ -7,4 +7,4 @@ namespace Cratis.Identity.Tenants;
 /// Represents a successful lookup, including when no tenants are selectable.
 /// </summary>
 /// <param name="Tenants">The selectable tenants.</param>
-public sealed record TenantsListed(IEnumerable<SelectableTenant> Tenants) : TenantLookup;
+internal sealed record TenantsListed(IEnumerable<SelectableTenant> Tenants) : TenantLookup;

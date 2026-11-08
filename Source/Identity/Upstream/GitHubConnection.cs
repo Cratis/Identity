@@ -12,8 +12,14 @@ namespace Cratis.Identity.Upstream;
 /// <summary>The GitHub immutable-id adapter; login is never an identity key.</summary>
 /// <param name="connectionId">The configured connection.</param>
 /// <param name="time">The trusted clock.</param>
-public class GitHubConnection(ConnectionId connectionId, TimeProvider time)
+internal class GitHubConnection(ConnectionId connectionId, TimeProvider time)
 {
+    /// <summary>The exact upstream issuer/authority of GitHub sign-ins.</summary>
+    public const string Issuer = "https://github.com";
+
+    /// <summary>The stable connection identity for the configured GitHub provider.</summary>
+    public static readonly ConnectionId FixedConnectionId = new(new Guid(0xc36fad37, 0x7df9, 0x4bad, 0x9b, 0x3c, 0x46, 0xc1, 0x66, 0x57, 0x20, 0x21));
+
     /// <summary>Binds a verified provider response to the existing account session's link ceremony.</summary>
     /// <param name="user">The verified provider response.</param>
     /// <param name="session">The authenticated existing-account session.</param>
@@ -37,6 +43,6 @@ public class GitHubConnection(ConnectionId connectionId, TimeProvider time)
         {
             throw new AccountOperationRefused("invalid_upstream_subject");
         }
-        return new(connectionId, "https://github.com", user.Id.ToString(CultureInfo.InvariantCulture), time.GetUtcNow(), operationId);
+        return new(connectionId, Issuer, user.Id.ToString(CultureInfo.InvariantCulture), time.GetUtcNow(), operationId);
     }
 }

@@ -14,7 +14,7 @@ public class a_secret_store_directory : Specification
     protected FixedTimeProvider _time;
     protected SecretStoreOptions _options;
     protected Exception _exception;
-    protected SecretStoreKeys _keys;
+    private protected SecretStoreKeys _keys;
     protected StoreFiles _files;
 
     void Establish()

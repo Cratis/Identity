@@ -3,8 +3,8 @@
 ```text
 Spec id: arc-verified-caller
 Version: 1
-Status: Locked
-Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
+Status: Signed off
+Signed off: 2026-11-05 by woksin, https://github.com/Cratis/Identity/issues/14; owner confirmation pending
 Issue: https://github.com/Cratis/Arc/issues/3701
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -139,4 +139,4 @@ Machine-readable group: [principals and workload cache](../../Source/Identity.Sp
 
 ## Versioning
 
-A Locked spec MUST change only through a new version file. Consumers MUST reject unknown record profiles, never infer compatibility from field names, and retain the superseded document and vectors. New versions MUST identify their predecessor and migration requirements. A new verifier MUST preserve authenticated actors, represented persons, and declared clients as distinct concepts.
+This spec MUST change only through a new version file. Consumers MUST reject unknown record profiles, never infer compatibility from field names, and retain the superseded document and vectors. New versions MUST identify their predecessor and migration requirements. A new verifier MUST preserve authenticated actors, represented persons, and declared clients as distinct concepts.

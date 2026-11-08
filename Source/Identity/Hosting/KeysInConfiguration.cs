@@ -8,5 +8,5 @@ namespace Cratis.Identity.Hosting;
 /// live in the secret store only; silently ignoring a stale setting would leave the operator believing a key is in use.
 /// </summary>
 /// <param name="setting">The configuration key that was found.</param>
-public class KeysInConfiguration(string setting)
+internal class KeysInConfiguration(string setting)
     : Exception($"{setting} is no longer supported. Keys are read from the secret store directory Identity:SecretStore:Path (signing.<name>.crt/.key, encryption.<name>.crt/.key, data-protection.<name>.xml).");

@@ -8,4 +8,4 @@ namespace Cratis.Identity.Tenants;
 /// </summary>
 /// <param name="Id">The tenant identifier written to the <c language="text">tid</c> claim.</param>
 /// <param name="Name">The human-readable tenant name.</param>
-public record SelectableTenant(string Id, string Name);
+internal record SelectableTenant(string Id, string Name);

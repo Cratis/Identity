@@ -16,7 +16,7 @@ namespace Cratis.Identity.Authorization;
 /// survives until a key is provisioned. JWKS keeps publishing the public keys that are still valid.
 /// </remarks>
 /// <param name="keys">The <see cref="SecretStoreKeys"/>.</param>
-public class RefuseIssuanceWithoutUsableKey(SecretStoreKeys keys) : IOpenIddictServerHandler<ProcessSignInContext>
+internal class RefuseIssuanceWithoutUsableKey(SecretStoreKeys keys) : IOpenIddictServerHandler<ProcessSignInContext>
 {
     /// <summary>
     /// Gets the descriptor. It runs before any other sign-in handler.

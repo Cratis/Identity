@@ -3,8 +3,8 @@
 ```text
 Spec id: arc-scope-catalog
 Version: 1
-Status: Locked
-Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
+Status: Signed off
+Signed off: 2026-11-05 by woksin, https://github.com/Cratis/Identity/issues/14; owner confirmation pending
 Issue: https://github.com/Cratis/Arc/issues/3700
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -38,6 +38,8 @@ All URLs in this table are test fixtures, not production endpoints. Names are de
 | Generated Atlas app | `https://atlas.example.test/mcp` | `stage-atlas-api` | `stage-atlas:` | `stage-atlas:read`, `stage-atlas:write` |
 
 The scope catalog MUST map each registered RFC 8707 resource indicator URL to exactly one audience slug, and each audience slug to exactly one resource indicator URL. This one-to-one mapping MUST determine the token's `aud`: for example, `https://direct.example.test/mcp` maps to `direct-api`. `aud` MUST NOT be a URL. Each deployment MUST register its actual absolute resource indicator and audience slug. Each generated Stage app MUST have an application-specific registration and scope prefix; it MUST NOT reuse another app's authority by using a shared `stage:` scope. A token MUST target one resource. Verifiers MUST reject audiences not registered for the receiving resource and MUST NOT use URL similarity, hostname suffixes, or scope prefixes as audience verification.
+
+N1 does not prescribe a `/v1` resource. The reference host additionally registers `https://cratis.direct/v1` with the distinct audience `direct-v1` and its existing `direct:read`, `direct:content.write` and `direct:work` scopes. Its `direct-api` entry binds `https://cratis.direct/mcp` to `direct:mcp:read`, `direct:mcp:content.write` and `direct:mcp:work`, preserving N1's MCP audience. These runtime scope sets differ from N1's stable scope set above. API and MCP have distinct scope sets; clients requesting MCP must select its indicator and scopes. `GrantPolicy` resolves explicit indicators before filtering scopes. Changing configuration does not exchange existing grants or imply authority across resources. The local Compose tenant fixture is configured separately on both entries.
 
 The catalog MUST map every exposed operation to its required scopes. `read` MUST cover only operations reviewed as non-mutating; `write` MUST cover only explicitly exposed mutations. New operations MUST remain unexposed until explicitly allowlisted. A scope name MUST NOT expose a new command automatically. `write` MUST NOT imply `read` unless an explicit reviewed catalog mapping says so; this specification instead uses bundles containing both.
 
@@ -78,4 +80,4 @@ Decided in Identity #14 (2026-11-05) with the recommended answers from the sign-
 
 ## Versioning
 
-A Locked spec MUST change only through a new version file. Catalog and bundle revisions MUST preserve previously consented scope ceilings; any widening MUST require explicit renewed consent and product authorization. Unknown catalog versions MUST NOT result in permissive authorization.
+This spec MUST change only through a new version file. Catalog and bundle revisions MUST preserve previously consented scope ceilings; any widening MUST require explicit renewed consent and product authorization. Unknown catalog versions MUST NOT result in permissive authorization.

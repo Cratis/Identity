@@ -6,7 +6,7 @@ namespace Cratis.Identity.Keys;
 /// <summary>
 /// Reads the files of a mounted secret store directory.
 /// </summary>
-public static class SecretStoreDirectory
+internal static class SecretStoreDirectory
 {
     /// <summary>
     /// Reads the regular files directly in <paramref name="path"/>. Dot entries, such as the

@@ -9,7 +9,7 @@ namespace Cratis.Identity.Keys;
 /// <summary>
 /// Extension methods for serving the Data Protection key ring from the secret store.
 /// </summary>
-public static class SecretStoreKeyRingServiceCollectionExtensions
+internal static class SecretStoreKeyRingServiceCollectionExtensions
 {
     /// <summary>
     /// Uses the secret store as the read-only Data Protection key repository, and makes a reload invalidate the cached key ring.

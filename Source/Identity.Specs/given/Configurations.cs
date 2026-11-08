@@ -17,13 +17,15 @@ public static class Configurations
 
     public static IdentityOptions TwoResourceServers() => new()
     {
+        Accounts = new() { LookupKey = Convert.ToBase64String(new byte[32]) },
         Resources =
         [
             new ResourceServerOptions
             {
                 Audience = DirectAudience,
+                ReceivesUpstreamIdentity = true,
                 DisplayName = "Cratis Direct",
-                Indicators = [DirectMcp, DirectV1],
+                Indicators = [DirectMcp],
                 Scopes =
                 [
                     new ScopeOptions { Name = "direct:read", Description = "Read" },

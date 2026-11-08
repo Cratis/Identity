@@ -19,7 +19,7 @@ Legend: **PII** means the value type carries `[PII]`, so Chronicle crypto-shredd
 | Read model `AccountLinkState` | `Email` and `Name`; reducer-state members `Proposals` (holding `UpstreamSubject`), `Logins` and `Links` (holding `KeyHash`) | Values derive from PII events; the read model itself is not separately marked | `Source/Identity/Accounts/Linking/AccountLinkState.cs:26-41`, `LinkProposal.cs:17` |
 | Read model `UpstreamKeyLookup` | `LinkId` and an active flag per account | Pseudonymous ids only | `Source/Identity/Accounts/Lookup/UpstreamKeyLookupProjection.cs:14-23` |
 | Query `LinkedAccountKeys` | `Login` display identifier, read from `AccountLinkState` | Derived | `Source/Identity/Accounts/LinkedAccountKeys.cs:23,50` |
-| Mongo `AccountDocument` (GitHub sign-in accounts) | `github_id`, `github_login`, `name` | **Not PII-marked**; outside Chronicle crypto-shredding | `Source/Identity/Accounts/AccountDocument.cs:22-35`, `Accounts.cs:26-31` |
+| Legacy Mongo `accounts` collection | Former `github_id`, `github_login`, `name` documents | No code reads or writes it; the account store is event-sourced. `LegacyAccountStoreProbe` only guards against a non-empty collection | `Source/Identity/Operational/LegacyAccountStoreProbe.cs:16` |
 | Fence log, tombstones, outbox | Pseudonymous ids and sequences | Not personal data by design | identity-events-v1 §7; [storage note](../design/identity-package-and-storage-v1.md) §2 |
 | Backups, exports, consumer stores, logs | Anything the stores above held at copy time | Outside the workflow | identity-events-v1 §5 |
 
@@ -33,7 +33,7 @@ No erasure event, command or call to `PII.DeleteEncryptionKeyFor` exists in `Sou
 | Chronicle constraint index | **Unverified** | **Unverified** | n/a |
 | Read models | **PROPOSED:** rows removed or replaced; rebuilds must not restore plaintext | Pseudonymous `LinkId`s | Copies in backups |
 | Fence log and tombstone | Nothing; kept on purpose | Pseudonymous account id, fence ids, sequences, `AccountTombstoned` | n/a |
-| Mongo `AccountDocument` | **Implemented in this branch:** `IAccounts.Erase` deletes the `accounts` document (`github_id`, `github_login`, `name`) and writes an `erased_accounts` marker holding only the account id and `erased_at`; erasing twice or an unknown id succeeds. A later GitHub sign-in creates a new account. Not yet called by an erasure workflow | The marker (no personal data) | Logs: `GitHubSignInEventsLogging` writes the GitHub id and login to application logs, and log stores are outside the boundary; backups |
+| Legacy Mongo `accounts` collection | Nothing implemented here; account erasure goes through the `AccountErased` event workflow (section 3), which is PROPOSED | Any documents a deployment still holds; the guard refuses to start with them rather than erasing them | Logs: `GitHubSignInEventsLogging` writes the GitHub id and login to application logs, and log stores are outside the boundary; backups |
 | Backups, exports, consumer stores | n/a | All copies | Retention boundary and acknowledgements are an open decision |
 
 ## 3. Proposed workflow (PROPOSED, not implemented)
@@ -55,7 +55,7 @@ The fence log and the tombstone are kept so a replay or restore cannot re-enable
 - Who may request erasure, the response time, and whether a disabled or tombstoned account can be erased.
 - What Ante and other consumers must acknowledge, and whether `AccountErased` waits for it.
 - Whether one request covers every realm and namespace the person exists in, or one realm.
-- Whether the `AccountDocument` GitHub store stays in scope of this workflow.
+- Whether the legacy `accounts` collection needs any erasure handling beyond the startup guard.
 
 ## 5. Unverified: constraint index and a `[PII]` digest
 

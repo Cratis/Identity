@@ -19,6 +19,16 @@ public static class IdentityClaims
     public const string GitHubLogin = "github_login";
 
     /// <summary>
+    /// The exact upstream issuer/authority the person authenticated with.
+    /// </summary>
+    public const string Idp = "idp";
+
+    /// <summary>
+    /// The immutable upstream subject verified by the upstream issuer; not the realm subject.
+    /// </summary>
+    public const string IdpSub = "idp_sub";
+
+    /// <summary>
     /// The tenant the user selected when authorizing the client.
     /// </summary>
     public const string TenantId = "tid";
