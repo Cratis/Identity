@@ -13,7 +13,7 @@ public class when_starting_the_cratis_id_image
     public static bool ImageSmokeEnabled => Environment.GetEnvironmentVariable("CI") == "true" &&
         Environment.GetEnvironmentVariable("CRATIS_ID_IMAGE_SMOKE_ENABLED") == "true";
 
-    [Fact(SkipUnless = nameof(ImageSmokeEnabled))]
+    [Fact(SkipUnless = nameof(ImageSmokeEnabled), Skip = "The Cratis ID image smoke fixture is not provisioned.")]
     public async Task should_serve_liveness_and_reconciled_readiness()
     {
         var configurationDirectory = Environment.GetEnvironmentVariable("CRATIS_ID_IMAGE_SMOKE_CONFIGURATION_DIRECTORY");
