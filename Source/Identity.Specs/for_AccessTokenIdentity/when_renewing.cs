@@ -39,5 +39,7 @@ public class when_renewing : given.an_account_and_a_grant
     [Fact] void should_have_a_single_authentication_time() => _identity.FindAll(Claims.AuthenticationTime).Count().ShouldEqual(1);
     [Fact] void should_keep_the_assurance() => _identity.GetClaim(Claims.AuthenticationContextReference).ShouldEqual("basic");
     [Fact] void should_refresh_the_github_id_for_a_consumer() => _identity.GetClaim(IdentityClaims.GitHubId).ShouldEqual("999");
+    [Fact] void should_keep_the_preferred_username_current_for_a_consumer() => _identity.GetClaim(Claims.PreferredUsername).ShouldEqual("einari-renamed");
+    [Fact] void should_never_carry_the_display_name() => _identity.FindFirst(Claims.Name).ShouldBeNull();
     [Fact] void should_have_a_single_subject() => _identity.FindAll("sub").Count().ShouldEqual(1);
 }

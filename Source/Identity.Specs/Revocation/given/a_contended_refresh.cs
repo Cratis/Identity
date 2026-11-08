@@ -52,21 +52,36 @@ public class a_contended_refresh : for_RedeemRefreshTokenOnce.given.a_refresh_to
         };
     }
 
-    protected async Task<IResult> ReachTokenEndpoint()
+    protected Task<IResult> ReachTokenEndpoint() => ReachTokenEndpoint("1700000000", new Dictionary<string, bool> { ["audience"] = false });
+
+    /// <summary>
+    /// Reaches the token endpoint with a refresh grant carrying the given authentication time, bound to the given audiences (audience to whether the resource receives upstream identity).
+    /// </summary>
+    /// <param name="authTime">The grant's <c language="text">auth_time</c> claim, or <see langword="null"/> for none.</param>
+    /// <param name="audiences">The granted audiences and their upstream-identity flag.</param>
+    /// <returns>The endpoint's <see cref="IResult"/>.</returns>
+    protected async Task<IResult> ReachTokenEndpoint(string? authTime, IReadOnlyDictionary<string, bool> audiences)
     {
         var account = new Account(new(FenceDoubles.Subject), "Member", null, "42", "member", AccountStatus.Active, []);
         var principal = _validation.Principal.Clone()
             .SetClaim(Claims.Subject, FenceDoubles.Subject)
             .SetClaim(IdentityClaims.TenantId, "tenant")
-            .SetClaim(Claims.AuthenticationTime, "1700000000")
-            .SetResources("audience");
+            .SetClaim(Claims.AuthenticationTime, authTime)
+            .SetClaim(Claims.Name, "Member")
+            .SetClaim(Claims.PreferredUsername, "member")
+            .SetClaim(IdentityClaims.GitHubId, "42")
+            .SetResources([.. audiences.Keys]);
         var accounts = Substitute.For<IAccountReader>();
         accounts.FindActive(Arg.Any<AccountSubject>(), Arg.Any<CancellationToken>()).Returns(account);
-        var resource = new ResourceServer("audience", "Resource", [], []);
         var resources = Substitute.For<IResourceCatalog>();
-        resources.FindByAudience("audience").Returns(resource);
         var tenants = Substitute.For<ITenantDirectory>();
-        tenants.SelectableTenants(account, resource, Arg.Any<CancellationToken>()).Returns(new TenantsListed([new("tenant", "Tenant")]));
+        foreach (var (audience, receivesUpstreamIdentity) in audiences)
+        {
+            var resource = new ResourceServer(audience, "Resource", [], [], receivesUpstreamIdentity);
+            resources.FindByAudience(audience).Returns(resource);
+            tenants.SelectableTenants(account, resource, Arg.Any<CancellationToken>()).Returns(new TenantsListed([new("tenant", "Tenant")]));
+        }
+
         var authentication = Substitute.For<IAuthenticationService>();
         authentication.AuthenticateAsync(Arg.Any<HttpContext>(), Arg.Any<string>()).Returns(AuthenticateResult.Success(new(principal, "test")));
         await using var services = new ServiceCollection().AddSingleton(authentication).BuildServiceProvider();
