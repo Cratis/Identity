@@ -92,6 +92,11 @@ internal sealed class HostedSharedConfiguration(IConfiguration configuration, IH
                 yield return $"{prefix}:Tenants are Development fixtures and must not be configured for hosted-shared.";
             }
 
+            if (resource.Indicators.All(string.IsNullOrWhiteSpace))
+            {
+                yield return $"{prefix}:Indicators must contain a resource indicator for resource server \"{resource.Audience}\" ({prefix}:Indicators:0).";
+            }
+
             foreach (var failure in ValidateCallback(resource.TenantsCallback, prefix))
             {
                 yield return failure;
