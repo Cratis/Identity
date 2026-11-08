@@ -3,7 +3,7 @@
 
 namespace Cratis.Identity.ConsentFlow.Pending;
 
-/// <summary>An escaped requested scope name and description.</summary>
-/// <param name="Name">The escaped scope name.</param>
+/// <summary>A raw requested scope name and escaped description.</summary>
+/// <param name="Name">The raw scope name; hosts must render it as text, not HTML.</param>
 /// <param name="Description">The escaped catalogue description.</param>
 internal record ConsentScope(string Name, string Description);

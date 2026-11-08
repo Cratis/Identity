@@ -19,7 +19,8 @@ internal static class ConsentRequestTransitions
     }
 
     static bool SameRequest(ConsentRequest before, ConsentRequest after) =>
-        before.Id == after.Id && before.Binding == after.Binding && before.Deadline == after.Deadline && before.CreatedAt == after.CreatedAt && after.Revision == before.Revision + 1;
+        before.Id == after.Id && before.Binding == after.Binding && before.Deadline == after.Deadline && before.CreatedAt == after.CreatedAt &&
+        before.RecoveryEpoch == after.RecoveryEpoch && after.Revision == before.Revision + 1;
 
     static bool HasSelection(ConsentRequest before, ConsentRequest after) =>
         (after.State != ConsentRequestState.Decided || after.Selection is not null) &&

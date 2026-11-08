@@ -298,7 +298,7 @@ internal static class IdentityServiceCollectionExtensions
             .AddCore(options => options.UseConfigurationStores()
                 .SetDefaultAuthorizationEntity<OpenIddictMongoDbAuthorization>()
                 .SetDefaultTokenEntity<OpenIddictMongoDbToken>()
-                .ReplaceAuthorizationStore<OpenIddictMongoDbAuthorization, OpenIddictMongoDbAuthorizationStore<OpenIddictMongoDbAuthorization>>()
+                .ReplaceAuthorizationStore<OpenIddictMongoDbAuthorization, FencedAuthorizationStore>()
                 .ReplaceTokenStore<OpenIddictMongoDbToken, FencedTokenStore>())
             .AddServer(options =>
             {
@@ -332,6 +332,7 @@ internal static class IdentityServiceCollectionExtensions
 
                 options.AddEventHandler(RefuseIssuanceDuringRecovery.Descriptor)
                     .AddEventHandler(RefuseIssuanceDuringRecovery.ValidationDescriptor)
+                    .AddEventHandler(RefuseIssuanceDuringRecovery.EntryValidationDescriptor)
                     .AddEventHandler(RefuseIssuanceDuringRecovery.RequestDescriptor)
                     .AddEventHandler(RejectExpiredTokenEntries.Descriptor)
                     .AddEventHandler(RejectFencedGrants.Descriptor)

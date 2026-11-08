@@ -5,7 +5,7 @@ using System.Net;
 
 namespace Cratis.Identity.ConsentFlow.Pending;
 
-/// <summary>Renders only escaped text and identifiers, never HTML, logos or navigation URIs.</summary>
+/// <summary>Renders escaped display text and raw scope identifiers, never HTML, logos or navigation URIs.</summary>
 internal static class ConsentPresentation
 {
     /// <summary>Builds the safe package-owned display from validated server inputs.</summary>
@@ -24,6 +24,6 @@ internal static class ConsentPresentation
         proof);
 
     static ConsentScope Scope(string scope, ConsentEligibility eligible) => new(
-        WebUtility.HtmlEncode(scope),
+        scope,
         WebUtility.HtmlEncode(eligible.Grant.Resource.Scopes.FirstOrDefault(_ => _.Name == scope)?.Description ?? scope));
 }

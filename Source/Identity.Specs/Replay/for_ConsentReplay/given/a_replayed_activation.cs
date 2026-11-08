@@ -19,7 +19,7 @@ public class a_replayed_activation : Deciding.given.an_activation
         RestartReplay();
     }
 
-    internal void RestartReplay() => activation = new(store, evidence, fence, counting, clock, Options.Create(options));
+    internal void RestartReplay() => activation = new(store, evidence, fence, counting, clock, Options.Create(options), gate);
 
     internal async Task ReplayTwice()
     {

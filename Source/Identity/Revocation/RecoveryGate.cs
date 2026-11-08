@@ -9,6 +9,7 @@ namespace Cratis.Identity.Revocation;
 internal sealed class RecoveryGate
 {
     int _ready;
+    int _grantsRecovered;
     int _restored;
     long _epoch;
     long _closedAt = Stopwatch.GetTimestamp();
@@ -31,6 +32,7 @@ internal sealed class RecoveryGate
     /// <summary>Closes admission without erasing continuity evidence.</summary>
     internal void Close()
     {
+        Interlocked.Exchange(ref _grantsRecovered, 0);
         if (Interlocked.Exchange(ref _ready, 0) == 1)
         {
             Interlocked.Exchange(ref _closedAt, Stopwatch.GetTimestamp());
@@ -60,6 +62,27 @@ internal sealed class RecoveryGate
         }
     }
 
+    /// <summary>Requires complete continuity coverage before creating a capability.</summary>
+    /// <param name="restriction">The required restriction class.</param>
+    /// <exception cref="RevocationPending">Recovery is not ready.</exception>
+    internal void Demand(RestrictionClass restriction)
+    {
+        if (!Allows(restriction)) throw new RevocationPending();
+    }
+
+    /// <summary>Marks completion of independent grant replay in the observed epoch.</summary>
+    internal void MarkGrantsRecovered() => Interlocked.Exchange(ref _grantsRecovered, 1);
+
+    /// <summary>Reports coverage without opening admission for uncovered classes.</summary>
+    /// <param name="restriction">The required restriction class.</param>
+    /// <returns>Whether the class has complete recovery coverage.</returns>
+    internal bool Allows(RestrictionClass restriction) => Ready || (Volatile.Read(ref _grantsRecovered) != 0 && Covered(restriction));
+
+    /// <summary>Checks an operational capability against the independently observed epoch.</summary>
+    /// <param name="epoch">The capability's immutable creation epoch.</param>
+    /// <returns>Whether the capability is usable.</returns>
+    internal bool Accepts(long epoch) => Allows(RestrictionClass.Consent) && epoch >= 0 && epoch == Epoch;
+
     /// <summary>Opens admission only with complete restriction coverage.</summary>
     /// <param name="restrictionsProven">Whether all restriction classes were proven.</param>
     internal void Open(bool restrictionsProven)
@@ -73,4 +96,8 @@ internal sealed class RecoveryGate
 
         Volatile.Write(ref _ready, 1);
     }
+
+    static bool Covered(RestrictionClass restriction) => restriction is
+        RestrictionClass.Grants or RestrictionClass.Tokens or RestrictionClass.Authorizations or
+        RestrictionClass.Consent or RestrictionClass.Keys or RestrictionClass.ClientSecrets or RestrictionClass.LegacyBootstrap;
 }

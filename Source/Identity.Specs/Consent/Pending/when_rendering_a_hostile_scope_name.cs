@@ -14,6 +14,6 @@ public class when_rendering_a_hostile_scope_name : given.a_consent_interaction
         _rendered = ConsentPresentation.Create(hostile, available, token);
     }
 
-    [Fact] void should_escape_the_scope_name() => _rendered.Scopes.Single().Name.ShouldEqual("&lt;img/src=x/onerror=alert(1)&gt;");
+    [Fact] void should_preserve_the_raw_scope_name_for_the_host() => _rendered.Scopes.Single().Name.ShouldEqual(Hostile);
     [Fact] void should_not_leak_markup_in_the_scope_description() => _rendered.Scopes.Single().Description.ShouldEqual("&lt;img/src=x/onerror=alert(1)&gt;");
 }

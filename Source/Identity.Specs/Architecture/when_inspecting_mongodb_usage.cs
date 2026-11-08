@@ -26,6 +26,8 @@ public class when_inspecting_mongodb_usage : Specification
         type.Namespace == "Cratis.Identity.ConsentFlow.Operational" ||
         type.Namespace == "Cratis.Identity.Revocation.Operational" ||
         type == typeof(Authorization.FencedTokenStore) || type.DeclaringType == typeof(Authorization.FencedTokenStore) ||
+        type == typeof(Authorization.FencedAuthorizationStore) || type.DeclaringType == typeof(Authorization.FencedAuthorizationStore) ||
+        type == typeof(Authorization.RecoveryEpochStamp) || type.DeclaringType == typeof(Authorization.RecoveryEpochStamp) ||
         new[] { "Cratis.Identity.Operational", "Cratis.Identity.Storage", "Cratis.Identity.Keys" }.Any(prefix => type.Namespace?.StartsWith(prefix, StringComparison.Ordinal) == true) ||
         type == typeof(IdentityServiceCollectionExtensions) || type == typeof(MongoClientFactory) || type.DeclaringType == typeof(IdentityServiceCollectionExtensions);
 

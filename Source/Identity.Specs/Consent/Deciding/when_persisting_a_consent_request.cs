@@ -15,6 +15,8 @@ public class when_persisting_a_consent_request : given.an_activation
     BsonDocument _activeFilter;
     BsonDocument _replacement;
     ConsentRequest _roundTrip;
+    ConsentRequest _legacy;
+    bool _epochChange;
     bool _updated;
     bool _invalidTransition;
     IMongoCollection<BsonDocument> _collection;
@@ -29,18 +31,24 @@ public class when_persisting_a_consent_request : given.an_activation
         _collection.WithReadPreference(Arg.Any<ReadPreference>()).Returns(_collection);
         _collection.InsertOneAsync(Arg.Do<BsonDocument>(_ => _inserted = _), Arg.Any<InsertOneOptions>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
         var mongo = new MongoConsentRequestStore(database);
+        request = request with { RecoveryEpoch = 7 };
         await mongo.Create(request, CancellationToken.None);
         var cursor = Substitute.For<IAsyncCursor<BsonDocument>>();
         cursor.Current.Returns([_inserted]);
         cursor.MoveNextAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult(true), Task.FromResult(false));
         _collection.FindAsync(Arg.Any<FilterDefinition<BsonDocument>>(), Arg.Any<FindOptions<BsonDocument, BsonDocument>>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult(cursor));
         _roundTrip = await mongo.Read(request.Id, CancellationToken.None);
+        _inserted.Remove("RecoveryEpoch");
+        cursor.MoveNextAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult(true), Task.FromResult(false));
+        _legacy = await mongo.Read(request.Id, CancellationToken.None);
+        _inserted["RecoveryEpoch"] = 7L;
         _collection.ReplaceOneAsync(Arg.Do<FilterDefinition<BsonDocument>>(CaptureFilter),
             Arg.Do<BsonDocument>(_ => _replacement ??= _),
             Arg.Any<ReplaceOptions>(),
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<ReplaceOneResult>(new ReplaceOneResult.Acknowledged(1, 1, null)));
         _updated = await mongo.CompareExchange(_roundTrip, _roundTrip with { State = ConsentRequestState.Decided, Revision = 1, Selection = new(binding.Tenant, binding.Scopes) }, clock.Now, CancellationToken.None);
+        _epochChange = await mongo.CompareExchange(_roundTrip, _roundTrip with { State = ConsentRequestState.Decided, Revision = 1, Selection = new(binding.Tenant, binding.Scopes), RecoveryEpoch = 8 }, clock.Now, CancellationToken.None);
         _invalidTransition = await mongo.CompareExchange(_roundTrip, _roundTrip with { State = ConsentRequestState.Active, Revision = 1, AuthorizationId = "injected" }, clock.Now, CancellationToken.None);
         var evidenced = _roundTrip with { State = ConsentRequestState.EvidenceRecorded, Revision = 2 };
         var active = evidenced with { State = ConsentRequestState.Active, Revision = 3, AuthorizationId = "prepared" };
@@ -63,6 +71,10 @@ public class when_persisting_a_consent_request : given.an_activation
     [Fact] void should_guard_the_pending_decision_with_database_execution_time() => _filter["$expr"]["$gt"].AsBsonArray.ShouldEqual(new BsonArray { "$Deadline", "$$NOW" });
     [Fact] void should_persist_the_immutable_creation_time() => _inserted["CreatedAt"].ToUniversalTime().ShouldEqual(request.CreatedAt.UtcDateTime);
     [Fact] void should_persist_the_selection() => _replacement["Selection"]["Tenant"].AsString.ShouldEqual(binding.Tenant);
+    [Fact] void should_persist_the_creation_epoch_in_the_insert() => _inserted["RecoveryEpoch"].AsInt64.ShouldEqual(7);
+    [Fact] void should_compare_the_observed_epoch() => _filter["RecoveryEpoch"].AsInt64.ShouldEqual(7);
+    [Fact] void should_read_a_legacy_row_as_epoch_zero() => _legacy.RecoveryEpoch.ShouldEqual(0);
+    [Fact] void should_reject_changing_the_creation_epoch() => _epochChange.ShouldBeFalse();
     [Fact] void should_compare_the_revision() => _filter["Revision"].AsInt64.ShouldEqual(0);
     [Fact] void should_compare_the_observed_state() => _filter["State"].AsString.ShouldEqual(nameof(ConsentRequestState.Pending));
     [Fact] void should_compare_the_identity() => _filter["_id"].AsString.ShouldEqual(request.Id.Value.ToString("D"));

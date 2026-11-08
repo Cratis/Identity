@@ -14,6 +14,7 @@ namespace Cratis.Identity.ConsentFlow;
 /// <param name="PurgeAt">The terminal-row retention deadline; never set on unresolved requests.</param>
 /// <param name="CreatedAt">The immutable creation time from the server clock.</param>
 /// <param name="Selection">The validated approval, retained through recovery.</param>
+/// <param name="RecoveryEpoch">The immutable creation epoch; legacy rows belong to epoch zero.</param>
 internal record ConsentRequest(
     ConsentRequestId Id,
     ConsentBinding Binding,
@@ -24,4 +25,5 @@ internal record ConsentRequest(
     bool CodeClaimed = false,
     DateTimeOffset? PurgeAt = null,
     DateTimeOffset CreatedAt = default,
-    ConsentSelection? Selection = null);
+    ConsentSelection? Selection = null,
+    long RecoveryEpoch = 0);

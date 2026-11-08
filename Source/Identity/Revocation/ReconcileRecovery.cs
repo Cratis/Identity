@@ -140,6 +140,7 @@ internal sealed class ReconcileRecovery(
 
         session.Reconciled = true;
         gate.Open(final.ClearedEpoch == final.Epoch);
+        gate.MarkGrantsRecovered();
     }
 
     async Task<RecoveryCustody> ReadCustody(CancellationToken cancellationToken)
@@ -329,6 +330,7 @@ internal sealed class ReconcileRecovery(
 
         session.Reconciled = true;
         gate.Open(true);
+        gate.MarkGrantsRecovered();
     }
 
     async Task<bool> CompletePrefix(long appliedThrough, CancellationToken cancellationToken) =>

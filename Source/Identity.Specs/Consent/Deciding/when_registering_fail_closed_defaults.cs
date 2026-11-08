@@ -19,6 +19,7 @@ public class when_registering_fail_closed_defaults : given.an_activation
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton(gate);
         services.AddSingleton<IConsentRequestStore>(store);
         services.AddSingleton<TimeProvider>(clock);
         services.AddConsentActivation(new ConfigurationBuilder().Build());
