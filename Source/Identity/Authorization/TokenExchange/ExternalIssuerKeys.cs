@@ -32,6 +32,18 @@ internal class ExternalIssuerKeys(IHttpClientFactory httpClients, TimeProvider t
 
     readonly ConcurrentDictionary<string, IssuerKeys> _issuers = new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Creates a handler that never follows redirects, never keeps cookies and uses default TLS validation.
+    /// </summary>
+    /// <returns>The restricted handler.</returns>
+    public static SocketsHttpHandler CreateHandler() => new()
+    {
+        AllowAutoRedirect = false,
+        UseCookies = false,
+        ConnectTimeout = TimeSpan.FromSeconds(3),
+        PooledConnectionLifetime = TimeSpan.FromMinutes(2)
+    };
+
     /// <summary>Checks whether the cache holds the named key.</summary>
     /// <param name="cached">The cached keys.</param>
     /// <param name="keyId">The key id, if any.</param>

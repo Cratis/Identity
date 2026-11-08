@@ -2,9 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Accounts;
+using Cratis.Identity.Accounts.Lookup;
 using Cratis.Identity.Authorization;
+using Cratis.Identity.Authorization.TokenExchange;
 using Cratis.Identity.Contracts;
 using Cratis.Identity.Contracts.Accounts;
+using Cratis.Identity.given;
 using Cratis.Identity.Resources;
 using Cratis.Identity.Revocation;
 using Cratis.Identity.Tenants;
@@ -87,9 +90,19 @@ public class a_contended_refresh : for_RedeemRefreshTokenOnce.given.a_refresh_to
         await using var services = new ServiceCollection().AddSingleton(authentication).BuildServiceProvider();
         var http = new DefaultHttpContext { RequestServices = services };
         http.Features.Set(new OpenIddictServerAspNetCoreFeature { Transaction = _context.Transaction });
-        var endpoint = new TokenEndpoint(accounts, Substitute.For<IGrantPolicy>(), resources, tenants, NullLogger<TokenEndpoint>.Instance, _authority);
+        var endpoint = new TokenEndpoint(accounts, Substitute.For<IGrantPolicy>(), resources, tenants, NullLogger<TokenEndpoint>.Instance, _authority, ExchangeGrant());
         return await endpoint.Handle(http);
     }
+
+    static TokenExchangeGrant ExchangeGrant() => new(
+        Substitute.For<ISubjectTokenValidator>(),
+        new(TimeProvider.System),
+        Substitute.For<IUpstreamKeyResolver>(),
+        Substitute.For<IAccountReader>(),
+        Substitute.For<IResourceCatalog>(),
+        Substitute.For<ITenantDirectory>(),
+        Configurations.WithTokenExchange().AsOptions(),
+        NullLogger<TokenExchangeGrant>.Instance);
 
     async Task<bool> CompleteRedemption()
     {

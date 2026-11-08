@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Accounts;
+using Cratis.Identity.Authorization.TokenExchange;
 using Cratis.Identity.Contracts;
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Resources;
@@ -27,13 +28,15 @@ namespace Cratis.Identity.Authorization;
 /// <param name="tenants">The <see cref="ITenantDirectory"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
 /// <param name="fences">The primary grant authority.</param>
+/// <param name="exchange">The RFC 8693 <see cref="TokenExchangeGrant"/>.</param>
 internal class TokenEndpoint(
     IAccountReader accounts,
     IGrantPolicy grantPolicy,
     IResourceCatalog resources,
     ITenantDirectory tenants,
     ILogger<TokenEndpoint> logger,
-    IFenceStore fences)
+    IFenceStore fences,
+    TokenExchangeGrant exchange)
 {
     /// <summary>
     /// Handles a token request.
@@ -44,6 +47,11 @@ internal class TokenEndpoint(
     public async Task<IResult> Handle(HttpContext context)
     {
         var request = context.GetOpenIddictServerRequest() ?? throw new OpenIddictRequestMissing(context.Request.Path);
+        if (string.Equals(request.GrantType, TokenExchangeConstants.GrantType, StringComparison.Ordinal))
+        {
+            return await exchange.Handle(request, context.RequestAborted);
+        }
+
         if (!request.IsAuthorizationCodeGrantType() && !request.IsRefreshTokenGrantType())
         {
             return OAuthResults.Error(Errors.UnsupportedGrantType, "The grant type is not supported.");
