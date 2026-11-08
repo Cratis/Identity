@@ -67,6 +67,10 @@ internal static class IdentityServiceCollectionExtensions
             throw new OptionsValidationException(Options.DefaultName, typeof(IdentityOptions), hostedValidation.Failures);
         }
 
+        // Entirely unconfigured optional resources are disabled once, here, so every consumer and every reload sees the same catalog.
+        var disabledAudiences = new HostedSharedConfiguration(configuration, environment).DisabledAudiences(startupOptions);
+        HostedSharedConfiguration.Remove(startupOptions, disabledAudiences);
+
         if (!environment.IsDevelopment() && !startupOptions.SecretStore.IsConfigured)
         {
             throw new SecretStoreNotConfigured();
@@ -77,7 +81,12 @@ internal static class IdentityServiceCollectionExtensions
             throw new ChronicleNotConfigured();
         }
 
-        services.AddOptions<IdentityOptions>().Bind(section).ValidateOnStart();
+        services.AddOptions<IdentityOptions>().Bind(section).PostConfigure(options => HostedSharedConfiguration.Remove(options, disabledAudiences)).ValidateOnStart();
+        if (disabledAudiences.Count > 0)
+        {
+            services.AddHostedService(provider => new DisabledResourcesNotice(provider.GetRequiredService<ILogger<DisabledResourcesNotice>>(), disabledAudiences));
+        }
+
         services.AddSingleton<IValidateOptions<IdentityOptions>, IdentityOptionsValidation>();
         services.AddSingleton(TimeProvider.System);
 

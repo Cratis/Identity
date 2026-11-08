@@ -16,6 +16,10 @@ public class a_hosted_studio_configuration : Specification
 
     protected virtual string? StudioIndicator => null;
 
+    protected virtual string? StudioUrl => "https://studio.example/tenants";
+
+    protected virtual string? StudioSecret => new('y', 32);
+
     void Establish()
     {
         var settings = new Dictionary<string, string?>
@@ -37,8 +41,8 @@ public class a_hosted_studio_configuration : Specification
             ["Identity:Resources:0:TenantsCallback:Secret"] = new string('x', 32),
             ["Identity:Resources:1:TenantsCallback:Url"] = "https://direct.example/tenants",
             ["Identity:Resources:1:TenantsCallback:Secret"] = new string('x', 32),
-            ["Identity:Resources:2:TenantsCallback:Url"] = "https://studio.example/tenants",
-            ["Identity:Resources:2:TenantsCallback:Secret"] = new string('y', 32)
+            ["Identity:Resources:2:TenantsCallback:Url"] = StudioUrl,
+            ["Identity:Resources:2:TenantsCallback:Secret"] = StudioSecret
         };
         if (StudioIndicator is not null)
         {
@@ -49,10 +53,16 @@ public class a_hosted_studio_configuration : Specification
             .AddInMemoryCollection(settings).Build();
     }
 
-    protected ValidateOptionsResult Validate()
+    protected IdentityOptions Bound()
     {
         var options = new IdentityOptions();
         _configuration.GetSection("Identity").Bind(options);
+        return options;
+    }
+
+    protected ValidateOptionsResult Validate()
+    {
+        var options = Bound();
         return new HostedSharedConfiguration(_configuration, new HostingEnvironment { EnvironmentName = Environments.Production }).Validate(null, options);
     }
 }

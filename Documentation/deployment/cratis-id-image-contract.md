@@ -111,17 +111,21 @@ The shipped catalog has two Direct entries and the Studio entry:
 | `https://cratis.direct/mcp` | `direct-api` | `direct:mcp:read`, `direct:mcp:content.write`, `direct:mcp:work` |
 | Supplied by the environment (see below) | `studio-mcp` | `studio:mcp:read`, `studio:mcp:write` |
 
-Resources have no fixed tenants. **Direct and Studio must each expose a tenants callback with a shared secret of at least 32 characters**; authentication to the callback does not replace the product's live membership checks. Direct must configure a callback for both resource entries, even when both use the same product endpoint. Product owners supply callback URLs and secrets. The image does not implement product callbacks.
+Resources have no fixed tenants. **Direct must expose a tenants callback with a shared secret of at least 32 characters, and so must Studio when it is enabled**; authentication to the callback does not replace the product's live membership checks. Direct must configure a callback for both resource entries, even when both use the same product endpoint. Product owners supply callback URLs and secrets. The image does not implement product callbacks.
 
-**Studio (index `2`).** The image ships the audience, display name and scopes but an **empty indicator list**, because staging and production Studio hosts differ and a hostname is never hardcoded in the image. Each deployment must set:
+**Studio (index `2`) is optional.** The image ships the audience, display name and scopes but an **empty indicator list**, because staging and production Studio hosts differ and a hostname is never hardcoded in the image. The image starts without Studio:
 
-| Setting | Requirement |
+- **Entirely unconfigured** (no indicator, no callback URL and no callback secret): `studio-mcp` is **disabled**. It is removed from the effective resource catalog, so a token or authorization request for that audience is refused like any unknown resource and the consent and discovery surfaces do not advertise it. The host logs one value-free line at startup ("Optional resource studio-mcp is not configured and is disabled"). Options reload cannot enable it; restart the host after configuring it.
+- **Partially configured** (any of the three present, not all valid): the host refuses to start, naming `studio-mcp`.
+- **Fully configured:** `studio-mcp` is served with these settings.
+
+| Setting | Requirement when Studio is enabled |
 | --- | --- |
-| `Identity__Resources__2__Indicators__0` | **Required.** The HTTPS resource indicator of that environment's Studio MCP endpoint. Without it the host refuses to start, naming `studio-mcp`. |
-| `Identity__Resources__2__TenantsCallback__Url` | Required. HTTPS, no user info or fragment. |
-| `Identity__Resources__2__TenantsCallback__Secret` | Required. At least 32 characters; secret-bearing, never logged. |
+| `Identity__Resources__2__Indicators__0` | The HTTPS resource indicator of that environment's Studio MCP endpoint. |
+| `Identity__Resources__2__TenantsCallback__Url` | HTTPS, no user info or fragment. |
+| `Identity__Resources__2__TenantsCallback__Secret` | At least 32 characters; secret-bearing, never logged. |
 
-The callback follows the same contract as the Direct callbacks above; tenant ids it returns must be lowercase. There is no placeholder indicator in this image.
+Only `studio-mcp` is optional; the Direct entries stay mandatory. For hosted-shared, **every** resource indicator, Direct's included, must be an absolute HTTPS URI; the refusal names the resource, never the value. The callback follows the same contract as the Direct callbacks above; tenant ids it returns must be lowercase. There is no placeholder indicator in this image.
 
 Client and scope materialization reads configuration at each startup. The configured clients retain stable client ids; restarting reconstructs the same catalog instead of issuing registration commands or accumulating registrations. The CLI descriptor remains public-client/PKCE constrained. The host does not depend on the registration-command work in #39 and does not bootstrap an administrator.
 
