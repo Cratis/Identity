@@ -21,6 +21,7 @@ public class when_github_sign_in_is_cancelled(IdentityHost host) : IAsyncLifetim
     {
         await using var factory = host.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
             services.PostConfigure<UpstreamLoginOptions>(options => options.Scheme = IdentitySchemes.GitHub)));
+        await IdentityHost.WaitForRecovery(factory.Services);
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false,
