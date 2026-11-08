@@ -23,4 +23,13 @@ public interface IAccounts
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
     /// <returns>The <see cref="Account"/>, or <see langword="null"/> if it does not exist.</returns>
     Task<Account?> FindById(string id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Erases the personal fields of an account: removes its stored document and leaves only an erasure marker.
+    /// Erasing an account that is already erased or unknown succeeds without effect.
+    /// </summary>
+    /// <param name="id">The account identifier.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    Task Erase(string id, CancellationToken cancellationToken = default);
 }

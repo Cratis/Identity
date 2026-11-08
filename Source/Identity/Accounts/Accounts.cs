@@ -17,7 +17,13 @@ public class Accounts(IMongoDatabase database, TimeProvider timeProvider) : IAcc
     /// </summary>
     public const string CollectionName = "accounts";
 
+    /// <summary>
+    /// The name of the collection erasure markers are stored in.
+    /// </summary>
+    public const string ErasedCollectionName = "erased_accounts";
+
     readonly IMongoCollection<AccountDocument> _collection = database.GetCollection<AccountDocument>(CollectionName);
+    readonly IMongoCollection<ErasedAccountDocument> _erased = database.GetCollection<ErasedAccountDocument>(ErasedCollectionName);
 
     /// <inheritdoc/>
     public async Task<Account> RecordGitHubSignIn(GitHubUser user, CancellationToken cancellationToken = default)
@@ -46,5 +52,19 @@ public class Accounts(IMongoDatabase database, TimeProvider timeProvider) : IAcc
     {
         var document = await _collection.Find(_ => _.Id == id).FirstOrDefaultAsync(cancellationToken);
         return document?.ToAccount();
+    }
+
+    /// <inheritdoc/>
+    public async Task Erase(string id, CancellationToken cancellationToken = default)
+    {
+        // Marker first: a failure between the two steps leaves the document in place and the retry finishes the job.
+        // Both steps are no-ops the second time, so erasing an erased or unknown account succeeds.
+        await _erased.UpdateOneAsync(
+            Builders<ErasedAccountDocument>.Filter.Eq(_ => _.Id, id),
+            Builders<ErasedAccountDocument>.Update.SetOnInsert(_ => _.ErasedAt, timeProvider.GetUtcNow()),
+            new UpdateOptions { IsUpsert = true },
+            cancellationToken);
+
+        await _collection.DeleteOneAsync(Builders<AccountDocument>.Filter.Eq(_ => _.Id, id), cancellationToken);
     }
 }

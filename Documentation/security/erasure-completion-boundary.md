@@ -33,7 +33,7 @@ No erasure event, command or call to `PII.DeleteEncryptionKeyFor` exists in `Sou
 | Chronicle constraint index | **Unverified** | **Unverified** | n/a |
 | Read models | **PROPOSED:** rows removed or replaced; rebuilds must not restore plaintext | Pseudonymous `LinkId`s | Copies in backups |
 | Fence log and tombstone | Nothing; kept on purpose | Pseudonymous account id, fence ids, sequences, `AccountTombstoned` | n/a |
-| Mongo `AccountDocument` | **OPEN:** not yet in the workflow | Plaintext GitHub id, login and name | The whole store until handled |
+| Mongo `AccountDocument` | **Implemented in this branch:** `IAccounts.Erase` deletes the `accounts` document (`github_id`, `github_login`, `name`) and writes an `erased_accounts` marker holding only the account id and `erased_at`; erasing twice or an unknown id succeeds. A later GitHub sign-in creates a new account. Not yet called by an erasure workflow | The marker (no personal data) | Logs: `GitHubSignInEventsLogging` writes the GitHub id and login to application logs, and log stores are outside the boundary; backups |
 | Backups, exports, consumer stores | n/a | All copies | Retention boundary and acknowledgements are an open decision |
 
 ## 3. Proposed workflow (PROPOSED, not implemented)
