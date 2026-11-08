@@ -60,7 +60,17 @@ Refs are `repo@ref path:line`. Identity `main` is `origin/main`; the delivered t
 - **Step 12, missing.** Local JWT validation (above) has no revocation check, so a revoked token stays accepted until it expires, up to 15 minutes. The fence exists on Identity branches (step 11) but nothing at the edge consumes it (AuthProxy issue 255, open). Studio has no `/mcp` bearer route (step 10). No spec calls a resource, revokes, and calls again.
 - **DPoP, missing.** Identity@main and the train branch have no DPoP code: the only matches are a secret-scan pattern and Arc MCP vectors. Identity issue 55 (issue DPoP-bound tokens) is open and branch `identity-55-dpop` is not delivered. Edge verification is AuthProxy issue 258, open. Arc and Direct have no DPoP code.
 
-## Proposals for missing items
+## Decisions for missing items
+
+Decided for the first end-to-end milestone. The proposals below it are the original list; where they differ, this section wins.
+
+- **Step 12 and step 8 (contract):** the edge checks revocation. AuthProxy issue 255 (L101): for Cratis ID bearer routes, introspect at Identity with a short positive cache (30 seconds or less, configurable), never cache negative results, and fail closed on `/mcp` when introspection is unavailable. Direct and Studio do not introspect themselves. The contract is JWKS plus edge introspection, documented under Identity issue 69.
+- **Revoke-then-call spec:** owner L103, part of #2479, runs in the end-to-end.
+- **Step 1 deployment:** owner L104 with L63 for the datastore egress labels. Tracked as Infrastructure issue 367, under issue 298.
+- **Steps 6 and 7 live runs:** L103 runs them in the end-to-end itself; no separate issue.
+- **DPoP** (Identity issue 55, AuthProxy issue 258): not part of the first milestone; after it.
+
+## Original proposals
 
 - Step 1 deployment: owner L63, no issue found; new issue: "Deploy the Cratis ID host with issuer, MongoDB and GitHub sign-in".
 - Step 8 callers: owners L102 (Direct) and L105 (Studio) with L101 (AuthProxy); new issue: "Resource servers validate Cratis ID tokens by introspection, or document JWKS plus fence as the contract" (tied to Identity issue 69).
