@@ -3,8 +3,8 @@
 ```text
 Doc id: identity-platform-corrections
 Version: 1
-Status: Proposed
-Issue: https://github.com/Cratis/Identity/issues/11
+Status: Draft
+Issue: https://github.com/Cratis/Identity/issues/104
 Depends on: identity-design v1 (Signed off), identity-module-outline v1, identity-tenant-model v1 (Signed off), arc-delegation v1 (Signed off), identity-events v1 (Signed off)
 ```
 

@@ -5,14 +5,14 @@ Doc id: identity-design
 Version: 1
 Status: Signed off
 Signed off: 2026-11-05 by woksin, https://github.com/Cratis/Identity/issues/14; owner confirmation pending
-Source: W0 identity design (final), approved 2026-11-05
+Source: W0 identity design (final), signed off by a maintainer 2026-11-05 (#14), owner confirmation pending
 Issue: https://github.com/Cratis/Identity/issues/11
 Cited by: identity-module-outline v1
 ```
 
 ## Scope and authority
 
-This note records the parts of the W0 identity design (final), approved 2026-11-05, that the [Identity module outline](identity-module-outline-v1.md) relies on. The excerpts below are **verbatim** where the text is binding. Section numbers (§…), decision ids (D…) and cross-references inside an excerpt refer to the W0 identity design, which is the only place they are defined; sections not excerpted here are not part of this note and are not cited by the outline.
+This note records the parts of the W0 identity design (final), signed off by a maintainer 2026-11-05 (#14), owner confirmation pending, that the [Identity module outline](identity-module-outline-v1.md) relies on. The excerpts below are **verbatim** where the text is binding. Section numbers (§…), decision ids (D…) and cross-references inside an excerpt refer to the W0 identity design, which is the only place they are defined; sections not excerpted here are not part of this note and are not cited by the outline.
 
 Where this note and a signed-off specification differ, the specification wins: [identity-contract](../specs/identity-contract-v1.md), [identity-events](../specs/identity-events-v1.md), [identity-revocation](../specs/identity-revocation-v1.md) and [identity-package-and-storage](identity-package-and-storage-v1.md).
 
