@@ -158,8 +158,16 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
             }
         }
 
-        // The host refuses issuance until recovery has reconciled; later specs must not start inside that window.
-        var health = Services.GetRequiredService<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckService>();
+        await WaitForRecovery(Services);
+    }
+
+    /// <summary>Waits until a host has finished its restriction recovery; a new host refuses issuance until it has.</summary>
+    /// <param name="services">The host's services.</param>
+    /// <returns>A task that completes once recovery is healthy.</returns>
+    /// <exception cref="TimeoutException">The host did not finish restriction recovery in time.</exception>
+    public static async Task WaitForRecovery(IServiceProvider services)
+    {
+        var health = services.GetRequiredService<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckService>();
         var deadline = DateTime.UtcNow.AddSeconds(90);
         while (true)
         {
