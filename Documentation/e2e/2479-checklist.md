@@ -74,7 +74,7 @@ Decided for the first end-to-end milestone. The proposals below it are the origi
 
 - Step 1 deployment: owner L63, no issue found; new issue: "Deploy the Cratis ID host with issuer, MongoDB and GitHub sign-in".
 - Step 8 callers: owners L102 (Direct) and L105 (Studio) with L101 (AuthProxy); new issue: "Resource servers validate Cratis ID tokens by introspection, or document JWKS plus fence as the contract" (tied to Identity issue 69).
-- Step 12 denial after revocation: owner L101 (AuthProxy), existing AuthProxy issue 255; plus new issue: "Spec: revoke then call again is refused on Direct and Studio /mcp".
+- Step 12 denial after revocation: owner L101 (AuthProxy), existing AuthProxy issue 255; plus Identity issue 112, "End-to-end spec: a revoked token is refused on resource-server /mcp routes".
 - DPoP issuance: owner L104, Identity issue 55.
 - DPoP edge verification: owner L101, AuthProxy issue 258.
 - Live runs for steps 6 and 7: owner L103; new issue: "Record a deployed sign-in and token run for the 2479 checklist".
