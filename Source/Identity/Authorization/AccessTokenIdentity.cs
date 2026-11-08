@@ -5,6 +5,7 @@ using System.Security.Claims;
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Contracts;
 using Cratis.Identity.Tenants;
+using Cratis.Identity.Upstream;
 using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -30,6 +31,8 @@ internal static class AccessTokenIdentity
         Claims.Name,
         Claims.PreferredUsername,
         Claims.AuthorizedParty,
+        IdentityClaims.Idp,
+        IdentityClaims.IdpSub,
         IdentityClaims.GitHubId,
         IdentityClaims.GitHubLogin,
         IdentityClaims.TenantId
@@ -75,6 +78,8 @@ internal static class AccessTokenIdentity
             .SetClaim(Claims.Subject, account.Id.Value)
             .SetClaim(Claims.Name, account.Name.Value)
             .SetClaim(Claims.PreferredUsername, account.GitHubLogin.Value)
+            .SetClaim(IdentityClaims.Idp, GitHubConnection.Issuer)
+            .SetClaim(IdentityClaims.IdpSub, account.GitHubId.Value)
             .SetClaim(IdentityClaims.GitHubId, account.GitHubId.Value)
             .SetClaim(IdentityClaims.GitHubLogin, account.GitHubLogin.Value)
             .SetClaim(Claims.AuthorizedParty, clientId);

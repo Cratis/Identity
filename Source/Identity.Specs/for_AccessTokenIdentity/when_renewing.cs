@@ -22,12 +22,17 @@ public class when_renewing : given.an_account_and_a_grant
         _granted.SetAuthorizationId(AuthorizationId);
     }
 
-    void Because() => _identity = AccessTokenIdentity.Renew(_granted, _account with { GitHubLogin = "einari-renamed" }, ClientId);
+    void Because() => _identity = AccessTokenIdentity.Renew(_granted, _account with { GitHubLogin = "einari-renamed", GitHubId = "999" }, ClientId);
 
     [Fact] void should_keep_the_tenant_of_the_grant() => _identity.GetClaim(IdentityClaims.TenantId).ShouldEqual("cratis");
     [Fact] void should_keep_the_authorization_the_grant_belongs_to() => _identity.GetAuthorizationId().ShouldEqual(AuthorizationId);
     [Fact] void should_keep_the_granted_scopes() => _identity.GetScopes().ShouldContainOnly("direct:read", "offline_access");
     [Fact] void should_keep_the_audience() => _identity.GetResources().ShouldContainOnly(Configurations.DirectAudience);
     [Fact] void should_refresh_the_github_login_from_the_account() => _identity.GetClaim(IdentityClaims.GitHubLogin).ShouldEqual("einari-renamed");
+    [Fact] void should_refresh_the_idp_sub_from_the_account() => _identity.GetClaim(IdentityClaims.IdpSub).ShouldEqual("999");
+    [Fact] void should_refresh_the_idp() => _identity.GetClaim(IdentityClaims.Idp).ShouldEqual("https://github.com");
+    [Fact] void should_have_a_single_idp() => _identity.FindAll(IdentityClaims.Idp).Count().ShouldEqual(1);
+    [Fact] void should_send_idp_only_to_the_access_token() => _identity.FindFirst(IdentityClaims.Idp).GetDestinations().ShouldContainOnly("access_token");
+    [Fact] void should_send_idp_sub_only_to_the_access_token() => _identity.FindFirst(IdentityClaims.IdpSub).GetDestinations().ShouldContainOnly("access_token");
     [Fact] void should_have_a_single_subject() => _identity.FindAll("sub").Count().ShouldEqual(1);
 }
