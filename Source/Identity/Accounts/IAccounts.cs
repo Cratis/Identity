@@ -26,7 +26,7 @@ public interface IAccounts
 
     /// <summary>
     /// Erases the personal fields of an account: removes its stored document and leaves only an erasure marker.
-    /// Erasing an account that is already erased or unknown succeeds without effect.
+    /// Erasing an account that is already erased or unknown succeeds; the erased marker is written either way and holds no personal data.
     /// </summary>
     /// <param name="id">The account identifier.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/>.</param>
