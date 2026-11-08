@@ -66,9 +66,9 @@ internal sealed class ProtocolCommands(IServiceScopeFactory scopes, ICommandPipe
             {
                 await catchUp.AfterCommand(ownAppends, CancellationToken.None);
             }
-            else if (appends.IsEmpty)
+            else
             {
-                // No append was observed at all: fence on the sign-in read models' current tails instead of assuming nothing changed.
+                // This command appended nothing (appends by concurrent commands do not count): fence on the sign-in read models' current tails instead of assuming nothing changed.
                 await catchUp.BeforeRetry(CancellationToken.None);
             }
         }

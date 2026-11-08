@@ -3,6 +3,7 @@
 
 using System.Reactive.Subjects;
 using Cratis.Arc.Commands;
+using Cratis.Chronicle.Events;
 using Cratis.Chronicle.EventSequences;
 using Cratis.Chronicle.Observation;
 using Cratis.Identity.Configuration;
@@ -41,6 +42,8 @@ public class concurrent_commands : Specification
         var log = Substitute.For<IEventLog>();
         log.AppendOperations.Returns(_appends);
         _progress = Substitute.For<IObserverProgress>();
+        _progress.Tail(Arg.Any<Type>()).Returns(Task.FromResult(new EventSequenceNumber(5)));
+        _progress.Position(Arg.Any<Type>()).Returns(Task.FromResult(new ObserverPosition(ObserverRunningState.Active, false, false, new(5))));
         _progress.Complete(_firstAppend, Arg.Any<TimeSpan>()).Returns(_ =>
         {
             _firstWait.TrySetResult();
