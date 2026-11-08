@@ -169,7 +169,7 @@ For both: the closing facts are written only from `EvidenceWithheld`, never when
 These changes exist on the train or are relied on by it and are not covered by sections 2 to 8. They are recorded here so the review sees them.
 
 - **Refresh-family facts.** `RefreshTokenFamilyStarted` and `RefreshTokenReuseDetected` are appended on the Grant stream (event source `GrantId`, not the family), in area Revocation, and carry a `FactId`. identity-events-v1 §8 still has older rows (event source Family, area Authorization, no `FactId`) that must be removed in the next version.
-- **Access-token lifetime (open deviation).** identity-access-token-v1 requires `0 < exp - iat <= 600` seconds. The `Identity.Host` default is 15 minutes (900 seconds); only the hosted-shared profile caps at 5 minutes. A validator that follows the spec rejects Identity.Host tokens. Resolution: lower the default to 300 seconds. The code is not changed by this document.
+- **Access-token lifetime (resolved).** identity-access-token-v1 requires `0 < exp - iat <= 600` seconds. The `Identity.Host` default is 300 seconds, and startup refuses a configured value above 600 seconds or one that is not positive. The hosted-shared profile keeps its own cap of 5 minutes.
 - **Edge introspection.** Decided 2026-11-08: positive cache of at most 30 seconds, no negative cache, fail closed on `/mcp` (AuthProxy#255). This does not amend identity-revocation-v1. Identity #69 is still open and carries only the earlier option C decision, so the 2026-11-08 decision needs its own citable record.
 - **New normative prose.** identity-events-v1 (replay and registration text, §6.1.1) and identity-revocation-v1 §9.1 gained normative text after sign-off. Treat it as part of this review, or move it to design notes.
 
