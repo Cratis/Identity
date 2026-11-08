@@ -14,8 +14,9 @@ Legend: **PII** means the value type carries `[PII]`, so Chronicle crypto-shredd
 | Chronicle event store, Account stream | Upstream display login in `UpstreamKeyDisplayIdentifierObserved` | PII | `Source/Identity.Contracts/Accounts/Login.cs:12`, `Events/UpstreamKeyDisplayIdentifierObserved.cs:14` |
 | Chronicle event store, Account stream | Keyed lookup digest `KeyHash` in `UpstreamKeyLinkRecorded` | PII | `Source/Identity.Contracts/Accounts/UpstreamLookupDigest.cs:12`, `Events/UpstreamKeyLinkRecorded.cs:17` |
 | Chronicle event store, public events | `AccountTombstoned` carries only `TombstonedAt` | No personal data by content | `Source/Identity.Contracts/Accounts/Events/AccountTombstoned.cs:11` |
+| Chronicle event store, public events | `UpstreamKeyLinked` and `UpstreamKeyUnlinked` carry `KeyHash`, a keyed lookup pseudonym of the upstream subject | Pseudonymous, read by downstream consumers of public events; whether it is PII-marked or erasable downstream is OPEN (see section 4, consumer acknowledgements) | `Source/Identity.Contracts/Accounts/Events/UpstreamKeyLinked.cs:13,17` |
 | Chronicle constraint index | `unique-upstream-key` over `KeyHash` | **Unverified**, see section 5 | `Source/Identity/Accounts/Constraints/UniqueUpstreamKey.cs:13-17` |
-| Read model `AccountLinkState` | `Email` and `Name`; reducer-state members `Proposals` (holding `UpstreamSubject`) and `Logins` | Values derive from PII events; the read model itself is not separately marked | `Source/Identity/Accounts/Linking/AccountLinkState.cs:26-41`, `LinkProposal.cs:17` |
+| Read model `AccountLinkState` | `Email` and `Name`; reducer-state members `Proposals` (holding `UpstreamSubject`), `Logins` and `Links` (holding `KeyHash`) | Values derive from PII events; the read model itself is not separately marked | `Source/Identity/Accounts/Linking/AccountLinkState.cs:26-41`, `LinkProposal.cs:17` |
 | Read model `UpstreamKeyLookup` | `LinkId` and an active flag per account | Pseudonymous ids only | `Source/Identity/Accounts/Lookup/UpstreamKeyLookupProjection.cs:14-23` |
 | Query `LinkedAccountKeys` | `Login` display identifier, read from `AccountLinkState` | Derived | `Source/Identity/Accounts/LinkedAccountKeys.cs:23,50` |
 | Mongo `AccountDocument` (GitHub sign-in accounts) | `github_id`, `github_login`, `name` | **Not PII-marked**; outside Chronicle crypto-shredding | `Source/Identity/Accounts/AccountDocument.cs:22-35`, `Accounts.cs:26-31` |
@@ -28,7 +29,7 @@ No erasure event, command or call to `PII.DeleteEncryptionKeyFor` exists in `Sou
 
 | Store | Erased | Remains | Not covered |
 |---|---|---|---|
-| Chronicle event log | Readable plaintext of PII-marked values, once the subject key is destroyed (identity-events-v1 §5) | Event envelopes, ids, timestamps and unreadable ciphertext | Copies made before destruction |
+| Chronicle event log | Readable plaintext of PII-marked values, once the subject key is destroyed (identity-events-v1 §5) | Event envelopes, ids, timestamps and unreadable ciphertext | Copies made before destruction; command causation values, which key deletion does not erase; a restored key backup, which makes the ciphertext readable again |
 | Chronicle constraint index | **Unverified** | **Unverified** | n/a |
 | Read models | **PROPOSED:** rows removed or replaced; rebuilds must not restore plaintext | Pseudonymous `LinkId`s | Copies in backups |
 | Fence log and tombstone | Nothing; kept on purpose | Pseudonymous account id, fence ids, sequences, `AccountTombstoned` | n/a |
