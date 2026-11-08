@@ -10,4 +10,5 @@ namespace Cratis.Identity.Contracts.Check;
 /// <param name="Visibility">The publication status.</param>
 /// <param name="Subject">The stream subject alias.</param>
 /// <param name="Fields">The exact field list with protection marks.</param>
-internal sealed record CatalogueRow(string Name, string? TypeId, string Area, string Visibility, string Subject, string Fields);
+/// <param name="Assembly">The production assembly and namespace root.</param>
+internal sealed record CatalogueRow(string Name, string? TypeId, string Area, string Visibility, string Subject, string Fields, string Assembly = "Cratis.Identity.Contracts");

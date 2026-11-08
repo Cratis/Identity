@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Reflection;
-using Cratis.Identity.Contracts.Accounts.Events;
 using Cratis.Identity.Contracts.Compliance;
 
 namespace Cratis.Identity.Contracts.Check;
@@ -61,6 +60,6 @@ internal static class CheckRunner
         return count == 0 ? 0 : 1;
     }
 
-    static bool Matches(Type type, CatalogueRow row) => type.Assembly == typeof(AccountRegistered).Assembly &&
-        type.FullName == $"Cratis.Identity.Contracts.{row.Area}.Events.{row.Name}";
+    static bool Matches(Type type, CatalogueRow row) => type.Assembly.GetName().Name == row.Assembly &&
+        type.FullName == $"{row.Assembly}.{row.Area}.Events.{row.Name}";
 }

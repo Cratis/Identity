@@ -11,9 +11,9 @@ public class when_checking_the_catalogue : Specification
     [Fact]
     public void should_mirror_every_section_eight_row()
     {
-        var rows = TableRows("| AccountRegistered | fd1cb0b5-17c1-4f34-b625-c318dc928d97 |", "| RealmRecoveryEpochAdvanced | assigned at implementation |");
+        var rows = TableRows("| AccountRegistered | fd1cb0b5-17c1-4f34-b625-c318dc928d97 |", "| RefreshTokenReuseDetected | bedbc6d5-2870-4cf7-aa5e-79e7a2bf3cb6 |");
         rows.Length.ShouldEqual(CatalogueChecker.Events.Count);
-        var parsed = rows.Select(cells => new CatalogueRow(cells[0], Identity(cells[1]), cells[2], cells[3], cells[4], cells[5])).ToArray();
+        var parsed = rows.Select(cells => new CatalogueRow(cells[0], Identity(cells[1]), cells[2], cells[3], cells[4], cells[5], cells[7].Contains("`Cratis.Identity.Revocation.Events`", StringComparison.Ordinal) ? "Cratis.Identity" : "Cratis.Identity.Contracts")).ToArray();
         parsed.ShouldEqual(CatalogueChecker.Events.ToArray());
     }
 

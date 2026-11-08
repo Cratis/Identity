@@ -45,7 +45,14 @@
     { "name": "EnterpriseConnectionRegistered", "typeId": null, "area": "Access", "visibility": "Public", "subject": "Connection", "fields": "OrganisationId, IdpIssuer, Protocol" },
     { "name": "ConnectionAssuranceMappingChanged", "typeId": null, "area": "Access", "visibility": "Public", "subject": "Connection", "fields": "MappingRevision, AssuranceMappings" },
     { "name": "RealmPolicyEpochAdvanced", "typeId": null, "area": "Revocation", "visibility": "Public", "subject": "Realm", "fields": "PolicyEpoch, ReasonId, FenceId, FenceSequence" },
-    { "name": "RealmRecoveryEpochAdvanced", "typeId": null, "area": "Revocation", "visibility": "Public", "subject": "Realm", "fields": "RestoreEpoch, ReasonId, FenceId, FenceSequence" }
+    { "name": "RealmRecoveryEpochAdvanced", "typeId": null, "area": "Revocation", "visibility": "Public", "subject": "Realm", "fields": "RestoreEpoch, ReasonId, FenceId, FenceSequence" },
+    { "name": "AuthorizationRevocationRecorded", "typeId": "ac88f9a7-6364-4f20-9301-d533b491b641", "area": "Revocation", "visibility": "Internal", "subject": "Grant", "fields": "AccountSubject, ReasonId, GrantEpoch, FenceId, FenceSequence, FactId", "assembly": "Cratis.Identity" },
+    { "name": "FenceLogCustodyEstablished", "typeId": "b90e65de-fd11-43c9-b032-e6f73d5ca089", "area": "Revocation", "visibility": "Internal", "subject": "identity-recovery", "fields": "InstanceId", "assembly": "Cratis.Identity" },
+    { "name": "FencePublicationCheckpoint", "typeId": "507bb271-f4cf-43ca-a5a8-3e3a80fd0093", "area": "Revocation", "visibility": "Internal", "subject": "identity-recovery", "fields": "InstanceId, FenceSequence", "assembly": "Cratis.Identity" },
+    { "name": "RealmRecoveryEpochAdvanceRecorded", "typeId": "bf2cbb34-f181-4931-be63-52d68a143be4", "area": "Revocation", "visibility": "Internal", "subject": "identity-recovery", "fields": "RestoreEpoch, ReasonId, FenceId, FenceSequence, FactId", "assembly": "Cratis.Identity" },
+    { "name": "RefreshTokenFamilyRevocationRecorded", "typeId": "a80e52ab-051e-4771-bff2-488dccd8aa44", "area": "Revocation", "visibility": "Internal", "subject": "Grant", "fields": "GrantId, ReasonId, FenceId, FenceSequence, FactId", "assembly": "Cratis.Identity" },
+    { "name": "RefreshTokenFamilyStarted", "typeId": "d9a448be-ccf1-4ab5-b43c-f17dad0ba6c3", "area": "Revocation", "visibility": "Internal", "subject": "Grant", "fields": "GrantId, AccountSubject, StartedAt, AbsoluteExpiresAt, FactId", "assembly": "Cratis.Identity" },
+    { "name": "RefreshTokenReuseDetected", "typeId": "bedbc6d5-2870-4cf7-aa5e-79e7a2bf3cb6", "area": "Revocation", "visibility": "Internal", "subject": "Grant", "fields": "GrantId, DetectionId, DetectedAt, FactId", "assembly": "Cratis.Identity" }
   ],
   "sourceFacts": [
     { "contract": "AccountRegistered", "name": "AccountRegistrationRecorded", "typeId": "c2c8ac1b-6110-433f-93d6-1e9222852baa" },

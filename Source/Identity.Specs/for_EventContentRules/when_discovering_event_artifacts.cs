@@ -16,7 +16,7 @@ public class when_discovering_event_artifacts : Specification
     public void should_check_the_real_contracts()
     {
         using var output = new StringWriter();
-        CheckRunner.Run(ReflectionShapeBuilder.Discover(typeof(AccountRegistered).Assembly), output).ShouldEqual(0);
+        CheckRunner.Run(ReflectionShapeBuilder.Discover([typeof(AccountRegistered).Assembly, typeof(Revocation.GrantId).Assembly]), output).ShouldEqual(0);
     }
 
     [Fact]
