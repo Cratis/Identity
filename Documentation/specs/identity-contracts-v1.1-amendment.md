@@ -151,3 +151,15 @@ For both: the closing facts are written only from `EvidenceWithheld`, never when
 6. **Item 5.** Guarded cancellation fact or idempotency-key claim? Needs a real-kernel check of keyed appends with the decision guard and constraints. Should foreign writers appending account facts directly to Chronicle be forbidden by contract, since custody cannot cover them?
 7. **Item 6.** Option A or B, and should `AuthorizationGranted` publication be visible to connected apps before activation at all?
 8. **Lock order.** The audit recommends not locking v1.1 until #110 slice 2 and #107 show it is sufficient. Is that the review plan?
+9. **`name` claim.** See section 8: confirm the deviation or restore the v1 prohibition.
+
+## 8. Display name `name` in access tokens (idp-claims delivery)
+
+**Finding.** identity-contract-v1 §5 (around line 148) says display name MUST NOT appear in access tokens; only `preferred_username` is excepted, and only for resources that opt in. The idp-claims delivery (branch `identity-idp-claims`, head 4c44404) restores `name` in access tokens for **all** audiences, on the instruction of L0 (keep-name). Other upstream identity claims (`preferred_username`, `github_id`, `github_login`, `idp_sub`) stay limited to audiences that receive upstream identity.
+
+**Change.** Option A is what the code does today:
+
+- **A.** Amend identity-contract-v1 §5 to allow `name` in access tokens for every audience, as display-only data that carries no authority. The code carries a comment recording the deviation.
+- **B.** Keep the v1 prohibition and drop `name` again, leaving it to the user-info or profile surface.
+
+**Alters.** identity-contract-v1 §5 (the sentence listing display name among the claims that MUST NOT appear in access tokens).
