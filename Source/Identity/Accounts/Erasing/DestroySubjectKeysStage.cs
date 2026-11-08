@@ -12,7 +12,8 @@ namespace Cratis.Identity.Accounts.Erasing;
 /// </summary>
 /// <param name="client">The Chronicle client used to reach each namespace.</param>
 /// <param name="eventStore">The account event store whose name addresses the other namespaces.</param>
-internal class DestroySubjectKeysStage(IChronicleClient client, IEventStore eventStore) : IErasureStage
+/// <param name="logger">The logger; it receives only the namespace and the exception type.</param>
+internal class DestroySubjectKeysStage(IChronicleClient client, IEventStore eventStore, ILogger<DestroySubjectKeysStage> logger) : IErasureStage
 {
     static readonly ReasonId _failed = "erasure_key_destruction_failed";
 
@@ -34,6 +35,7 @@ internal class DestroySubjectKeysStage(IChronicleClient client, IEventStore even
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
+                logger.KeyDestructionFailed(@namespace, exception.GetType().FullName ?? exception.GetType().Name);
                 failure = _failed;
             }
         }

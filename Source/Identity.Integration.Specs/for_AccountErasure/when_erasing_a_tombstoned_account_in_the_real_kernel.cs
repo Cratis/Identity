@@ -48,5 +48,7 @@ public class when_erasing_a_tombstoned_account_in_the_real_kernel(IdentityHost h
     [Fact] void should_carry_the_boundary_version_in_the_completion() => _events.OfType<AccountErasureRecorded>().Single().BoundaryVersion.ShouldEqual(ErasureHarness.SpecBoundary);
     [Fact] void should_not_record_a_failure() => _events.OfType<AccountErasureFailed>().ShouldBeEmpty();
     [Fact] void should_fold_to_completed() => _state.Completed.ShouldBeTrue();
+    [Fact] void should_keep_the_personal_name_event_in_the_stream() => _events.OfType<AccountNameChanged>().ShouldContainSingleItem();
+    [Fact] void should_no_longer_decrypt_the_erased_subjects_personal_name() => _events.OfType<AccountNameChanged>().Single().PersonalName?.Value.ShouldNotEqual(ErasureHarness.RenamedPersonalName);
     [Fact] void should_keep_the_tombstone() => _events.OfType<AccountTombstoneRecorded>().ShouldContainSingleItem();
 }

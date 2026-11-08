@@ -10,6 +10,7 @@ using Cratis.Identity.Contracts.Accounts.Events;
 using Cratis.Identity.Integration.for_NativeAccounts.given;
 using Cratis.Identity.Upstream;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Cratis.Identity.Integration.for_AccountErasure.given;
 
@@ -22,6 +23,9 @@ internal sealed class ErasureHarness(IServiceProvider provider)
 {
     /// <summary>The boundary value used only by these specs; it is not an approved production boundary version.</summary>
     public static readonly BoundaryVersion SpecBoundary = new(1);
+
+    /// <summary>The personal name appended before erasure; it must not be readable afterwards.</summary>
+    public const string RenamedPersonalName = "Erasure Spec Renamed";
 
     /// <summary>Gets the account event store.</summary>
     public IEventStore Store { get; } = provider.GetRequiredService<IEventStore>();
@@ -39,7 +43,7 @@ internal sealed class ErasureHarness(IServiceProvider provider)
         {
             var stages = ErasureStages.Required
                 .Select(id => id == ErasureStages.DestroySubjectKeys
-                    ? new DestroySubjectKeysStage(provider.GetRequiredService<IChronicleClient>(), Store)
+                    ? new DestroySubjectKeysStage(provider.GetRequiredService<IChronicleClient>(), Store, NullLogger<DestroySubjectKeysStage>.Instance)
                     : (IErasureStage)new Satisfied(id))
                 .ToArray();
             return new(Log, stages, new Scope(), new Boundary(), TimeProvider.System);
@@ -55,7 +59,7 @@ internal sealed class ErasureHarness(IServiceProvider provider)
         var connection = new GitHubConnection(GitHubConnection.FixedConnectionId, timeProvider);
         var user = new GitHubUser(UpstreamUserIds.Next(), "erasure-spec-login", "Erasure Spec Person");
         var account = await adapter.SignIn(connection.From(user, FactId.New()), new(null, user.Name, user.Login));
-        (await Store.EventLog.Append(account.Id.Value, new AccountNameChanged("Erasure Spec Renamed"))).IsSuccess.ShouldBeTrue();
+        (await Store.EventLog.Append(account.Id.Value, new AccountNameChanged(RenamedPersonalName))).IsSuccess.ShouldBeTrue();
         (await Store.EventLog.Append(account.Id.Value, new AccountTombstoneRecorded(timeProvider.GetUtcNow(), FactId.New()))).IsSuccess.ShouldBeTrue();
         return account.Id;
     }
