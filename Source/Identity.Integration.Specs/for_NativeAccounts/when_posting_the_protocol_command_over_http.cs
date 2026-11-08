@@ -4,6 +4,7 @@
 using System.Net.Http.Json;
 using System.Security.Claims;
 using Cratis.Chronicle;
+using Cratis.Chronicle.Events;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Contracts.Accounts;
 using Microsoft.AspNetCore.Authentication;
@@ -53,9 +54,9 @@ public class when_posting_the_protocol_command_over_http(IdentityHost host)
         host.NativeCommands.HandlerInvocations.ShouldEqual(handlersBefore);
 
         // Recovery and publication workers append their own facts concurrently, so the global tail is not stable; no account event may appear.
-        var accountEventTypes = typeof(Cratis.Identity.Contracts.Accounts.Events.AccountEnabled).Assembly.GetTypes()
+        var accountEventTypes = typeof(Contracts.Accounts.Events.AccountEnabled).Assembly.GetTypes()
             .Where(_ => _.Namespace?.StartsWith("Cratis.Identity.Contracts.Accounts", StringComparison.Ordinal) == true)
-            .Select(_ => _.GetCustomAttributes(typeof(Cratis.Chronicle.Events.EventTypeAttribute), false).Cast<Cratis.Chronicle.Events.EventTypeAttribute>().FirstOrDefault()?.Id.ToString())
+            .Select(_ => _.GetCustomAttributes(typeof(EventTypeAttribute), false).Cast<EventTypeAttribute>().FirstOrDefault()?.Id.ToString())
             .OfType<string>()
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var added = (await realm.EventLog.GetFromSequenceNumber(before.Next())).Concat(await tenantStore.EventLog.GetFromSequenceNumber(tenantBefore.Next()));
