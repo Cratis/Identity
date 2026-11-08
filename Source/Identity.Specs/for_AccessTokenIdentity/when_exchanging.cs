@@ -35,7 +35,7 @@ public class when_exchanging : given.an_account_and_a_grant
     [Fact] void should_not_carry_offline_access() => _identity.GetScopes().ShouldNotContain("offline_access");
     [Fact] void should_name_the_external_issuer_as_idp() => _identity.GetClaim(IdentityClaims.Idp).ShouldEqual(Configurations.ExternalIssuer);
     [Fact] void should_carry_the_external_subject_for_an_upstream_identity_consumer() => _identity.GetClaim(IdentityClaims.IdpSub).ShouldEqual("external-subject-1");
-    [Fact] void should_carry_the_preferred_username_for_an_upstream_identity_consumer() => _identity.GetClaim(Claims.PreferredUsername).ShouldEqual(_account.GitHubLogin.Value);
+    [Fact] void should_not_carry_a_github_login_next_to_another_issuers_identity() => _identity.GetClaim(Claims.PreferredUsername).ShouldBeNull();
     [Fact] void should_not_carry_github_claims() => _identity.Claims.Select(_ => _.Type).Intersect([IdentityClaims.GitHubId, IdentityClaims.GitHubLogin]).ShouldBeEmpty();
     [Fact] void should_carry_basic_assurance() => _identity.GetClaim(Claims.AuthenticationContextReference).ShouldEqual("basic");
     [Fact] void should_copy_the_authentication_time() => _identity.GetClaim(Claims.AuthenticationTime).ShouldEqual(AuthTime.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture));

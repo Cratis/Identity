@@ -121,7 +121,7 @@ internal static class AccessTokenIdentity
         identity
             .SetClaim(Claims.Subject, account.Id.Value)
             .SetClaim(Claims.Name, account.Name.Value)
-            .SetClaim(Claims.PreferredUsername, resource.ReceivesUpstreamIdentity ? account.GitHubLogin.Value : null)
+            .SetClaim(Claims.PreferredUsername, resource.ReceivesUpstreamIdentity && string.Equals(externalIssuer, GitHubConnection.Issuer, StringComparison.Ordinal) ? account.GitHubLogin.Value : null)
             .SetClaim(IdentityClaims.Idp, externalIssuer)
             .SetClaim(IdentityClaims.IdpSub, resource.ReceivesUpstreamIdentity ? externalSubject : null)
             .SetClaim(Claims.AuthenticationContextReference, BasicAssurance)
