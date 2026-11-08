@@ -150,7 +150,17 @@ Arc's Chronicle integration registers `TenantNamespaceResolver` (`Arc/Source/Dot
 
 The role is the issuer and security owner named in [Identity #20](https://github.com/Cratis/Identity/issues/20).
 
-- `Hosting/IdentityPolicies.cs`: `public const string IssuerSecurityOwner = "Cratis.Identity.IssuerSecurityOwner";`.
+### Implemented configuration boundary
+
+`IdentityPolicies.IssuerSecurityOwner` names the `issuer-security-owner` policy. `AddCratisIdentity` registers it for the Identity session scheme: only an authenticated principal with an exact `sub` in `Identity:SecurityOwners` is accepted. The list defaults to empty, which denies everyone, including in Development; tenant membership and a CLI registration grant no administrative authority. Empty or whitespace-only configured subjects are refused at startup. For a local owner, configure `Identity__SecurityOwners__0` with that account's subject explicitly. This does not authorize a public registration endpoint or a seeding bypass.
+
+`ClientRegistrationRules` is a side-effect-free validator. Public clients require PKCE with S256 only; confidential clients require a non-empty secret. Redirects must be absolute, without user information or fragments; public native clients accept only HTTP `127.0.0.1` and `[::1]` literals, with arbitrary ports. The built-in CLI descriptor uses these rules. Resource configuration requires exactly one indicator per audience, unique normalized indicators and unique audiences. The OpenIddict application and scope adapters remain read-only.
+
+### Planned mutation handlers (not implemented)
+
+The remaining design below is for the event-sourced follow-up. No registration command or configuration query is exposed by the configuration boundary above.
+
+- `Hosting/IdentityPolicies.cs`: `IssuerSecurityOwner = "issuer-security-owner"`.
 - Deny by default: every client, resource and scope mutation command (`RegisterClient`, `ChangeClientRedirectUris`, `RotateClientSecret`, `RetireClient`, `RegisterResource`, `RegisterResourceScope`, `RetireResourceScope`) carries `[Authorize(Policy = IdentityPolicies.IssuerSecurityOwner)]`, and so do the configuration queries (`AllClients`, the resource listings). None of them is `[AllowAnonymous]` or relies on plain `[Authorize]`.
 - The module defines the policy **name** only. The host provides the policy: Arc `services.AddArcAuthorizationPolicy<TPolicy>(IdentityPolicies.IssuerSecurityOwner)` (`Arc/Source/DotNET/Arc.Core/Authorization/AuthorizationPolicyServiceCollectionExtensions.cs`) or the ASP.NET Core policy of that name on the ASP.NET host. Arc already rejects an unknown policy before accepting traffic (`ArcAuthorizationPolicyRuntime`, `AuthorizationConfigurationValidator`); `AddCratisIdentity` adds an explicit startup refusal, `IssuerSecurityOwnerPolicyNotConfigured`, naming the policy.
 - Dev seeding: `Identity.Host` runs the seed commands through `ProtocolCommands.Seed(...)`, which opens a `ProtocolCommandScope` of kind `Seeding` and executes in-process under a seeding principal that holds the issuer and security owner role. That principal is built only inside `ProtocolCommands`, never from a request, and the host's policy evaluates it normally: there is no bypass inside the policy. `Identity.Host` registers its own policy for its dev setup; production hosts register theirs.

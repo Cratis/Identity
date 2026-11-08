@@ -32,7 +32,8 @@ internal sealed class ConsentActivation(
     public async Task<ConsentRequest> Create(ConsentBinding binding, CancellationToken cancellationToken)
     {
         gate.Demand(RestrictionClass.Consent);
-        var request = new ConsentRequest(ConsentRequestId.New(), binding, timeProvider.GetUtcNow() + options.Value.ActivationDeadline, RecoveryEpoch: gate.Epoch);
+        var now = timeProvider.GetUtcNow();
+        var request = new ConsentRequest(ConsentRequestId.New(), binding, now + options.Value.ActivationDeadline, CreatedAt: now, RecoveryEpoch: gate.Epoch);
         if (!await store.Create(request, cancellationToken))
         {
             throw new InvalidOperationException("The consent request identity already exists.");
@@ -187,6 +188,7 @@ internal sealed class ConsentActivation(
         {
             State = state,
             Revision = request.Revision + 1,
+            Selection = state == ConsentRequestState.Decided ? new(request.Binding.Tenant, request.Binding.Scopes) : request.Selection,
             PurgeAt = state is ConsentRequestState.Denied or ConsentRequestState.Abandoned or ConsentRequestState.EvidenceWithheld
                 ? timeProvider.GetUtcNow() + options.Value.TerminalRetention : null
         };

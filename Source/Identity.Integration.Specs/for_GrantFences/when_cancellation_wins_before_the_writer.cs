@@ -15,8 +15,9 @@ public class when_cancellation_wins_before_the_writer(IdentityHost host) : IAsyn
     public async ValueTask InitializeAsync()
     {
         var log = await FenceLogDatabase.Create(host);
-        var writer = new MongoFenceStore(host.Database, TimeProvider.System, log);
-        var reconciler = new MongoFenceStore(host.Database, TimeProvider.System, log);
+        var operational = FenceLogDatabase.Operational(host);
+        var writer = new MongoFenceStore(operational, TimeProvider.System, log);
+        var reconciler = new MongoFenceStore(operational, TimeProvider.System, log);
         var id = Guid.NewGuid();
         var grant = Guid.NewGuid().ToString("D");
         var sequence = await log.Reserve(id, grant, CancellationToken.None);

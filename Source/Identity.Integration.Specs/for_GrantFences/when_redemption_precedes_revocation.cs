@@ -16,8 +16,9 @@ public class when_redemption_precedes_revocation(IdentityHost host) : IAsyncLife
     public async ValueTask InitializeAsync()
     {
         var log = await FenceLogDatabase.Create(host);
-        var first = new MongoFenceStore(host.Database, TimeProvider.System, log);
-        var second = new MongoFenceStore(host.Database, TimeProvider.System, log);
+        var operational = FenceLogDatabase.Operational(host);
+        var first = new MongoFenceStore(operational, TimeProvider.System, log);
+        var second = new MongoFenceStore(operational, TimeProvider.System, log);
         var grant = Guid.NewGuid().ToString("D");
         var subject = Guid.NewGuid().ToString("D");
         var read = await first.RecordFamilyStart(grant, "presented-entry", subject, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(30), CancellationToken.None);

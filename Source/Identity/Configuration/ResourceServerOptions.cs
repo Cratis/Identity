@@ -19,7 +19,8 @@ public class ResourceServerOptions
     public string DisplayName { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the RFC 8707 resource indicators that map to the audience.
+    /// Gets or sets the single RFC 8707 resource indicator that maps to the audience.
+    /// Separate API and MCP surfaces require separate resource entries.
     /// </summary>
     public IList<string> Indicators { get; set; } = [];
 

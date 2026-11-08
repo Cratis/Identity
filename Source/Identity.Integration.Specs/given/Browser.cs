@@ -42,7 +42,7 @@ public partial class Browser(HttpClient client)
     /// <param name="resources">The resource indicators.</param>
     /// <param name="scope">The scope.</param>
     /// <returns>The parameters.</returns>
-    public static List<KeyValuePair<string, string?>> CliAuthorization(string challenge, IEnumerable<string>? resources = null, string scope = "direct:read offline_access") =>
+    public static List<KeyValuePair<string, string?>> CliAuthorization(string challenge, IEnumerable<string>? resources = null, string scope = "direct:mcp:read offline_access") =>
     [
         new("client_id", ClientId),
         new("response_type", "code"),

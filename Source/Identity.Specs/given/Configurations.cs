@@ -24,7 +24,7 @@ public static class Configurations
             {
                 Audience = DirectAudience,
                 DisplayName = "Cratis Direct",
-                Indicators = [DirectMcp, DirectV1],
+                Indicators = [DirectMcp],
                 Scopes =
                 [
                     new ScopeOptions { Name = "direct:read", Description = "Read" },

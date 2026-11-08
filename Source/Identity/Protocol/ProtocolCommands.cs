@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using Cratis.Arc.Commands;
 using Cratis.Chronicle.EventSequences;
+using Cratis.Execution;
 using Cratis.Identity.Realm;
 
 namespace Cratis.Identity.Protocol;
@@ -39,13 +40,37 @@ internal sealed class ProtocolCommands(IServiceScopeFactory scopes, ICommandPipe
             }
         }))
         {
-            result = await pipeline.Execute(command, child.ServiceProvider);
+            // Arc generates a correlation id for a direct execution without installing it ambiently, so appends would carry another one.
+            var accessor = child.ServiceProvider.GetService<ICorrelationIdAccessor>();
+            var modifier = accessor as ICorrelationIdModifier;
+            var previous = accessor?.Current;
+            modifier?.Modify(CorrelationId.New());
+            try
+            {
+                result = await pipeline.Execute(command, child.ServiceProvider);
+            }
+            finally
+            {
+                if (previous is not null)
+                {
+                    modifier?.Modify(previous);
+                }
+            }
         }
 
         var ownAppends = appends.Where(append => append.Result.CorrelationId == result.CorrelationId).ToArray();
-        if (result.IsSuccess && ownAppends.Length != 0)
+        if (result.IsSuccess)
         {
-            await child.ServiceProvider.GetRequiredService<ReadModelCatchUp>().AfterCommand(ownAppends, CancellationToken.None);
+            var catchUp = child.ServiceProvider.GetRequiredService<ReadModelCatchUp>();
+            if (ownAppends.Length != 0)
+            {
+                await catchUp.AfterCommand(ownAppends, CancellationToken.None);
+            }
+            else if (appends.IsEmpty)
+            {
+                // No append was observed at all: fence on the sign-in read models' current tails instead of assuming nothing changed.
+                await catchUp.BeforeRetry(CancellationToken.None);
+            }
         }
 
         return result;

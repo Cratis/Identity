@@ -28,7 +28,7 @@ public class when_an_upstream_key_is_unlinked_after_the_sign_in_recheck(Identity
         var adapter = provider.GetRequiredService<EventSourcedAccountAdapter>();
         var timeProvider = provider.GetRequiredService<TimeProvider>();
         var connection = new GitHubConnection(GitHubConnection.FixedConnectionId, timeProvider);
-        var user = new GitHubUser(987654329, "unlinked-after-recheck", "Before Unlink");
+        var user = new GitHubUser(UpstreamUserIds.Next(), "unlinked-after-recheck", "Before Unlink");
         var initial = await adapter.SignIn(connection.From(user, FactId.New()), new(null, user.Name, user.Login));
         var store = provider.GetRequiredService<IEventStore>();
         var before = (await store.EventLog.GetFromSequenceNumber(EventSequenceNumber.First, initial.Id.Value)).Count;

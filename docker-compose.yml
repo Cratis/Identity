@@ -37,6 +37,9 @@ services:
       Identity__Resources__0__Tenants__0__Id: local
       Identity__Resources__0__Tenants__0__Name: Local development
       Identity__Resources__0__Tenants__0__Members__0: ${GITHUB_USER_ID:?set GITHUB_USER_ID in .env}
+      Identity__Resources__1__Tenants__0__Id: local
+      Identity__Resources__1__Tenants__0__Name: Local development
+      Identity__Resources__1__Tenants__0__Members__0: ${GITHUB_USER_ID:?set GITHUB_USER_ID in .env}
 
 volumes:
   identity-mongo:

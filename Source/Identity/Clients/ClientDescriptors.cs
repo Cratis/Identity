@@ -35,6 +35,7 @@ internal class ClientDescriptors(IResourceCatalog resources, IOptions<IdentityOp
     /// the IP literals are registered and <c language="text">localhost</c> is refused.
     /// </summary>
     /// <returns>The <see cref="OpenIddictApplicationDescriptor"/>.</returns>
+    /// <exception cref="InvalidOperationException">The built-in descriptor violates the registration rules.</exception>
     public OpenIddictApplicationDescriptor CratisCliDescriptor()
     {
         var descriptor = new OpenIddictApplicationDescriptor
@@ -72,6 +73,12 @@ internal class ClientDescriptors(IResourceCatalog resources, IOptions<IdentityOp
         foreach (var indicator in resources.All.SelectMany(_ => _.Indicators))
         {
             descriptor.Permissions.Add(Permissions.Prefixes.Resource + indicator);
+        }
+
+        var validation = ClientRegistrationRules.Validate(descriptor, [CodeChallengeMethods.Sha256]);
+        if (!validation.IsValid)
+        {
+            throw new InvalidOperationException(string.Join(' ', validation.Refusals));
         }
 
         return descriptor;

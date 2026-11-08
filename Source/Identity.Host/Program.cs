@@ -8,7 +8,7 @@ builder.Host.UseDefaultServiceProvider(options =>
     options.ValidateOnBuild = true;
 });
 
-builder.AddCratisArc();
+builder.AddCratisArc(options => options.GeneratedApis.SegmentsToSkipForRoute = 2);
 builder.AddCratisChronicle(options =>
 {
     options.EventStore = "Identity";

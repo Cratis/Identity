@@ -33,9 +33,9 @@ Each realm MUST have its own Chronicle event store. Context and delivery MUST pr
 | Account | Account subject | Exactly the immutable lowercase UUID v4 in contract v1 §2.1. Link proposals and confirmed links remain on the target account stream. |
 | Grant | GrantId | Opaque, generated, never-reassigned UUID v4; one authorization grant, not a token. |
 | Family | FamilyId | Opaque, generated, never-reassigned UUID v4; one refresh-token family, not a refresh-token value. |
-| Client | ClientRegistrationId | Opaque UUID v4, distinct from a client's externally registered OAuth identifier or CIMD URL. |
+| Client | ClientRegistrationId | Opaque UUID v4, distinct from a client's externally registered OAuth identifier or CIMD URL. Immutable across configuration changes; never derive the stream id from a client id or URL. |
 | Signing key | SigningKeyId | Opaque UUID v4 identifying a secret-store/KMS record; not key material. |
-| Resource | ResourceId | Opaque UUID v4 referencing the contract v1 resource catalog entry. |
+| Resource | ResourceId | Opaque UUID v4 referencing the contract v1 resource catalog entry. Immutable across configuration changes; never derive the stream id from the indicator or audience. |
 | Organisation | OrganisationId | Opaque Access id; syntax/ownership per D5 (Identity #23). |
 | Binding | BindingId | Opaque UUID v4 for a registered `(resource, installation, tenant, environment, organisation)` binding; per D5 (Identity #23). |
 | Connection | ConnectionId | Opaque UUID v4 for an approved upstream connection; ownership per D5 (Identity #23). |
@@ -132,6 +132,14 @@ No event, internal or public, may contain a secret or redeemable value: access/I
 
 Secret-derived hashes MUST use a reviewed keyed construction; the decided construction is HMAC-SHA-256 with a separate secret-store-held key, domain separation by purpose and an explicit hash-key revision. Hashing MUST happen before append, never in a reactor. An unkeyed hash of a low-entropy code/secret is forbidden because offline enumeration recovers it. Password verifiers remain operational credential state even if salted/keyed. Public-key thumbprints MAY use SHA-256 under a documented canonical public-key representation (for JWKs, RFC 7638). These digest choices/allowances are decided in §9 point 6.
 
+### 6.1.1 Replay regression checks
+
+The unit specs discover Identity events from the Identity and contracts assemblies, compare them with Chronicle's testing registry, seed every registered event and scan serialized source-log and outbox payloads **and envelopes**. The scan rejects recognizable token, PAT, authorization-header and PEM shapes, secret-bearing properties, opaque handles and exact synthetic inputs. Poisoned fixtures and a synthetic event with generic seeded `AccessToken` and `client_secret` values prove rejection without printing the offending value. Property names are lowercased with underscores and hyphens removed; a secret-name substring with any non-null, non-empty value fails the scan regardless of value shape. The real GitHub callback, account sign-in decision and revocation fact writer are exercised alongside registry fixtures; this is a runtime regression check, not the complete content analyzer below.
+
+Read-model rebuilds replay the same history twice into empty `Account`, `AccountGuard`, `UpstreamKeyLookup` and `AccountLinkState` instances. An observer-inventory architecture spec classifies every projection, reducer and reactor; adding an unclassified observer fails the suite. Pure observers have no dependencies, and `AccountPublications` has only the event store and logger. New side-effecting observers need explicit review rather than automatic inclusion. Publication tests retain the §4.1 `FactId:contractTypeId` key across changed sequence numbers, reject conflicting content and retry failed publication without duplicating contracts. Reflection checks inspect declared observer dependencies for token, grant-mutation, mail and live-clock capabilities and require every observer to be classified. These are structural checks, not behavioral proof that replay cannot mint tokens or send mail.
+
+Consent replay tests drive the real `ConsentActivation` API with in-memory operational, evidence and authorization doubles. Abandoned, withheld, never-active and revoked requests cannot acquire new usable authority or code claims through replay. Real-kernel consent evidence replay and durability remain tracked in [#99](https://github.com/Cratis/Identity/issues/99); these unit specs do not establish that conformance.
+
 ### 6.2 Required executable check (W2)
 
 The check is **implemented with the contracts project ([#35](https://github.com/Cratis/Identity/issues/35)); the build-failing content check is tracked in [#82](https://github.com/Cratis/Identity/issues/82)**. The vectors here are data only, not an existing analyzer or passing conformance suite. The proposed exact check policy is open point 6:
@@ -157,6 +165,8 @@ D18 excludes individual refresh rotations, codes, `state`/nonce, `jti`/replay ca
 Revocation/disable fences, tombstones, account/grant epochs and pending outbox entries are authoritative operational state, durably committed before acknowledgement with the independently retained fence log. The corresponding §8 events report completed business facts asynchronously; they are not the fence itself and their projection is never a prerequisite to refusing revoked credentials. `FenceId`, `FenceSequence`, epochs and outbox-derived event identity permit idempotent recovery; replay MUST NOT resurrect credentials. Names/fields marked **align with identity-revocation-v1** follow [identity-revocation-v1](identity-revocation-v1.md) (§9 point 7).
 
 Access projection freshness/heartbeat transport is operational, not a periodic domain event in this catalogue. A policy change with a new epoch is a domain fact. D20's freshness/epoch-before-policy protocol remains a separate contract; this catalogue MUST NOT manufacture authority from a transport heartbeat.
+
+The client/resource registration configuration boundary currently provides validation and an explicit, deny-by-default `issuer-security-owner` policy only. It does not append client, resource or scope facts. Event-sourced mutation handlers, read-your-writes barriers and explicit event type ids remain follow-up work; the catalogue's unassigned ids below are not registrations. Accepted facts must never persist client secrets or redeemable values (§6).
 
 ## 8. Event catalogue v1
 
