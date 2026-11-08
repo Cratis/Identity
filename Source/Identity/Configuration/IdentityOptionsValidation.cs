@@ -55,6 +55,7 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
             .Where(_ => string.IsNullOrWhiteSpace(_.ClientId) || string.IsNullOrWhiteSpace(_.ClientSecret))
             .Select(_ => $"Introspection client \"{_.ClientId}\" needs both a client id and a client secret."));
 
+        failures.AddRange(TokenExchangeOptionsValidation.Validate(options, environment.IsDevelopment()));
         ValidateAccounts(options.Accounts, failures);
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }
