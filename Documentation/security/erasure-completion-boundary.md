@@ -48,14 +48,20 @@ Order follows identity-events-v1 §5. Revoking first keeps access denied even if
 
 The fence log and the tombstone are kept so a replay or restore cannot re-enable access. Stage progress would be operational state; events would mark only the request, a real failure and completion.
 
-## 4. Open product and legal questions (OPEN)
+## 4. Decided by agents (woksin delegation, 2026-11-08), einari to review post-hoc
 
-- Retention window for backups and exports, and the policy for restores that predate an erasure.
-- Whether `AccountErased` may be recorded while retention-only stores still hold copies.
-- Who may request erasure, the response time, and whether a disabled or tombstoned account can be erased.
-- What Ante and other consumers must acknowledge, and whether `AccountErased` waits for it.
-- Whether one request covers every realm and namespace the person exists in, or one realm.
+These decisions were made without product or legal sign-off and are revisable.
+
+- **Backups and exports.** Crypto-shredding is the erasure mechanism. Destroying the person's key makes their encrypted data in backups and exports unreadable, and a restore never re-creates a destroyed key. Personal data stored outside crypto-shredding must move under it. Backup retention is a bounded window set by infrastructure policy, not a blocker.
+- **Who may request.** The person themselves, after fresh authentication, or a realm admin acting on a verified request. A disabled or tombstoned account can still be erased.
+- **When erasure is complete.** Key destroyed, erasure event appended, Identity read models purged, and each downstream product has acknowledged. The completion status is queryable and lists the products still pending.
+- **Ante and other consumers.** A consumer reads the public Identity erasure event, erases or anonymizes its own data and acknowledges. Ante shows as pending in the completion status until its contract lands (Cratis/Ante#195).
+- **Scope.** One realm per request. Erasing a person across realms takes one request per realm; person-level orchestration is a later item.
+
+Still open:
+
 - Whether the legacy `accounts` collection needs any erasure handling beyond the startup guard.
+- Whether `AccountErased` may be recorded while retention-only stores still hold copies, beyond the bounded retention window above.
 
 ## 5. Unverified: constraint index and a `[PII]` digest
 
