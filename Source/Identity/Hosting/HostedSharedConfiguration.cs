@@ -68,12 +68,15 @@ internal sealed class HostedSharedConfiguration(IConfiguration configuration, IH
     /// <summary>
     /// Finds the optional resources that are entirely unconfigured (no indicator, callback URL or secret) and so are disabled.
     /// A partially configured optional resource is not listed: it stays in the catalog and fails validation.
+    /// An audience that appears more than once is never disabled, so the duplicate is refused rather than silently collapsed.
     /// </summary>
     /// <param name="options">The bound options.</param>
     /// <returns>The audiences to disable; empty outside hosted-shared.</returns>
     internal IReadOnlyList<string> DisabledAudiences(IdentityOptions options) => !IsHostedShared()
         ? []
-        : [.. options.Resources.Where(resource => OptionalAudiences.Contains(resource.Audience) && IsUnconfigured(resource)).Select(_ => _.Audience)];
+        : [.. options.Resources
+            .Where(resource => OptionalAudiences.Contains(resource.Audience) && IsUnconfigured(resource) && options.Resources.Count(_ => _.Audience == resource.Audience) == 1)
+            .Select(_ => _.Audience)];
 
     static IdentityOptions Without(IdentityOptions options, IReadOnlyList<string> disabled) => disabled.Count == 0
         ? options
