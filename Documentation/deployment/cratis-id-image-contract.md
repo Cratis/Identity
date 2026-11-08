@@ -62,7 +62,7 @@ Recommendation: in staging, the default is acceptable only while network policy 
 
 ### Indexed collections
 
-Configuration arrays are addressed by index, and environment variables merge into the shipped `appsettings.json` arrays **by index**. For `Identity:Resources` the shipped order is a contract: index `0` is `https://cratis.direct/v1` (audience `direct-v1`) and index `1` is `https://cratis.direct/mcp` (audience `direct-api`). Infrastructure sets only `Identity__Resources__<N>__TenantsCallback__Url` and `__Secret`. Reordering or inserting a shipped entry silently re-targets those secrets, so a later Studio entry must be appended (index `2`) and the automation must pair index and secret.
+Configuration arrays are addressed by index, and environment variables merge into the shipped `appsettings.json` arrays **by index**. For `Identity:Resources` the shipped order is a contract: index `0` is `https://cratis.direct/v1` (audience `direct-v1`) and index `1` is `https://cratis.direct/mcp` (audience `direct-api`). Index `2` is Studio (audience `studio-mcp`). Infrastructure sets `Identity__Resources__<N>__TenantsCallback__Url` and `__Secret`, plus `Identity__Resources__2__Indicators__0` for Studio. Reordering or inserting a shipped entry silently re-targets those secrets, so any further entry must be appended (index `3` onward) and the automation must pair index and secret.
 
 `Identity__IntrospectionClients__<N>__ClientId` and `__ClientSecret` are both required for each entry, and client ids must be unique; the shipped list is empty. Use contiguous indexes starting at `0`. Validation enforces only that the secret is present; use a high-entropy value of at least 32 characters, as for callbacks.
 
@@ -103,16 +103,25 @@ Initialize fence custody and record its `InstanceId` and allocation bound out of
 
 ## Resource catalog and callbacks
 
-The shipped catalog has **Direct entries only**:
+The shipped catalog has two Direct entries and the Studio entry:
 
 | Resource indicator | Audience | Scope names |
 | --- | --- | --- |
 | `https://cratis.direct/v1` | `direct-v1` | `direct:read`, `direct:content.write`, `direct:work` |
 | `https://cratis.direct/mcp` | `direct-api` | `direct:mcp:read`, `direct:mcp:content.write`, `direct:mcp:work` |
+| Supplied by the environment (see below) | `studio-mcp` | `studio:mcp:read`, `studio:mcp:write` |
 
 Resources have no fixed tenants. **Direct and Studio must each expose a tenants callback with a shared secret of at least 32 characters**; authentication to the callback does not replace the product's live membership checks. Direct must configure a callback for both resource entries, even when both use the same product endpoint. Product owners supply callback URLs and secrets. The image does not implement product callbacks.
 
-**TODO — Studio, assigned later by L103:** add the reviewed Studio indicator, audience and scopes only after the product owner supplies its registration and callback. There is no placeholder Studio resource or invented hostname in this image.
+**Studio (index `2`).** The image ships the audience, display name and scopes but an **empty indicator list**, because staging and production Studio hosts differ and a hostname is never hardcoded in the image. Each deployment must set:
+
+| Setting | Requirement |
+| --- | --- |
+| `Identity__Resources__2__Indicators__0` | **Required.** The HTTPS resource indicator of that environment's Studio MCP endpoint. Without it the host refuses to start, naming `studio-mcp`. |
+| `Identity__Resources__2__TenantsCallback__Url` | Required. HTTPS, no user info or fragment. |
+| `Identity__Resources__2__TenantsCallback__Secret` | Required. At least 32 characters; secret-bearing, never logged. |
+
+The callback follows the same contract as the Direct callbacks above; tenant ids it returns must be lowercase. There is no placeholder indicator in this image.
 
 Client and scope materialization reads configuration at each startup. The configured clients retain stable client ids; restarting reconstructs the same catalog instead of issuing registration commands or accumulating registrations. The CLI descriptor remains public-client/PKCE constrained. The host does not depend on the registration-command work in #39 and does not bootstrap an administrator.
 

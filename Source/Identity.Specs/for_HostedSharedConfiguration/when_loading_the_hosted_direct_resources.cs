@@ -43,7 +43,10 @@ public class when_loading_the_hosted_direct_resources : Specification
                 ["Identity:Resources:0:TenantsCallback:Url"] = "https://direct.example/tenants",
                 ["Identity:Resources:0:TenantsCallback:Secret"] = new string('x', 32),
                 ["Identity:Resources:1:TenantsCallback:Url"] = "https://direct.example/tenants",
-                ["Identity:Resources:1:TenantsCallback:Secret"] = new string('x', 32)
+                ["Identity:Resources:1:TenantsCallback:Secret"] = new string('x', 32),
+                ["Identity:Resources:2:Indicators:0"] = "https://studio.example/mcp",
+                ["Identity:Resources:2:TenantsCallback:Url"] = "https://studio.example/tenants",
+                ["Identity:Resources:2:TenantsCallback:Secret"] = new string('x', 32)
             }).Build();
         _options = new IdentityOptions();
         _configuration.GetSection("Identity").Bind(_options);
@@ -52,7 +55,7 @@ public class when_loading_the_hosted_direct_resources : Specification
     }
 
     [Fact] void should_accept_complete_production_settings() => new HostedSharedConfiguration(_configuration, new HostingEnvironment { EnvironmentName = Environments.Production }).Validate(null, _options).Succeeded.ShouldBeTrue();
-    [Fact] void should_have_only_the_two_direct_surfaces() => _catalog.All.Count().ShouldEqual(2);
+    [Fact] void should_have_the_two_direct_surfaces_and_studio() => _catalog.All.Count().ShouldEqual(3);
     [Fact] void should_keep_the_api_audience() => _catalog.FindByIndicator("https://cratis.direct/v1").Audience.ShouldEqual("direct-v1");
     [Fact] void should_keep_the_mcp_audience() => _catalog.FindByIndicator("https://cratis.direct/mcp").Audience.ShouldEqual("direct-api");
     [Fact] void should_not_have_fixed_tenants() => _options.Resources.All(resource => resource.Tenants.Count == 0).ShouldBeTrue();
@@ -69,8 +72,8 @@ public class when_loading_the_hosted_direct_resources : Specification
         var first = new ConfigurationProtocolCatalog(new ClientDescriptors(_catalog, Options.Create(_options)), _catalog);
         var second = new ConfigurationProtocolCatalog(new ClientDescriptors(_catalog, Options.Create(_options)), _catalog);
         first.Applications.Select(application => application.Id).SequenceEqual(second.Applications.Select(application => application.Id)).ShouldBeTrue();
-        first.Scopes.Count.ShouldEqual(6);
-        second.Scopes.Count.ShouldEqual(6);
+        first.Scopes.Count.ShouldEqual(8);
+        second.Scopes.Count.ShouldEqual(8);
     }
 
     [Theory]
