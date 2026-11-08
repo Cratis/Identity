@@ -1,0 +1,61 @@
+# Personal-data erasure: completion boundary (outline)
+
+This outline records where Identity holds personal data today, what a completed erasure covers, and what stays outside it. It supports [Cratis/Identity#51](https://github.com/Cratis/Identity/issues/51). Statements with a cited source path are backed by that code. Everything labeled **PROPOSED** or **OPEN** is not implemented and not decided. The normative rules stay in [identity-events-v1](../specs/identity-events-v1.md) §5 and §9 point 5; this page does not change them.
+
+## 1. Where personal data lives
+
+Legend: **PII** means the value type carries `[PII]`, so Chronicle crypto-shredding applies when the subject key is destroyed. **Not PII-marked** means the value is not protected by Chronicle encryption and needs separate handling.
+
+| Store | Data | Marked | Evidence |
+|---|---|---|---|
+| Chronicle event store, Account stream | Email in `AccountEmailChanged` | PII | `Source/Identity.Contracts/Accounts/Email.cs:12`, `Events/AccountEmailChanged.cs:11` |
+| Chronicle event store, Account stream | Personal name in `AccountNameChanged` | PII | `Source/Identity.Contracts/Accounts/PersonalName.cs:12`, `Events/AccountNameChanged.cs:11` |
+| Chronicle event store, Account stream | Raw upstream subject in `UpstreamKeyLinkProposed` and `UpstreamKeySubjectRecorded` | PII | `Source/Identity.Contracts/Accounts/UpstreamSubject.cs:12`, `Events/UpstreamKeyLinkProposed.cs:14`, `Events/UpstreamKeySubjectRecorded.cs:14` |
+| Chronicle event store, Account stream | Upstream display login in `UpstreamKeyDisplayIdentifierObserved` | PII | `Source/Identity.Contracts/Accounts/Login.cs:12`, `Events/UpstreamKeyDisplayIdentifierObserved.cs:14` |
+| Chronicle event store, Account stream | Keyed lookup digest `KeyHash` in `UpstreamKeyLinkRecorded` | PII | `Source/Identity.Contracts/Accounts/UpstreamLookupDigest.cs:12`, `Events/UpstreamKeyLinkRecorded.cs:17` |
+| Chronicle event store, public events | `AccountTombstoned` carries only `TombstonedAt` | No personal data by content | `Source/Identity.Contracts/Accounts/Events/AccountTombstoned.cs:11` |
+| Chronicle constraint index | `unique-upstream-key` over `KeyHash` | **Unverified**, see section 5 | `Source/Identity/Accounts/Constraints/UniqueUpstreamKey.cs:13-17` |
+| Read model `AccountLinkState` | `Email` and `Name`; reducer-state members `Proposals` (holding `UpstreamSubject`) and `Logins` | Values derive from PII events; the read model itself is not separately marked | `Source/Identity/Accounts/Linking/AccountLinkState.cs:26-41`, `LinkProposal.cs:17` |
+| Read model `UpstreamKeyLookup` | `LinkId` and an active flag per account | Pseudonymous ids only | `Source/Identity/Accounts/Lookup/UpstreamKeyLookupProjection.cs:14-23` |
+| Query `LinkedAccountKeys` | `Login` display identifier, read from `AccountLinkState` | Derived | `Source/Identity/Accounts/LinkedAccountKeys.cs:23,50` |
+| Mongo `AccountDocument` (GitHub sign-in accounts) | `github_id`, `github_login`, `name` | **Not PII-marked**; outside Chronicle crypto-shredding | `Source/Identity/Accounts/AccountDocument.cs:22-35`, `Accounts.cs:26-31` |
+| Fence log, tombstones, outbox | Pseudonymous ids and sequences | Not personal data by design | identity-events-v1 §7; [storage note](../design/identity-package-and-storage-v1.md) §2 |
+| Backups, exports, consumer stores, logs | Anything the stores above held at copy time | Outside the workflow | identity-events-v1 §5 |
+
+No erasure event, command or call to `PII.DeleteEncryptionKeyFor` exists in `Source/`. `AccountErased` and the `AccountErasure*` events are catalogued in identity-events-v1 (§4 and §8) but have no contract type yet.
+
+## 2. Completion boundary
+
+| Store | Erased | Remains | Not covered |
+|---|---|---|---|
+| Chronicle event log | Readable plaintext of PII-marked values, once the subject key is destroyed (identity-events-v1 §5) | Event envelopes, ids, timestamps and unreadable ciphertext | Copies made before destruction |
+| Chronicle constraint index | **Unverified** | **Unverified** | n/a |
+| Read models | **PROPOSED:** rows removed or replaced; rebuilds must not restore plaintext | Pseudonymous `LinkId`s | Copies in backups |
+| Fence log and tombstone | Nothing; kept on purpose | Pseudonymous account id, fence ids, sequences, `AccountTombstoned` | n/a |
+| Mongo `AccountDocument` | **OPEN:** not yet in the workflow | Plaintext GitHub id, login and name | The whole store until handled |
+| Backups, exports, consumer stores | n/a | All copies | Retention boundary and acknowledgements are an open decision |
+
+## 3. Proposed workflow (PROPOSED, not implemented)
+
+Order follows identity-events-v1 §5. Revoking first keeps access denied even if a later stage fails.
+
+1. Revoke grants, families, sessions and personal access tokens through the revocation protocol.
+2. Purge operational personal data.
+3. Destroy the subject's encryption keys in every relevant namespace (`IEventStore.PII.DeleteEncryptionKeyFor`).
+4. Remove or rebuild read models and caches so no plaintext survives a replay.
+5. Append `AccountErased`.
+
+The fence log and the tombstone are kept so a replay or restore cannot re-enable access. Stage progress would be operational state; events would mark only the request, a real failure and completion.
+
+## 4. Open product and legal questions (OPEN)
+
+- Retention window for backups and exports, and the policy for restores that predate an erasure.
+- Whether `AccountErased` may be recorded while retention-only stores still hold copies.
+- Who may request erasure, the response time, and whether a disabled or tombstoned account can be erased.
+- What Ante and other consumers must acknowledge, and whether `AccountErased` waits for it.
+- Whether one request covers every realm and namespace the person exists in, or one realm.
+- Whether the `AccountDocument` GitHub store stays in scope of this workflow.
+
+## 5. Unverified: constraint index and a `[PII]` digest
+
+`unique-upstream-key` is declared on `UpstreamKeyLinkRecorded.KeyHash`, which is `[PII]` (`UniqueUpstreamKey.cs:13-17`, `UpstreamLookupDigest.cs:12`). The Chronicle sources are not part of this repository, so this review cannot confirm what the constraint index stores for an encrypted property (plaintext digest, ciphertext or nothing), nor whether the reservation survives key destruction. Until that is confirmed, the boundary neither claims the digest is erased from the index nor that it remains. If the index keeps a usable digest, that is a gap to raise with Chronicle.
