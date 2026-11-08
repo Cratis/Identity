@@ -13,13 +13,12 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build:
     name: Build hosted-shared image
+    concurrency:
+      group: ${{ github.workflow }}-build-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}
     timeout-minutes: 15
     steps:
@@ -39,6 +38,9 @@ jobs:
 
   publish:
     name: Publish hosted-shared image (opt-in)
+    concurrency:
+      group: ${{ github.workflow }}-publish
+      cancel-in-progress: false
     needs: build
     if: >-
       github.event_name == 'push' &&

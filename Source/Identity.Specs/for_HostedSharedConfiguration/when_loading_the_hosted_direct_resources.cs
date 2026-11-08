@@ -35,10 +35,10 @@ public class when_loading_the_hosted_direct_resources : Specification
                 ["Identity:MongoDB:Database"] = "identity-products",
                 ["Identity:Accounts:LookupKey"] = Convert.ToBase64String(new byte[32]),
                 ["Identity:SecurityOwners:0"] = "synthetic-owner",
-                ["Identity:Revocation:FenceLog:ConnectionString"] = "mongodb://independent.example",
-                ["Identity:Revocation:FenceLog:Database"] = "fences",
-                ["Identity:Revocation:FenceLog:InstanceId"] = "synthetic-custody",
-                ["Identity:Revocation:FenceLog:MinimumSequence"] = "0",
+                ["Identity:FenceLog:ConnectionString"] = "mongodb://independent.example",
+                ["Identity:FenceLog:Database"] = "fences",
+                ["Identity:FenceLog:InstanceId"] = "synthetic-custody",
+                ["Identity:FenceLog:MinimumSequence"] = "0",
                 ["Cratis:Chronicle:ConnectionString"] = "chronicle://chronicle.example:35000",
                 ["Identity:Resources:0:TenantsCallback:Url"] = "https://direct.example/tenants",
                 ["Identity:Resources:0:TenantsCallback:Secret"] = new string('x', 32),
@@ -96,11 +96,11 @@ public class when_loading_the_hosted_direct_resources : Specification
     [InlineData("Identity:SecretStore:Path", "", "Identity:SecretStore:Path")]
     [InlineData("Identity:MongoDB:ConnectionString", "", "Identity:MongoDB:ConnectionString")]
     [InlineData("Identity:MongoDB:Database", "", "Identity:MongoDB:Database")]
-    [InlineData("Identity:Revocation:FenceLog:ConnectionString", "", "Identity:Revocation:FenceLog:ConnectionString")]
-    [InlineData("Identity:Revocation:FenceLog:ConnectionString", "mongodb://operational.example", "Identity:Revocation:FenceLog:ConnectionString")]
-    [InlineData("Identity:Revocation:FenceLog:InstanceId", "", "Identity:Revocation:FenceLog:InstanceId")]
-    [InlineData("Identity:Revocation:FenceLog:MinimumSequence", "", "Identity:Revocation:FenceLog:MinimumSequence")]
-    [InlineData("Identity:Revocation:FenceLog:MinimumSequence", "-1", "Identity:Revocation:FenceLog:MinimumSequence")]
+    [InlineData("Identity:FenceLog:ConnectionString", "", "Identity:FenceLog:ConnectionString")]
+    [InlineData("Identity:FenceLog:ConnectionString", "mongodb://operational.example", "Identity:FenceLog:ConnectionString")]
+    [InlineData("Identity:FenceLog:InstanceId", "", "Identity:FenceLog:InstanceId")]
+    [InlineData("Identity:FenceLog:MinimumSequence", "", "Identity:FenceLog:MinimumSequence")]
+    [InlineData("Identity:FenceLog:MinimumSequence", "-1", "Identity:FenceLog:MinimumSequence")]
     [InlineData("Identity:GitHub:ClientId", "", "Identity:GitHub:ClientId")]
     [InlineData("Identity:GitHub:ClientSecret", "", "Identity:GitHub:ClientSecret")]
     [InlineData("Identity:SecurityOwners:0", "", "Identity:SecurityOwners")]

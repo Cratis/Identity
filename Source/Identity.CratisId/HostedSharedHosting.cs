@@ -4,6 +4,7 @@
 using System.Net;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Cratis.Identity.Server;
 
@@ -34,6 +35,20 @@ internal static class HostedSharedHosting
     /// <param name="app">The host application.</param>
     internal static void MapReadiness(WebApplication app) => app.MapHealthChecks("/readyz", new HealthCheckOptions
     {
-        Predicate = registration => registration.Name == "identity-recovery"
+        Predicate = registration => registration.Name == "identity-restriction-recovery",
+        ResponseWriter = WriteReadinessResponse
     });
+
+    static Task WriteReadinessResponse(HttpContext context, HealthReport report)
+    {
+        context.Response.ContentType = "text/plain";
+        var status = report.Status;
+        if (report.Entries.Count == 0)
+        {
+            context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+            status = HealthStatus.Unhealthy;
+        }
+
+        return context.Response.WriteAsync(status.ToString(), context.RequestAborted);
+    }
 }

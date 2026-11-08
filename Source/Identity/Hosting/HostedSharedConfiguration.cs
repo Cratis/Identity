@@ -17,7 +17,7 @@ internal sealed class HostedSharedConfiguration(IConfiguration configuration, IH
     [
         "Identity:GitHub:ClientId", "Identity:GitHub:ClientSecret",
         "Identity:MongoDB:ConnectionString", "Identity:MongoDB:Database",
-        "Identity:Revocation:FenceLog:ConnectionString", "Identity:Revocation:FenceLog:Database", "Identity:Revocation:FenceLog:InstanceId",
+        "Identity:FenceLog:ConnectionString", "Identity:FenceLog:Database", "Identity:FenceLog:InstanceId",
         "Cratis:Chronicle:ConnectionString"
     ];
 
@@ -131,15 +131,15 @@ internal sealed class HostedSharedConfiguration(IConfiguration configuration, IH
 
     IEnumerable<string> ValidateCustody()
     {
-        var connection = configuration["Identity:Revocation:FenceLog:ConnectionString"];
+        var connection = configuration["Identity:FenceLog:ConnectionString"];
         if (!string.IsNullOrWhiteSpace(connection) && connection == configuration["Identity:MongoDB:ConnectionString"])
         {
-            yield return "Identity:Revocation:FenceLog:ConnectionString must differ from Identity:MongoDB:ConnectionString and use independent custody.";
+            yield return "Identity:FenceLog:ConnectionString must differ from Identity:MongoDB:ConnectionString and use independent custody.";
         }
 
-        if (!long.TryParse(configuration["Identity:Revocation:FenceLog:MinimumSequence"], out var minimum) || minimum < 0)
+        if (!long.TryParse(configuration["Identity:FenceLog:MinimumSequence"], out var minimum) || minimum < 0)
         {
-            yield return "Identity:Revocation:FenceLog:MinimumSequence must be an explicitly supplied nonnegative independent allocation bound.";
+            yield return "Identity:FenceLog:MinimumSequence must be an explicitly supplied nonnegative independent allocation bound.";
         }
     }
 }

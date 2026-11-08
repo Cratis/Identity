@@ -34,8 +34,8 @@ ASP.NET Core configuration providers supply the following settings. Environment 
 | `Identity:SecretStore:Path` | Read-only secret-store mount containing realm signing/encryption pairs and the Data Protection ring. Keys must be dedicated to this realm, not shared with another issuer. |
 | `Identity:MongoDB:ConnectionString`, `Identity:MongoDB:Database` | Explicit operational-store connection and database. Use a transaction-capable replica set with durable writes, not a standalone development server. |
 | `Cratis:Chronicle:ConnectionString` | Explicit native Chronicle client connection. `Cratis:Chronicle:EventStore` defaults to `IdentityProducts`; isolate it from other realms. |
-| `Identity:Revocation:FenceLog:ConnectionString`, `Database`, `InstanceId` | Independently provisioned fence-log custody. Its connection string must differ from the operational connection. Merely changing the URI or database name does not establish deployment or backup independence. |
-| `Identity:Revocation:FenceLog:MinimumSequence` | Explicit nonnegative, externally observed allocation bound. A fresh, independently initialized empty custody may start at `0`; never reset an existing custody's bound to make a restore pass. |
+| `Identity:FenceLog:ConnectionString`, `Database`, `InstanceId` | Independently provisioned fence-log custody. Its connection string must differ from the operational connection. Merely changing the URI or database name does not establish deployment or backup independence. |
+| `Identity:FenceLog:MinimumSequence` | Explicit nonnegative, externally observed allocation bound. A fresh, independently initialized empty custody may start at `0`; never reset an existing custody's bound to make a restore pass. |
 | `Identity:Accounts:LookupKey` | Secret base64 lookup key containing at least 256 bits; keep its revision and custody stable across replicas and restarts. |
 | `Identity:Accounts:ConfirmNoLegacyMongoStore` | Defaults to `false`. Leave the legacy-account guard enabled unless an operator has confirmed no legacy store needs preservation. This is not an automatic bootstrap flag. |
 | `Identity:GitHub:ClientId`, `Identity:GitHub:ClientSecret` | Provisioned GitHub OAuth application, with its callback at the public issuer's `/signin-github`. Supply the secret through the platform secret mechanism. |
@@ -44,6 +44,8 @@ ASP.NET Core configuration providers supply the following settings. Environment 
 | `Identity:Tokens:AccessTokenLifetime` | Positive, at most `00:05:00`; shipped default is five minutes. The hosted-shared limit is deliberately stricter than the general access-token v1 ceiling. |
 | `ForwardedHeaders:KnownProxies:<index>` | Explicit ingress IP addresses trusted to forward the client address and scheme. |
 | `ForwardedHeaders:KnownNetworks:<index>` | Optional trusted ingress CIDRs, narrowly scoped to the controlled ingress network. Never use all-address networks. |
+
+For environment injection, the fence-log variables are `Identity__FenceLog__ConnectionString`, `Identity__FenceLog__Database`, `Identity__FenceLog__InstanceId` and `Identity__FenceLog__MinimumSequence`. These bind the runtime's `Identity:FenceLog` section; there is no `Revocation` nesting.
 
 Startup aggregates missing or invalid hosted-shared settings into one value-free diagnostic list before normal Identity storage setup. Existing legacy-certificate, secret-store, account, resource and token checks still apply. An invalid or inaccessible key mount, invalid MongoDB connection, missing custody or uncertain recovery continues to fail closed; validation does not provision or prove any of these dependencies.
 
@@ -84,7 +86,7 @@ Client and scope materialization reads configuration at each startup. The config
 | Endpoint | Meaning | Probe use |
 | --- | --- | --- |
 | `/healthz` | Process liveness, independent of recovery readiness. | Liveness; do not restart a live process merely because reconciliation is incomplete. |
-| `/readyz` | Only the `identity-recovery` health check: HTTP 503 while the recovery barrier is closed, HTTP 200 after recovery is proven. | Readiness; do not route issuance traffic while unhealthy. |
+| `/readyz` | Only the registered `identity-restriction-recovery` health check: HTTP 503 while the recovery barrier is closed or no matching check is registered, HTTP 200 after recovery is proven. | Readiness; do not route issuance traffic while unhealthy. |
 
 Readiness is a protocol barrier, not a claim that production approval or D13 evidence exists. A healthy process can still deny individual operations. Offline access tokens remain bounded by their lifetime and verifier policy; closing readiness does not instantly revoke already issued JWTs.
 

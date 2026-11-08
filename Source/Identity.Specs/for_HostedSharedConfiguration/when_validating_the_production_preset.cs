@@ -28,7 +28,7 @@ public class when_validating_the_production_preset : Specification
         failures.ShouldContain("Identity:SecretStore:Path");
         failures.ShouldContain("Identity:GitHub:ClientId");
         failures.ShouldContain("Identity:MongoDB:Database");
-        failures.ShouldContain("Identity:Revocation:FenceLog:InstanceId");
+        failures.ShouldContain("Identity:FenceLog:InstanceId");
         failures.ShouldContain("Cratis:Chronicle:ConnectionString");
         failures.Contains("synthetic-sensitive-value", StringComparison.Ordinal).ShouldBeFalse();
         failures.Contains("mongodb://", StringComparison.Ordinal).ShouldBeFalse();
