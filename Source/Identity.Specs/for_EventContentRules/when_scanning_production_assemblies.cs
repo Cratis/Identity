@@ -10,7 +10,7 @@ namespace Cratis.Identity.for_EventContentRules;
 public class when_scanning_production_assemblies : Specification
 {
     static readonly string _solution = Path.GetFullPath("../../../../../Identity.slnx", AppContext.BaseDirectory);
-    static readonly Assembly[] _production = [typeof(AccountRegistered).Assembly, Assembly.Load("Cratis.Identity"), Assembly.Load("Cratis.Identity.Host")];
+    static readonly Assembly[] _production = [typeof(AccountRegistered).Assembly, Assembly.Load("Cratis.Identity"), Assembly.Load("Cratis.Identity.Host"), Assembly.Load("Cratis.Id.Host")];
 
     [Fact]
     public void should_scan_every_production_project()
@@ -26,6 +26,14 @@ public class when_scanning_production_assemblies : Specification
         using var output = new StringWriter();
         CheckRunner.Run(_production.Where(assembly => assembly.GetName().Name != "Cratis.Identity.Host"), _solution, output).ShouldEqual(1);
         output.ToString().ShouldEqual($"event-content Cratis.Identity.Host production_assembly_not_scanned{Environment.NewLine}");
+    }
+
+    [Fact]
+    public void should_fail_when_the_hosted_server_is_not_scanned()
+    {
+        using var output = new StringWriter();
+        CheckRunner.Run(_production.Where(assembly => assembly.GetName().Name != "Cratis.Id.Host"), _solution, output).ShouldEqual(1);
+        output.ToString().ShouldEqual($"event-content Cratis.Id.Host production_assembly_not_scanned{Environment.NewLine}");
     }
 
     [Fact]

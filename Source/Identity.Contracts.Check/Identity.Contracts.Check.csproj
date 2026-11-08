@@ -11,6 +11,7 @@
     <ProjectReference Include="../Identity.Contracts/Identity.Contracts.csproj" />
     <ProjectReference Include="../Identity/Identity.csproj" />
     <ProjectReference Include="../Identity.Host/Identity.Host.csproj" />
+    <ProjectReference Include="../Identity.CratisId/Identity.CratisId.csproj" />
     <InternalsVisibleTo Include="Cratis.Identity.Specs" />
     <EmbeddedResource Include="catalogue/identity-events-v1.json" />
   </ItemGroup>

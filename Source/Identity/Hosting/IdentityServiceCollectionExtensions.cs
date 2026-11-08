@@ -47,6 +47,7 @@ internal static class IdentityServiceCollectionExtensions
     /// <returns>The <see cref="IServiceCollection"/> for continuation.</returns>
     /// <exception cref="KeysInConfiguration">Thrown when a signing or encryption certificate is still configured.</exception>
     /// <exception cref="SecretStoreNotConfigured">Thrown outside development without a secret store.</exception>
+    /// <exception cref="OptionsValidationException">The hosted-shared preset has missing or invalid production settings.</exception>
     /// <exception cref="ChronicleNotConfigured">The native account path has no configured Chronicle client.</exception>
     /// <exception cref="InvalidMongoDBConnectionString">Thrown when the MongoDB client is first resolved with a connection string that cannot be parsed.</exception>
     internal static IServiceCollection AddCratisIdentity(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
@@ -58,6 +59,12 @@ internal static class IdentityServiceCollectionExtensions
         foreach (var setting in _keySettings.Where(_ => section.GetSection(_).Exists()))
         {
             throw new KeysInConfiguration($"{IdentityOptions.SectionName}:{setting}");
+        }
+
+        var hostedValidation = new HostedSharedConfiguration(configuration, environment).Validate(null, startupOptions);
+        if (hostedValidation.Failed)
+        {
+            throw new OptionsValidationException(Options.DefaultName, typeof(IdentityOptions), hostedValidation.Failures);
         }
 
         if (!environment.IsDevelopment() && !startupOptions.SecretStore.IsConfigured)
