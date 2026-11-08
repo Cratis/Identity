@@ -5,6 +5,7 @@ using System.Globalization;
 using Cratis.Arc.Commands;
 using Cratis.Arc.Tenancy;
 using Cratis.Chronicle;
+using Cratis.Chronicle.Events;
 using Cratis.Chronicle.Reactors;
 using Cratis.Chronicle.Registrations;
 using Cratis.Identity.Accounts;
@@ -133,9 +134,29 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
 
     /// <summary>Restarts the same kernel after an outage scenario without replacing its state.</summary>
     /// <returns>A task that completes once the kernel is back and the host has finished its restriction recovery.</returns>
+    /// <exception cref="TimeoutException">The host did not finish restriction recovery in time.</exception>
     public async Task RestartChronicle()
     {
         await _chronicle.Start();
+
+        // Specs sign in right after an outage; the native client must be reconnected before they do.
+        await using (var scope = Services.CreateAsyncScope())
+        {
+            var store = scope.ServiceProvider.GetRequiredService<IEventStore>();
+            var connectDeadline = DateTime.UtcNow.AddSeconds(90);
+            while (true)
+            {
+                try
+                {
+                    _ = await store.EventLog.GetFromSequenceNumber(EventSequenceNumber.First);
+                    break;
+                }
+                catch (Exception) when (DateTime.UtcNow < connectDeadline)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(500));
+                }
+            }
+        }
 
         // The host refuses issuance until recovery has reconciled; later specs must not start inside that window.
         var health = Services.GetRequiredService<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckService>();
@@ -143,9 +164,14 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         while (true)
         {
             var report = await health.CheckHealthAsync(check => check.Name == "identity-restriction-recovery");
-            if (report.Status == Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Healthy || DateTime.UtcNow > deadline)
+            if (report.Status == Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Healthy)
             {
                 return;
+            }
+
+            if (DateTime.UtcNow > deadline)
+            {
+                throw new TimeoutException("The host did not finish restriction recovery after the Chronicle restart.");
             }
 
             await Task.Delay(TimeSpan.FromMilliseconds(250));
