@@ -12,5 +12,6 @@ namespace Cratis.Identity.Authorization.TokenExchange;
 /// <param name="Subject">The subject at that issuer.</param>
 /// <param name="AuthTime">The authentication time in Unix seconds, if the token carried one.</param>
 /// <param name="Expiry">When the token expires.</param>
+/// <param name="IssuedAt">When the token was issued.</param>
 /// <param name="ReplayKey">The key identifying this token for single use.</param>
-internal sealed record ValidatedSubject(UpstreamIssuer Issuer, UpstreamSubject Subject, long? AuthTime, DateTimeOffset Expiry, string ReplayKey);
+internal sealed record ValidatedSubject(UpstreamIssuer Issuer, UpstreamSubject Subject, long? AuthTime, DateTimeOffset Expiry, DateTimeOffset IssuedAt, string ReplayKey);

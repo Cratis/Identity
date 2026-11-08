@@ -157,6 +157,6 @@ internal class SubjectTokenValidator(IOptions<IdentityOptions> options, IExterna
 
         long? authTime = token.TryGetPayloadValue<long>("auth_time", out var seconds) ? seconds : null;
         var expiry = Utc(token.ValidTo);
-        return SubjectTokenResult.Accepted(new ValidatedSubject(upstreamIssuer, upstreamSubject, authTime, expiry, replayKey));
+        return SubjectTokenResult.Accepted(new ValidatedSubject(upstreamIssuer, upstreamSubject, authTime, expiry, issued, replayKey));
     }
 }

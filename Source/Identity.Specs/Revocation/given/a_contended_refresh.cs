@@ -102,6 +102,7 @@ public class a_contended_refresh : for_RedeemRefreshTokenOnce.given.a_refresh_to
         Substitute.For<IResourceCatalog>(),
         Substitute.For<ITenantDirectory>(),
         Configurations.WithTokenExchange().AsOptions(),
+        TimeProvider.System,
         NullLogger<TokenExchangeGrant>.Instance);
 
     async Task<bool> CompleteRedemption()

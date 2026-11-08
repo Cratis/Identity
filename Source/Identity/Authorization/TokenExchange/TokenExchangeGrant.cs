@@ -24,6 +24,7 @@ namespace Cratis.Identity.Authorization.TokenExchange;
 /// <param name="resources">The <see cref="IResourceCatalog"/>.</param>
 /// <param name="tenants">The <see cref="ITenantDirectory"/>.</param>
 /// <param name="options">The <see cref="IdentityOptions"/>.</param>
+/// <param name="time">The <see cref="TimeProvider"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
 internal class TokenExchangeGrant(
     ISubjectTokenValidator validator,
@@ -33,12 +34,29 @@ internal class TokenExchangeGrant(
     IResourceCatalog resources,
     ITenantDirectory tenants,
     IOptions<IdentityOptions> options,
+    TimeProvider time,
     ILogger<TokenExchangeGrant> logger)
 {
     /// <summary>
     /// The one description every identity-side refusal carries.
     /// </summary>
     internal const string InvalidSubjectDescription = "The subject token is not valid.";
+
+    /// <summary>
+    /// The longest request-supplied value written to a log.
+    /// </summary>
+    internal const int MaximumLoggedLength = 64;
+
+    /// <summary>
+    /// Truncates a caller-supplied value and strips control characters so it is safe to log.
+    /// </summary>
+    /// <param name="value">The value as sent.</param>
+    /// <returns>The value limited to <see cref="MaximumLoggedLength"/> characters.</returns>
+    public static string SafeForLog(string value)
+    {
+        var clean = new string([.. value.Take(MaximumLoggedLength).Select(_ => char.IsControl(_) ? '?' : _)]);
+        return value.Length > MaximumLoggedLength ? clean + "…" : clean;
+    }
 
     /// <summary>
     /// Handles a token-exchange request.
@@ -99,18 +117,29 @@ internal class TokenExchangeGrant(
 
         if (!listed.Tenants.Any(_ => string.Equals(_.Id, parameters.Tenant, StringComparison.Ordinal)))
         {
-            logger.TenantNotSelectable(client.ClientId, account.Id, parameters.Tenant, resource.Audience);
+            logger.TenantNotSelectable(client.ClientId, account.Id, SafeForLog(parameters.Tenant), resource.Audience);
             return Invalid();
         }
 
         var issuerOptions = options.Value.TokenExchange.Issuers.Single(_ => string.Equals(_.Issuer, verified.Issuer.Value, StringComparison.Ordinal));
-        if (!replay.TryRecord(verified.ReplayKey, verified.Expiry + issuerOptions.ClockSkew))
+        var remembered = verified.Expiry < verified.IssuedAt + issuerOptions.MaxTokenAge ? verified.Expiry : verified.IssuedAt + issuerOptions.MaxTokenAge;
+        switch (replay.Record(verified.ReplayKey, remembered + issuerOptions.ClockSkew))
         {
-            logger.RefusedForIssuer(client.ClientId, SubjectTokenRefusal.Replayed, verified.Issuer.Value, "replay");
-            return Invalid();
+            case ReplayRecordResult.AlreadyUsed:
+                logger.RefusedForIssuer(client.ClientId, SubjectTokenRefusal.Replayed, verified.Issuer.Value, "replay");
+                return Invalid();
+            case ReplayRecordResult.Full:
+                logger.RefusedForIssuer(client.ClientId, SubjectTokenRefusal.ReplayGuardFull, verified.Issuer.Value, "replay-guard-full");
+                return OAuthResults.Error(Errors.TemporarilyUnavailable, "Token exchange is unavailable right now. Try again later.");
         }
 
         var lifetime = options.Value.Tokens.AccessTokenLifetime;
+        var remaining = verified.Expiry - time.GetUtcNow();
+        if (remaining < lifetime)
+        {
+            lifetime = remaining;
+        }
+
         return OAuthResults.Issue(AccessTokenIdentity.Exchange(
             account,
             client.ClientId,

@@ -37,14 +37,22 @@ internal class SubjectTokenReplayGuard(TimeProvider time)
     /// <param name="key">The <see cref="ValidatedSubject.ReplayKey"/>.</param>
     /// <param name="until">How long to remember the token: its remaining life plus the tolerated skew.</param>
     /// <returns><see langword="true"/> if the token was recorded now; <see langword="false"/> if it was used before or the guard is full.</returns>
-    public bool TryRecord(string key, DateTimeOffset until)
+    public bool TryRecord(string key, DateTimeOffset until) => Record(key, until) == ReplayRecordResult.Recorded;
+
+    /// <summary>
+    /// Atomically checks and records a token as used, telling a replay from a full guard.
+    /// </summary>
+    /// <param name="key">The <see cref="ValidatedSubject.ReplayKey"/>.</param>
+    /// <param name="until">How long to remember the token.</param>
+    /// <returns>The <see cref="ReplayRecordResult"/>.</returns>
+    public ReplayRecordResult Record(string key, DateTimeOffset until)
     {
         lock (_lock)
         {
             var now = time.GetUtcNow();
             if (_seen.TryGetValue(key, out var existing) && existing > now)
             {
-                return false;
+                return ReplayRecordResult.AlreadyUsed;
             }
 
             if (_seen.Count >= MaximumEntries)
@@ -56,12 +64,12 @@ internal class SubjectTokenReplayGuard(TimeProvider time)
 
                 if (_seen.Count >= MaximumEntries)
                 {
-                    return false;
+                    return ReplayRecordResult.Full;
                 }
             }
 
             _seen[key] = until;
-            return true;
+            return ReplayRecordResult.Recorded;
         }
     }
 }

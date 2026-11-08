@@ -38,7 +38,7 @@ public class a_token_exchange_request : for_AccessTokenIdentity.given.an_account
         _options = Configurations.WithTokenExchange();
         _time = new(DateTimeOffset.UtcNow);
         _replay = new(_time);
-        _subject = new(new UpstreamIssuer(Configurations.ExternalIssuer), new UpstreamSubject("external-subject-1"), 1_700_000_000, _time.Now.AddMinutes(5), "key-1");
+        _subject = new(new UpstreamIssuer(Configurations.ExternalIssuer), new UpstreamSubject("external-subject-1"), 1_700_000_000, _time.Now.AddMinutes(5), _time.Now, "key-1");
 
         _validator = Substitute.For<ISubjectTokenValidator>();
         _validator.Validate(default!, default!, default).ReturnsForAnyArgs(Task.FromResult(SubjectTokenResult.Accepted(_subject)));
@@ -84,7 +84,7 @@ public class a_token_exchange_request : for_AccessTokenIdentity.given.an_account
 
     private protected async Task Handle()
     {
-        _handler = new(_validator, _replay, _keys, _accounts, new ResourceCatalog(_options.AsOptions()), _tenants, _options.AsOptions(), NullLogger<TokenExchangeGrant>.Instance);
+        _handler = new(_validator, _replay, _keys, _accounts, new ResourceCatalog(_options.AsOptions()), _tenants, _options.AsOptions(), _time, NullLogger<TokenExchangeGrant>.Instance);
         _result = await _handler.Handle(_request);
     }
 

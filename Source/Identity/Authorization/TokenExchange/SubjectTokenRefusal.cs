@@ -51,5 +51,10 @@ internal enum SubjectTokenRefusal
     /// <summary>
     /// The issuer's keys could not be obtained; nothing is issued, and the caller may retry.
     /// </summary>
-    KeysUnavailable = 8
+    KeysUnavailable = 8,
+
+    /// <summary>
+    /// The replay guard is full, so the token cannot be recorded; nothing is issued, and the caller may retry.
+    /// </summary>
+    ReplayGuardFull = 9
 }
