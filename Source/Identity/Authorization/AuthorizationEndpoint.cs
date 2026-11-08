@@ -52,14 +52,15 @@ internal class AuthorizationEndpoint(
                 : OAuthResults.Error(Errors.AccessDenied, "Sign-in could not be completed.");
         }
 
-        var account = await signedInAccounts.Find(context, request);
-        if (account is null)
+        var signedIn = await signedInAccounts.Find(context, request);
+        if (signedIn is null)
         {
             return request.HasPromptValue(PromptValues.None)
                 ? OAuthResults.Error(Errors.LoginRequired, "The user is not signed in.")
                 : signedInAccounts.Challenge(context);
         }
 
+        var account = signedIn.Account;
         var evaluation = grantPolicy.Evaluate(new GrantRequest(request.GetScopes(), request.GetResources()));
         if (evaluation is NotGrantable notGrantable)
         {
@@ -110,7 +111,7 @@ internal class AuthorizationEndpoint(
         }
 
         logger.ConsentGranted(account.Id, clientId, grant.Resource.Audience, tenant.Id, string.Join(' ', grant.Scopes));
-        return OAuthResults.Issue(AccessTokenIdentity.Create(account, clientId, grant, tenant));
+        return OAuthResults.Issue(AccessTokenIdentity.Create(account, clientId, grant, tenant, signedIn.AuthTime));
     }
 
     static bool IsConsentSubmission(HttpContext context) =>

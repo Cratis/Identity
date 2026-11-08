@@ -1,10 +1,12 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Globalization;
 using System.Security.Claims;
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Contracts;
 using Cratis.Identity.Tenants;
+using Cratis.Identity.Upstream;
 using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -21,6 +23,11 @@ namespace Cratis.Identity.Authorization;
 internal static class AccessTokenIdentity
 {
     /// <summary>
+    /// The assurance level the contract assigns when no connection mapping vouches for a stronger one.
+    /// </summary>
+    public const string BasicAssurance = "basic";
+
+    /// <summary>
     /// Gets the claim types written to access tokens, in addition to those OpenIddict writes itself
     /// (<c language="text">iss</c>, <c language="text">aud</c>, <c language="text">exp</c>, <c language="text">iat</c>, <c language="text">jti</c>, <c language="text">scope</c>, <c language="text">client_id</c>).
     /// </summary>
@@ -30,8 +37,12 @@ internal static class AccessTokenIdentity
         Claims.Name,
         Claims.PreferredUsername,
         Claims.AuthorizedParty,
+        IdentityClaims.Idp,
+        IdentityClaims.IdpSub,
         IdentityClaims.GitHubId,
         IdentityClaims.GitHubLogin,
+        Claims.AuthenticationTime,
+        Claims.AuthenticationContextReference,
         IdentityClaims.TenantId
     ];
 
@@ -42,14 +53,16 @@ internal static class AccessTokenIdentity
     /// <param name="clientId">The client the grant is for.</param>
     /// <param name="grant">The <see cref="Grant"/>.</param>
     /// <param name="tenant">The <see cref="SelectableTenant"/> the user selected.</param>
+    /// <param name="authTime">When the upstream authentication of the signed-in session was verified.</param>
     /// <returns>The <see cref="ClaimsIdentity"/> to sign in with.</returns>
-    public static ClaimsIdentity Create(Account account, string clientId, Grant grant, SelectableTenant tenant)
+    public static ClaimsIdentity Create(Account account, string clientId, Grant grant, SelectableTenant tenant, DateTimeOffset authTime)
     {
         var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
         identity.SetClaim(IdentityClaims.TenantId, tenant.Id);
         identity.SetScopes(grant.Scopes);
         identity.SetResources(grant.Resource.Audience);
-        Apply(identity, account, clientId);
+        SetAuthTime(identity, authTime.ToUnixTimeSeconds());
+        Apply(identity, account, clientId, grant.Resource.ReceivesUpstreamIdentity);
         return identity;
     }
 
@@ -61,22 +74,44 @@ internal static class AccessTokenIdentity
     /// <param name="granted">The principal carried by the authorization code or refresh token.</param>
     /// <param name="account">The current <see cref="Account"/>.</param>
     /// <param name="clientId">The client redeeming the token.</param>
+    /// <param name="receivesUpstreamIdentity">Whether every audience of the grant is a registered upstream-identity consumer, per the current catalog.</param>
     /// <returns>The <see cref="ClaimsIdentity"/> to sign in with.</returns>
-    public static ClaimsIdentity Renew(ClaimsPrincipal granted, Account account, string clientId)
+    public static ClaimsIdentity Renew(ClaimsPrincipal granted, Account account, string clientId, bool receivesUpstreamIdentity)
     {
         var identity = new ClaimsIdentity(granted.Claims, TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
-        Apply(identity, account, clientId);
+        Apply(identity, account, clientId, receivesUpstreamIdentity);
         return identity;
     }
 
-    static void Apply(ClaimsIdentity identity, Account account, string clientId)
+    /// <summary>
+    /// Gets the original authentication time a grant carries.
+    /// </summary>
+    /// <param name="granted">The principal carried by the authorization code or refresh token.</param>
+    /// <returns>The authentication time in Unix seconds, or <see langword="null"/> if the grant carries none.</returns>
+    public static long? AuthTimeOf(ClaimsPrincipal granted) =>
+        long.TryParse(granted.FindFirst(Claims.AuthenticationTime)?.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds) ? seconds : null;
+
+    static void SetAuthTime(ClaimsIdentity identity, long seconds)
     {
+        identity.SetClaim(Claims.AuthenticationTime, (string?)null);
+        identity.AddClaim(new Claim(Claims.AuthenticationTime, seconds.ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64));
+    }
+
+    static void Apply(ClaimsIdentity identity, Account account, string clientId, bool receivesUpstreamIdentity)
+    {
+        // TODO: idp is hard-wired to GitHub; it must come from the verified authentication once a second provider exists.
+        // Only registered upstream-identity consumers get the upstream subject, GitHub claims and preferred_username; everything else fails closed.
+        // Deviation from identity-contract-v1.md:148 (name MUST NOT appear in access tokens): resource proxies use it as the identity name;
+        // tracked for the v1.1 amendment (#111).
         identity
             .SetClaim(Claims.Subject, account.Id.Value)
             .SetClaim(Claims.Name, account.Name.Value)
-            .SetClaim(Claims.PreferredUsername, account.GitHubLogin.Value)
-            .SetClaim(IdentityClaims.GitHubId, account.GitHubId.Value)
-            .SetClaim(IdentityClaims.GitHubLogin, account.GitHubLogin.Value)
+            .SetClaim(Claims.PreferredUsername, receivesUpstreamIdentity ? account.GitHubLogin.Value : null)
+            .SetClaim(IdentityClaims.Idp, GitHubConnection.Issuer)
+            .SetClaim(IdentityClaims.IdpSub, receivesUpstreamIdentity ? account.GitHubId.Value : null)
+            .SetClaim(IdentityClaims.GitHubId, receivesUpstreamIdentity ? account.GitHubId.Value : null)
+            .SetClaim(IdentityClaims.GitHubLogin, receivesUpstreamIdentity ? account.GitHubLogin.Value : null)
+            .SetClaim(Claims.AuthenticationContextReference, BasicAssurance)
             .SetClaim(Claims.AuthorizedParty, clientId);
 
         identity.SetDestinations(claim => AccessTokenClaimTypes.Contains(claim.Type, StringComparer.Ordinal) ? [Destinations.AccessToken] : []);

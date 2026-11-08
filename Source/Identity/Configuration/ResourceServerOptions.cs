@@ -25,6 +25,12 @@ public class ResourceServerOptions
     public IList<string> Indicators { get; set; } = [];
 
     /// <summary>
+    /// Gets or sets a value indicating whether the resource is a registered upstream-identity consumer, the only kind of
+    /// audience whose access tokens carry <c language="text">idp_sub</c>, <c language="text">github_id</c> and <c language="text">github_login</c>.
+    /// </summary>
+    public bool ReceivesUpstreamIdentity { get; set; }
+
+    /// <summary>
     /// Gets or sets the scopes that belong to the resource server.
     /// </summary>
     public IList<ScopeOptions> Scopes { get; set; } = [];

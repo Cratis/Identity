@@ -107,6 +107,13 @@ internal class TokenEndpoint(
         // Offline access JWTs retain the accepted 630-second lifetime+skew window after a fence.
         // Online refresh admission is decided again by the single-document consume/install CAS.
         // A known non-current entry must reach redemption so concurrent reuse fences the family.
-        return OAuthResults.Issue(AccessTokenIdentity.Renew(granted, account, request.ClientId!));
+        // A grant without its original authentication time cannot be renewed: auth_time is never invented from the current time.
+        if (AccessTokenIdentity.AuthTimeOf(granted) is null)
+        {
+            return OAuthResults.Error(Errors.InvalidGrant, "The refresh token is no longer valid.");
+        }
+
+        var receivesUpstreamIdentity = grantedAudiences.All(_ => resources.FindByAudience(_)?.ReceivesUpstreamIdentity == true);
+        return OAuthResults.Issue(AccessTokenIdentity.Renew(granted, account, request.ClientId!, receivesUpstreamIdentity));
     }
 }

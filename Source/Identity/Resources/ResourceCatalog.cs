@@ -35,5 +35,6 @@ internal class ResourceCatalog(IOptions<IdentityOptions> options) : IResourceCat
         resource.Audience,
         string.IsNullOrWhiteSpace(resource.DisplayName) ? resource.Audience : resource.DisplayName,
         [.. resource.Indicators.Select(ResourceIndicator.Normalize).OfType<string>()],
-        [.. resource.Scopes.Select(_ => new ScopeDefinition(_.Name, _.Description))]);
+        [.. resource.Scopes.Select(_ => new ScopeDefinition(_.Name, _.Description))],
+        resource.ReceivesUpstreamIdentity);
 }
