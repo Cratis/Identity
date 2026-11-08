@@ -9,9 +9,9 @@ namespace Cratis.Identity.for_KeyEligibility.given;
 public class keys_at_a_moment : Specification
 {
     protected FixedTimeProvider _time;
-    protected KeyEligibility _eligibility;
+    private protected KeyEligibility _eligibility;
     protected Exception _exception;
-    protected RealmKey _current;
+    private protected RealmKey _current;
 
     void Establish()
     {
@@ -21,5 +21,5 @@ public class keys_at_a_moment : Specification
 
     protected static DateTimeOffset Ago(TimeSpan span) => KeyMaterial.Now - span;
 
-    protected void Select(params RealmKey[] keys) => _exception = Catch.Exception(() => _current = _eligibility.Current(KeyPurpose.Signing, keys));
+    private protected void Select(params RealmKey[] keys) => _exception = Catch.Exception(() => _current = _eligibility.Current(KeyPurpose.Signing, keys));
 }

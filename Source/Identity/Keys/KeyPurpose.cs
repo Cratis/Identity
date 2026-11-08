@@ -6,7 +6,7 @@ namespace Cratis.Identity.Keys;
 /// <summary>
 /// Represents what a realm key is used for. A key serves exactly one purpose.
 /// </summary>
-public enum KeyPurpose
+internal enum KeyPurpose
 {
     /// <summary>
     /// The key signs issued tokens and its public half is published through JWKS.

@@ -19,7 +19,7 @@ namespace Cratis.Identity.Authorization;
 /// </remarks>
 /// <param name="tokens">The <see cref="IOpenIddictTokenManager"/>.</param>
 /// <param name="timeProvider">The <see cref="TimeProvider"/>.</param>
-public class RejectExpiredTokenEntries(IOpenIddictTokenManager tokens, TimeProvider timeProvider) : IOpenIddictServerHandler<ValidateTokenContext>
+internal class RejectExpiredTokenEntries(IOpenIddictTokenManager tokens, TimeProvider timeProvider) : IOpenIddictServerHandler<ValidateTokenContext>
 {
     /// <summary>
     /// Gets the descriptor. It carries the same filters as OpenIddict's token-entry validation and runs before it and before

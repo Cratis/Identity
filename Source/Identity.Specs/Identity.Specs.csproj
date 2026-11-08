@@ -33,9 +33,9 @@
 
   <ItemGroup>
     <ProjectReference Include="../Identity/Identity.csproj" />
-    <ProjectReference Include="../Identity.Contracts.Check/Identity.Contracts.Check.csproj" />
     <None Include="Vectors/**" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="../../Documentation/specs/identity-events-v1.md" Link="identity-events-v1.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../Identity.Host/appsettings.json" Link="Identity.appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="../Identity.Integration.Specs/given/ResourceSettings.cs" Link="given/ResourceSettings.cs" />
   </ItemGroup>
 
 </Project>

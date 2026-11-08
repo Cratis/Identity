@@ -10,7 +10,7 @@ public class a_link_proposal : an_account_store
 {
     protected AccountSubject _account;
     protected LinkProposalId _proposal;
-    protected VerifiedAuthentication _proof;
+    private protected VerifiedAuthentication _proof;
 
     async Task Establish()
     {

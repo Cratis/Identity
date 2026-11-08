@@ -16,7 +16,7 @@ namespace Cratis.Identity.Keys;
 /// <param name="options">The <see cref="SecretStoreOptions"/>.</param>
 /// <param name="timeProvider">The <see cref="TimeProvider"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
-public sealed class SecretStoreKeys(SecretStoreOptions options, TimeProvider timeProvider, ILogger<SecretStoreKeys> logger) : IDisposable
+internal sealed class SecretStoreKeys(SecretStoreOptions options, TimeProvider timeProvider, ILogger<SecretStoreKeys> logger) : IDisposable
 {
     static readonly TimeSpan _dataProtectionExpiryWarning = TimeSpan.FromDays(14);
     readonly Lock _lock = new();

@@ -3,8 +3,8 @@
 ```text
 Spec id: identity-revocation
 Version: 1
-Status: Locked
-Locked: 2026-11-05, https://github.com/Cratis/Identity/issues/14
+Status: Signed off
+Signed off: 2026-11-05 by woksin, https://github.com/Cratis/Identity/issues/14; owner confirmation pending
 Issue: https://github.com/Cratis/Identity/issues/32
 Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
@@ -162,6 +162,12 @@ No outage permits bypass of a required check or a successful response before req
 [JSON vectors](../../Source/Identity.Specs/Vectors/identity-revocation-v1/) are **data only**, not credentials or implemented/passing executable specs. Each file contains `name`, `description`, `given`, `when` (ordered timeline steps) and `then`. Fixture ids are synthetic local labels, not proposed wire identifiers. An `event_type`/`event_types` value names the catalogue event (the Public contract where the row is Public); per §3 step 5 the dispatcher appends that event's Internal source fact, and an expected Chronicle fact count counts source facts. Unless separately specified, a vector's `recovery_epoch` applies to both its authority and realm; it is not a policy epoch. Sequence numbers and times are illustrative fence sequences / seconds; a harness MUST supply real multi-replica stores, faults and barriers rather than mock the serialization point away. `t` values order a timeline; `order` distinguishes steps at the same time. Unspecified dependencies are healthy, membership is known/allowed, policy is current, and target status is active before the steps. `ready` describes the affected class, not process liveness. Expected append/fence counts count logical durable facts, not delivery attempts.
 
 Conformance MUST exercise crashes after operational commit, log append, acknowledgement, Chronicle append and before outbox completion; replay/duplicate publication; restore of either and both stores; projection pause/rebuild; refresh races and reuse; remote-replica PAT use; ancestor revocation; stale Access and unknown membership; and recovery readiness/watermark gaps. Restore vectors MUST cover consumed refresh and approval invalidation with durable watermarks/outbox intent, delegation budget re-spend denial, denial of both sides of runner rotation, lost account disable blocking fresh login despite a healthy epoch authority, PAT revocation lost beyond the durable fence tail, policy-epoch re-evaluation versus unconditional recovery-epoch denial, and restored client-secret rotation with independent retirement enforcement. It MUST assert no secret/token/handle enters events or the fence log. Boundary tests MUST include exact 5/60-second freshness limits, 300/600-second AT lifetime plus 30-second skew, in-flight decisions on both sides of the fence, and fail-closed behavior for every dependency row. JSON parsing alone proves syntax, not these guarantees.
+
+### 9.1 Unit replay and rebuild coverage
+
+The replay suite rebuilds all four current read models from empty state, then repeats the same history. It preserves the operational grant fence, version, sequence and outbox while source facts are redelivered; refresh remains denied and keyed source-fact appends remain singular. The stale-Chronicle recovery case reapplies the independent fence before readiness and leaves admission closed while fact coverage is missing. It does not reset operational status from business projections.
+
+An observer-inventory tripwire rejects unclassified observers and declared token, grant-mutation, mail or clock dependencies. This reflection check is structural, not behavioral proof of absent effects. A recording token collection observes an initial real token-store insert as a positive control; the same store and operational fence are then used for revocation and rebuild, with no further insert and a refused post-rebuild creation attempt. The only current reactor, `AccountPublications`, retries failed publication and deduplicates by `FactId:contractTypeId`, not a sequence number. Registry-driven serialized log/outbox scans reject synthetic secrets and poisoned payloads. These unit checks complement, rather than replace, the real-store restore/race conformance above. Consent uses the real activation API with in-memory doubles; real-kernel consent replay remains with [#99](https://github.com/Cratis/Identity/issues/99).
 
 ## 10. Decisions recorded at sign-off and implementation proof
 

@@ -7,4 +7,4 @@ namespace Cratis.Identity.Authorization;
 /// Represents a <see cref="GrantRequest"/> that can be granted.
 /// </summary>
 /// <param name="Grant">The <see cref="Authorization.Grant"/>.</param>
-public sealed record Grantable(Grant Grant) : GrantEvaluation;
+internal sealed record Grantable(Grant Grant) : GrantEvaluation;

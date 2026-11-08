@@ -7,7 +7,7 @@ using Cratis.Identity.Contracts.Accounts.Events;
 namespace Cratis.Identity.Accounts.Linking;
 
 /// <summary>Admits a guarded source read without relying on reducer admission in Chronicle 19.111.</summary>
-public class AccountGuardProjection : IProjectionFor<AccountGuard>
+internal class AccountGuardProjection : IProjectionFor<AccountGuard>
 {
     /// <inheritdoc/>
     public void Define(IProjectionBuilderFor<AccountGuard> builder) => builder

@@ -1,7 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Cratis.Identity.Accounts;
+using Cratis.Identity.ConsentFlow.Operational;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -15,7 +15,7 @@ namespace Cratis.Identity.Storage;
 /// </summary>
 /// <param name="database">The <see cref="IMongoDatabase"/>.</param>
 /// <param name="openIddict">The <see cref="OpenIddictMongoDbOptions"/>.</param>
-public class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddictMongoDbOptions> openIddict)
+internal class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddictMongoDbOptions> openIddict)
 {
     /// <summary>
     /// Ensures all indexes exist.
@@ -25,23 +25,8 @@ public class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddictM
     public async Task Ensure(CancellationToken cancellationToken)
     {
         var options = openIddict.CurrentValue;
-
-        // The unique GitHub id is what makes a concurrent first sign-in create one account, not two.
-        await database.GetCollection<AccountDocument>(Accounts.Accounts.CollectionName).Indexes.CreateOneAsync(
-            new CreateIndexModel<AccountDocument>(Builders<AccountDocument>.IndexKeys.Ascending(_ => _.GitHubId), new CreateIndexOptions { Unique = true }),
-            cancellationToken: cancellationToken);
-
-        await database.GetCollection<OpenIddictMongoDbApplication>(options.ApplicationsCollectionName).Indexes.CreateOneAsync(
-            new CreateIndexModel<OpenIddictMongoDbApplication>(
-                Builders<OpenIddictMongoDbApplication>.IndexKeys.Ascending(_ => _.ClientId),
-                new CreateIndexOptions { Unique = true }),
-            cancellationToken: cancellationToken);
-
-        await database.GetCollection<OpenIddictMongoDbScope>(options.ScopesCollectionName).Indexes.CreateOneAsync(
-            new CreateIndexModel<OpenIddictMongoDbScope>(
-                Builders<OpenIddictMongoDbScope>.IndexKeys.Ascending(_ => _.Name),
-                new CreateIndexOptions { Unique = true }),
-            cancellationToken: cancellationToken);
+        await MongoConsentRequestStore.EnsureIndexes(database, cancellationToken);
+        await EnsureGrantFences(cancellationToken);
 
         await database.GetCollection<OpenIddictMongoDbAuthorization>(options.AuthorizationsCollectionName).Indexes.CreateOneAsync(
             new CreateIndexModel<OpenIddictMongoDbAuthorization>(
@@ -77,5 +62,14 @@ public class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddictM
                     new CreateIndexOptions { ExpireAfter = TimeSpan.Zero })
             ],
             cancellationToken);
+    }
+
+    async Task EnsureGrantFences(CancellationToken cancellationToken)
+    {
+        // Mongo's unique _id is the grant/fence identity. Tombstones and outbox intents never receive TTLs.
+        await database.GetCollection<BsonDocument>("grant-fences").Indexes.CreateOneAsync(
+            new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("undelivered"), new CreateIndexOptions { Name = "undelivered_grant_facts" }), cancellationToken: cancellationToken);
+        await database.GetCollection<BsonDocument>("grant-fence-log").Indexes.CreateOneAsync(
+            new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("sequence"), new CreateIndexOptions { Name = "unique_fence_sequence", Unique = true, Sparse = true }), cancellationToken: cancellationToken);
     }
 }

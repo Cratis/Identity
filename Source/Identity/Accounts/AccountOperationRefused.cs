@@ -5,7 +5,7 @@ namespace Cratis.Identity.Accounts;
 
 /// <summary>A fail-closed account operation, containing only an allowlisted reason.</summary>
 /// <param name="reason">The reason code, never evidence or personal content.</param>
-public class AccountOperationRefused(string reason) : Exception(reason)
+internal class AccountOperationRefused(string reason) : Exception(reason)
 {
     /// <summary>Requires a policy condition without including personal proof material in errors.</summary>
     /// <param name="satisfied">Whether policy is satisfied.</param>

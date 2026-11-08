@@ -11,7 +11,7 @@ namespace Cratis.Identity.Keys;
 /// Rebuilds the <see cref="OpenIddictServerOptions"/> when the keys of the secret store change.
 /// </summary>
 /// <param name="keys">The <see cref="SecretStoreKeys"/>.</param>
-public class SecretStoreKeysChangeTokenSource(SecretStoreKeys keys) : IOptionsChangeTokenSource<OpenIddictServerOptions>
+internal class SecretStoreKeysChangeTokenSource(SecretStoreKeys keys) : IOptionsChangeTokenSource<OpenIddictServerOptions>
 {
     /// <inheritdoc/>
     public string Name => Options.DefaultName;

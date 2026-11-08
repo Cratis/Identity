@@ -10,7 +10,7 @@ namespace Cratis.Identity.Keys;
 /// Serves the Data Protection key ring from the secret store. It is read-only: the ring is provisioned by the operator.
 /// </summary>
 /// <param name="keys">The <see cref="SecretStoreKeys"/>.</param>
-public class SecretStoreXmlRepository(SecretStoreKeys keys) : IXmlRepository
+internal class SecretStoreXmlRepository(SecretStoreKeys keys) : IXmlRepository
 {
     /// <inheritdoc/>
     public IReadOnlyCollection<XElement> GetAllElements() => keys.Current.Ring.DataProtection.Select(_ => new XElement(_.Element)).ToList();

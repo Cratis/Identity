@@ -6,7 +6,7 @@ using Cratis.Identity.Keys;
 
 namespace Cratis.Identity.given;
 
-public static class RealmKeys
+internal static class RealmKeys
 {
     public static RealmKey Signing(string kid, DateTimeOffset notBefore, DateTimeOffset notAfter)
     {

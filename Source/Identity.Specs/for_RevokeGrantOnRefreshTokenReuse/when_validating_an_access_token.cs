@@ -10,7 +10,7 @@ public class when_validating_an_access_token : given.a_refresh_token_being_valid
 {
     void Establish()
     {
-        _context.Principal!.SetTokenType(TokenTypeIdentifiers.AccessToken);
+        _context.Principal.SetTokenType(TokenTypeIdentifiers.AccessToken);
         _tokens.HasStatusAsync(_token, Statuses.Valid, Arg.Any<CancellationToken>()).Returns(false);
     }
 

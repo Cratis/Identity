@@ -8,7 +8,7 @@ using Cratis.Identity.Contracts.Accounts.Events;
 namespace Cratis.Identity.Accounts.Linking;
 
 /// <summary>Folds only Internal facts for guarded account decisions.</summary>
-public class AccountLinkStateReducer : IReducerFor<AccountLinkState>
+internal class AccountLinkStateReducer : IReducerFor<AccountLinkState>
 {
     /// <summary>Gets the reducer identity.</summary>
     public ReducerId Id => "47c30545-5546-433a-828a-b7ba31fd9710";

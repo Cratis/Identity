@@ -8,7 +8,7 @@ namespace Cratis.Identity.Accounts.Lookup;
 
 /// <summary>Lookup is a hint; the guarded account stream and kernel constraint authorize writes.</summary>
 /// <param name="readModels">The passive projection reader.</param>
-public class UpstreamLookups(IReadModels readModels)
+internal class UpstreamLookups(IReadModels readModels)
 {
     /// <summary>Finds a permanent reservation by keyed digest.</summary>
     /// <param name="digest">The lookup pseudonym.</param>

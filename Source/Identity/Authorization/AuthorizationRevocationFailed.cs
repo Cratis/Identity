@@ -8,5 +8,5 @@ namespace Cratis.Identity.Authorization;
 /// The request fails without issuing tokens.
 /// </summary>
 /// <param name="authorizationId">The authorization identifier.</param>
-public class AuthorizationRevocationFailed(string authorizationId)
+internal class AuthorizationRevocationFailed(string authorizationId)
     : Exception($"The authorization \"{authorizationId}\" could not be revoked after its refresh token was reused.");

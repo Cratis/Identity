@@ -10,7 +10,7 @@ namespace Cratis.Identity.Resources;
 /// Represents an implementation of <see cref="IResourceCatalog"/> backed by configuration.
 /// </summary>
 /// <param name="options">The <see cref="IdentityOptions"/>.</param>
-public class ResourceCatalog(IOptions<IdentityOptions> options) : IResourceCatalog
+internal class ResourceCatalog(IOptions<IdentityOptions> options) : IResourceCatalog
 {
     readonly ResourceServer[] _resources = [.. options.Value.Resources.Select(ToResourceServer)];
 

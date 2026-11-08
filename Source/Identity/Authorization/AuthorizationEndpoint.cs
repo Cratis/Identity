@@ -24,7 +24,7 @@ namespace Cratis.Identity.Authorization;
 /// <param name="consentPages">The <see cref="ConsentPages"/>.</param>
 /// <param name="applications">The <see cref="IOpenIddictApplicationManager"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
-public class AuthorizationEndpoint(
+internal class AuthorizationEndpoint(
     SignedInAccounts signedInAccounts,
     IGrantPolicy grantPolicy,
     ITenantDirectory tenants,
@@ -47,7 +47,9 @@ public class AuthorizationEndpoint(
         // the client and redirect URI, so it can send a safe OAuth error instead of challenging again.
         if (context.Request.Query.ContainsKey("upstream_error"))
         {
-            return OAuthResults.Error(Errors.AccessDenied, "Sign-in could not be completed.");
+            return context.Request.Query["upstream_error"] == "temporarily_unavailable"
+                ? OAuthResults.Error(Errors.TemporarilyUnavailable, "Sign-in is temporarily unavailable. Try again later.")
+                : OAuthResults.Error(Errors.AccessDenied, "Sign-in could not be completed.");
         }
 
         var account = await signedInAccounts.Find(context, request);

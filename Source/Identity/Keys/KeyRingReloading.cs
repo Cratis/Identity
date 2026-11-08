@@ -16,7 +16,7 @@ namespace Cratis.Identity.Keys;
 /// <param name="keys">The <see cref="SecretStoreKeys"/>.</param>
 /// <param name="options">The <see cref="IdentityOptions"/>, for the reload interval.</param>
 /// <param name="timeProvider">The <see cref="TimeProvider"/>.</param>
-public class KeyRingReloading(SecretStoreKeys keys, IOptions<IdentityOptions> options, TimeProvider timeProvider) : BackgroundService
+internal class KeyRingReloading(SecretStoreKeys keys, IOptions<IdentityOptions> options, TimeProvider timeProvider) : BackgroundService
 {
     static readonly TimeSpan _shortest = TimeSpan.FromSeconds(1);
 

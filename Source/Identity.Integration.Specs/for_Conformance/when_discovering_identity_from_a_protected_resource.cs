@@ -35,34 +35,34 @@ public class when_discovering_identity_from_a_protected_resource(IdentityHost ho
         _challengeStatus = challenge.StatusCode;
         var authenticate = challenge.Headers.WwwAuthenticate.Single();
         _challengeScheme = authenticate.Scheme;
-        var metadataUri = authenticate.Parameter!.Split('"')[1];
+        var metadataUri = authenticate.Parameter.Split('"')[1];
         using var prm = await _client.GetAsync(metadataUri);
         _prm = await Browser.ReadJson(prm);
-        _issuer = _prm.GetProperty("authorization_servers")[0].GetString()!;
+        _issuer = _prm.GetProperty("authorization_servers")[0].GetString();
 
         using var discovery = await _browser.Client.GetAsync(new Uri(new Uri(_issuer), "/.well-known/oauth-authorization-server"));
         _metadata = await Browser.ReadJson(discovery);
         var keys = new JsonWebKeySet(await _browser.Client.GetStringAsync(_metadata.GetProperty("jwks_uri").GetString()));
-        _resource.Trust(_metadata.GetProperty("issuer").GetString()!, keys.GetSigningKeys());
+        _resource.Trust(_metadata.GetProperty("issuer").GetString(), keys.GetSigningKeys());
 
         var (verifier, pkce) = Browser.Pkce();
-        var parameters = Browser.CliAuthorization(pkce, [_prm.GetProperty("resource").GetString()!]);
+        var parameters = Browser.CliAuthorization(pkce, [_prm.GetProperty("resource").GetString()]);
         using var page = await _browser.Send(new HttpRequestMessage(HttpMethod.Get, $"{_metadata.GetProperty("authorization_endpoint").GetString()}{QueryString.Create(parameters)}"));
         using var redirect = await _browser.Consent(await page.Content.ReadAsStringAsync());
-        var code = QueryHelpers.ParseQuery(redirect.Headers.Location!.Query)["code"].ToString();
-        using var tokens = await _browser.RedeemCodeResponse(code, verifier, resource: _prm.GetProperty("resource").GetString()!, tokenEndpoint: _metadata.GetProperty("token_endpoint").GetString()!);
+        var code = QueryHelpers.ParseQuery(redirect.Headers.Location.Query)["code"].ToString();
+        using var tokens = await _browser.RedeemCodeResponse(code, verifier, resource: _prm.GetProperty("resource").GetString(), tokenEndpoint: _metadata.GetProperty("token_endpoint").GetString());
         _tokenStatus = tokens.StatusCode;
         var body = await Browser.ReadJson(tokens);
-        _acceptedStatus = await CallResource(body.GetProperty("access_token").GetString()!);
+        _acceptedStatus = await CallResource(body.GetProperty("access_token").GetString());
 
         // A real token, signed by this issuer but minted for a different resource, must not be accepted.
         var (otherVerifier, otherChallenge) = Browser.Pkce();
         using var otherPage = await _browser.Authorize(Browser.CliAuthorization(otherChallenge, [IdentityHost.StudioMcp], "studio:read offline_access"));
         using var otherRedirect = await _browser.Consent(await otherPage.Content.ReadAsStringAsync(), tenant: "studio");
-        var otherCode = QueryHelpers.ParseQuery(otherRedirect.Headers.Location!.Query)["code"].ToString();
+        var otherCode = QueryHelpers.ParseQuery(otherRedirect.Headers.Location.Query)["code"].ToString();
         var (status, otherTokens) = await _browser.RedeemCode(otherCode, otherVerifier, IdentityHost.StudioMcp);
         _otherTokenStatus = status;
-        _rejectedStatus = await CallResource(otherTokens.GetProperty("access_token").GetString()!);
+        _rejectedStatus = await CallResource(otherTokens.GetProperty("access_token").GetString());
     }
 
     [Fact] void should_challenge_an_unauthenticated_resource_request() => Conformance.Conformance.Expect(Requirements.AsMetadataFromPrm, () => _challengeStatus.ShouldEqual(HttpStatusCode.Unauthorized));

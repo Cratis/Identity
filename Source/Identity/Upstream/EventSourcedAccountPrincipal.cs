@@ -8,7 +8,7 @@ using Cratis.Identity.Contracts.Accounts;
 namespace Cratis.Identity.Upstream;
 
 /// <summary>Claim material for the new account path, never matching proof or an existing-session proof.</summary>
-public static class EventSourcedAccountPrincipal
+internal static class EventSourcedAccountPrincipal
 {
     /// <summary>Creates claims with display-only preferred_username from the protected observed login.</summary>
     /// <param name="account">The immutable account subject.</param>

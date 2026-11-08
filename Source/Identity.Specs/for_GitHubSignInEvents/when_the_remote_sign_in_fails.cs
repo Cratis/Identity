@@ -1,7 +1,6 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Cratis.Identity.Accounts;
 using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OAuth;
@@ -22,7 +21,7 @@ public class when_the_remote_sign_in_fails : Specification
     void Establish()
     {
         _logger = new CapturingLogger();
-        _events = new GitHubSignInEvents(Substitute.For<IAccounts>(), _logger);
+        _events = new GitHubSignInEvents(Substitute.For<IAccountSignIn>(), _logger, TimeProvider.System);
         _failure = new AuthenticationFailureException("The oauth state was missing or invalid.");
         _context = new RemoteFailureContext(
             new DefaultHttpContext(),

@@ -11,12 +11,16 @@ namespace Cratis.Identity.Configuration;
 /// service instead of silently narrowing or widening what tokens can carry.
 /// </summary>
 /// <param name="environment">The host environment; configured tenants are Development fixtures only.</param>
-public class IdentityOptionsValidation(IHostEnvironment environment) : IValidateOptions<IdentityOptions>
+internal class IdentityOptionsValidation(IHostEnvironment environment) : IValidateOptions<IdentityOptions>
 {
     /// <inheritdoc/>
     public ValidateOptionsResult Validate(string? name, IdentityOptions options)
     {
         var failures = new List<string>();
+        if (options.SecurityOwners.Any(string.IsNullOrWhiteSpace))
+        {
+            failures.Add("Identity:SecurityOwners must contain only non-empty subjects.");
+        }
 
         if (!string.IsNullOrWhiteSpace(options.Issuer))
         {
@@ -62,6 +66,11 @@ public class IdentityOptionsValidation(IHostEnvironment environment) : IValidate
             yield return $"Resource server \"{resource.Audience}\" has no resource indicators.";
         }
 
+        if (resource.Indicators.Count > 1)
+        {
+            yield return $"Resource server \"{resource.Audience}\" must have exactly one resource indicator.";
+        }
+
         foreach (var indicator in resource.Indicators.Where(_ => ResourceIndicator.Normalize(_) is null))
         {
             yield return $"Resource indicator \"{indicator}\" of \"{resource.Audience}\" is not an absolute URI without a fragment.";
@@ -88,9 +97,9 @@ public class IdentityOptionsValidation(IHostEnvironment environment) : IValidate
 
     void ValidateAccounts(AccountsOptions accounts, List<string> failures)
     {
-        if (!accounts.EventSourced)
+        if (accounts.ReadModelCatchUpTimeout <= TimeSpan.Zero)
         {
-            return;
+            failures.Add("Account read-model catch-up timeout must be positive.");
         }
 
         if (!environment.IsDevelopment() && string.IsNullOrEmpty(accounts.LookupKey))

@@ -7,5 +7,5 @@ namespace Cratis.Identity.Upstream;
 /// The exception that is thrown when GitHub answers the user endpoint without a numeric id or a login, so the
 /// sign-in cannot be linked to an account.
 /// </summary>
-public class GitHubUserResponseInvalid()
+internal class GitHubUserResponseInvalid()
     : Exception("GitHub returned a user without a numeric id or a login; the sign-in cannot be linked to an account.");

@@ -19,7 +19,7 @@ public class when_the_same_refresh_token_is_used_concurrently(IdentityHost host)
         var browser = host.CreateBrowser();
         var (verifier, challenge) = Browser.Pkce();
         var (_, tokens) = await browser.RedeemCode(await browser.LoginForCode(challenge), verifier);
-        var refreshToken = tokens.GetProperty("refresh_token").GetString()!;
+        var refreshToken = tokens.GetProperty("refresh_token").GetString();
         var secondBrowser = host.CreateBrowser();
 
         // Both requests pass token validation and wait just before redemption until the other has too, so both
@@ -31,11 +31,11 @@ public class when_the_same_refresh_token_is_used_concurrently(IdentityHost host)
                 Task.Run(() => secondBrowser.Refresh(refreshToken)));
         }
 
-        (_, _originalIntrospection) = await browser.Introspect(tokens.GetProperty("access_token").GetString()!);
+        (_, _originalIntrospection) = await browser.Introspect(tokens.GetProperty("access_token").GetString());
         if (_results.Count(_ => _.Status == HttpStatusCode.OK) == 1)
         {
-            _successorRefresh = await browser.Refresh(Winner.Body.GetProperty("refresh_token").GetString()!);
-            (_, _successorIntrospection) = await browser.Introspect(Winner.Body.GetProperty("access_token").GetString()!);
+            _successorRefresh = await browser.Refresh(Winner.Body.GetProperty("refresh_token").GetString());
+            (_, _successorIntrospection) = await browser.Introspect(Winner.Body.GetProperty("access_token").GetString());
         }
     }
 

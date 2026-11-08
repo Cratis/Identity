@@ -8,7 +8,7 @@ namespace Cratis.Identity.Resources;
 /// <summary>
 /// Holds the scopes that belong to the protocol rather than to a resource server.
 /// </summary>
-public static class ProtocolScopes
+internal static class ProtocolScopes
 {
     /// <summary>
     /// Gets all protocol scopes Identity accepts.

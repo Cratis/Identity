@@ -20,11 +20,11 @@ public class when_a_rotated_refresh_token_is_reused(IdentityHost host) : IAsyncL
         var browser = host.CreateBrowser();
         var (verifier, challenge) = Browser.Pkce();
         var (_, tokens) = await browser.RedeemCode(await browser.LoginForCode(challenge), verifier);
-        _first = tokens.GetProperty("refresh_token").GetString()!;
+        _first = tokens.GetProperty("refresh_token").GetString();
 
         (_rotationStatus, var rotated) = await browser.Refresh(_first);
-        _second = rotated.GetProperty("refresh_token").GetString()!;
-        var secondAccessToken = rotated.GetProperty("access_token").GetString()!;
+        _second = rotated.GetProperty("refresh_token").GetString();
+        var secondAccessToken = rotated.GetProperty("access_token").GetString();
 
         (_reuseStatus, _reuse) = await browser.Refresh(_first);
         (_successorStatus, _) = await browser.Refresh(_second);
