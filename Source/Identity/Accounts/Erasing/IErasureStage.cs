@@ -16,6 +16,6 @@ internal interface IErasureStage
 
     /// <summary>Runs the stage for one subject.</summary>
     /// <param name="context">The subject and namespaces.</param>
-    /// <returns>Success, or a failure carrying only an allowlisted reason.</returns>
+    /// <returns>Success naming every namespace covered, or a failure carrying only an allowlisted reason.</returns>
     Task<ErasureStageOutcome> Execute(ErasureContext context);
 }

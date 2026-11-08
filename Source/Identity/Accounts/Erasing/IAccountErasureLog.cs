@@ -5,7 +5,12 @@ using Cratis.Identity.Contracts.Accounts;
 
 namespace Cratis.Identity.Accounts.Erasing;
 
-/// <summary>The account-stream seam of the erasure workflow.</summary>
+/// <summary>
+/// The account-stream seam of the erasure workflow. A real implementation MUST append with optimistic concurrency
+/// guarded by the state it read, or as a one-time append keyed on the erasure, so concurrent coordinators cannot
+/// both record completion or duplicate a request/failure.
+/// TODO(#51): the Chronicle-backed implementation must provide that guard (decision read / idempotency key); none exists yet.
+/// </summary>
 internal interface IAccountErasureLog
 {
     /// <summary>Reads the erasure decision state.</summary>

@@ -68,7 +68,7 @@ internal partial class AccountPublications(IEventStore eventStore, ILogger<Accou
         try
         {
             // The durable idempotency key is also exposed as a non-PII tag for consumer deduplication.
-            // One reactor observes all six source types. Throwing suspends this source partition, never skips it.
+            // One reactor observes every account source fact type. Throwing suspends this source partition, never skips it.
             var result = await eventStore.GetEventSequence(EventSequenceId.Outbox).AppendOnce(
                 context.EventSourceId,
                 contract,

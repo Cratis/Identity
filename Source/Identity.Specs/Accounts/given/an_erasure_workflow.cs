@@ -67,7 +67,9 @@ public class an_erasure_workflow : Specification
 
     private protected class FakeStage(ErasureStageId id, List<string> executed) : IErasureStage
     {
-        public ErasureStageOutcome Outcome { get; set; } = ErasureStageOutcome.Success;
+        public ErasureStageOutcome? Outcome { get; set; }
+
+        public IReadOnlyList<string>? Covered { get; set; }
 
         public Exception? Throws { get; set; }
 
@@ -76,7 +78,7 @@ public class an_erasure_workflow : Specification
         public Task<ErasureStageOutcome> Execute(ErasureContext context)
         {
             executed.Add(id.Value);
-            return Throws is null ? Task.FromResult(Outcome) : Task.FromException<ErasureStageOutcome>(Throws);
+            return Throws is null ? Task.FromResult(Outcome ?? ErasureStageOutcome.Success(Covered ?? context.Namespaces)) : Task.FromException<ErasureStageOutcome>(Throws);
         }
     }
 

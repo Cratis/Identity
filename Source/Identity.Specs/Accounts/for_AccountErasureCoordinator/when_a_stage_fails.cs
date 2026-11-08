@@ -24,7 +24,7 @@ public class when_a_stage_fails : given.an_erasure_workflow
     {
         _first = await Coordinator.Run(_account, _erasure);
         _repeat = await Coordinator.Run(_account, _erasure);
-        _stages[1].Outcome = ErasureStageOutcome.Success;
+        _stages[1].Outcome = null;
         _healed = await Coordinator.Run(_account, _erasure);
     }
 

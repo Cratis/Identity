@@ -18,6 +18,7 @@ namespace Cratis.Identity.Accounts.Erasing;
 internal class AccountErasureCoordinator(IAccountErasureLog log, IEnumerable<IErasureStage> stages, IErasureTenantScope scope, IErasureBoundaryPolicy boundary, TimeProvider time)
 {
     static readonly ReasonId _stageException = "erasure_stage_exception";
+    static readonly ReasonId _namespaceNotCovered = "erasure_namespace_not_covered";
 
     /// <summary>Runs, or safely resumes, the erasure; every stage is re-run so stages must be idempotent.</summary>
     /// <param name="account">The account subject.</param>
@@ -44,6 +45,11 @@ internal class AccountErasureCoordinator(IAccountErasureLog log, IEnumerable<IEr
         foreach (var stage in ordered)
         {
             var outcome = await Execute(stage, context);
+            if (outcome.Succeeded && !namespaces.All(outcome.Covered.Contains))
+            {
+                outcome = ErasureStageOutcome.Failure(_namespaceNotCovered);
+            }
+
             if (!outcome.Succeeded)
             {
                 await RecordFailure(account, state, erasureId, stage.Id, outcome.Reason!);
@@ -51,7 +57,7 @@ internal class AccountErasureCoordinator(IAccountErasureLog log, IEnumerable<IEr
             }
         }
 
-        await log.Append(account, new AccountErasureRecorded(erasureId, time.GetUtcNow(), approved!, new FactId(erasureId.Value)));
+        await log.Append(account, new AccountErasureRecorded(erasureId, time.GetUtcNow(), approved!, FactId.ForOperation(new FactId(erasureId.Value), $"{nameof(AccountErasureRecorded)}:{account.Value}")));
         return new(true, null);
     }
 
