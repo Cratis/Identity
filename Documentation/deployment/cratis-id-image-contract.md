@@ -159,6 +159,31 @@ These are deployment prerequisites, not features newly implemented by this host.
 
 Before a staging login/consent/token exercise, provision the issuer DNS/TLS and restricted ingress; all four storage/custody boundaries; the GitHub callback; a known security-owner subject; Direct's two authenticated tenants callbacks; and product/CLI issuer, audience and scope trust. Provide the host UI needed for interactive account, tenant and consent flows separately: this image adds no new UI or UI-conformance preset. Product verifiers must enforce exact issuer/audience, scope and live tenant membership; a callback selection alone is not authorization.
 
-The integration project includes a CI-only image smoke scaffold. It is opt-in with `CI=true` and `CRATIS_ID_IMAGE_SMOKE_ENABLED=true`, a locally available `CRATIS_ID_IMAGE_SMOKE_IMAGE` (default `cratis-id:ci`), and `CRATIS_ID_IMAGE_SMOKE_CONFIGURATION_DIRECTORY` containing `appsettings.json` and readable test realm keys. The directory is mounted read-only at `/configuration`; its settings must reference isolated, reachable, pre-provisioned test stores and proven custody. The scaffold starts only the server image and checks liveness and reconciled readiness. It does not provision MongoDB, Chronicle or keys, and the image workflow does not enable it automatically.
+### Image smoke
+
+The integration project includes a container smoke, opt-in with `CI=true` and `CRATIS_ID_IMAGE_SMOKE_ENABLED=true`; without both it is skipped, so normal and local runs stay green. It needs a local Docker daemon and the image already loaded as `CRATIS_ID_IMAGE_SMOKE_IMAGE` (default `cratis-id:ci`). The `smoke` job in the image workflow runs it for every pull request and main push after `build` succeeds: it rebuilds the `cratis-id` image with `load: true` (no registry sign-in, no push, `contents: read` only) and runs the two specs below.
+
+- `when_starting_the_cratis_id_image` provisions throwaway infrastructure on a private Docker network: an operational MongoDB replica set, a separate fence-log MongoDB with an empty custody document, a pinned Chronicle development kernel and a read-only secret-store mount with freshly generated realm keys and Data Protection key. All settings are injected as environment variables with run-time generated secrets and nothing is committed. It asserts `/healthz` and `/readyz` both return 200.
+- `when_starting_the_cratis_id_image_without_configuration` runs the image with no required settings except secret-bearing ones and asserts it exits non-zero without echoing the supplied secret or a connection string.
+
+To run it locally, on a machine with Docker:
+
+```bash
+docker build -f Docker/Dockerfile --target cratis-id --build-arg HOST=Identity.CratisId -t cratis-id:ci .
+CI=true CRATIS_ID_IMAGE_SMOKE_ENABLED=true ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs \
+  -class Cratis.Identity.Integration.for_Host.when_starting_the_cratis_id_image \
+  -class Cratis.Identity.Integration.for_Host.when_starting_the_cratis_id_image_without_configuration
+```
+
+Set `IDENTITY_CHRONICLE_IMAGE` to override the pinned Chronicle image. The smoke proves the image starts, reconciles and answers its probes against real stores; it does not prove GitHub sign-in, since the upstream credentials are placeholders.
+
+### Publish checklist
+
+Publication stays off and the image name above is a working name. Before the first publication, a maintainer:
+
+1. Confirms the final public image name and updates the workflow tags.
+2. Confirms the `smoke` job is green on the main commit to publish.
+3. Sets the repository variable `CRATIS_ID_IMAGE_PUBLISH_ENABLED=true`.
+4. Pushes to main or a `v*` tag, then records the published digest for deployment, which must pin it.
 
 A container smoke is not a full protocol or D13 rehearsal. Browser sign-in, tenant selection, consent, refresh, product verifier behavior and restore/rotation exercises need their owning fixtures and operational procedures. Infrastructure manifests, rollout/rollback policy, per-app/self-hosted presets, bootstrap/upgrade tooling and host UI conformance are separate work.
