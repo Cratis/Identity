@@ -81,9 +81,10 @@ The access token follows the [access-token profile](specs/identity-access-token-
 ## Security notes
 
 - **Linking.** A person is found only through the linked `(issuer, subject)` pair of an active account. Email addresses and usernames are never matched.
-- **Replay.** A subject token is accepted once. The guard is in memory on one node: it does not survive a restart and is not shared between replicas, so keep subject tokens short-lived and `MaxTokenAge` small.
+- **Replay.** A subject token is accepted once. The guard is in memory on a single node: it is lost on restart and not shared across replicas. That is acceptable for v1 because the exchange is opt-in and the issued tokens are short-lived; keep subject tokens short-lived and `MaxTokenAge` small.
+- **`temporarily_unavailable` is intentional.** During an issuer-key (JWKS) or tenants-callback outage the grant answers `temporarily_unavailable` rather than `invalid_grant`, so clients retry correctly instead of treating the person as refused. It leaks only that the issuer is configured, or that the token or account was valid, during an outage; the exchange is opt-in, so that exposure is limited to deployments that enabled it.
 - **Short life, no revocation grant.** The issued token cannot be revoked individually and has no refresh token. Its short lifetime is the bound. Membership is checked live when the token is issued; products must check it again on each request.
 - **Bearer, not DPoP.** There is no actor, so the delegation rule in [DPoP](specs/identity-dpop-v1.md) does not apply; the consumer validates the token like any Identity access token.
-- **No rate limit.** The grant is not rate limited beyond the issuer key refresh, which is limited to once a minute per issuer. Put the token endpoint behind your usual edge limits.
+- **No token-endpoint rate limit yet.** The grant is not rate limited beyond the issuer key refresh, which is limited to once a minute per issuer. Put the token endpoint behind your usual edge limits.
 - **Tenants callback.** Membership comes from the product tenants callback, which receives the GitHub identity of the account as it does for sign-in. A person who signed in through a non-GitHub issuer has the same upstream link and is looked up the same way; the callback body does not yet name the external issuer.
 - **Logs.** Refusals log the client, the configured issuer and a category. Tokens and claim values are never logged.

@@ -123,7 +123,7 @@ internal static class TokenExchangeOptionsValidation
         var known = options.Resources.Where(_ => client.Resources.Contains(_.Audience, StringComparer.Ordinal)).ToArray();
         foreach (var audience in client.Resources.Where(_ => !options.Resources.Any(r => string.Equals(r.Audience, _, StringComparison.Ordinal))))
         {
-            yield return $"Token-exchange client \"{client.ClientId}\" references an unknown resource \"{audience}\".";
+            yield return $"Token-exchange client \"{client.ClientId}\" references a resource \"{audience}\" that is not configured or was disabled by hosted configuration.";
         }
 
         foreach (var scope in client.Scopes.Where(_ => !known.Any(r => r.Scopes.Any(s => string.Equals(s.Name, _, StringComparison.Ordinal)))))

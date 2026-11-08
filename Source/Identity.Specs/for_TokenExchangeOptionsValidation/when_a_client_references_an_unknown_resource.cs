@@ -9,4 +9,5 @@ public class when_a_client_references_an_unknown_resource : given.a_token_exchan
     void Because() => Validate();
 
     [Fact] void should_fail() => result.Failed.ShouldBeTrue();
+    [Fact] void should_name_the_client_and_the_resource() => result.FailureMessage.ShouldContain($"\"{Client.ClientId}\" references a resource \"unknown-api\" that is not configured or was disabled");
 }
