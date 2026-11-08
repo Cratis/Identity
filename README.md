@@ -117,7 +117,7 @@ Everything is under the `Identity` section (environment variables use `Identity_
 | `GitHub:ClientId`, `GitHub:ClientSecret` | — | GitHub OAuth app. Callback URL: `<issuer>signin-github`. |
 | `SecretStore:Path` | — | Directory the platform mounts from its secret store, holding realm signing keys, encryption keys and the Data Protection key ring (see [Keys and the secret store](#keys-and-the-secret-store)). **Required outside development.** The old `SigningCertificate` and `EncryptionCertificate` settings are refused at startup. |
 | `SecretStore:ReloadInterval` | `00:01:00` | How often the directory is read again; between one second and five minutes. |
-| `Tokens:AccessTokenLifetime` | `00:15:00` | Also the longest a revoked grant keeps working at a resource server that does not introspect. |
+| `Tokens:AccessTokenLifetime` | `00:05:00` | Startup refuses zero or more than ten minutes. Also the longest a revoked grant keeps working at a resource server that does not introspect. |
 | `Tokens:AuthorizationCodeLifetime` | `00:02:00` | |
 | `Tokens:RefreshTokenLifetime` | `30.00:00:00` | Absolute lifetime of a refresh-token family. |
 | `TokenExchange` | none | `Issuers[]` and `Clients[]` for token exchange; nothing is enabled until both are configured. See [Token exchange](Documentation/token-exchange.md). |
