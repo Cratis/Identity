@@ -21,7 +21,8 @@ public class when_declaring_an_exchange_client_without_a_scope_ceiling : Specifi
         _exchange = new ClientDescriptors(new ResourceCatalog(asOptions), asOptions).All().Single(_ => _.ClientId == Configurations.ExchangeClientId);
     }
 
-    [Fact] void should_allow_every_scope_of_its_resources_and_no_other() =>
+    [Fact]
+    void should_allow_every_scope_of_its_resources_and_no_other() =>
         _exchange.Permissions.Where(_ => _.StartsWith(Permissions.Prefixes.Scope)).ShouldContainOnly(
             Permissions.Prefixes.Scope + "direct:read",
             Permissions.Prefixes.Scope + "direct:content.write",

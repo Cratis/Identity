@@ -15,6 +15,6 @@ public class when_fetching_keys : given.an_issuer_that_serves_keys
         await Get();
     }
 
-    [Fact] void should_return_the_published_keys() => _result!.Count.ShouldEqual(2);
+    [Fact] void should_return_the_published_keys() => _result.Count.ShouldEqual(2);
     [Fact] void should_fetch_only_once_within_the_cache_lifetime() => _requests.ShouldEqual(1);
 }

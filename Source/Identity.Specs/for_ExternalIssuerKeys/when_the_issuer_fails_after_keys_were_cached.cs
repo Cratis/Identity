@@ -15,5 +15,5 @@ public class when_the_issuer_fails_after_keys_were_cached : given.an_issuer_that
         await Get();
     }
 
-    [Fact] void should_keep_serving_the_stale_keys() => _result!.Count.ShouldEqual(2);
+    [Fact] void should_keep_serving_the_stale_keys() => _result.Count.ShouldEqual(2);
 }

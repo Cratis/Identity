@@ -85,7 +85,7 @@ public sealed class ExternalIssuerFixture : IDisposable
     /// <param name="payload">The claims.</param>
     /// <returns>The compact token with an empty signature.</returns>
     public static string AlgNone(Dictionary<string, object> payload) =>
-        $"{Base64UrlEncoder.Encode(Encoding.UTF8.GetBytes("{\"alg\":\"none\",\"typ\":\"JWT\"}"))}.{Base64UrlEncoder.Encode(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(payload)))}.";
+        $"{Base64UrlEncoder.Encode(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { alg = "none", typ = "JWT" })))}.{Base64UrlEncoder.Encode(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(payload)))}.";
 
     /// <summary>
     /// Forges an HS256 token keyed with the public key material, the classic algorithm-confusion attack.
