@@ -27,7 +27,7 @@ internal sealed class VerifiedKeyGate(IUpstreamLookupKeys keys, UpstreamKeyDiges
     /// <returns>A rejection, or null when the provenance matches.</returns>
     public ValidationResult? Validate(VerifiedAuthentication authentication, VerifiedSignInKey key) =>
         authentication.ConnectionId == GitHubConnection.FixedConnectionId &&
-        authentication.IdpIssuer.Value == "https://github.com" && !string.IsNullOrWhiteSpace(authentication.Subject.Value) &&
+        authentication.IdpIssuer.Value == GitHubConnection.Issuer && !string.IsNullOrWhiteSpace(authentication.Subject.Value) &&
         key.ConnectionId == authentication.ConnectionId && key.IdpIssuer == authentication.IdpIssuer && key.IdpSubject == authentication.Subject &&
         key.Revision == keys.Current.Revision && key.Digest == digester.Digest(authentication.IdpIssuer, authentication.Subject)
             ? null

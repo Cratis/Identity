@@ -7,6 +7,7 @@ using Cratis.Identity.Contracts;
 using Cratis.Identity.given;
 using Cratis.Identity.Tenants;
 using OpenIddict.Abstractions;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Cratis.Identity.for_AccessTokenIdentity;
 
@@ -14,8 +15,13 @@ public class when_creating : given.an_account_and_a_grant
 {
     ClaimsIdentity _identity;
 
-    void Because() => _identity = AccessTokenIdentity.Create(_account, ClientId, _grant, new SelectableTenant("cratis", "Cratis"));
+    void Because() => _identity = AccessTokenIdentity.Create(_account, ClientId, _grant, new SelectableTenant("cratis", "Cratis"), AuthTime);
 
+    [Fact] void should_carry_the_upstream_authentication_time() => _identity.GetClaim(Claims.AuthenticationTime).ShouldEqual("1700000000");
+    [Fact] void should_carry_the_authentication_time_as_an_integer() => _identity.FindFirst(Claims.AuthenticationTime).ValueType.ShouldEqual(ClaimValueTypes.Integer64);
+    [Fact] void should_carry_basic_assurance() => _identity.GetClaim(Claims.AuthenticationContextReference).ShouldEqual("basic");
+    [Fact] void should_send_auth_time_only_to_the_access_token() => _identity.FindFirst(Claims.AuthenticationTime).GetDestinations().ShouldContainOnly("access_token");
+    [Fact] void should_send_acr_only_to_the_access_token() => _identity.FindFirst(Claims.AuthenticationContextReference).GetDestinations().ShouldContainOnly("access_token");
     [Fact] void should_use_the_canonical_account_id_as_subject() => _identity.GetClaim("sub").ShouldEqual(_account.Id.Value);
     [Fact] void should_carry_the_github_id() => _identity.GetClaim(IdentityClaims.GitHubId).ShouldEqual("134365");
     [Fact] void should_carry_the_github_issuer_as_idp() => _identity.GetClaim(IdentityClaims.Idp).ShouldEqual("https://github.com");

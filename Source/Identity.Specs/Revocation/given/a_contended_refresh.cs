@@ -58,6 +58,7 @@ public class a_contended_refresh : for_RedeemRefreshTokenOnce.given.a_refresh_to
         var principal = _validation.Principal.Clone()
             .SetClaim(Claims.Subject, FenceDoubles.Subject)
             .SetClaim(IdentityClaims.TenantId, "tenant")
+            .SetClaim(Claims.AuthenticationTime, "1700000000")
             .SetResources("audience");
         var accounts = Substitute.For<IAccountReader>();
         accounts.FindActive(Arg.Any<AccountSubject>(), Arg.Any<CancellationToken>()).Returns(account);

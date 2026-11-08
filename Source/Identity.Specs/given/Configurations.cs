@@ -23,6 +23,7 @@ public static class Configurations
             new ResourceServerOptions
             {
                 Audience = DirectAudience,
+                ReceivesUpstreamIdentity = true,
                 DisplayName = "Cratis Direct",
                 Indicators = [DirectMcp],
                 Scopes =

@@ -10,7 +10,8 @@ namespace Cratis.Identity.Resources;
 /// <param name="DisplayName">The human-readable name shown on the consent page.</param>
 /// <param name="Indicators">The normalized RFC 8707 resource indicators that map to the audience.</param>
 /// <param name="Scopes">The scopes that belong to the resource server.</param>
-internal record ResourceServer(string Audience, string DisplayName, IEnumerable<string> Indicators, IEnumerable<ScopeDefinition> Scopes)
+/// <param name="ReceivesUpstreamIdentity">Whether the resource is a registered upstream-identity consumer; unflagged resources get no upstream subject or GitHub claims.</param>
+internal record ResourceServer(string Audience, string DisplayName, IEnumerable<string> Indicators, IEnumerable<ScopeDefinition> Scopes, bool ReceivesUpstreamIdentity = false)
 {
     /// <summary>
     /// Checks whether a scope belongs to the resource server.
