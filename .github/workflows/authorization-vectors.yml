@@ -16,7 +16,7 @@ concurrency:
 jobs:
   package:
     name: Package reviewed vector artifact
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_GATE || 'cratis-arc-small' }}
     timeout-minutes: 5
     steps:
       - name: Checkout selected commit
