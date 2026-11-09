@@ -10,7 +10,7 @@ namespace Cratis.Identity.for_EventContentRules;
 public class when_scanning_production_assemblies : Specification
 {
     static readonly string _solution = Path.GetFullPath("../../../../../Identity.slnx", AppContext.BaseDirectory);
-    static readonly Assembly[] _production = [typeof(AccountRegistered).Assembly, Assembly.Load("Cratis.Identity"), Assembly.Load("Cratis.Identity.Host"), Assembly.Load("Cratis.Id.Host")];
+    static readonly Assembly[] _production = [typeof(AccountRegistered).Assembly, Assembly.Load("Cratis.Identity"), Assembly.Load("Cratis.Identity.Host"), Assembly.Load("Cratis.Id.Host"), Assembly.Load("Cratis.Identity.FenceLog"), Assembly.Load("Cratis.Identity.FenceLog.Mongo")];
 
     [Fact]
     public void should_scan_every_production_project()

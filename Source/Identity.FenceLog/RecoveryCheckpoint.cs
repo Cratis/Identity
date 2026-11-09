@@ -7,4 +7,4 @@ namespace Cratis.Identity.Revocation;
 /// <param name="InstanceId">Independent custody identity.</param>
 /// <param name="AppliedThrough">The complete operational prefix.</param>
 /// <param name="Nonce">The mirrored recovery-owner nonce.</param>
-internal sealed record RecoveryCheckpoint(string InstanceId, long AppliedThrough, string Nonce);
+public sealed record RecoveryCheckpoint(string InstanceId, long AppliedThrough, string Nonce);

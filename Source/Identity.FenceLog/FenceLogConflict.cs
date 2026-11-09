@@ -4,4 +4,4 @@
 namespace Cratis.Identity.Revocation;
 
 /// <summary>A permanent log identity already exists with different content.</summary>
-internal sealed class FenceLogConflict() : Exception("The fence log contains conflicting content.");
+public sealed class FenceLogConflict() : Exception("The fence log contains conflicting content.");

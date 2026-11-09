@@ -3,8 +3,8 @@
 
 namespace Cratis.Identity.Revocation;
 
-/// <summary>Internal operator-owned independent custody and restore declaration settings.</summary>
-internal sealed class FenceLogOptions
+/// <summary>Operator-owned independent custody and restore declaration settings, bound from the Identity:FenceLog configuration section.</summary>
+public sealed class FenceLogOptions
 {
     /// <summary>Gets or sets the independently provisioned connection.</summary>
     public string ConnectionString { get; set; } = string.Empty;

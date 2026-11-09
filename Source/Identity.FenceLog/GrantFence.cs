@@ -10,4 +10,4 @@ namespace Cratis.Identity.Revocation;
 /// <param name="Subject">The account subject.</param>
 /// <param name="Reason">The closed restriction reason.</param>
 /// <param name="RecordedAt">The restriction time.</param>
-internal sealed record GrantFence(Guid Id, long Sequence, string GrantId, string Subject, RevocationReason Reason, DateTimeOffset RecordedAt);
+public sealed record GrantFence(Guid Id, long Sequence, string GrantId, string Subject, RevocationReason Reason, DateTimeOffset RecordedAt);

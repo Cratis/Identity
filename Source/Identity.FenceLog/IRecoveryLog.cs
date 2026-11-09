@@ -4,7 +4,7 @@
 namespace Cratis.Identity.Revocation;
 
 /// <summary>Independent restore custody and reservation reconciliation.</summary>
-internal interface IRecoveryLog : IIndependentFenceLog, IReservationLog
+public interface IRecoveryLog : IIndependentFenceLog, IReservationLog
 {
     /// <summary>Reads the allocated high-water mark, which is not the contiguous prefix.</summary>
     /// <param name="cancellationToken">Cancellation.</param>

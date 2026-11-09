@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Cratis.Identity.FenceLog.Mongo</AssemblyName>
+    <RootNamespace>Cratis.Identity.Revocation.Operational</RootNamespace>
+    <PackageId>Cratis.Identity.FenceLog.Mongo</PackageId>
+    <Description>The MongoDB adapter of the independent fence log of Cratis Identity, for a separately provisioned replica set.</Description>
+    <PackageTags>cratis;identity;oauth;revocation;fence-log;mongodb</PackageTags>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MongoDB.Driver" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Identity.FenceLog/Identity.FenceLog.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cratis.Identity" />
+    <InternalsVisibleTo Include="Cratis.Identity.Specs" />
+    <InternalsVisibleTo Include="Cratis.Identity.Integration.Specs" />
+  </ItemGroup>
+
+</Project>

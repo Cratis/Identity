@@ -1,6 +1,8 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Cratis.Identity.Revocation;
 
 /// <summary>The single operational authority for refresh admission and its irreversible tombstone.</summary>
@@ -10,4 +12,5 @@ namespace Cratis.Identity.Revocation;
 /// <param name="Fence">The permanent denial, when present.</param>
 /// <param name="Outbox">The immutable delivery intents and their current delivery states.</param>
 /// <param name="RecoveryEpoch">The independently held epoch at family creation.</param>
-internal sealed record GrantState(string GrantId, long Version, string? CurrentRefreshTokenId, GrantFence? Fence, OutboxEntry[] Outbox, long RecoveryEpoch = 0);
+[SuppressMessage("Design", "CA1819:Properties should not return arrays", Justification = "The persisted document shape of already-written grant state is a compatibility constraint.")]
+public sealed record GrantState(string GrantId, long Version, string? CurrentRefreshTokenId, GrantFence? Fence, OutboxEntry[] Outbox, long RecoveryEpoch = 0);

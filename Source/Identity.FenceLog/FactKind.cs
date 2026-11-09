@@ -4,7 +4,7 @@
 namespace Cratis.Identity.Revocation;
 
 /// <summary>Closed source-fact kinds accepted by the dispatcher.</summary>
-internal enum FactKind
+public enum FactKind
 {
     /// <summary>A grant restriction.</summary>
     AuthorizationRevocation = 0,

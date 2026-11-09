@@ -1,15 +1,13 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Cratis.Identity.Configuration;
-using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Cratis.Identity.Revocation.Operational;
 
 /// <summary>Refuses a shared or unproven deployment boundary; configuration never grants backup independence.</summary>
-internal sealed class IndependentFenceLogConnection : IDisposable
+public sealed class IndependentFenceLogConnection : IDisposable
 {
     readonly MongoClient _client;
     readonly FenceLogOptions _options;
@@ -17,16 +15,15 @@ internal sealed class IndependentFenceLogConnection : IDisposable
 
     /// <summary>Constructs an independent connection without initializing custody.</summary>
     /// <param name="options">Independent provisioning and continuity evidence.</param>
-    /// <param name="identity">Operational store configuration.</param>
     /// <param name="operational">The operational database identity probe.</param>
     /// <exception cref="RevocationPending">Configuration does not prove an independent store.</exception>
-    public IndependentFenceLogConnection(FenceLogOptions options, IOptions<IdentityOptions> identity, IMongoDatabase operational)
+    public IndependentFenceLogConnection(FenceLogOptions options, IMongoDatabase operational)
     {
         _options = options;
         _operational = operational;
         RequireStorageOptions(options);
         RequireRestoreOptions(options);
-        if (options.ConnectionString == identity.Value.MongoDB.ConnectionString && options.Database == identity.Value.MongoDB.Database)
+        if (SameServers(operational, options) && options.Database == operational.DatabaseNamespace.DatabaseName)
         {
             throw new RevocationPending();
         }
@@ -36,7 +33,7 @@ internal sealed class IndependentFenceLogConnection : IDisposable
     }
 
     /// <summary>Gets the configured independent database.</summary>
-    internal IMongoDatabase Database { get; }
+    public IMongoDatabase Database { get; }
 
     /// <inheritdoc/>
     public void Dispose() => _client.Dispose();
@@ -45,7 +42,7 @@ internal sealed class IndependentFenceLogConnection : IDisposable
     /// <param name="cancellationToken">Cancellation.</param>
     /// <returns>Boundary verification completion.</returns>
     /// <exception cref="RevocationPending">The deployment or custody proof failed.</exception>
-    internal async Task Verify(CancellationToken cancellationToken)
+    public async Task Verify(CancellationToken cancellationToken)
     {
         var operational = await Deployment(_operational, cancellationToken);
         var independent = await Deployment(Database, cancellationToken);
@@ -66,6 +63,10 @@ internal sealed class IndependentFenceLogConnection : IDisposable
         await Database.GetCollection<BsonDocument>("fence-reservations").Indexes.CreateOneAsync(
             new CreateIndexModel<BsonDocument>(new BsonDocument("sequence", 1), new CreateIndexOptions { Unique = true }), cancellationToken: cancellationToken);
     }
+
+    static bool SameServers(IMongoDatabase operational, FenceLogOptions options) =>
+        operational.Client.Settings.Servers.Select(server => server.ToString()).Order(StringComparer.Ordinal)
+            .SequenceEqual(MongoClientSettings.FromConnectionString(options.ConnectionString).Servers.Select(server => server.ToString()).Order(StringComparer.Ordinal), StringComparer.Ordinal);
 
     static void RequireStorageOptions(FenceLogOptions options)
     {

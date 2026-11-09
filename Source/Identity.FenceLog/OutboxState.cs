@@ -4,7 +4,7 @@
 namespace Cratis.Identity.Revocation;
 
 /// <summary>Durable delivery progress; no pending fence fact can reach Chronicle.</summary>
-internal enum OutboxState
+public enum OutboxState
 {
     /// <summary>The fence log has not confirmed the restriction.</summary>
     Pending = 0,

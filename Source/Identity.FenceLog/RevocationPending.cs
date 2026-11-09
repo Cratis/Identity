@@ -4,4 +4,4 @@
 namespace Cratis.Identity.Revocation;
 
 /// <summary>No acknowledgement is possible; any committed restriction remains irreversible.</summary>
-internal sealed class RevocationPending() : Exception("The grant restriction could not be durably confirmed.");
+public sealed class RevocationPending() : Exception("The grant restriction could not be durably confirmed.");
