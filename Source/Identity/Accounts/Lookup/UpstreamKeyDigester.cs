@@ -19,7 +19,7 @@ internal class UpstreamKeyDigester(IUpstreamLookupKeys keys)
     public UpstreamLookupDigest Digest(UpstreamIssuer issuer, UpstreamSubject subject)
     {
         var authority = Encoding.UTF8.GetBytes(issuer.Value);
-        var upstream = Encoding.UTF8.GetBytes(subject.Value);
+        var upstream = Encoding.UTF8.GetBytes(UpstreamSubject.Create(subject.Value).Value);
         using var input = new MemoryStream();
         input.Write(Encoding.UTF8.GetBytes("cratis.identity.upstream-key-lookup.v1"));
         Frame(input, authority);

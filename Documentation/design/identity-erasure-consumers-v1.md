@@ -14,6 +14,12 @@ Acknowledgements are an **operational fact, not an event**. Identity records, pe
 
 Acknowledgements are informational. **Nothing in the erasure workflow waits on a consumer**: a missing or late consumer never blocks or fails an erasure, and `AccountErased` is not delayed for it. Acknowledgements from unlisted consumers are ignored.
 
+## Replaying erased account data
+
+Chronicle releases encrypted `[PII]` string properties as `""` after the subject key is destroyed, not as a null value or an erasure marker. Identity's personal-data concepts must deserialize that representation so event reads, projections, reducers and reactors can replay erased streams. `UpstreamSubject` therefore supports stored values in its constructor; new observations use `UpstreamSubject.Create` (also used by implicit string conversion). Verified authentication and lookup digest creation revalidate subjects, so an erased or otherwise invalid replay value cannot become a new sign-in or linking key. Issuers are not `[PII]` and retain constructor validation.
+
+An empty personal-data value is not identity proof and must not restore a profile or authorize a link. This read-path behavior does not broaden the completion boundary: key destruction still cannot erase exported plaintext or consumer-owned copies, and acknowledgement policy remains unchanged.
+
 ## What each consumer must do
 
 | Consumer | Obligation on `AccountErased` | Acknowledgement | Status |
