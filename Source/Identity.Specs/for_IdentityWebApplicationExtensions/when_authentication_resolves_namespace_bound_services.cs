@@ -17,7 +17,12 @@ public class when_authentication_resolves_namespace_bound_services : Specificati
     [InlineData("/signin-github", true, false)]
     [InlineData("/connect/token", true, true)]
     [InlineData("/.well-known/openid-configuration", true, true)]
-    [InlineData("/logout", true, true)]
+    [InlineData("/logout", false, true)]
+    [InlineData("/connectevil", false, true)]
+    [InlineData("/.well-knownevil", false, true)]
+    [InlineData("/signin-githubevil", false, true)]
+    [InlineData("/connect/../host-work", false, true)]
+    [InlineData("/connect/%2e%2e/host-work", false, true)]
     [InlineData("/api/cratis/identity/accounts/mine", true, true)]
     [InlineData("/host-work", false, true)]
     public async Task should_bind_during_authentication_to_the_route_namespace(string path, bool identity, bool reachesNext)
@@ -56,6 +61,7 @@ public class when_authentication_resolves_namespace_bound_services : Specificati
             options.EventsType = typeof(OAuthEvents);
         });
         await using var app = builder.Build();
+        app.UseCratisIdentity();
         app.MapCratisIdentity();
         app.MapGet("/api/cratis/identity/accounts/mine", () => Results.NoContent());
         app.MapGet("/host-work", () => Results.NoContent());

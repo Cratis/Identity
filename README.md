@@ -25,11 +25,11 @@ It is built on [OpenIddict](https://documentation.openiddict.com/) 7 as an embed
 
 | Package | Contents |
 | --- | --- |
-| `Cratis.Identity` | The module: OpenIddict server, stores, `AddCratisIdentity()` and `MapCratisIdentity()`. |
+| `Cratis.Identity` | The module: OpenIddict server, stores, `AddCratisIdentity()`, `UseCratisIdentity()` and `MapCratisIdentity()`. |
 | `Cratis.Identity.Contracts` | The contracts a resource server reads, such as the access token claim types. |
 | `@cratis/identity` | TypeScript proxies generated from the module by the Arc proxy generator. |
 
-CI builds and packs all three as artifacts. Nothing is published until the W0 specs (#24, #26) are locked. The supported surface is `AddCratisIdentity`, `MapCratisIdentity` and the `Identity` configuration section; other public types are implementation detail and may become internal.
+CI builds and packs all three as artifacts. Nothing is published until the W0 specs (#24, #26) are locked. The supported surface is `AddCratisIdentity`, `UseCratisIdentity`, `MapCratisIdentity`, `IdentityEndpointOptions` and the `Identity` configuration section; other public types are implementation detail and may become internal.
 
 ## Hosting Identity
 
@@ -44,13 +44,15 @@ builder.AddCratisChronicle(options =>
 builder.AddCratisIdentity();
 
 var app = builder.Build();
-app.MapCratisIdentity();
+app.UseCratisIdentity();
+app.MapCratisIdentity(options => options.MapSignOut = true);
+app.MapGet("/healthz", () => Results.Text("ok"));
 app.UseCratisArc();
 app.UseCratisChronicle();
 await app.RunAsync();
 ```
 
-`MapCratisIdentity` owns the Identity pipeline order: routing → realm scope → security headers → authentication, followed by endpoint mapping. Call it once, before the host's own endpoints and Arc/Chronicle middleware; do not call `UseAuthentication` or `UseRouting` ahead of it for Identity routes. Authentication and generated Identity API routes use the realm namespace; non-Identity routes retain the host's namespace resolver. `Source/Identity.Host` remains the sample host and default Docker/compose target. `Source/Identity.CratisId` is the hosted-shared Cratis ID server; its [image contract](Documentation/deployment/cratis-id-image-contract.md) defines configuration, readiness and the D13 prerequisites before production issuance.
+`UseCratisIdentity` explicitly installs the Identity pipeline: routing → realm scope → security headers → authentication. Call it once before Arc/Chronicle middleware and endpoint execution; do not put authentication ahead of it for Identity routes. Its security headers apply globally in hosts that opt in. Authentication and generated Identity API routes use the realm namespace; non-Identity routes retain the host's namespace resolver. `MapCratisIdentity` only maps authorization and token endpoints; it adds no middleware, `/`, or `/healthz`. Hosts own their health and root routes, without collisions regardless of mapping order. Sign-out HTML is off by default; opt in with `MapSignOut = true` as above. `Source/Identity.Host` remains the sample host and default Docker/compose target. `Source/Identity.CratisId` is the hosted-shared Cratis ID server; its [image contract](Documentation/deployment/cratis-id-image-contract.md) defines configuration, readiness and the D13 prerequisites before production issuance.
 
 ## What v1 implements
 
@@ -101,8 +103,12 @@ A resource server must validate `iss`, the signature against the JWKS, `aud`, `e
 | `GET /.well-known/openid-configuration` | OpenIddict's discovery fallback. This server does **not** offer the `openid` scope or issue ID tokens in v1. |
 | `GET /.well-known/jwks` | Public signing keys. |
 | `GET /signin-github` | GitHub OAuth callback. Register it on the GitHub OAuth app. |
-| `GET/POST /logout` | Identity site cookie sign-out: GET serves an antiforgery-protected form; POST clears the session cookie. This does not revoke CLI grants. |
-| `GET /healthz` | Liveness. |
+| `GET/POST /logout` (opt-in) | Identity site cookie sign-out: GET serves an antiforgery-protected form; POST clears the session cookie. This does not revoke CLI grants. |
+| `GET /healthz` (host-owned) | Liveness in the sample and Cratis ID hosts, not mapped by the package. |
+
+Set `Identity:Endpoints:RoutePrefix` before `AddCratisIdentity` to move the four `/connect/*` endpoints and optional `/logout`, for example to `/id/connect/token`. The default is empty. Prefixes must be at most 128 ASCII unreserved path characters, start with one `/`, and have no trailing slash, empty or dot segments, escapes, whitespace, query, fragment or backslash. `/.well-known`, `/signin-github`, `/healthz` and `/readyz` prefixes are reserved (including descendants). Invalid shapes fail registration and mapping. A mapping delegate that supplies a different prefix fails rather than diverging from OpenIddict. Discovery/JWKS, the issuer and the registered GitHub callback remain unprefixed.
+
+The validated prefix is available through `IOptions<IdentityEndpointOptions>` for token-endpoint middleware, including rate limiting. This base has no token limiter; this is its integration boundary, not a claim that prefixed limiting has been verified. A limiter added later must match `{RoutePrefix}/connect/token` using those options.
 
 ## Configuration
 
@@ -110,6 +116,7 @@ Everything is under the `Identity` section (environment variables use `Identity_
 
 | Key | Default | Notes |
 | --- | --- | --- |
+| `Endpoints:RoutePrefix` | empty | Validated endpoint prefix, shared by mapping, OpenIddict and realm matching through `IOptions<IdentityEndpointOptions>`. |
 | `Issuer` | — | Absolute public URI, normally `https://auth.example/` (including trailing `/`, no path). **Required outside development**; the service refuses to start without it. Its scheme and host must match the public authorization/discovery origin. |
 | `MongoDB:ConnectionString` | `mongodb://localhost:27017` | |
 | `MongoDB:Database` | `cratis-identity` | Holds OpenIddict applications, authorizations and and tokens. Tokens have a TTL index on their expiry; keys are never stored here. |

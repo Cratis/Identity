@@ -136,6 +136,8 @@ Client and scope materialization reads configuration at each startup. The config
 | `/healthz` | Process liveness, independent of recovery readiness. | Liveness; do not restart a live process merely because reconciliation is incomplete. |
 | `/readyz` | Only the registered `identity-restriction-recovery` health check: HTTP 503 while the recovery barrier is closed or no matching check is registered, HTTP 200 after recovery is proven. | Readiness; do not route issuance traffic while unhealthy. |
 
+The Cratis ID host explicitly maps `/healthz` and `/readyz`; `MapCratisIdentity()` owns neither probe nor a root banner. The host calls `UseCratisIdentity()` for routing, realm scope, security headers and authentication, and opts in to the antiforgery-protected `/logout` form with `MapSignOut = true`. A configured `Identity:Endpoints:RoutePrefix` moves protocol and sign-out routes, not these probes, discovery/JWKS or `/signin-github`.
+
 Readiness is a protocol barrier, not a claim that production approval or D13 evidence exists. A healthy process can still deny individual operations. Offline access tokens remain bounded by their lifetime and verifier policy; closing readiness does not instantly revoke already issued JWTs.
 
 ## Staging and production gates
