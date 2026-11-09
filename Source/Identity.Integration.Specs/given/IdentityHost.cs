@@ -210,7 +210,7 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
 
         // This shared fixture runs many independent device scenarios against the same account and peer.
         builder.UseSetting("Identity:Device:AttemptsPerAccount", "100");
-        builder.UseSetting("Identity:Device:AttemptsPerCode", "100");
+        builder.UseSetting("Identity:Device:AttemptsPerCode", "10");
         builder.UseSetting("Identity:Device:AttemptsPerIp", "300");
         builder.UseSetting("Identity:Device:IssuancesPerIp", "100");
 
