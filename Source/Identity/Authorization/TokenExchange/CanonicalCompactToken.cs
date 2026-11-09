@@ -88,11 +88,34 @@ internal static class CanonicalCompactToken
             }
 
             var names = new HashSet<string>(StringComparer.Ordinal);
-            return root.EnumerateObject().All(_ => names.Add(_.Name));
+            return root.EnumerateObject().All(_ => names.Add(_.Name)) && AreAllStringsDecodable(root);
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException)
         {
+            // A name or value with an unpaired surrogate escape or invalid UTF-8 cannot be decoded: refuse, never throw.
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Parsing is lazy about string content; decodes every name and value now so a hostile one is refused here
+    /// rather than throwing later when a claim is read.
+    /// </summary>
+    /// <param name="element">The element to walk.</param>
+    /// <returns>True when every string decodes; a hostile one throws and is caught by the caller.</returns>
+    static bool AreAllStringsDecodable(JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.String:
+                _ = element.GetString();
+                return true;
+            case JsonValueKind.Array:
+                return element.EnumerateArray().All(AreAllStringsDecodable);
+            case JsonValueKind.Object:
+                return element.EnumerateObject().Select(property => (property.Name, property.Value)).All(_ => AreAllStringsDecodable(_.Value));
+            default:
+                return true;
         }
     }
 }

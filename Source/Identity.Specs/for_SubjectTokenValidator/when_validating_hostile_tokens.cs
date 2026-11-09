@@ -29,6 +29,9 @@ public class when_validating_hostile_tokens : given.a_subject_token_validator
     SubjectTokenRefusal _truncatedSignature;
     SubjectTokenRefusal _emptyPayload;
     SubjectTokenRefusal _pointerHeaders;
+    SubjectTokenRefusal _surrogateHeaderName;
+    SubjectTokenRefusal _surrogateClaimName;
+    SubjectTokenRefusal _surrogateClaimValue;
     SubjectTokenResult _withoutKeyId;
 
     async Task Because()
@@ -63,6 +66,9 @@ public class when_validating_hostile_tokens : given.a_subject_token_validator
         _payloadNotAnObject = await RefusalOf(Manual(header + "}", "[1,2,3]", rsa));
         _emptyPayload = await RefusalOf(Manual(header + "}", string.Empty, rsa));
         _headerNotJson = await RefusalOf(Manual("{not json", payload, rsa));
+        _surrogateHeaderName = await RefusalOf(Manual(header + ",\"\\ud800\":1}", payload, rsa));
+        _surrogateClaimName = await RefusalOf(Manual(header + "}", payload.TrimEnd('}') + ",\"\\ud800\":1}", rsa));
+        _surrogateClaimValue = await RefusalOf(Manual(header + "}", Replace("iss", "\"\\ud800\""), rsa));
 
         var valid = Valid().Split('.');
         _truncatedSignature = await RefusalOf($"{valid[0]}.{valid[1]}.{Base64UrlEncoder.Encode(new byte[100])}");
@@ -103,6 +109,9 @@ public class when_validating_hostile_tokens : given.a_subject_token_validator
     [Fact] void should_refuse_a_payload_that_is_not_an_object() => _payloadNotAnObject.ShouldEqual(SubjectTokenRefusal.Malformed);
     [Fact] void should_refuse_an_empty_payload() => _emptyPayload.ShouldEqual(SubjectTokenRefusal.Malformed);
     [Fact] void should_refuse_a_header_that_is_not_json() => _headerNotJson.ShouldEqual(SubjectTokenRefusal.Malformed);
+    [Fact] void should_refuse_an_unpaired_surrogate_in_a_header_parameter_name() => _surrogateHeaderName.ShouldEqual(SubjectTokenRefusal.Malformed);
+    [Fact] void should_refuse_an_unpaired_surrogate_in_a_claim_name() => _surrogateClaimName.ShouldEqual(SubjectTokenRefusal.Malformed);
+    [Fact] void should_refuse_an_unpaired_surrogate_in_a_claim_value() => _surrogateClaimValue.ShouldEqual(SubjectTokenRefusal.Malformed);
     [Fact] void should_refuse_a_truncated_signature() => _truncatedSignature.ShouldEqual(SubjectTokenRefusal.Invalid);
     [Fact] void should_ignore_key_pointer_headers() => _pointerHeaders.ShouldEqual(SubjectTokenRefusal.None);
     [Fact] void should_accept_a_token_without_a_key_id_signed_by_a_published_key() => _withoutKeyId.Refusal.ShouldEqual(SubjectTokenRefusal.None);
