@@ -6,7 +6,7 @@ namespace Cratis.Identity.Authorization;
 /// <summary>
 /// Defines the rules that decide which resource server and scopes an authorization request is granted.
 /// </summary>
-public interface IGrantPolicy
+internal interface IGrantPolicy
 {
     /// <summary>
     /// Evaluates an authorization request.

@@ -10,4 +10,4 @@ namespace Cratis.Identity.Accounts.Lookup;
 /// <param name="Id">The non-PII LinkId used for routing.</param>
 /// <param name="KeyHash">The indexed, protected lookup pseudonym; never a routing key.</param>
 /// <param name="Active">Whether the link is still active.</param>
-public record UpstreamKeyReservation(LinkId Id, [property: Index] UpstreamLookupDigest KeyHash, bool Active);
+internal record UpstreamKeyReservation(LinkId Id, [property: Index] UpstreamLookupDigest KeyHash, bool Active);

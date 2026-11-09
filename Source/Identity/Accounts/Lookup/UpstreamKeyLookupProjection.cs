@@ -7,7 +7,7 @@ using Cratis.Identity.Contracts.Accounts.Events;
 namespace Cratis.Identity.Accounts.Lookup;
 
 /// <summary>Indexes Internal facts under the account owner; unlink never releases a reservation.</summary>
-public class UpstreamKeyLookupProjection : IProjectionFor<UpstreamKeyLookup>
+internal class UpstreamKeyLookupProjection : IProjectionFor<UpstreamKeyLookup>
 {
     /// <inheritdoc/>
     public void Define(IProjectionBuilderFor<UpstreamKeyLookup> builder) => builder

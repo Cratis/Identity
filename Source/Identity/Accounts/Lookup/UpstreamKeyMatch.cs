@@ -9,4 +9,4 @@ namespace Cratis.Identity.Accounts.Lookup;
 /// <param name="AccountSubject">The reserved account owner.</param>
 /// <param name="LinkId">The opaque key reference.</param>
 /// <param name="Active">Whether the reservation remains active.</param>
-public record UpstreamKeyMatch(AccountSubject AccountSubject, LinkId LinkId, bool Active);
+internal record UpstreamKeyMatch(AccountSubject AccountSubject, LinkId LinkId, bool Active);

@@ -6,7 +6,7 @@ namespace Cratis.Identity.Hosting;
 /// <summary>
 /// Adds the response headers every Identity response carries.
 /// </summary>
-public static class SecurityHeaders
+internal static class SecurityHeaders
 {
     /// <summary>
     /// Adds the security headers middleware.

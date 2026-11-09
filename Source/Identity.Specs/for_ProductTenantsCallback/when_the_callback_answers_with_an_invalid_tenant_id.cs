@@ -18,7 +18,7 @@ public class when_the_callback_answers_with_an_invalid_tenant_id : given.a_tenan
     [InlineData("one two")]
     async Task should_reject_the_id(string id)
     {
-        handler.Body = JsonSerializer.Serialize(new { subject = account.Id, tenants = new[] { new { id } } });
+        handler.Body = JsonSerializer.Serialize(new { subject = account.Id.Value, tenants = new[] { new { id } } });
         await Lookup(TestContext.Current.CancellationToken);
         result.ShouldEqual(new TenantsUnavailable(TenantsUnavailableReason.Malformed));
     }

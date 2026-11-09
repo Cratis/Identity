@@ -12,7 +12,7 @@ namespace Cratis.Identity.Accounts.Linking;
 /// <param name="eventStore">The account event store.</param>
 /// <param name="readModels">The passive account fold reader.</param>
 /// <param name="time">The trusted append clock.</param>
-public class AccountStore(IEventStore eventStore, IReadModels readModels, TimeProvider time)
+internal class AccountStore(IEventStore eventStore, IReadModels readModels, TimeProvider time)
 {
     /// <summary>Initializes a new instance of the <see cref="AccountStore"/> class using its store's passive reader.</summary>
     /// <param name="eventStore">The account event store.</param>

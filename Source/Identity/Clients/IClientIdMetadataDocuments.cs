@@ -18,7 +18,7 @@ namespace Cratis.Identity.Clients;
 /// <item><description>never present the client name as proof of identity: a legitimate CIMD URL can be replayed by another program using the same loopback redirect.</description></item>
 /// </list>
 /// </remarks>
-public interface IClientIdMetadataDocuments
+internal interface IClientIdMetadataDocuments
 {
     /// <summary>
     /// Resolves the metadata document for a URL client identifier.

@@ -23,7 +23,7 @@ public class when_logging_in_on_an_ipv6_loopback_port(IdentityHost host) : IAsyn
 
         using var page = await browser.Authorize(parameters);
         using var consent = await browser.Consent(await page.Content.ReadAsStringAsync());
-        _callback = consent.Headers.Location!;
+        _callback = consent.Headers.Location;
         var code = QueryHelpers.ParseQuery(_callback.Query)["code"].ToString();
         (_tokenStatus, _) = await browser.PostForm("/connect/token",
         [

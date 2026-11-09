@@ -3,13 +3,14 @@
 
 using System.Text.Json;
 using Cratis.Identity.Accounts;
+using Cratis.Identity.Contracts.Accounts;
 
 namespace Cratis.Identity.Upstream;
 
 /// <summary>
 /// Reads the GitHub REST API <c language="text">GET /user</c> response.
 /// </summary>
-public static class GitHubUserResponse
+internal static class GitHubUserResponse
 {
     /// <summary>
     /// Reads a <see cref="GitHubUser"/> from a <c language="text">GET /user</c> response.
@@ -29,6 +30,12 @@ public static class GitHubUserResponse
             ? n.GetString()!
             : login.GetString()!;
 
-        return new GitHubUser(gitHubId, login.GetString()!, name);
+        var email = user.TryGetProperty("email", out var emailProperty) && emailProperty.ValueKind == JsonValueKind.String
+            ? emailProperty.GetString()
+            : null;
+        return new GitHubUser(gitHubId, login.GetString()!, name)
+        {
+            Email = string.IsNullOrWhiteSpace(email) ? null : new Email(email)
+        };
     }
 }

@@ -15,7 +15,7 @@ public class a_token_to_validate : Specification
     protected const string TokenId = "token-1";
 
     protected IOpenIddictTokenManager _tokens;
-    protected RejectExpiredTokenEntries _handler;
+    private protected RejectExpiredTokenEntries _handler;
     protected FixedTimeProvider _time;
     protected object _entry;
 

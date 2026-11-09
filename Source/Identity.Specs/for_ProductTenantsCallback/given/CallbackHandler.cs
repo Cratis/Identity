@@ -9,7 +9,7 @@ namespace Cratis.Identity.for_ProductTenantsCallback.given;
 public class CallbackHandler : HttpMessageHandler
 {
     public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
-    public string Body { get; set; } = /*lang=json*/ """{"subject":"account-1","tenants":[{"id":"one","name":"One"},{"id":"two","name":"Two"}]}""";
+    public string Body { get; set; } = /*lang=json*/ """{"subject":"7d9d5c9e-0000-4000-8000-000000000001","tenants":[{"id":"one","name":"One"},{"id":"two","name":"Two"}]}""";
     public string MediaType { get; set; } = "application/json";
     public Func<HttpContent>? Content { get; set; }
     public Func<CancellationToken, Task>? BeforeResponse { get; set; }

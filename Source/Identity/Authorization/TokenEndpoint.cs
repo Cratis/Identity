@@ -2,8 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Accounts;
+using Cratis.Identity.Authorization.TokenExchange;
 using Cratis.Identity.Contracts;
+using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Resources;
+using Cratis.Identity.Revocation;
 using Cratis.Identity.Tenants;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
@@ -19,17 +22,21 @@ namespace Cratis.Identity.Authorization;
 /// exists, that the requested resource matches the grant, and that the account can still use the tenant the
 /// grant was authorized for.
 /// </summary>
-/// <param name="accounts">The <see cref="IAccounts"/>.</param>
+/// <param name="accounts">The active-account reader.</param>
 /// <param name="grantPolicy">The <see cref="IGrantPolicy"/>.</param>
 /// <param name="resources">The <see cref="IResourceCatalog"/>.</param>
 /// <param name="tenants">The <see cref="ITenantDirectory"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
-public class TokenEndpoint(
-    IAccounts accounts,
+/// <param name="fences">The primary grant authority.</param>
+/// <param name="exchange">The RFC 8693 <see cref="TokenExchangeGrant"/>.</param>
+internal class TokenEndpoint(
+    IAccountReader accounts,
     IGrantPolicy grantPolicy,
     IResourceCatalog resources,
     ITenantDirectory tenants,
-    ILogger<TokenEndpoint> logger)
+    ILogger<TokenEndpoint> logger,
+    IFenceStore fences,
+    TokenExchangeGrant exchange)
 {
     /// <summary>
     /// Handles a token request.
@@ -40,6 +47,11 @@ public class TokenEndpoint(
     public async Task<IResult> Handle(HttpContext context)
     {
         var request = context.GetOpenIddictServerRequest() ?? throw new OpenIddictRequestMissing(context.Request.Path);
+        if (string.Equals(request.GrantType, TokenExchangeConstants.GrantType, StringComparison.Ordinal))
+        {
+            return await exchange.Handle(request, context.RequestAborted);
+        }
+
         if (!request.IsAuthorizationCodeGrantType() && !request.IsRefreshTokenGrantType())
         {
             return OAuthResults.Error(Errors.UnsupportedGrantType, "The grant type is not supported.");
@@ -55,7 +67,7 @@ public class TokenEndpoint(
         }
 
         var accountId = granted.GetClaim(Claims.Subject);
-        var account = accountId is null ? null : await accounts.FindById(accountId, context.RequestAborted);
+        var account = AccountSubject.TryParse(accountId, out var subject) ? await accounts.FindActive(subject!, context.RequestAborted) : null;
         if (account is null)
         {
             logger.AccountMissing(authorizationId, accountId);
@@ -86,6 +98,30 @@ public class TokenEndpoint(
             }
         }
 
-        return OAuthResults.Issue(AccessTokenIdentity.Renew(granted, account, request.ClientId!));
+        try
+        {
+            var state = string.IsNullOrEmpty(authorizationId) ? null : await fences.Read(authorizationId, context.RequestAborted);
+            if (string.IsNullOrEmpty(authorizationId) || state?.Fence is not null || (state is not null && !GrantStateValidation.IsKnown(state)) ||
+                (request.IsRefreshTokenGrantType() && state is null))
+            {
+                return OAuthResults.Error(Errors.InvalidGrant, "The refresh token is no longer valid.");
+            }
+        }
+        catch (Exception)
+        {
+            return OAuthResults.Error(Errors.InvalidGrant, "The refresh token is no longer valid.");
+        }
+
+        // Offline access JWTs retain the accepted 630-second lifetime+skew window after a fence.
+        // Online refresh admission is decided again by the single-document consume/install CAS.
+        // A known non-current entry must reach redemption so concurrent reuse fences the family.
+        // A grant without its original authentication time cannot be renewed: auth_time is never invented from the current time.
+        if (AccessTokenIdentity.AuthTimeOf(granted) is null)
+        {
+            return OAuthResults.Error(Errors.InvalidGrant, "The refresh token is no longer valid.");
+        }
+
+        var receivesUpstreamIdentity = grantedAudiences.All(_ => resources.FindByAudience(_)?.ReceivesUpstreamIdentity == true);
+        return OAuthResults.Issue(AccessTokenIdentity.Renew(granted, account, request.ClientId!, receivesUpstreamIdentity));
     }
 }

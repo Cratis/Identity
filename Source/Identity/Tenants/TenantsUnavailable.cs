@@ -7,4 +7,4 @@ namespace Cratis.Identity.Tenants;
 /// Represents a failed lookup; no tenant selection may proceed.
 /// </summary>
 /// <param name="Reason">The fixed failure category, without response content.</param>
-public sealed record TenantsUnavailable(TenantsUnavailableReason Reason) : TenantLookup;
+internal sealed record TenantsUnavailable(TenantsUnavailableReason Reason) : TenantLookup;

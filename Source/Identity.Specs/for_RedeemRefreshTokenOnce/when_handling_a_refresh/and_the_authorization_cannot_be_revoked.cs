@@ -13,6 +13,7 @@ public class and_the_authorization_cannot_be_revoked : given.a_refresh_token_req
     void Establish()
     {
         _tokens.HasStatusAsync(_token, Statuses.Valid, Arg.Any<CancellationToken>()).Returns(false);
+        _tokens.HasStatusAsync(_token, Statuses.Redeemed, Arg.Any<CancellationToken>()).Returns(true);
         _authorizations.TryRevokeAsync(_authorization, Arg.Any<CancellationToken>()).Returns(false);
     }
 

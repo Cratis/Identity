@@ -11,7 +11,7 @@ namespace Cratis.Identity.Accounts.Linking;
 /// <summary>The guarded account decision state, never an HTTP query.</summary>
 /// <param name="Id">The account subject.</param>
 [Passive]
-public record AccountLinkState(string Id)
+internal record AccountLinkState(string Id)
 {
     /// <summary>Gets whether the subject was allocated.</summary>
     public bool Registered { get; init; }

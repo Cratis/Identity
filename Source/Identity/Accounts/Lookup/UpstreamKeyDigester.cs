@@ -10,7 +10,7 @@ namespace Cratis.Identity.Accounts.Lookup;
 
 /// <summary>Domain-separated, length-framed HMAC over exact immutable upstream values.</summary>
 /// <param name="keys">The lookup key source.</param>
-public class UpstreamKeyDigester(IUpstreamLookupKeys keys)
+internal class UpstreamKeyDigester(IUpstreamLookupKeys keys)
 {
     /// <summary>Computes a revision-prefixed keyed pseudonym.</summary>
     /// <param name="issuer">The exact authority.</param>
@@ -19,7 +19,7 @@ public class UpstreamKeyDigester(IUpstreamLookupKeys keys)
     public UpstreamLookupDigest Digest(UpstreamIssuer issuer, UpstreamSubject subject)
     {
         var authority = Encoding.UTF8.GetBytes(issuer.Value);
-        var upstream = Encoding.UTF8.GetBytes(subject.Value);
+        var upstream = Encoding.UTF8.GetBytes(UpstreamSubject.Create(subject.Value).Value);
         using var input = new MemoryStream();
         input.Write(Encoding.UTF8.GetBytes("cratis.identity.upstream-key-lookup.v1"));
         Frame(input, authority);

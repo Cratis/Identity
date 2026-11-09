@@ -5,4 +5,4 @@ namespace Cratis.Identity.Accounts.Linking;
 
 /// <summary>Raw-source projection guarding every fact read by the account reducer.</summary>
 /// <param name="Id">The immutable account source.</param>
-public record AccountGuard(string Id);
+internal record AccountGuard(string Id);

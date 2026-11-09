@@ -9,4 +9,4 @@ namespace Cratis.Identity.Keys;
 /// <param name="Signing">The signing keys.</param>
 /// <param name="Encryption">The encryption keys.</param>
 /// <param name="DataProtection">The Data Protection keys.</param>
-public record KeyRing(IReadOnlyList<RealmKey> Signing, IReadOnlyList<RealmKey> Encryption, IReadOnlyList<DataProtectionKey> DataProtection);
+internal record KeyRing(IReadOnlyList<RealmKey> Signing, IReadOnlyList<RealmKey> Encryption, IReadOnlyList<DataProtectionKey> DataProtection);

@@ -7,5 +7,5 @@ namespace Cratis.Identity.Hosting;
 /// The exception that is thrown when Identity starts outside development without a secret store. Ephemeral keys
 /// would invalidate every issued token on restart and differ between replicas.
 /// </summary>
-public class SecretStoreNotConfigured()
+internal class SecretStoreNotConfigured()
     : Exception("Identity:SecretStore:Path must be configured outside development. It is a directory holding signing.<name>.crt/.key, encryption.<name>.crt/.key and data-protection.<name>.xml.");

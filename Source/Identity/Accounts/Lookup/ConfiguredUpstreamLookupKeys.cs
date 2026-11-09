@@ -8,22 +8,17 @@ using Microsoft.Extensions.Options;
 namespace Cratis.Identity.Accounts.Lookup;
 
 /// <summary>A configuration-backed key source. Outside Development a configured lookup key is required.</summary>
-public sealed class ConfiguredUpstreamLookupKeys : IUpstreamLookupKeys
+internal sealed class ConfiguredUpstreamLookupKeys : IUpstreamLookupKeys
 {
     static readonly byte[] _developmentKey = RandomNumberGenerator.GetBytes(32);
 
     /// <summary>Initializes a new instance of the <see cref="ConfiguredUpstreamLookupKeys"/> class.</summary>
     /// <param name="options">The account options.</param>
     /// <param name="environment">The host environment.</param>
-    /// <exception cref="AccountOperationRefused">The experiment is not enabled, the key is invalid, or no key is configured outside Development.</exception>
+    /// <exception cref="AccountOperationRefused">The key is invalid or no key is configured outside Development.</exception>
     public ConfiguredUpstreamLookupKeys(IOptions<IdentityOptions> options, IHostEnvironment environment)
     {
         var accounts = options.Value.Accounts;
-        if (!accounts.EventSourced)
-        {
-            throw new AccountOperationRefused("event_sourced_accounts_not_enabled");
-        }
-
         if (string.IsNullOrEmpty(accounts.LookupKey) && !environment.IsDevelopment())
         {
             throw new AccountOperationRefused("lookup_key_required");

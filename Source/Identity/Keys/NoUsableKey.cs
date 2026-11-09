@@ -8,4 +8,4 @@ namespace Cratis.Identity.Keys;
 /// previous keys on reload, rather than issuing tokens it cannot sign or protect.
 /// </summary>
 /// <param name="purpose">The <see cref="KeyPurpose"/> without a usable key.</param>
-public class NoUsableKey(KeyPurpose purpose) : Exception($"The secret store holds no {purpose.ToString().ToLowerInvariant()} key that is valid now.");
+internal class NoUsableKey(KeyPurpose purpose) : Exception($"The secret store holds no {purpose.ToString().ToLowerInvariant()} key that is valid now.");

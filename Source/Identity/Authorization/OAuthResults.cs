@@ -10,7 +10,7 @@ namespace Cratis.Identity.Authorization;
 /// <summary>
 /// Creates results that hand an OAuth outcome back to OpenIddict, which renders it for the client.
 /// </summary>
-public static class OAuthResults
+internal static class OAuthResults
 {
     /// <summary>
     /// Creates a result that rejects the request with an OAuth error.

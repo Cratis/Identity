@@ -17,7 +17,7 @@ namespace Cratis.Identity.Authorization;
 /// <param name="Account">The signed-in <see cref="Accounts.Account"/>.</param>
 /// <param name="Parameters">The OAuth parameters of the authorization request, carried through the form.</param>
 /// <param name="Error">An error to show, for example when no tenant was selected.</param>
-public record Consent(
+internal record Consent(
     string ClientId,
     string ClientName,
     Uri RedirectUri,

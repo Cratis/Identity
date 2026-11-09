@@ -16,7 +16,7 @@ namespace Cratis.Identity.Authorization;
 /// that belong to another resource server are dropped rather than granted.
 /// </remarks>
 /// <param name="resources">The <see cref="IResourceCatalog"/>.</param>
-public class GrantPolicy(IResourceCatalog resources) : IGrantPolicy
+internal class GrantPolicy(IResourceCatalog resources) : IGrantPolicy
 {
     /// <inheritdoc/>
     public GrantEvaluation Evaluate(GrantRequest request)

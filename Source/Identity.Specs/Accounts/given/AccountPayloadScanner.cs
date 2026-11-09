@@ -6,29 +6,20 @@ using Cratis.Chronicle.Compliance;
 using Cratis.Chronicle.Compliance.GDPR;
 using Cratis.Chronicle.Events;
 using Cratis.Identity.Contracts.Accounts;
+using Cratis.Identity.Contracts.Check;
+using Cratis.Identity.Contracts.Compliance;
 
 namespace Cratis.Identity.Accounts.given;
 
 public static class AccountPayloadScanner
 {
-    public static IEnumerable<string> Violations(Type payload)
-    {
-        foreach (var property in payload.GetProperties(BindingFlags.Instance | BindingFlags.Public))
-        {
-            if (property.PropertyType == typeof(string))
-            {
-                yield return property.Name;
-            }
+    public static IEnumerable<string> Violations(Type type) => ContentRules.Check(
+        ReflectionShapeBuilder.Build(type, CatalogueChecker.HasAccountSubject(type)),
+        SafeConceptRegistry.Entries).Select(violation => $"{type.Name}.{violation.Path}")
+        .Concat(LegacyViolations(type).Select(property => $"{type.Name}.{property.Name}")).Distinct();
 
-            if (payload.IsDefined(typeof(PublicAttribute)) && property.PropertyType == typeof(UpstreamSubject))
-            {
-                yield return property.Name;
-            }
-
-            if (property.PropertyType.IsDefined(typeof(PIIAttribute)) && !property.PropertyType.IsDefined(typeof(ComplianceDetailsAttribute)))
-            {
-                yield return property.Name;
-            }
-        }
-    }
+    static IEnumerable<PropertyInfo> LegacyViolations(Type type) => type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+        .Where(property => property.PropertyType == typeof(string) ||
+            (type.IsDefined(typeof(PublicAttribute)) && property.PropertyType == typeof(UpstreamSubject)) ||
+            (property.PropertyType.IsDefined(typeof(PIIAttribute)) && !property.PropertyType.IsDefined(typeof(ComplianceDetailsAttribute))));
 }

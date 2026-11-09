@@ -7,7 +7,7 @@ using Cratis.Identity.Contracts.Accounts.Events;
 namespace Cratis.Identity.Accounts.Constraints;
 
 /// <summary>Reserves the exact upstream pair across all accounts, even after unlink.</summary>
-public class UniqueUpstreamKey : IConstraint
+internal class UniqueUpstreamKey : IConstraint
 {
     /// <inheritdoc/>
     public void Define(IConstraintBuilder builder) => builder.Unique(unique => unique

@@ -11,23 +11,34 @@ namespace Cratis.Identity.Accounts;
 /// <summary>
 /// Creates the principal stored in the Identity site session cookie.
 /// </summary>
-public static class SessionPrincipal
+internal static class SessionPrincipal
 {
     /// <summary>
     /// Creates the session principal for an account.
     /// </summary>
     /// <param name="account">The signed-in <see cref="Account"/>.</param>
     /// <param name="upstreamScheme">The upstream scheme the account signed in through.</param>
+    /// <param name="authTime">When the upstream authentication of this session was verified.</param>
     /// <returns>The session <see cref="ClaimsPrincipal"/>.</returns>
-    public static ClaimsPrincipal For(Account account, string upstreamScheme)
+    public static ClaimsPrincipal For(Account account, string upstreamScheme, DateTimeOffset authTime)
     {
         var identity = new ClaimsIdentity(upstreamScheme, Claims.Name, Claims.Role);
-        identity.AddClaim(new Claim(Claims.Subject, account.Id));
-        identity.AddClaim(new Claim(Claims.Name, account.Name));
-        identity.AddClaim(new Claim(IdentityClaims.GitHubId, account.GitHubId.ToString(CultureInfo.InvariantCulture)));
-        identity.AddClaim(new Claim(IdentityClaims.GitHubLogin, account.GitHubLogin));
+        identity.AddClaim(new Claim(Claims.Subject, account.Id.Value));
+        identity.AddClaim(new Claim(Claims.Name, account.Name.Value));
+        identity.AddClaim(new Claim(IdentityClaims.GitHubId, account.GitHubId.Value));
+        identity.AddClaim(new Claim(IdentityClaims.GitHubLogin, account.GitHubLogin.Value));
+        identity.AddClaim(new Claim(Claims.PreferredUsername, account.GitHubLogin.Value));
+        identity.AddClaim(new Claim(Claims.AuthenticationTime, authTime.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64));
         return new ClaimsPrincipal(identity);
     }
+
+    /// <summary>
+    /// Gets the upstream authentication time of a session principal.
+    /// </summary>
+    /// <param name="principal">The session <see cref="ClaimsPrincipal"/>.</param>
+    /// <returns>The authentication time, or <see langword="null"/> if the principal carries none (such a session must sign in again).</returns>
+    public static DateTimeOffset? AuthTime(ClaimsPrincipal principal) =>
+        long.TryParse(principal.FindFirst(Claims.AuthenticationTime)?.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds) ? DateTimeOffset.FromUnixTimeSeconds(seconds) : null;
 
     /// <summary>
     /// Gets the account identifier of a session principal.

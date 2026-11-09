@@ -17,13 +17,15 @@ public static class Configurations
 
     public static IdentityOptions TwoResourceServers() => new()
     {
+        Accounts = new() { LookupKey = Convert.ToBase64String(new byte[32]) },
         Resources =
         [
             new ResourceServerOptions
             {
                 Audience = DirectAudience,
+                ReceivesUpstreamIdentity = true,
                 DisplayName = "Cratis Direct",
-                Indicators = [DirectMcp, DirectV1],
+                Indicators = [DirectMcp],
                 Scopes =
                 [
                     new ScopeOptions { Name = "direct:read", Description = "Read" },
@@ -57,6 +59,41 @@ public static class Configurations
             resource.TenantsCallback = new TenantsCallbackOptions { Url = "https://products.example/tenants", Secret = new string('s', 32) };
         }
 
+        return options;
+    }
+
+    public const string ExchangeClientId = "authproxy";
+    public const string ExchangeClientSecret = "exchange-client-secret-0123456789abcdef";
+    public const string ExternalIssuer = "https://login.partner.example";
+    public const string ExternalAudience = "https://identity.example/exchange";
+
+    public static IdentityOptions WithTokenExchange()
+    {
+        var options = CallbackResources();
+        options.Issuer = "https://identity.example/";
+        options.TokenExchange = new()
+        {
+            Issuers =
+            [
+                new ExternalIssuerOptions
+                {
+                    Issuer = ExternalIssuer,
+                    JwksUri = $"{ExternalIssuer}/.well-known/jwks.json",
+                    Audiences = [ExternalAudience]
+                }
+            ],
+            Clients =
+            [
+                new TokenExchangeClientOptions
+                {
+                    ClientId = ExchangeClientId,
+                    ClientSecret = ExchangeClientSecret,
+                    Issuers = [ExternalIssuer],
+                    Resources = [DirectAudience],
+                    Scopes = ["direct:read"]
+                }
+            ]
+        };
         return options;
     }
 

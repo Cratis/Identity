@@ -11,12 +11,16 @@ namespace Cratis.Identity.Configuration;
 /// service instead of silently narrowing or widening what tokens can carry.
 /// </summary>
 /// <param name="environment">The host environment; configured tenants are Development fixtures only.</param>
-public class IdentityOptionsValidation(IHostEnvironment environment) : IValidateOptions<IdentityOptions>
+internal class IdentityOptionsValidation(IHostEnvironment environment) : IValidateOptions<IdentityOptions>
 {
     /// <inheritdoc/>
     public ValidateOptionsResult Validate(string? name, IdentityOptions options)
     {
         var failures = new List<string>();
+        if (options.SecurityOwners.Any(string.IsNullOrWhiteSpace))
+        {
+            failures.Add("Identity:SecurityOwners must contain only non-empty subjects.");
+        }
 
         if (!string.IsNullOrWhiteSpace(options.Issuer))
         {
@@ -36,6 +40,11 @@ public class IdentityOptionsValidation(IHostEnvironment environment) : IValidate
             failures.Add("The secret store reload interval must be between one second and five minutes.");
         }
 
+        if (options.Tokens.AccessTokenLifetime <= TimeSpan.Zero || options.Tokens.AccessTokenLifetime > TimeSpan.FromMinutes(10))
+        {
+            failures.Add("Identity:Tokens:AccessTokenLifetime must be positive and no greater than 00:10:00.");
+        }
+
         failures.AddRange(Duplicates(options.Resources.Select(_ => _.Audience), "audience"));
         failures.AddRange(Duplicates(options.Resources.SelectMany(_ => _.Indicators.Select(i => ResourceIndicator.Normalize(i) ?? i)), "resource indicator"));
         failures.AddRange(Duplicates(options.Resources.SelectMany(_ => _.Scopes.Select(s => s.Name)), "scope"));
@@ -46,6 +55,7 @@ public class IdentityOptionsValidation(IHostEnvironment environment) : IValidate
             .Where(_ => string.IsNullOrWhiteSpace(_.ClientId) || string.IsNullOrWhiteSpace(_.ClientSecret))
             .Select(_ => $"Introspection client \"{_.ClientId}\" needs both a client id and a client secret."));
 
+        failures.AddRange(TokenExchangeOptionsValidation.Validate(options, environment.IsDevelopment()));
         ValidateAccounts(options.Accounts, failures);
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }
@@ -60,6 +70,11 @@ public class IdentityOptionsValidation(IHostEnvironment environment) : IValidate
         if (resource.Indicators.Count == 0)
         {
             yield return $"Resource server \"{resource.Audience}\" has no resource indicators.";
+        }
+
+        if (resource.Indicators.Count > 1)
+        {
+            yield return $"Resource server \"{resource.Audience}\" must have exactly one resource indicator.";
         }
 
         foreach (var indicator in resource.Indicators.Where(_ => ResourceIndicator.Normalize(_) is null))
@@ -88,9 +103,9 @@ public class IdentityOptionsValidation(IHostEnvironment environment) : IValidate
 
     void ValidateAccounts(AccountsOptions accounts, List<string> failures)
     {
-        if (!accounts.EventSourced)
+        if (accounts.ReadModelCatchUpTimeout <= TimeSpan.Zero)
         {
-            return;
+            failures.Add("Account read-model catch-up timeout must be positive.");
         }
 
         if (!environment.IsDevelopment() && string.IsNullOrEmpty(accounts.LookupKey))

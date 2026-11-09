@@ -8,4 +8,4 @@ namespace Cratis.Identity.Authorization;
 /// </summary>
 /// <param name="Error">The OAuth error code.</param>
 /// <param name="Description">The error description.</param>
-public sealed record NotGrantable(string Error, string Description) : GrantEvaluation;
+internal sealed record NotGrantable(string Error, string Description) : GrantEvaluation;

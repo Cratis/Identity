@@ -21,9 +21,9 @@ public class when_a_selectable_tenant_is_hinted(IdentityHost host) : IAsyncLifet
         using var page = await browser.Authorize(parameters);
         _page = await page.Content.ReadAsStringAsync();
         using var redirect = await browser.Consent(_page, tenant: IdentityHost.OtherMemberTenant);
-        var code = QueryHelpers.ParseQuery(redirect.Headers.Location!.Query)["code"].ToString();
+        var code = QueryHelpers.ParseQuery(redirect.Headers.Location.Query)["code"].ToString();
         var (_, tokens) = await browser.RedeemCode(code, verifier);
-        var token = await AccessTokens.Validate(browser, tokens.GetProperty("access_token").GetString()!);
+        var token = await AccessTokens.Validate(browser, tokens.GetProperty("access_token").GetString());
         _selectedTenant = (string)token.Claims["tid"];
     }
 

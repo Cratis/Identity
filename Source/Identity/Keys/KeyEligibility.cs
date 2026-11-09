@@ -13,7 +13,7 @@ namespace Cratis.Identity.Keys;
 /// predecessor exists. Every key stays published, and usable for decryption, until the operator removes it.
 /// </remarks>
 /// <param name="timeProvider">The <see cref="TimeProvider"/>.</param>
-public class KeyEligibility(TimeProvider timeProvider)
+internal class KeyEligibility(TimeProvider timeProvider)
 {
     /// <summary>
     /// Gets how long a key is valid before it becomes the one that signs or encrypts.

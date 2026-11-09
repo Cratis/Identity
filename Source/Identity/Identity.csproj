@@ -59,6 +59,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Cratis.Identity.Specs" />
     <InternalsVisibleTo Include="Cratis.Identity.Integration.Specs" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
 
 </Project>

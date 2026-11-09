@@ -9,7 +9,7 @@ namespace Cratis.Identity.Keys;
 /// <param name="Ring">The <see cref="KeyRing"/>.</param>
 /// <param name="Signer">The signing key in use.</param>
 /// <param name="Encrypter">The encryption key in use.</param>
-public record KeySnapshot(KeyRing Ring, RealmKey Signer, RealmKey Encrypter)
+internal record KeySnapshot(KeyRing Ring, RealmKey Signer, RealmKey Encrypter)
 {
     /// <summary>
     /// Gets a value indicating whether the keys published, or the keys in use, differ from <paramref name="other"/>.

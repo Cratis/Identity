@@ -12,7 +12,7 @@ public class TenantsCallbackStub : HttpMessageHandler
     readonly ConcurrentDictionary<string, SelectableTenant[]> _tenants = new(StringComparer.Ordinal);
     readonly ConcurrentDictionary<string, bool> _unavailable = new(StringComparer.Ordinal);
 
-    public void List(string gitHubId, params SelectableTenant[] tenants)
+    internal void List(string gitHubId, params SelectableTenant[] tenants)
     {
         _tenants[gitHubId] = tenants;
         _unavailable[gitHubId] = false;

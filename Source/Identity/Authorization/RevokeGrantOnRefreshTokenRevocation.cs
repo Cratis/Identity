@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Revocation;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -18,21 +19,19 @@ namespace Cratis.Identity.Authorization;
 /// <see cref="RevokeGrantOnRefreshTokenReuse"/> at validation time and by <see cref="RedeemRefreshTokenOnce"/> at
 /// redemption time, including concurrent reuse.
 /// </remarks>
-/// <param name="tokens">The <see cref="IOpenIddictTokenManager"/>.</param>
-/// <param name="authorizations">The <see cref="IOpenIddictAuthorizationManager"/>.</param>
+/// <param name="grants">The shared irreversible restriction protocol.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
-public class RevokeGrantOnRefreshTokenRevocation(
-    IOpenIddictTokenManager tokens,
-    IOpenIddictAuthorizationManager authorizations,
+internal class RevokeGrantOnRefreshTokenRevocation(
+    GrantRevocation grants,
     ILogger<RevokeGrantOnRefreshTokenRevocation> logger) : IOpenIddictServerHandler<HandleRevocationRequestContext>
 {
     /// <summary>
-    /// Gets the descriptor that places the handler after OpenIddict has revoked the presented token.
+    /// Gets the descriptor that commits the permanent fence before OpenIddict revokes the presented entry.
     /// </summary>
     public static OpenIddictServerHandlerDescriptor Descriptor { get; } =
         OpenIddictServerHandlerDescriptor.CreateBuilder<HandleRevocationRequestContext>()
             .UseScopedHandler<RevokeGrantOnRefreshTokenRevocation>()
-            .SetOrder(OpenIddictServerHandlers.Revocation.RevokeToken.Descriptor.Order + 1_000)
+            .SetOrder(OpenIddictServerHandlers.Revocation.RevokeToken.Descriptor.Order - 1)
             .SetType(OpenIddictServerHandlerType.Custom)
             .Build();
 
@@ -50,12 +49,7 @@ public class RevokeGrantOnRefreshTokenRevocation(
             return;
         }
 
-        var count = await tokens.RevokeByAuthorizationIdAsync(authorizationId, context.CancellationToken);
-        var authorization = await authorizations.FindByIdAsync(authorizationId, context.CancellationToken);
-        if (authorization is not null)
-        {
-            await authorizations.TryRevokeAsync(authorization, context.CancellationToken);
-        }
+        var count = await grants.Revoke(authorizationId, RevocationReason.RefreshTokenRevoked, context.CancellationToken);
 
         logger.GrantRevoked(authorizationId, count);
     }

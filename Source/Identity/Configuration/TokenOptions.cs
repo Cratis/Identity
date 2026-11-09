@@ -11,8 +11,9 @@ public class TokenOptions
     /// <summary>
     /// Gets or sets the lifetime of access tokens. Access tokens are self-contained JWTs, so this is also the
     /// longest a revoked grant can still be used against a resource server that does not introspect.
+    /// Defaults to five minutes; startup refuses a value that is not positive or is over ten minutes.
     /// </summary>
-    public TimeSpan AccessTokenLifetime { get; set; } = TimeSpan.FromMinutes(15);
+    public TimeSpan AccessTokenLifetime { get; set; } = TimeSpan.FromMinutes(5);
 
     /// <summary>
     /// Gets or sets the lifetime of authorization codes.
