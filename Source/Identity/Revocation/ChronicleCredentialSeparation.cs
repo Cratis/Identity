@@ -29,7 +29,7 @@ internal static class ChronicleCredentialSeparation
             return [];
         }
 
-        var fromUserInfo = uri.UserInfo.Split(':').Select(Uri.UnescapeDataString);
+        var fromUserInfo = uri.UserInfo.Split(':', 2).Select(Uri.UnescapeDataString);
         var fromQuery = uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)
             .Select(pair => pair.Split('=', 2)).Where(pair => pair.Length == 2).Select(pair => Uri.UnescapeDataString(pair[1]));
         return fromUserInfo.Concat(fromQuery).Where(value => value.Length > 0).ToArray();
