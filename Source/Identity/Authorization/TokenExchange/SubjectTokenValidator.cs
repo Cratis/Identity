@@ -36,15 +36,22 @@ internal class SubjectTokenValidator(IOptions<IdentityOptions> options, IExterna
     /// <returns>The UTC offset time.</returns>
     public static DateTimeOffset Utc(DateTime value) => new(DateTime.SpecifyKind(value, DateTimeKind.Utc));
 
-    /// <summary>Creates the single-use key of a token.</summary>
+    /// <summary>
+    /// Creates the single-use key of a token from its verified claims, never from its encoding: the same claims signed
+    /// or encoded again map to the same key.
+    /// </summary>
     /// <param name="issuer">The issuer.</param>
+    /// <param name="subject">The subject.</param>
     /// <param name="jti">The token id.</param>
-    /// <param name="rawToken">The raw token, digested when there is no usable id.</param>
+    /// <param name="issuedAt">The issued-at time, used with the expiry when there is no usable id.</param>
+    /// <param name="expires">The expiry time.</param>
     /// <returns>The key.</returns>
-    public static string ReplayKey(string issuer, string? jti, string rawToken) =>
-        !string.IsNullOrEmpty(jti) && jti.Length <= MaximumJtiLength
-            ? $"{issuer}\n{jti}"
-            : $"{issuer}\nsha256:{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(rawToken)))}";
+    public static string ReplayKey(string issuer, string subject, string? jti, long issuedAt, long expires)
+    {
+        var identity = !string.IsNullOrEmpty(jti) && jti.Length <= MaximumJtiLength ? $"jti\n{jti}" : $"iat\n{issuedAt}\n{expires}";
+        var content = $"{subject.Length}:{subject}\n{identity}";
+        return $"{issuer}\nsha256:{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(content)))}";
+    }
 
     /// <inheritdoc/>
     public async Task<SubjectTokenResult> Validate(string rawToken, TokenExchangeClientOptions client, CancellationToken cancellationToken = default)
@@ -62,12 +69,12 @@ internal class SubjectTokenValidator(IOptions<IdentityOptions> options, IExterna
         }
 
         var token = await Verify(rawToken, issuer, signingKeys);
-        return token is null ? SubjectTokenResult.Refused(SubjectTokenRefusal.Invalid) : Interpret(token, issuer, rawToken);
+        return token is null ? SubjectTokenResult.Refused(SubjectTokenRefusal.Invalid) : Interpret(token, issuer);
     }
 
     (ExternalIssuerOptions? Issuer, JsonWebToken? Token, SubjectTokenRefusal Refusal) Select(string rawToken, TokenExchangeClientOptions client)
     {
-        if (string.IsNullOrEmpty(rawToken) || rawToken.Length > MaximumTokenLength || rawToken.Count(_ => _ == '.') != 2)
+        if (string.IsNullOrEmpty(rawToken) || rawToken.Length > MaximumTokenLength || !CanonicalCompactToken.IsCanonical(rawToken))
         {
             return (null, null, SubjectTokenRefusal.Malformed);
         }
@@ -123,7 +130,7 @@ internal class SubjectTokenValidator(IOptions<IdentityOptions> options, IExterna
         }
     }
 
-    SubjectTokenResult Interpret(JsonWebToken token, ExternalIssuerOptions issuer, string rawToken)
+    SubjectTokenResult Interpret(JsonWebToken token, ExternalIssuerOptions issuer)
     {
         if (!token.TryGetPayloadValue<long>("iat", out var issuedAt) || string.IsNullOrEmpty(token.Subject))
         {
@@ -149,14 +156,14 @@ internal class SubjectTokenValidator(IOptions<IdentityOptions> options, IExterna
             return SubjectTokenResult.Refused(SubjectTokenRefusal.MissingClaim);
         }
 
-        var replayKey = ReplayKey(issuer.Issuer, token.Id, rawToken);
+        var expiry = Utc(token.ValidTo);
+        var replayKey = ReplayKey(issuer.Issuer, token.Subject, token.Id, issuedAt, expiry.ToUnixTimeSeconds());
         if (replay.WasUsed(replayKey))
         {
             return SubjectTokenResult.Refused(SubjectTokenRefusal.Replayed);
         }
 
         long? authTime = token.TryGetPayloadValue<long>("auth_time", out var seconds) ? seconds : null;
-        var expiry = Utc(token.ValidTo);
         return SubjectTokenResult.Accepted(new ValidatedSubject(upstreamIssuer, upstreamSubject, authTime, expiry, issued, replayKey));
     }
 }
