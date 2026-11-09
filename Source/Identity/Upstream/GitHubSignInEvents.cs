@@ -30,6 +30,13 @@ internal class GitHubSignInEvents(IAccountSignIn accounts, ILogger<GitHubSignInE
     /// <inheritdoc/>
     public override Task RemoteFailure(RemoteFailureContext context)
     {
+        if (context.HttpContext.RequestAborted.IsCancellationRequested)
+        {
+            // The caller is gone: end the callback without a denial redirect or any session.
+            context.HandleResponse();
+            return Task.CompletedTask;
+        }
+
         logger.SignInFailed(context.Failure);
         context.HandleResponse();
         return Fail(context.HttpContext, context.Properties, TemporaryFailure(context.Failure) ? "temporarily_unavailable" : "access_denied");

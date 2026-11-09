@@ -46,7 +46,9 @@ internal class EventSourcedAccountAdapter(IProtocolCommands commands, AccountRea
                 throw new AccountOperationRefused("temporarily_unavailable");
             }
 
-            return await accounts.FindActive(subject) ?? throw new AccountOperationRefused("account_not_active");
+            var account = await accounts.FindActive(subject) ?? throw new AccountOperationRefused("account_not_active");
+            cancellationToken.ThrowIfCancellationRequested();
+            return account;
         }
         catch (ReadModelsNotCaughtUp)
         {
@@ -79,8 +81,15 @@ internal class EventSourcedAccountAdapter(IProtocolCommands commands, AccountRea
         return result.ValidationResults.FirstOrDefault()?.Message ?? "temporarily_unavailable";
     }
 
-    Task<CommandResult> Execute(VerifiedAuthentication authentication, ObservedProfile profile, CancellationToken cancellationToken) => commands.Execute(
-        new SignInWithUpstreamKey(authentication.OperationId),
-        provider => provider.GetRequiredService<VerifiedUpstreamSignIn>().Set(authentication, profile, cancellationToken),
-        cancellationToken);
+    async Task<CommandResult> Execute(VerifiedAuthentication authentication, ObservedProfile profile, CancellationToken cancellationToken)
+    {
+        var result = await commands.Execute(
+            new SignInWithUpstreamKey(authentication.OperationId),
+            provider => provider.GetRequiredService<VerifiedUpstreamSignIn>().Set(authentication, profile, cancellationToken),
+            cancellationToken);
+
+        // Arc captures a cancellation inside the command pipeline into a failed result; a gone caller is never a refusal.
+        cancellationToken.ThrowIfCancellationRequested();
+        return result;
+    }
 }
