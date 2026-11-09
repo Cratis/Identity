@@ -17,12 +17,12 @@ public class TokenRateLimitOptions
     /// <summary>Gets or sets the request budget per source address or IPv6 /64.</summary>
     public int PerSourceRequests { get; set; } = 300;
 
-    /// <summary>Gets or sets the request budget per claimed client.</summary>
+    /// <summary>Gets or sets the request budget per claimed client within a source.</summary>
     public int PerClientRequests { get; set; } = 120;
 
-    /// <summary>Gets or sets the additional token-exchange budget per claimed client.</summary>
+    /// <summary>Gets or sets the additional token-exchange budget per claimed client within a source.</summary>
     public int PerClientExchangeRequests { get; set; } = 30;
 
-    /// <summary>Gets or sets the maximum tracked partitions, from 100 through 1,000,000.</summary>
+    /// <summary>Gets or sets the maximum tracked keys per kind, from 100 through 1,000,000.</summary>
     public int MaxTrackedKeys { get; set; } = 10_000;
 }

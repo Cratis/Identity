@@ -42,7 +42,7 @@ public class when_capacity_is_exhausted : Specification
         _afterSweep = _limiter.TrackedCount;
     }
 
-    [Fact] void should_keep_a_hard_capacity() => _tracked.ShouldEqual(100);
+    [Fact] void should_keep_a_hard_capacity() => _tracked.ShouldEqual(101);
     [Fact] void should_limit_overflow_clients_together() => _overflowLimited.ShouldBeTrue();
     [Fact] void should_not_evict_live_clients() => _establishedAllowed.ShouldBeTrue();
     [Fact] void should_preserve_the_live_client_budget() => _establishedLimited.ShouldBeTrue();

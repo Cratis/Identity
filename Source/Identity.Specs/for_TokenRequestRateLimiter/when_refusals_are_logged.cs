@@ -11,6 +11,8 @@ namespace Cratis.Identity.for_TokenRequestRateLimiter;
 
 public class when_refusals_are_logged : Specification
 {
+    const string Client = "private-client-id\r\nforged-log-entry";
+    const string Source = "untrusted-source\r\nforged-source-entry";
     readonly List<string> _messages = [];
     FixedTimeProvider _time;
     TokenRequestRateLimiter _limiter;
@@ -24,21 +26,23 @@ public class when_refusals_are_logged : Specification
 
     void Because()
     {
-        _limiter.Acquire("private-client-id", null, "source");
+        _limiter.Acquire(Client, "forged\r\ngrant", Source);
         for (var index = 0; index < 5; index++)
         {
-            _limiter.Acquire("private-client-id", null, "source");
+            _limiter.Acquire(Client, "forged\r\ngrant", Source);
         }
 
         _firstWindow = _messages.Count;
         _time.Now += TimeSpan.FromMinutes(2);
-        _limiter.Acquire("private-client-id", null, "source");
-        _limiter.Acquire("private-client-id", null, "source");
+        _limiter.Acquire(Client, null, Source);
+        _limiter.Acquire(Client, null, Source);
     }
 
     [Fact] void should_log_once_per_reason_per_window() => _firstWindow.ShouldEqual(1);
     [Fact] void should_log_again_after_the_window() => _messages.Count.ShouldEqual(2);
     [Fact] void should_never_log_the_raw_client_id() => _messages.Exists(_ => _.Contains("private-client-id", StringComparison.Ordinal)).ShouldBeFalse();
+    [Fact] void should_never_emit_caller_control_characters() => _messages.Exists(_ => _.Any(char.IsControl)).ShouldBeFalse();
+    [Fact] void should_never_log_the_raw_source() => _messages.Exists(_ => _.Contains("untrusted-source", StringComparison.Ordinal)).ShouldBeFalse();
     [Fact] void should_report_suppressed_refusals() => _messages[1].ShouldContain("suppressed 4");
 
     sealed class CapturingLogger(List<string> messages) : ILogger<TokenRequestRateLimiter>
