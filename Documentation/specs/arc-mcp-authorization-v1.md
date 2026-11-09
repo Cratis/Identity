@@ -163,6 +163,40 @@ For example, a fixture retry limit of 2 allows no third step-up attempt. This va
 
 Machine-readable group: [profiles and discovery](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/profiles-and-discovery.json), repository path `Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/profiles-and-discovery.json`. Successful fixture requests assert handler admission, not a particular MCP method's response payload. The group has `name`, `description`, `given`, `when.action`, and `then`; `given.vectors` contains individual cases. These data vectors do not demonstrate runtime conformance. Outcomes and reasons are vector vocabulary, not public error messages.
 
+## Vector artifact
+
+Vector artifact version: 1.0.0
+
+The [manifest](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/manifest.json)
+assigns stable case IDs without modifying the signed-off vector bytes. Each case uses
+`file` and a zero-based `index` into `given.vectors`. Its `sha256` hashes the UTF-8
+compact JSON object (property order preserved, no whitespace or trailing newline,
+unescaped Unicode, as produced by JavaScript `JSON.stringify`). File hashes cover the
+original bytes. The [changelog](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/CHANGELOG.md)
+versions the artifact independently of contract version 1.
+
+### Packaging and manual publication
+
+Run `node scripts/package-authorization-vectors.mjs .ai-work/identity-134/artifacts`
+from the repository root. This Node-stdlib script produces
+`arc-mcp-authorization-v1-vectors-1.0.0.tar.gz` and its `.sha256` sidecar. The archive
+contains `manifest.json`, `CHANGELOG.md`, and every listed vector file at its root.
+Entries are sorted with fixed mode, owner, and timestamp fields; gzip timestamps and
+OS metadata are normalized. Use the same Node version for byte-identical compression.
+
+The release owner can run the **Package authorization vectors** `workflow_dispatch`
+workflow on the reviewed commit to download the pair as a workflow artifact. It does
+not create a Git tag or GitHub release and never runs on push. Publication of the pair
+as immutable assets under a separately approved artifact tag such as
+`arc-mcp-authorization-v1/v1.0.0` remains a release-owner action. No cross-repository
+dispatch or token is used.
+
+Arc and AuthProxy consumers should pin the published artifact version and SHA-256,
+verify the sidecar before extraction, verify the manifest and case coverage, and run
+their own conformance specs by case ID. A missing, duplicate, or unexecuted case must
+fail their gate. Consumer CI wiring and local overrides are separate deliverables;
+this package does not assert consumer conformance.
+
 ## Decisions recorded at sign-off
 
 Decided in Identity #14 (2026-11-05) with the recommended answers from the sign-off package:

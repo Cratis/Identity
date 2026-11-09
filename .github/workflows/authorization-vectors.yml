@@ -1,0 +1,47 @@
+# Copyright (c) Cratis. All rights reserved.
+# Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+name: Package authorization vectors
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: authorization-vectors-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: Package reviewed vector artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout selected commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22.14.0'
+      - name: Check deterministic archive format
+        run: node --test scripts/package-authorization-vectors.test.mjs
+      - name: Package vectors and checksum
+        run: node scripts/package-authorization-vectors.mjs .ai-work/identity-134/artifacts
+      - name: Verify checksum and archive
+        working-directory: .ai-work/identity-134/artifacts
+        run: |
+          sha256sum --check ./*.sha256
+          tar -tzf ./*.tar.gz
+      - name: Upload for release-owner review
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: arc-mcp-authorization-v1-vectors
+          path: |
+            .ai-work/identity-134/artifacts/*.tar.gz
+            .ai-work/identity-134/artifacts/*.sha256
+          if-no-files-found: error
+          retention-days: 30
