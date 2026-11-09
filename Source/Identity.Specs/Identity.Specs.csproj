@@ -41,6 +41,7 @@
     <None Include="../Identity.CratisId/appsettings.json" Link="CratisId.appsettings.json" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="../Identity.Integration.Specs/given/ResourceSettings.cs" Link="given/ResourceSettings.cs" />
     <None Include="../../Documentation/specs/identity-events-v1.md" Link="identity-events-v1.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../Documentation/specs/arc-mcp-authorization-v1.md" Link="arc-mcp-authorization-v1.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
