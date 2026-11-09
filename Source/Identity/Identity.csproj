@@ -50,6 +50,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Identity.Contracts/Identity.Contracts.csproj" />
+    <ProjectReference Include="../Identity.FenceLog.Mongo/Identity.FenceLog.Mongo.csproj" />
   </ItemGroup>
 
   <ItemGroup>

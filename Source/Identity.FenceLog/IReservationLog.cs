@@ -6,7 +6,7 @@ namespace Cratis.Identity.Revocation;
 /// <summary>
 /// The independent, conditional reservation transitions used by reconciliation.
 /// </summary>
-internal interface IReservationLog
+public interface IReservationLog
 {
     /// <summary>Reads at most 100 unresolved reservations, oldest sequence first.</summary>
     /// <param name="cancellationToken">Cancellation.</param>

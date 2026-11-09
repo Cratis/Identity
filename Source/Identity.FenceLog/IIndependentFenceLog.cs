@@ -4,7 +4,7 @@
 namespace Cratis.Identity.Revocation;
 
 /// <summary>The independent fence log custody: sequences, tombstones, watermark and recovery epoch; not yet wired into production.</summary>
-internal interface IIndependentFenceLog
+public interface IIndependentFenceLog
 {
     /// <summary>Reserves a sequence for a fence identity; idempotent per fence identity.</summary>
     /// <param name="fenceId">The fence identity.</param>

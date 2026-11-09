@@ -9,4 +9,4 @@ namespace Cratis.Identity.Revocation;
 /// <param name="OccurredAt">The original occurrence time.</param>
 /// <param name="FenceId">The stable recovery fence identity.</param>
 /// <param name="FenceSequence">The independently allocated sequence.</param>
-internal sealed record RecoveryEpochIntent(string RestoreId, long Epoch, DateTimeOffset OccurredAt, Guid FenceId, long FenceSequence);
+public sealed record RecoveryEpochIntent(string RestoreId, long Epoch, DateTimeOffset OccurredAt, Guid FenceId, long FenceSequence);

@@ -6,12 +6,12 @@ using Cratis.Identity.Contracts.Accounts;
 namespace Cratis.Identity.Revocation;
 
 /// <summary>A malformed or incomplete authority document is unknown, never evidence of permission.</summary>
-internal static class GrantStateValidation
+public static class GrantStateValidation
 {
     /// <summary>Checks the closed persisted schema before a caller may use it.</summary>
     /// <param name="state">The primary state.</param>
     /// <returns>Whether its denial and outbox invariants are complete.</returns>
-    internal static bool IsKnown(GrantState state)
+    public static bool IsKnown(GrantState state)
     {
         if (!HeaderIsKnown(state) || !state.Outbox.All(entry => EntryIsKnown(state, entry)))
         {

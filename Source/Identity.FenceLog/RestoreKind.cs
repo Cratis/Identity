@@ -4,7 +4,7 @@
 namespace Cratis.Identity.Revocation;
 
 /// <summary>The consumer stores named by a unique restore declaration.</summary>
-internal enum RestoreKind
+public enum RestoreKind
 {
     /// <summary>No declared restore.</summary>
     None = 0,

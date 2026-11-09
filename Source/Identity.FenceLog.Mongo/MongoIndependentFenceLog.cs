@@ -13,7 +13,7 @@ namespace Cratis.Identity.Revocation.Operational;
 /// <param name="database">The independent database, never the operational database.</param>
 /// <param name="timeProvider">The clock.</param>
 /// <param name="verified">The host startup boundary proof; omitted only by native adapter specifications.</param>
-internal sealed class MongoIndependentFenceLog(Func<IMongoDatabase> database, TimeProvider timeProvider, Func<bool>? verified = null) : IRecoveryLog
+public sealed class MongoIndependentFenceLog(Func<IMongoDatabase> database, TimeProvider timeProvider, Func<bool>? verified = null) : IRecoveryLog
 {
     readonly Lazy<IMongoCollection<BsonDocument>> _entryCollection = new(() => database().GetCollection<BsonDocument>("fence-reservations")
         .WithReadPreference(ReadPreference.Primary).WithReadConcern(ReadConcern.Majority).WithWriteConcern(WriteConcern.WMajority));

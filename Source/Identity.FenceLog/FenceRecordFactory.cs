@@ -4,12 +4,12 @@
 namespace Cratis.Identity.Revocation;
 
 /// <summary>Persists the original restriction payloads; recovery must never mint replacement fact identities.</summary>
-internal static class FenceRecordFactory
+public static class FenceRecordFactory
 {
     /// <summary>Creates the initial restriction intents.</summary>
     /// <param name="fence">The immutable committed fence.</param>
     /// <returns>Retry-stable restriction intents.</returns>
-    internal static OutboxEntry[] Entries(GrantFence fence)
+    public static OutboxEntry[] Entries(GrantFence fence)
     {
         var kinds = fence.Reason == RevocationReason.RefreshTokenReused
             ? new[] { FactKind.AuthorizationRevocation, FactKind.FamilyRevocation, FactKind.Reuse }
@@ -21,7 +21,7 @@ internal static class FenceRecordFactory
     /// <param name="state">The known fenced state.</param>
     /// <returns>The complete immutable independent record.</returns>
     /// <exception cref="FenceLogConflict">The state lacks a valid permanent denial.</exception>
-    internal static FenceRecord Record(GrantState state)
+    public static FenceRecord Record(GrantState state)
     {
         var fence = state.Fence ?? throw new FenceLogConflict();
         var entries = state.Outbox.Where(entry => entry.Fence == fence).Select(entry => entry with { State = OutboxState.Pending }).ToArray();
@@ -33,7 +33,7 @@ internal static class FenceRecordFactory
     /// <summary>Checks the complete closed restriction schema.</summary>
     /// <param name="record">The independent record.</param>
     /// <exception cref="FenceLogConflict">The payload is incomplete or inconsistent.</exception>
-    internal static void Validate(FenceRecord record)
+    public static void Validate(FenceRecord record)
     {
         if (record.Intents is not { Length: > 0 } || !record.IntentIds.SequenceEqual(record.Intents.Select(entry => entry.Id)) ||
             record.Intents.Any(entry => entry.State != OutboxState.Pending))

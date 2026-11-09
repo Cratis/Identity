@@ -11,4 +11,4 @@ namespace Cratis.Identity.Revocation;
 /// <param name="GrantId">The authorization.</param>
 /// <param name="State">The log-side writer fence.</param>
 /// <param name="ReservedAt">The reservation time.</param>
-internal sealed record FenceReservation(Guid Id, long Sequence, string GrantId, ReservationState State, DateTimeOffset ReservedAt);
+public sealed record FenceReservation(Guid Id, long Sequence, string GrantId, ReservationState State, DateTimeOffset ReservedAt);

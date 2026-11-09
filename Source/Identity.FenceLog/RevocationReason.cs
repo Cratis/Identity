@@ -4,7 +4,7 @@
 namespace Cratis.Identity.Revocation;
 
 /// <summary>Closed, non-personal reasons for a permanent grant fence.</summary>
-internal enum RevocationReason
+public enum RevocationReason
 {
     /// <summary>Explicit grant revocation.</summary>
     Revoked = 0,

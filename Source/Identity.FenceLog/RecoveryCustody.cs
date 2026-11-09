@@ -9,4 +9,4 @@ namespace Cratis.Identity.Revocation;
 /// <param name="Nonce">The mirrored recovery-owner nonce.</param>
 /// <param name="Epoch">The independently enforced epoch.</param>
 /// <param name="ClearedEpoch">The epoch whose uncovered restrictions were independently reconciled.</param>
-internal sealed record RecoveryCustody(string InstanceId, long AppliedThrough, string Nonce, long Epoch, long ClearedEpoch);
+public sealed record RecoveryCustody(string InstanceId, long AppliedThrough, string Nonce, long Epoch, long ClearedEpoch);
