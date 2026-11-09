@@ -1,9 +1,6 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Extensions.DependencyInjection;
-using OpenIddict.Abstractions;
-using static OpenIddict.Abstractions.OpenIddictConstants;
 using Requirements = Cratis.Identity.Integration.Conformance.Requirements;
 
 namespace Cratis.Identity.Integration.for_DeviceGrant;
@@ -20,15 +17,7 @@ public class when_another_client_redeems_a_device_code(IdentityHost host) : IAsy
         var device = host.CreateBrowser();
         var started = await device.StartDevice();
         started.Status.ShouldEqual(HttpStatusCode.OK);
-        await using var scope = host.Services.CreateAsyncScope();
-        var applications = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
-        const string otherClient = "device-binding-spec";
-        await applications.CreateAsync(new OpenIddictApplicationDescriptor
-        {
-            ClientId = otherClient,
-            ClientType = ClientTypes.Public,
-            Permissions = { Permissions.Endpoints.Token, Permissions.GrantTypes.DeviceCode }
-        });
+        const string otherClient = SpecClientDescriptors.OtherDeviceClient;
         var browser = host.CreateBrowser();
         var review = await browser.ReviewDevice(started.Body.GetProperty("user_code").GetString());
         using var approved = await browser.VerifyDevice(review, "approve");

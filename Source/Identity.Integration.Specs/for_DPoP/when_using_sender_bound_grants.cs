@@ -38,7 +38,7 @@ public class when_using_sender_bound_grants(DPoPHost host)
         tokens.GetProperty("token_type").GetString().ShouldEqual("DPoP");
         Confirmation(tokens).ShouldEqual(sender.Jkt);
         var entry = await Entry(tokens.GetProperty("refresh_token").GetString());
-        entry["Properties"]["cratis_dpop_jkt"].AsString.ShouldEqual(sender.Jkt);
+        entry["properties"]["cratis_dpop_jkt"].AsString.ShouldEqual(sender.Jkt);
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public class when_using_sender_bound_grants(DPoPHost host)
         var successor = await Browser.ReadJson(rotated);
         Confirmation(successor).ShouldEqual(sender.Jkt);
         successor.GetProperty("token_type").GetString().ShouldEqual("DPoP");
-        (await Entry(successor.GetProperty("refresh_token").GetString()))["Properties"]["cratis_dpop_jkt"].AsString.ShouldEqual(sender.Jkt);
+        (await Entry(successor.GetProperty("refresh_token").GetString()))["properties"]["cratis_dpop_jkt"].AsString.ShouldEqual(sender.Jkt);
     }
 
     [Fact]

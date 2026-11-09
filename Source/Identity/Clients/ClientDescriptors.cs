@@ -26,7 +26,7 @@ internal class ClientDescriptors(IResourceCatalog resources, IOptions<IdentityOp
     /// Gets the descriptors of all clients.
     /// </summary>
     /// <returns>The <see cref="OpenIddictApplicationDescriptor"/> instances.</returns>
-    public IEnumerable<OpenIddictApplicationDescriptor> All() =>
+    public virtual IEnumerable<OpenIddictApplicationDescriptor> All() =>
         [CratisCliDescriptor(), .. options.Value.IntrospectionClients.Select(IntrospectionClient), .. options.Value.TokenExchange.Clients.Select(ExchangeClient)];
 
     /// <summary>
