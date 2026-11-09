@@ -20,6 +20,7 @@ public partial class when_checking_the_arc_mcp_authorization_manifest : given.an
         _listedFiles = files.Select(file => file.GetProperty("path").GetString() ?? string.Empty).Order().ToArray();
         _actualFiles = Directory.GetFiles(_directory, "*", SearchOption.AllDirectories)
             .Select(path => Path.GetRelativePath(_directory, path).Replace('\\', '/'))
+            .Where(path => !path.StartsWith("baselines/", StringComparison.Ordinal))
             .Except(["manifest.json", "CHANGELOG.md"]).Order().ToArray();
         _hashesMatch = files.All(file => Hash(File.ReadAllBytes(Path.Combine(_directory, file.GetProperty("path").GetString()))) == file.GetProperty("sha256").GetString());
     }

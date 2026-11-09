@@ -3,6 +3,7 @@
 ```text
 Spec id: arc-mcp-authorization
 Version: 1
+MCP authorization revision: 2026-07-28
 Status: Signed off
 Signed off: 2026-11-05 by woksin, https://github.com/Cratis/Identity/issues/14; owner confirmation pending
 Issue: https://github.com/Cratis/Arc/issues/3703
@@ -175,12 +176,26 @@ unescaped Unicode, as produced by JavaScript `JSON.stringify`). File hashes cove
 original bytes. The [changelog](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/CHANGELOG.md)
 versions the artifact independently of contract version 1.
 
+The independently reviewed [v1.0.0 baseline](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/baselines/v1.0.0.json)
+locks the case-ID-to-content-hash bindings and vector-file hashes. Specs and packaging
+compare the manifest against `baselines/v<version>.json`, not against values regenerated
+from the manifest. Released baselines are immutable: never edit or regenerate them.
+Every version bump adds a new independently approved baseline and a changelog heading;
+all older baselines and their changelog headings must remain. The checks require one
+baseline per changelog heading, including the initial release. Review must reject edits
+to released baselines; these consistency checks do not compare them against Git history.
+IDs are never reassigned to different behavior. Changing a case requires a new ID or an
+artifact version bump; even with a bump, an existing ID must not acquire different meaning.
+Any ID or hash change at the current version fails baseline validation.
+
 ### Packaging and manual publication
 
 Run `node scripts/package-authorization-vectors.mjs .ai-work/identity-134/artifacts`
 from the repository root. This Node-stdlib script produces
 `arc-mcp-authorization-v1-vectors-1.0.0.tar.gz` and its `.sha256` sidecar. The archive
-contains `manifest.json`, `CHANGELOG.md`, and every listed vector file at its root.
+contains `manifest.json`, `CHANGELOG.md`, every listed vector file at its root, and all
+versioned baselines under `baselines/`. Packaging validates the current baseline and
+baseline/changelog history before writing the archive.
 Entries are sorted with fixed mode, owner, and timestamp fields; gzip timestamps and
 OS metadata are normalized. Use the same Node version for byte-identical compression.
 

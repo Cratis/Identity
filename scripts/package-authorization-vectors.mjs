@@ -44,7 +44,7 @@ export function createArchive(entries) {
 
 async function vectorEntries(manifest) {
     const listed = manifest.files.map(file => file.path).sort();
-    const actual = (await readdir(vectorDirectory)).filter(name => !['manifest.json', 'CHANGELOG.md'].includes(name)).sort();
+    const actual = (await readdir(vectorDirectory)).filter(name => !['manifest.json', 'CHANGELOG.md', 'baselines'].includes(name)).sort();
     assert.deepEqual(listed, actual, 'Manifest must list every vector file exactly once');
     const entries = [];
     for (const file of manifest.files) {
@@ -56,7 +56,7 @@ async function vectorEntries(manifest) {
     return entries;
 }
 
-function validateCases(manifest, entries) {
+export function validateCases(manifest, entries) {
     const ids = manifest.cases.map(item => item.id);
     assert(ids.every(id => /^[a-z0-9][a-z0-9-]*$/.test(id)), 'Invalid case id');
     assert.equal(new Set(ids).size, ids.length, 'Duplicate case ids');
@@ -73,6 +73,38 @@ function validateCases(manifest, entries) {
     }
 }
 
+export function validateBaseline(manifest, baseline) {
+    assert.equal(manifest.version, baseline.version, 'Baseline version mismatch');
+    const cases = Object.fromEntries(manifest.cases.map(item => [item.id, item.sha256]));
+    const files = Object.fromEntries(manifest.files.map(item => [item.path, item.sha256]));
+    assert.deepEqual(cases, baseline.cases, 'Released case bindings changed without a version bump');
+    assert.deepEqual(files, baseline.files, 'Released file hashes changed without a version bump');
+}
+
+export function validateBaselineHistory(manifest, names, changelog) {
+    const headings = changelog.split('\n').filter(line => line.startsWith('## '));
+    assert.equal(headings[0], `## ${manifest.version}`, 'Changelog version mismatch');
+    assert(names.includes(`v${manifest.version}.json`), 'Missing current baseline');
+    assert(names.includes('v1.0.0.json'), 'Missing initial baseline');
+    assert.deepEqual([...names].sort(), headings.map(line => `v${line.slice(3)}.json`).sort(), 'Every release must retain its baseline and changelog heading');
+}
+
+async function baselineEntries(manifest, changelog) {
+    const directory = join(vectorDirectory, 'baselines');
+    const names = await readdir(directory);
+    validateBaselineHistory(manifest, names, changelog);
+    const entries = [];
+    for (const name of names) {
+        assert.match(name, /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\.json$/, 'Invalid baseline filename');
+        const bytes = await readFile(join(directory, name));
+        const baseline = JSON.parse(bytes);
+        assert.equal(`v${baseline.version}.json`, name, 'Baseline filename version mismatch');
+        if (baseline.version === manifest.version) validateBaseline(manifest, baseline);
+        entries.push([`baselines/${name}`, bytes]);
+    }
+    return entries;
+}
+
 async function packageVectors(output) {
     const manifestBytes = await readFile(join(vectorDirectory, 'manifest.json'));
     const manifest = JSON.parse(manifestBytes);
@@ -83,8 +115,8 @@ async function packageVectors(output) {
     const entries = await vectorEntries(manifest);
     validateCases(manifest, entries);
     const changelog = await readFile(join(vectorDirectory, 'CHANGELOG.md'));
-    assert.equal(changelog.toString().split('\n').find(line => line.startsWith('## ')), `## ${manifest.version}`, 'Changelog version mismatch');
-    entries.push(['manifest.json', manifestBytes], ['CHANGELOG.md', changelog]);
+    const baselines = await baselineEntries(manifest, changelog.toString());
+    entries.push(['manifest.json', manifestBytes], ['CHANGELOG.md', changelog], ...baselines);
     const archive = createArchive(entries);
     const name = `${manifest.spec}-v${manifest.contractVersion}-vectors-${manifest.version}.tar.gz`;
     await mkdir(output, { recursive: true });
