@@ -73,6 +73,32 @@ await app.RunAsync();
 
 Protocol obligations, executable proofs, known gaps and the OpenIddict upgrade checklist are in the [conformance catalogue](Documentation/conformance.md).
 
+## Device authorization
+
+Device authorization is disabled by default. Set `Identity:Device:Enabled=true` before registering Identity to enable the device endpoints, discovery metadata and CLI permissions. The public options property is `IdentityOptions.DeviceGrant`, bound to the `Identity:Device` section. No CLI auto-fallback or device UI in other products is included.
+
+The device receives a high-entropy opaque `device_code`, an eight-character user code from a 20-symbol unambiguous alphabet, `verification_uri` pointing to `/device`, a five-minute `expires_in`, and a five-second polling `interval`. `verification_uri_complete` is deliberately omitted: users enter the code manually. Polling before the current interval returns `slow_down` and increases it by five seconds; unapproved requests return `authorization_pending`. Approval is explicit, requires a live signed-in account and tenant membership, and remains bound to the originating client, audience, scopes and browser session. Device redemption rechecks grant fences, the independent recovery epoch, token and authorization stamps, account state, and live tenancy. A code cannot be redeemed twice.
+
+The script-free verification page emphasizes the issuer host, client name and asserted client id, scope descriptions and signed-in GitHub login. GET never approves. Session-bound confirmation and antiforgery are required for every POST. Codes are never included in redirect URLs or application logs; verification responses use `no-store` and `no-referrer`.
+
+Default shared MongoDB limits are five attempts per code and per signed-in account, thirty per client IP and a realm-wide ceiling of one thousand guesses per five-minute window. Issuance allows ten requests per client IP per minute. The account budget is primary; the IP budget is secondary. Throttle refusal returns HTTP 429. Storage failure or an unavailable trusted client IP fails closed. Configure trusted forwarded headers in the host, **before** `MapCratisIdentity`, with explicit known proxies/networks; Identity does not trust arbitrary forwarded IP headers. All replicas must share the operational database.
+
+`Identity:Device` also accepts `CodeLifetime`, `PollingInterval`, `VerificationWindow`, `AttemptsPerCode`, `AttemptsPerAccount`, `AttemptsPerIp`, `AttemptsGlobally`, `IssuancesPerIp`, `UserCodeLength` and `UserCodeCharset`. Codes require at least eight symbols and an alphabet of at least twenty distinct uppercase ASCII letters or digits. Keep the default alphabet to avoid ambiguous characters. Limits and durations are validated at startup.
+
+Rate-counter keys are purpose-separated SHA-256 digests, not HMACs; counters use atomic increment/upsert with logical expiry independent of TTL cleanup. Polling alone retains compare-and-swap because it must update the deadline and cumulative interval together, not just increment a counter. OpenIddict token rows remain authoritative for device/user codes, approval and expiry; the operational collection contains only rate and polling state. Its zero-delay TTL index is housekeeping, never the admission decision. Durable consent events and a connected-apps UI are separate work.
+
+## Sender-bound token issuance (opt-in)
+
+RFC 9449 token-endpoint DPoP is disabled by default. Set `Identity:DPoP:Enabled=true` and `Identity:DPoP:PublicTokenEndpoint` to the **exact public token endpoint URL** before registering Identity. The endpoint is never inferred from `Host`, forwarded headers or an internal URL. HTTPS is required; Development permits loopback HTTP. Only ES256 proofs with public P-256 keys are supported. Enabled discovery advertises `dpop_signing_alg_values_supported: ["ES256"]`.
+
+`Identity:DPoP:RequireForAllClients=true` requires proofs for new supported grants. Alternatively, `Identity:DPoP:RequiredClients` lists registered clients (currently `cratis-cli`). Optional clients without a proof retain Bearer behavior; any supplied proof must validate. Organization policy, token exchange and `client_credentials` are not included.
+
+Send a compact proof in one `DPoP` header, with `typ=dpop+jwt`, `alg=ES256`, a public `jwk`, `htm=POST`, the exact configured `htu`, an integer `iat` and a fresh bounded `jti`. The fixed proof lifetime is 300 seconds, future skew 30 seconds and shared replay reservation 390 seconds from acceptance. Do not reuse a proof on retries. A missing or stale server nonce returns `use_dpop_nonce` and `DPoP-Nonce`, with no grant consumption. Retry with that nonce and a **new proof/jti**. Nonces are stateless, origin- and key-bound, using the issuer's existing shared ASP.NET Core Data Protection ring with purpose `Cratis.Identity.Dpop.Nonce.v1`. Retain old ring keys across rotation; all replicas must share the same ring/application discriminator. No new secret-store entry is needed. The current 300-second issuance window overlaps its predecessor by 30 seconds; timestamps at age 330 seconds are refused.
+
+Authorization-code redemption and approved device-code polling issue access tokens with object-valued `cnf: { "jkt": "..." }` and `token_type=DPoP`. Refresh entries carry immutable operational family binding; every rotation requires the same key. Missing/wrong proofs, nonce challenges and replay-store outages refuse issuance **before** consuming a refresh entry. An existing unbound family presented with a proof is refused; requiring DPoP later requires reauthentication, not key attachment during refresh. Disabling DPoP does not downgrade existing bound families to Bearer. ID tokens, authorization/device codes and refresh-token payloads do not carry `cnf`.
+
+**This slice is issuer-only. AuthProxy remains Bearer-only and is not a DPoP resource server.** Do not enable DPoP for clients targeting AuthProxy or assume sender binding is enforced at an API. Resource-server validation of `DPoP` authorization, proof `ath`, nonce and replay handling is deferred. See [the profile](Documentation/specs/identity-dpop-v1.md) and [conformance coverage](Documentation/conformance.md).
+
 ## Access token contract
 
 Access tokens are signed JWTs (`typ: at+jwt`, RS256), not encrypted. Default lifetime: 15 minutes.
@@ -88,6 +114,7 @@ Access tokens are signed JWTs (`typ: at+jwt`, RS256), not encrypted. Default lif
 | `github_id`, `github_login` | The linked GitHub user id and the login at issue time. |
 | `name`, `preferred_username` | Display name and GitHub login. |
 | `exp`, `iat`, `jti` | Standard. |
+| `cnf` | Only for opt-in DPoP issuance: JSON object with the proof key's RFC 7638 `jkt`. Never a JSON string. |
 
 A resource server must validate `iss`, the signature against the JWKS, `aud`, `exp` and `typ`. It must still check that `sub` is a member of `tid`: Identity records the choice, the product enforces membership.
 
@@ -96,7 +123,9 @@ A resource server must validate `iss`, the signature against the JWKS, `aud`, `e
 | Path | Purpose |
 | --- | --- |
 | `GET/POST /connect/authorize` | Authorization endpoint: upstream login, consent, code issuance. |
-| `POST /connect/token` | Code redemption and refresh. |
+| `POST /connect/token` | Authorization-code and device-code redemption, and refresh. |
+| `POST /connect/device` | Opt-in RFC 8628 device authorization for the public CLI client. |
+| `GET/POST /device` | Opt-in signed-in manual code entry, explicit approval or denial, and tenant selection. GET never approves access. |
 | `POST /connect/revocation` | Token revocation. |
 | `POST /connect/introspect` | Token introspection for resource servers. |
 | `GET /.well-known/oauth-authorization-server` | RFC 8414 authorization server metadata; includes `authorization_response_iss_parameter_supported: true`. |
@@ -129,6 +158,11 @@ Everything is under the `Identity` section (environment variables use `Identity_
 | `Tokens:RefreshTokenLifetime` | `30.00:00:00` | Absolute lifetime of a refresh-token family. |
 | `TokenExchange` | none | `Issuers[]` and `Clients[]` for token exchange; nothing is enabled until both are configured. See [Token exchange](Documentation/token-exchange.md). |
 | `SessionLifetime` | `01:00:00` | The Identity site session cookie; not sliding. |
+| `DeviceGrant:Enabled` | `true` | Enables the RFC 8628 device authorization grant for `cratis-cli`. |
+| `DeviceGrant:CodeLifetime` | `00:10:00` | User and device codes expire together, between one and fifteen minutes; approval does not extend this deadline. |
+| `DeviceGrant:PollingInterval` | `00:00:05` | Whole seconds, between five and sixty. Each early poll adds five seconds to subsequent intervals (`slow_down`). |
+| `DeviceGrant:VerificationWindow` | `00:10:00` | One-to-sixty-minute verification attempt window. |
+| `DeviceGrant:AttemptsPerCode`, `AttemptsPerAccount`, `AttemptsPerIp` | `5`, `20`, `30` | All three budgets apply before code lookup. Upper bounds are 10, 100 and 300 respectively. |
 | `Resources[]` | Direct | `Audience`, `DisplayName`, `Indicators[]`, `Scopes[]` (`Name`, `Description`), `TenantsCallback` (`Url`, `Secret`, `Timeout`). `Tenants[]` (`Id`, `Name`, `Members[]` as numeric GitHub ids, `AllowAllAccounts`) is Development only and cannot be combined with a callback. Validated at startup: duplicate audiences, indicators or scopes, fragments, and protocol scopes are rejected. Outside Development every resource requires an HTTPS callback and a secret of at least 32 characters. |
 | `IntrospectionClients[]` | none | `ClientId`, `ClientSecret` for confidential resource servers that introspect. Use the token's audience as the client id: `direct-api` for `direct:mcp:*` tokens, `direct-v1` for `direct:*` API tokens. Configure a separate secret for each client through the platform's secret configuration mechanism. |
 
@@ -137,6 +171,14 @@ OpenIddict rejects introspection by a client that is neither the token's audienc
 Clients are declared in code (`ClientDescriptors`) and configuration (introspection clients). The client store is reconciled at startup: undeclared clients are deleted.
 
 In development (`ASPNETCORE_ENVIRONMENT=Development`) without a `SecretStore:Path`, Identity uses ephemeral signing and encryption keys and the default Data Protection ring, so tokens stop validating when it restarts, and it allows plain HTTP.
+
+### Device authorization
+
+Request the resource and its scopes at `POST /connect/device`, then display the returned `user_code` and `verification_uri` separately. Identity deliberately omits `verification_uri_complete`: codes belong in the verification form, not URLs, browser history or referrers. Poll `/connect/token` with `grant_type=urn:ietf:params:oauth:grant-type:device_code`, `client_id` and `device_code`, respecting the advertised interval and `slow_down`. An unapproved request returns `authorization_pending`; denial returns `access_denied`, and expiry returns `expired_token`.
+
+The user signs in to Identity, enters the code, reviews the client, resource and scopes, and selects a permitted tenant. Approval is explicit, protected by antiforgery, and bound to the displayed request and approving browser session. Codes are single-use. Device authorization requires full recovery readiness and current immutable recovery-epoch stamps; redemption also rechecks the grant fence, active account and tenant membership. Decisions currently use operational OpenIddict entries; consent and grant lifecycle event publication is separate work.
+
+The host owner must configure ASP.NET Core `UseForwardedHeaders` **before** `MapCratisIdentity` when serving behind a proxy, explicitly setting known proxies/networks. Do not trust arbitrary forwarded IP headers. The account budget is the primary verification throttle; the host-resolved client IP budget is secondary. A missing peer IP, unavailable primary store or unresolved CAS contention refuses verification. Rate windows live in MongoDB with logical expiry and TTL cleanup; their identifiers use purpose-separated HMACs under the existing host-owned account lookup key, which must be stable across replicas. Rotating that key starts new rate windows. Exclude device authorization request/response bodies from host and proxy logging, and share the Data Protection ring across replicas.
 
 ### Event-sourced accounts
 
@@ -282,7 +324,7 @@ In rough order, following the long-term architecture:
 1. **Client ID Metadata Documents (CIMD)** for remote MCP clients. `IClientIdMetadataDocuments` defines the contract: SSRF-safe fetching, `client_id` must equal the document URL, redirect validation, and surfacing through an OpenIddict application store decorator. Advertise `client_id_metadata_document_supported` once it exists.
 2. **Accounts, grants and consent as an event-sourced Cratis domain** (Arc and Chronicle) with an audit of grants, consents and revocations, remembered consent, and a "connected apps" page to review and revoke grants.
 3. **Product-backed tenant directory — implemented.** Each production resource requires an authenticated product tenants callback; product-side rollout is still required.
-4. **Device authorization grant (RFC 8628)** for headless terminals, with polling intervals, `slow_down`, expiry and phishing-resistant confirmation.
+4. **Device authorization grant (RFC 8628) — opt-in.** Headless terminals use manual-code confirmation, bounded polling and explicit tenant selection. CLI fallback and durable consent history remain separate work.
 5. **Step-up and `max_age`/`acr`**: fresh authentication for sensitive consent, passkeys.
 6. **Decoupled approval requests (CIBA-style)**, so agents running unattended can ask a person to approve on another device.
 7. **RFC 9396 `authorization_details`** for transaction-bound approvals, for example a specific publication payload hash.

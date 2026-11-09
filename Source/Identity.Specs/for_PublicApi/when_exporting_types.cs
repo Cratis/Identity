@@ -23,6 +23,8 @@ public class when_exporting_types : Specification
             typeof(IdentityHostApplicationBuilderExtensions),
             typeof(IdentityWebApplicationExtensions),
             typeof(AccountsOptions),
+            typeof(DeviceGrantOptions),
+            typeof(DPoPOptions),
             typeof(ExternalIssuerOptions),
             typeof(GitHubOptions),
             typeof(IdentityEndpointOptions),

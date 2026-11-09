@@ -4,6 +4,7 @@
 using System.Net;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Authorization.RateLimiting;
+using Cratis.Identity.Device;
 using Cratis.Identity.Hosting;
 using Cratis.Identity.Realm;
 using Microsoft.AspNetCore.Antiforgery;
@@ -50,6 +51,12 @@ public static class IdentityWebApplicationExtensions
     {
         var options = app.ServiceProvider.ResolveIdentityEndpoints(configure);
         var group = app.MapGroup(options.RoutePrefix.Value ?? string.Empty);
+        if (app.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<Cratis.Identity.Configuration.DeviceGrantOptions>>().Value.Enabled)
+        {
+            DeviceAuthorizationEndpoint.Map(group);
+            DeviceVerificationEndpoint.Map(group);
+        }
+
         group.MapMethods("/connect/authorize", [HttpMethods.Get, HttpMethods.Post], (HttpContext context, AuthorizationEndpoint endpoint) => endpoint.Handle(context))
             .DisableAntiforgery();
         group.MapPost("/connect/token", (HttpContext context, TokenEndpoint endpoint) => endpoint.Handle(context))

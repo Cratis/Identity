@@ -36,6 +36,7 @@ internal static class AccessTokenIdentity
     /// <summary>
     /// Gets the claim types written to access tokens, in addition to those OpenIddict writes itself
     /// (<c language="text">iss</c>, <c language="text">aud</c>, <c language="text">exp</c>, <c language="text">iat</c>, <c language="text">jti</c>, <c language="text">scope</c>, <c language="text">client_id</c>).
+    /// The advisory <c language="text">cid</c> is derived only once an authorization exists, on code redemption and refresh.
     /// </summary>
     public static IEnumerable<string> AccessTokenClaimTypes { get; } =
     [
@@ -49,7 +50,8 @@ internal static class AccessTokenIdentity
         IdentityClaims.GitHubLogin,
         Claims.AuthenticationTime,
         Claims.AuthenticationContextReference,
-        IdentityClaims.TenantId
+        IdentityClaims.TenantId,
+        CredentialId.ClaimType
     ];
 
     /// <summary>
@@ -167,7 +169,8 @@ internal static class AccessTokenIdentity
             .SetClaim(IdentityClaims.GitHubId, receivesUpstreamIdentity ? account.GitHubId.Value : null)
             .SetClaim(IdentityClaims.GitHubLogin, receivesUpstreamIdentity ? account.GitHubLogin.Value : null)
             .SetClaim(Claims.AuthenticationContextReference, BasicAssurance)
-            .SetClaim(Claims.AuthorizedParty, clientId);
+            .SetClaim(Claims.AuthorizedParty, clientId)
+            .SetClaim(CredentialId.ClaimType, CredentialId.For(identity.GetAuthorizationId()));
 
         identity.SetDestinations(claim => AccessTokenClaimTypes.Contains(claim.Type, StringComparer.Ordinal) ? [Destinations.AccessToken] : []);
     }

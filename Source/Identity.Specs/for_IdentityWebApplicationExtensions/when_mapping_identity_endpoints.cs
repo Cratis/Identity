@@ -39,6 +39,23 @@ public class when_mapping_identity_endpoints : given.an_identity_host
     }
 
     [Theory]
+    [InlineData("")]
+    [InlineData("/id")]
+    async Task should_map_device_routes_and_protocol_uris_with_the_prefix(string prefix)
+    {
+        var builder = CreateBuilder(prefix);
+        builder.Configuration["Identity:Device:Enabled"] = "true";
+        builder.AddCratisIdentity();
+        await using var app = builder.Build();
+        app.MapCratisIdentity();
+        var routes = ((IEndpointRouteBuilder)app).DataSources.SelectMany(source => source.Endpoints).Cast<RouteEndpoint>().ToArray();
+        routes.Select(route => route.RoutePattern.RawText).ShouldContainOnly($"{prefix}/connect/authorize", $"{prefix}/connect/token", $"{prefix}/connect/device", $"{prefix}/device");
+        var server = app.Services.GetRequiredService<IOptions<OpenIddict.Server.OpenIddictServerOptions>>().Value;
+        server.DeviceAuthorizationEndpointUris.Single().OriginalString.ShouldEqual($"{prefix}/connect/device".TrimStart('/'));
+        server.EndUserVerificationEndpointUris.Single().OriginalString.ShouldEqual($"{prefix}/device".TrimStart('/'));
+    }
+
+    [Theory]
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(false, false)]
@@ -69,7 +86,7 @@ public class when_mapping_identity_endpoints : given.an_identity_host
 
         // No business dependencies: a missing validated OpenIddict request must be refused before any are used.
         builder.Services.AddSingleton(new AuthorizationEndpoint(null!, null!, null!, null!, null!, null!));
-        builder.Services.AddSingleton(new TokenEndpoint(null!, null!, null!, null!, null!, null!, null!));
+        builder.Services.AddSingleton(new TokenEndpoint(null!, null!, null!, null!, null!, null!, null!, null!));
         await using var app = builder.Build();
         app.UseRouting();
         app.MapCratisIdentity();

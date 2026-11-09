@@ -70,6 +70,12 @@ internal sealed class RefuseIssuanceDuringRecovery(RecoveryGate gate, IRecoveryL
     public async ValueTask HandleAsync(ValidateTokenContext context)
     {
         if (context.Transaction.EndpointType == OpenIddictServerEndpointType.Revocation) return;
+        if (context.Transaction.EndpointType == OpenIddictServerEndpointType.Introspection)
+        {
+            // Preserve the first observation: validation can dispatch this barrier more than once.
+            context.Transaction.Properties.TryAdd(IntrospectionCredentialClaims.RecoveryEpochProperty, gate.Epoch);
+        }
+
         if (!await CanUse(context.CancellationToken, validation: true))
         {
             context.Reject(error: Errors.ServerError, description: "The server is recovering its restriction state.");

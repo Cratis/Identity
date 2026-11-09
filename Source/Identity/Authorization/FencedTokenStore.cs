@@ -4,6 +4,8 @@
 using System.Collections.Immutable;
 using System.Text.Json;
 using Cratis.Identity.Contracts.Accounts;
+using Cratis.Identity.DPoP;
+using Cratis.Identity.DPoP.Operational;
 using Cratis.Identity.Revocation;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
@@ -21,7 +23,8 @@ namespace Cratis.Identity.Authorization;
 /// <param name="fences">The authoritative grant store.</param>
 /// <param name="issuance">The request-scoped preallocated successor.</param>
 /// <param name="gate">The recovery continuity guard.</param>
-internal sealed class FencedTokenStore(IOpenIddictMongoDbContext context, IOptionsMonitor<OpenIddictMongoDbOptions> options, IFenceStore fences, RefreshIssuance issuance, RecoveryGate gate)
+/// <param name="binding">The optional verified request binding.</param>
+internal sealed class FencedTokenStore(IOpenIddictMongoDbContext context, IOptionsMonitor<OpenIddictMongoDbOptions> options, IFenceStore fences, RefreshIssuance issuance, RecoveryGate gate, DPoPBinding? binding = null)
     : OpenIddictMongoDbTokenStore<OpenIddictMongoDbToken>(context, options)
 {
     /// <inheritdoc/>
@@ -34,6 +37,7 @@ internal sealed class FencedTokenStore(IOpenIddictMongoDbContext context, IOptio
             return;
         }
 
+        token.Properties = DPoPBindingStamp.Create(token.Properties, binding?.Jkt);
         var grantId = token.AuthorizationId.ToString();
         if (token.AuthorizationId == ObjectId.Empty || !AccountSubject.TryParse(token.Subject, out _) ||
             token.CreationDate is not { } created || token.ExpirationDate is not { } expires)
@@ -82,6 +86,7 @@ internal sealed class FencedTokenStore(IOpenIddictMongoDbContext context, IOptio
     public override async ValueTask SetPropertiesAsync(OpenIddictMongoDbToken token, ImmutableDictionary<string, JsonElement> properties, CancellationToken cancellationToken)
     {
         var original = token.Properties;
+        properties = DPoPBindingStamp.Preserve(original, properties);
         await base.SetPropertiesAsync(token, RecoveryEpochStamp.Preserve(original, properties), cancellationToken);
         token.Properties = RecoveryEpochStamp.Reapply(original, token.Properties);
     }
@@ -91,6 +96,7 @@ internal sealed class FencedTokenStore(IOpenIddictMongoDbContext context, IOptio
     {
         var existing = await FindByIdAsync(token.Id.ToString(), cancellationToken) ?? throw new RevocationPending();
         RecoveryEpochStamp.DemandUnchanged(existing.Properties, token.Properties);
+        DPoPBindingStamp.DemandUnchanged(existing.Properties, token.Properties);
         await base.UpdateAsync(token, cancellationToken);
     }
 

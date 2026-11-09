@@ -31,9 +31,31 @@ public static class Requirements
     public const string RevocationUnknownToken = "REVOCATION-UNKNOWN-TOKEN";
     public const string AsMetadataFromPrm = "AS-METADATA-FROM-PRM";
     public const string KeyRotationOverlap = "KEY-ROTATION-OVERLAP";
+    public const string DeviceLifecycle = "DEVICE-LIFECYCLE";
+    public const string DevicePolling = "DEVICE-POLLING";
+    public const string DeviceDenial = "DEVICE-DENIAL";
+    public const string DeviceSingleUse = "DEVICE-SINGLE-USE";
+    public const string DeviceBinding = "DEVICE-BINDING";
+    public const string DPoPIssuance = "DPOP-BOUND-ISSUANCE";
+    public const string DPoPRefresh = "DPOP-REFRESH-BINDING";
+    public const string DPoPNonce = "DPOP-AS-NONCE";
+    public const string DPoPReplay = "DPOP-PROOF-REPLAY";
+    public const string DPoPProof = "DPOP-PROOF-VALIDATION";
+    public const string DPoPMetadata = "DPOP-METADATA";
 
     public static IReadOnlyList<Requirement> All { get; } =
     [
+        new(DPoPIssuance, "RFC 9449 §5 and §6; identity-dpop-v1 §2", "MUST", "When enabled, bind code and approved device issuance to the proof key with object-valued cnf and DPoP token type."),
+        new(DPoPRefresh, "RFC 9449 §5; identity-dpop-v1 §2.3", "MUST", "Preserve immutable family binding; refuse missing or different keys without consuming the entry."),
+        new(DPoPNonce, "RFC 9449 §8; identity-dpop-v1 §5", "MUST", "Challenge with a stateless AS nonce without consuming the grant."),
+        new(DPoPReplay, "RFC 9449 §4.3; identity-dpop-v1 §4", "MUST", "Refuse proof replay across token requests without consuming the current refresh entry."),
+        new(DPoPProof, "RFC 9449 §4.3; identity-dpop-v1 §3", "MUST", "Validate ES256 proofs against the exact configured public token endpoint."),
+        new(DPoPMetadata, "RFC 9449 §5.1", "MUST", "Advertise ES256 only when the profile is enabled."),
+        new(DeviceLifecycle, "RFC 8628 §3.2 and §3.5", "MUST", "Issue bounded device codes and exchange an explicitly approved request."),
+        new(DevicePolling, "RFC 8628 §3.5", "MUST", "Keep unapproved requests pending and enforce polling slowdown across connections."),
+        new(DeviceDenial, "RFC 8628 §3.5", "MUST", "Refuse device requests denied by the user."),
+        new(DeviceSingleUse, "RFC 8628 §3.5; RFC 6749 §5.2", "MUST", "Refuse repeated device-code redemption."),
+        new(DeviceBinding, "RFC 8628 §3.5; RFC 6749 §5.2", "MUST", "Bind device codes to their initiating client."),
         new(PkceRequired, "RFC 9700 §2.1.1; RFC 7636 §4.4.1", "MUST", "Require PKCE for public authorization-code clients."),
         new(PkceS256Only, "RFC 7636 §4.2; RFC 9700 §2.1.1", "MUST", "Use S256, never plain PKCE."),
         new(PkceVerifierBound, "RFC 7636 §4.6", "MUST", "Bind redemption to the PKCE verifier."),

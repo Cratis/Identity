@@ -12,6 +12,10 @@ using Cratis.Identity.Clients;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.ConsentFlow;
 using Cratis.Identity.ConsentFlow.Operational;
+using Cratis.Identity.Device;
+using Cratis.Identity.Device.Operational;
+using Cratis.Identity.DPoP;
+using Cratis.Identity.DPoP.Operational;
 using Cratis.Identity.Keys;
 using Cratis.Identity.Operational;
 using Cratis.Identity.Protocol;
@@ -89,6 +93,7 @@ internal static class IdentityServiceCollectionExtensions
             services.AddHostedService(provider => new DisabledResourcesNotice(provider.GetRequiredService<ILogger<DisabledResourcesNotice>>(), disabledAudiences));
         }
 
+        services.AddOptions<DeviceGrantOptions>().Bind(section.GetSection("Device"));
         services.AddSingleton<IValidateOptions<IdentityOptions>, IdentityOptionsValidation>();
         services.AddSingleton(TimeProvider.System);
 
@@ -98,13 +103,21 @@ internal static class IdentityServiceCollectionExtensions
         services.AddCommandAwareDecisionReads();
         services.AddStorage();
         services.AddSecretStoreKeys(startupOptions);
-        services.AddDomain(configuration);
+        services.AddDomain(configuration, startupOptions.DeviceGrant.Enabled);
         services.AddAccountServices();
         services.AddConsentActivation(configuration.GetSection("Identity:ConsentActivation"));
 
         services.AddSessionAndUpstreamLogin(environment);
         services.AddIdentityAuthorization();
         services.AddAuthorizationServer(startupOptions, configuration, environment);
+        if (startupOptions.DPoP.Enabled)
+        {
+            services.AddScoped<DPoPBinding>();
+            services.AddScoped<DPoPAdmission>();
+            services.AddSingleton<DPoPProofValidator>();
+            services.AddSingleton<DPoPNonce>();
+            services.AddSingleton<IDPoPReplayStore, MongoDPoPReplayStore>();
+        }
 
         return services;
     }
@@ -171,7 +184,13 @@ internal static class IdentityServiceCollectionExtensions
         });
 
         services
-            .AddAuthentication(IdentitySchemes.Session)
+            .AddAuthentication(options =>
+            {
+                options.DefaultScheme = IdentitySchemes.Session;
+
+                // The device authorization endpoint signs in a deliberately unauthenticated principal, as OpenIddict requires.
+                options.RequireAuthenticatedSignIn = false;
+            })
             .AddCookie(IdentitySchemes.Session, options =>
             {
                 options.Cookie.Name = "cratis-identity-session";
@@ -265,7 +284,7 @@ internal static class IdentityServiceCollectionExtensions
         services.AddHostedService<KeyRingReloading>();
     }
 
-    static void AddDomain(this IServiceCollection services, IConfiguration configuration)
+    static void AddDomain(this IServiceCollection services, IConfiguration configuration, bool deviceEnabled)
     {
         services.AddSingleton<IResourceCatalog, ResourceCatalog>();
         services.AddSingleton<IGrantPolicy, GrantPolicy>();
@@ -280,6 +299,18 @@ internal static class IdentityServiceCollectionExtensions
         services.AddScoped<ConsentPages>();
         services.AddScoped<AuthorizationEndpoint>();
         services.AddScoped<TokenEndpoint>();
+        services.AddHttpContextAccessor();
+
+        // TokenEndpoint shares this admission helper; device handlers and state remain opt-in.
+        services.AddScoped<DeviceGrantAdmission>();
+        if (deviceEnabled)
+        {
+            services.AddSingleton<IDeviceGrantStateStore, MongoDeviceGrantStateStore>();
+            services.AddScoped<DeviceGrantRateLimiter>();
+            services.AddScoped<DeviceAuthorizationEndpoint>();
+            services.AddScoped<DeviceVerificationEndpoint>();
+            services.AddSingleton<DeviceGrantApproval>();
+        }
         services.AddScoped<TokenExchangeGrant>();
         services.AddSingleton<ISubjectTokenReplayGuard, MongoSubjectTokenReplayGuard>();
         services.AddSingleton<TokenRequestRateLimiter>();
@@ -343,11 +374,41 @@ internal static class IdentityServiceCollectionExtensions
                     .SetRefreshTokenReuseLeeway(null)
                     .DisableAccessTokenEncryption();
 
+                if (startupOptions.DeviceGrant.Enabled)
+                {
+                    options.AllowDeviceAuthorizationFlow()
+                        .SetDeviceAuthorizationEndpointUris($"{endpoints.RoutePrefix}/connect/device".TrimStart('/'))
+                        .SetEndUserVerificationEndpointUris($"{endpoints.RoutePrefix}/device".TrimStart('/'))
+                        .AddEventHandler<OpenIddictServerEvents.HandleDeviceAuthorizationRequestContext>(builder => builder.UseInlineHandler(context =>
+                        {
+                            context.SkipRequest();
+                            return ValueTask.CompletedTask;
+                        }));
+                }
+
+                if (startupOptions.DeviceGrant.Enabled)
+                {
+                    options.RemoveEventHandler(OpenIddictServerHandlers.AttachAuthorization.Descriptor)
+                        .AddEventHandler(AttachDeviceAuthorization.Descriptor)
+                        .RemoveEventHandler(OpenIddictServerHandlers.RedeemTokenEntry.Descriptor)
+                        .AddEventHandler(RedeemDeviceCodeOnce.Descriptor)
+                        .AddEventHandler(BindDeviceAuthorization.Descriptor)
+                        .AddEventHandler(DeviceVerificationGuard.Descriptor)
+                        .AddEventHandler(DevicePollingAdmissionGuard.Descriptor)
+                        .AddEventHandler(DevicePollingGuard.Descriptor)
+                        .AddEventHandler(DeviceAuthorizationResponse.Descriptor)
+                        .AddEventHandler(DeviceVerificationResponse.Descriptor)
+                        .AddEventHandler(GuardDeviceIssuance.BeforeGeneration)
+                        .AddEventHandler(GuardDeviceIssuance.BeforeResponse);
+                }
+
                 AddEphemeralCredentialsInDevelopment(options, startupOptions);
 
                 var aspNetCore = options.UseAspNetCore()
                     .EnableAuthorizationEndpointPassthrough()
                     .EnableTokenEndpointPassthrough();
+
+                if (startupOptions.DeviceGrant.Enabled) aspNetCore.EnableEndUserVerificationEndpointPassthrough();
 
                 if (environment.IsDevelopment())
                 {
@@ -363,12 +424,14 @@ internal static class IdentityServiceCollectionExtensions
                     .AddEventHandler(RefuseIssuanceDuringRecovery.ValidationDescriptor)
                     .AddEventHandler(RefuseIssuanceDuringRecovery.EntryValidationDescriptor)
                     .AddEventHandler(RefuseIssuanceDuringRecovery.RequestDescriptor)
+                    .AddEventHandler(IntrospectionCredentialClaims.Descriptor)
                     .AddEventHandler(RejectExpiredTokenEntries.Descriptor)
                     .AddEventHandler(RejectFencedGrants.Descriptor)
                     .AddEventHandler(RejectFencedGrants.SignInDescriptor)
                     .AddEventHandler(RevokeGrantOnRefreshTokenReuse.Descriptor)
                     .AddEventHandler(RedeemRefreshTokenOnce.Descriptor)
-                    .AddEventHandler(RevokeGrantOnRefreshTokenRevocation.Descriptor);
+                    .AddEventHandler(RevokeGrantOnRefreshTokenRevocation.Descriptor)
+                    .AddDPoPHandlers(startupOptions.DPoP.Enabled);
             });
 
         services.AddOptions<OpenIddictServerOptions>().Configure<IOptions<IdentityOptions>, IResourceCatalog>(ConfigureServer);
@@ -397,6 +460,15 @@ internal static class IdentityServiceCollectionExtensions
         server.AccessTokenLifetime = options.Tokens.AccessTokenLifetime;
         server.AuthorizationCodeLifetime = options.Tokens.AuthorizationCodeLifetime;
         server.RefreshTokenLifetime = options.Tokens.RefreshTokenLifetime;
+        server.DeviceCodeLifetime = options.DeviceGrant.CodeLifetime;
+        server.UserCodeLifetime = options.DeviceGrant.CodeLifetime;
+        if (options.DeviceGrant.Enabled)
+        {
+            server.UserCodeLength = options.DeviceGrant.UserCodeLength;
+            server.UserCodeDisplayFormat = options.DeviceGrant.UserCodeLength == 8 ? "{0}{1}{2}{3}-{4}{5}{6}{7}" : null;
+            server.UserCodeCharset.Clear();
+            server.UserCodeCharset.UnionWith(options.DeviceGrant.UserCodeCharset.Select(_ => _.ToString()));
+        }
 
         // OAuth only: no OpenID Connect sign-in is offered to clients yet, so identity tokens are not advertised.
         server.Scopes.Remove(Scopes.OpenId);

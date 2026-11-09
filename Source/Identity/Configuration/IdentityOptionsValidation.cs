@@ -55,10 +55,76 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
             .Where(_ => string.IsNullOrWhiteSpace(_.ClientId) || string.IsNullOrWhiteSpace(_.ClientSecret))
             .Select(_ => $"Introspection client \"{_.ClientId}\" needs both a client id and a client secret."));
 
+        ValidateDPoP(options.DPoP, environment.IsDevelopment(), failures);
+        ValidateDeviceGrant(options.DeviceGrant, failures);
         failures.AddRange(TokenExchangeOptionsValidation.Validate(options, environment.IsDevelopment()));
         failures.AddRange(TokenRateLimitOptionsValidation.Validate(options.TokenRateLimit));
         ValidateAccounts(options.Accounts, failures);
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
+    }
+
+    static void ValidateDPoP(DPoPOptions dpop, bool development, List<string> failures)
+    {
+        if (!dpop.Enabled) return;
+        if (!ValidDPoPEndpoint(dpop.PublicTokenEndpoint, development))
+        {
+            failures.Add("Identity:DPoP requires an absolute public HTTPS token endpoint without user information, query or fragment (Development permits loopback HTTP).");
+        }
+
+        if (dpop.RequiredClients.Any(client => client != Clients.ClientDescriptors.CratisCli))
+        {
+            failures.Add("Identity:DPoP required clients must be registered token clients.");
+        }
+
+        if (!FixedDPoPWindows(dpop))
+        {
+            failures.Add("Identity:DPoP requires the fixed 300-second proof lifetime, 30-second future skew and 390-second replay TTL.");
+        }
+    }
+
+    static bool ValidDPoPEndpoint(string configured, bool development)
+    {
+        if (!Uri.TryCreate(configured, UriKind.Absolute, out var endpoint)) return false;
+        if (!string.IsNullOrEmpty(endpoint.Query)) return false;
+        if (!string.IsNullOrEmpty(endpoint.Fragment)) return false;
+        if (!string.IsNullOrEmpty(endpoint.UserInfo)) return false;
+        if (endpoint.Scheme == "https") return true;
+        if (!development) return false;
+        return endpoint.Scheme == "http" && endpoint.IsLoopback;
+    }
+
+    static bool FixedDPoPWindows(DPoPOptions dpop)
+    {
+        if (dpop.ProofLifetime != TimeSpan.FromSeconds(300)) return false;
+        if (dpop.FutureSkew != TimeSpan.FromSeconds(30)) return false;
+        return dpop.ReplayTtl == TimeSpan.FromSeconds(390);
+    }
+
+    static void ValidateDeviceGrant(DeviceGrantOptions device, List<string> failures)
+    {
+        if (device.UserCodeLength is < 8 or > 32 || string.IsNullOrEmpty(device.UserCodeCharset) ||
+            device.UserCodeCharset.Distinct().Count() != device.UserCodeCharset.Length || device.UserCodeCharset.Length < 20 ||
+            device.UserCodeCharset.Any(_ => !char.IsAsciiLetterUpper(_) && !char.IsAsciiDigit(_)))
+        {
+            failures.Add("Identity:Device user codes require 8–32 characters from at least twenty distinct uppercase ASCII letters or digits.");
+        }
+
+        if (device.CodeLifetime < TimeSpan.FromMinutes(1) || device.CodeLifetime > TimeSpan.FromMinutes(15))
+        {
+            failures.Add("The device code lifetime must be between one and fifteen minutes.");
+        }
+
+        if (device.PollingInterval < TimeSpan.FromSeconds(5) || device.PollingInterval > TimeSpan.FromSeconds(60) || device.PollingInterval.Ticks % TimeSpan.TicksPerSecond != 0)
+        {
+            failures.Add("The device polling interval must be a whole number of seconds between five and sixty.");
+        }
+
+        if (device.VerificationWindow < TimeSpan.FromMinutes(1) || device.VerificationWindow > TimeSpan.FromHours(1) ||
+            device.AttemptsPerCode is < 1 or > 10 || device.AttemptsPerAccount is < 1 or > 100 || device.AttemptsPerIp is < 1 or > 300 ||
+            device.AttemptsGlobally is < 1 or > 1000 || device.IssuancesPerIp is < 1 or > 100)
+        {
+            failures.Add("Device verification needs a one-to-sixty-minute window and bounded positive code, account, IP, global and issuance limits.");
+        }
     }
 
     static IEnumerable<string> ValidateResource(ResourceServerOptions resource)

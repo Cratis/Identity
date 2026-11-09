@@ -81,7 +81,9 @@ Identity and AuthProxy MUST issue a fresh `DPoP-Nonce` on nonce challenges and S
 
 ### 5.1 Nonce encoding and keys
 
-Decided in Identity #14.
+**AS slice-1 override (Identity #55):** Identity authorization-server nonces use the already-configured ASP.NET Core Data Protection key ring, with `IDataProtectionProvider.CreateProtector("Cratis.Identity.Dpop.Nonce.v1")`. Protected fields include domain `as`, configured origin, `jkt`, integer issuance time and 128 random bits. The timestamp bounds above remain unchanged. Nonces are stateless; all AS replicas share the existing ring/application discriminator and retain old keys through the nonce acceptance window. No named-entry secret-store API or new secret is required. Data Protection provides versioning, key identification, authenticated encryption and retained-key rotation; its ciphertext is not the fixed HMAC fixture below. This override applies only to AS issuance. The resource-server design remains deferred.
+
+The following draft HMAC encoding, originally decided in Identity #14, remains the resource-server design and is **not** the AS slice-1 encoding.
 
 - **Encoding.** A nonce is the unpadded base64url form of 66 bytes (88 characters), within RFC 9449's nonce grammar: `ver` (1 byte, `0x01`); `domain` (1 byte: `0x01` for authorization-server nonces issued by Identity, `0x02` for resource nonces issued by AuthProxy); `kid` (8 opaque bytes); `issued_at` (8 bytes, unsigned big-endian Unix seconds); `random` (16 bytes from a CSPRNG); `mac` (32 bytes).
 - **MAC input.** `mac` = HMAC-SHA-256(key[kid], `"cratis-dpop-nonce-v1"` ‖ `0x00` ‖ ver ‖ domain ‖ kid ‖ issued_at ‖ random ‖ u16be(len(origin)) ‖ origin ‖ jkt). `origin` is the configured public origin, ASCII, as serialized for `htu`; `jkt` is the 32-byte SHA-256 JWK thumbprint decoded from the proof key. Origin and `jkt` are authenticated but not carried. Every nonce is issued after the proof checks pass, so `jkt` is known at issue time.

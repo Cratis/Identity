@@ -26,6 +26,7 @@ public class when_exchanging : given.an_account_and_a_grant
         AuthTime.ToUnixTimeSeconds(),
         TimeSpan.FromMinutes(5));
 
+    [Fact] void should_not_invent_a_grant_id_for_an_exchange() => _identity.GetClaim("cid").ShouldBeNull();
     [Fact] void should_use_the_account_id_as_subject() => _identity.GetClaim(Claims.Subject).ShouldEqual(_account.Id.Value);
     [Fact] void should_carry_the_account_name() => _identity.GetClaim(Claims.Name).ShouldEqual(_account.Name.Value);
     [Fact] void should_carry_the_client_as_authorized_party() => _identity.GetClaim(Claims.AuthorizedParty).ShouldEqual("authproxy");

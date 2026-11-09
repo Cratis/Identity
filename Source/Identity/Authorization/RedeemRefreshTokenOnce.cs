@@ -1,6 +1,8 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.DPoP;
+using Cratis.Identity.DPoP.Operational;
 using Cratis.Identity.Revocation;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;
@@ -27,7 +29,8 @@ namespace Cratis.Identity.Authorization;
 /// <param name="fences">The single-document authority.</param>
 /// <param name="read">The constrained legacy-family repair.</param>
 /// <param name="issuance">The request-scoped successor binding.</param>
-internal class RedeemRefreshTokenOnce(IOpenIddictTokenManager tokens, GrantRevocation grants, TimeProvider timeProvider, IFenceStore fences, ReadRefreshGrant read, RefreshIssuance issuance) : IOpenIddictServerHandler<ProcessSignInContext>
+/// <param name="dpop">The optional DPoP admission service.</param>
+internal class RedeemRefreshTokenOnce(IOpenIddictTokenManager tokens, GrantRevocation grants, TimeProvider timeProvider, IFenceStore fences, ReadRefreshGrant read, RefreshIssuance issuance, DPoPAdmission? dpop = null) : IOpenIddictServerHandler<ProcessSignInContext>
 {
     /// <summary>
     /// Gets the descriptor. It runs just before OpenIddict's redemption handler, whose later attempt to redeem the
@@ -82,7 +85,7 @@ internal class RedeemRefreshTokenOnce(IOpenIddictTokenManager tokens, GrantRevoc
             return;
         }
 
-        if (await IsRedeemable(context, token, state, tokenId))
+        if (await IsRedeemable(context, token, state, tokenId) && await AdmitBinding(context, token))
         {
             await ConsumeAndInstall(context, token, state, tokenId);
         }
@@ -102,6 +105,29 @@ internal class RedeemRefreshTokenOnce(IOpenIddictTokenManager tokens, GrantRevoc
         }
 
         context.Reject(error: Errors.InvalidGrant, description: "The refresh token was already used.");
+        return false;
+    }
+
+    async Task<bool> AdmitBinding(ProcessSignInContext context, object token)
+    {
+        var properties = await tokens.GetPropertiesAsync(token, context.CancellationToken);
+        string? jkt = null;
+        if (properties.TryGetValue(DPoPBindingStamp.PropertyName, out var stamp))
+        {
+            if (stamp.ValueKind != System.Text.Json.JsonValueKind.String || string.IsNullOrEmpty(stamp.GetString()))
+            {
+                context.Reject(Errors.InvalidGrant, "The refresh token is no longer valid.");
+                return false;
+            }
+
+            jkt = stamp.GetString();
+        }
+
+        if (dpop is not null) return await dpop.Admit(context, refresh: true, existingJkt: jkt);
+        if (jkt is null) return true;
+
+        // Disabling DPoP must never downgrade an existing bound family.
+        context.Reject(Errors.InvalidGrant, "The refresh token is no longer valid.");
         return false;
     }
 

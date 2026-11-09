@@ -6,6 +6,7 @@ using Cratis.Arc;
 using Cratis.Arc.Commands.ModelBound;
 using Cratis.Arc.Http;
 using Cratis.Arc.Queries.ModelBound;
+using Cratis.Identity.Configuration;
 using Cratis.Identity.Hosting;
 using Microsoft.Extensions.Options;
 
@@ -16,16 +17,19 @@ internal sealed class IdentityRealmMiddleware
 {
     readonly RequestDelegate _next;
     readonly PathString[] _prefixes;
+    readonly bool _deviceEnabled;
     readonly IdentityEndpointOptions _endpoints;
 
     /// <summary>Initializes realm route matching from the same options as Arc.</summary>
     /// <param name="next">The next middleware.</param>
     /// <param name="options">Arc endpoint options.</param>
     /// <param name="identityEndpoints">Identity endpoint paths.</param>
-    public IdentityRealmMiddleware(RequestDelegate next, IOptions<ArcOptions> options, IOptions<IdentityEndpointOptions>? identityEndpoints = null)
+    /// <param name="identity">The opt-in device route configuration.</param>
+    public IdentityRealmMiddleware(RequestDelegate next, IOptions<ArcOptions> options, IOptions<IdentityEndpointOptions>? identityEndpoints = null, IOptions<IdentityOptions>? identity = null)
     {
         _next = next;
         _endpoints = identityEndpoints?.Value ?? new IdentityEndpointOptions();
+        _deviceEnabled = identity?.Value.DeviceGrant.Enabled == true;
         var endpoints = options.Value.GeneratedApis;
         _prefixes = typeof(IdentityRealmMiddleware).Assembly.GetTypes()
             .Where(type => type.IsDefined(typeof(CommandAttribute)) || type.IsDefined(typeof(ReadModelAttribute)))
@@ -74,5 +78,6 @@ internal sealed class IdentityRealmMiddleware
         path.StartsWithSegments("/signin-github") || _prefixes.Any(path.StartsWithSegments);
 
     bool MatchesPrefixedRoute(PathString path) => path.StartsWithSegments("/connect") ||
+        (_deviceEnabled && (path == "/device" || path == "/device/")) ||
         (_endpoints.MapSignOut && path.StartsWithSegments("/logout"));
 }

@@ -5,6 +5,7 @@ using System.Security.Claims;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Contracts;
 using Cratis.Identity.given;
+using Cratis.Identity.Revocation;
 using Cratis.Identity.Tenants;
 using OpenIddict.Abstractions;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -25,6 +26,11 @@ public class when_renewing : given.an_account_and_a_grant
 
     void Because() => _identity = AccessTokenIdentity.Renew(_granted, _account with { GitHubLogin = "einari-renamed", GitHubId = "999" }, ClientId, true);
 
+    [Fact] void should_derive_cid_from_the_authorization() => _identity.GetClaim("cid").ShouldEqual(OutboxEntry.Source(AuthorizationId).ToString("D"));
+    [Fact] void should_send_cid_only_to_the_access_token() => _identity.FindFirst("cid").GetDestinations().ShouldContainOnly(Destinations.AccessToken);
+    [Fact] void should_allowlist_cid() => AccessTokenIdentity.AccessTokenClaimTypes.ShouldContain("cid");
+    [Fact] void should_keep_cid_when_refreshing_again() => AccessTokenIdentity.Renew(new ClaimsPrincipal(_identity), _account, ClientId, true).GetClaim("cid").ShouldEqual(_identity.GetClaim("cid"));
+    [Fact] void should_use_the_same_credential_id_function_as_introspection() => _identity.GetClaim("cid").ShouldEqual(CredentialId.For(AuthorizationId));
     [Fact] void should_keep_the_tenant_of_the_grant() => _identity.GetClaim(IdentityClaims.TenantId).ShouldEqual("cratis");
     [Fact] void should_keep_the_authorization_the_grant_belongs_to() => _identity.GetAuthorizationId().ShouldEqual(AuthorizationId);
     [Fact] void should_keep_the_granted_scopes() => _identity.GetScopes().ShouldContainOnly("direct:read", "offline_access");
