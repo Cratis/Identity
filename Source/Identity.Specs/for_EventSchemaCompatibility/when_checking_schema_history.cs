@@ -36,6 +36,16 @@ public class when_checking_schema_history : Specification
     }
 
     [Fact]
+    public void should_ignore_recursive_field_order()
+    {
+        var first = Original.Fields[0];
+        var second = first with { Name = "Second", WireName = "Second" };
+        var retained = Original with { Fields = [first with { Fields = [first, second] }, second] };
+        var reordered = retained with { Fields = [second, first with { Fields = [second, first] }] };
+        Check([reordered], [retained]).ShouldBeEmpty();
+    }
+
+    [Fact]
     public void should_reject_nested_shape_changes()
     {
         var nested = Original with { Fields = [Original.Fields[0] with { Fields = Original.Fields }] };

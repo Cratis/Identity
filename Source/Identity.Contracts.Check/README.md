@@ -91,6 +91,53 @@ specs, not placeholder migration infrastructure.
 dotnet test Source/Identity.Specs/Identity.Specs.csproj -c Release --filter FullyQualifiedName~for_EventSchemaCompatibility
 ```
 
+## Released-ref immutability gate
+
+The ordinary build compares declarations with the embedded manifest. To prevent a
+change from rewriting code, manifest rows, and fixtures together, CI must also run
+the standalone released-ref mode **after** the Release build:
+
+```sh
+dotnet Source/Identity.Contracts.Check/bin/Release/net10.0/Cratis.Identity.Contracts.Check.dll --released-ref origin/main Identity.slnx
+```
+
+This mode resolves the requested ref to a commit with `git rev-parse`, reads its
+catalogue with `git show`, and enumerates its entire fixture tree with
+`git ls-tree` before reading each blob. It compares that trusted state with the
+current on-disk catalogue and fixture tree, not potentially stale embedded files.
+Released rows cannot change or disappear; recursive field order is insignificant.
+Every released fixture, including unreferenced fixtures, must retain exactly the
+same bytes and path. New rows and fixtures are allowed. Diagnostics never print
+fixture contents.
+
+A missing/unresolvable ref, unavailable Git, unreadable or malformed catalogue,
+or empty released catalogue or fixture set fails closed. There is no environment
+variable skip. The trusted ref must already contain the initial schema baseline;
+bootstrap the baseline before enabling this required CI step, rather than allowing
+missing history to pass.
+
+**Follow-up wiring in `.github/workflows/build.yml`:** configure the existing
+`actions/checkout` step with `fetch-depth: 0`, then add these exact steps after the
+Release warnings-as-errors build (or fetch the trusted base explicitly as below):
+
+```yaml
+- name: Fetch trusted schema base
+  run: git fetch --no-tags origin main:refs/remotes/origin/main
+- name: Preserve released event schemas and fixtures
+  run: >-
+    dotnet Source/Identity.Contracts.Check/bin/Release/net10.0/Cratis.Identity.Contracts.Check.dll
+    --released-ref origin/main Identity.slnx
+```
+
+This change provides the mode but does not edit `build.yml`; that required-check
+wiring remains a follow-up. The trusted ref is supplied explicitly by CI, never
+selected from proposed fixture or catalogue content.
+
+The initial `WireName` snapshot preserves reflection names/explicit aliases;
+Chronicle's default camelCase serialization is exercised by the fixture round-trip
+specs. Normalizing those already recorded names is deliberately not part of this
+immutability fix, because it would rewrite retained rows.
+
 ## Reviewing a safe concept
 
 A suggestive name or a Hash/Thumbprint/Fingerprint suffix is not an exception.

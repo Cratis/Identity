@@ -115,6 +115,8 @@ internal static class SchemaCompatibility
 
     static void CompareFields(IReadOnlyList<SchemaField> retained, IReadOnlyList<SchemaField> compiled, string path, List<Violation> result)
     {
+        retained = retained.OrderBy(field => field.Name, StringComparer.Ordinal).ToArray();
+        compiled = compiled.OrderBy(field => field.Name, StringComparer.Ordinal).ToArray();
         if (!retained.Select(field => field.Name).SequenceEqual(compiled.Select(field => field.Name), StringComparer.Ordinal))
         {
             result.Add(new(path, "event_fields_changed_without_generation"));
