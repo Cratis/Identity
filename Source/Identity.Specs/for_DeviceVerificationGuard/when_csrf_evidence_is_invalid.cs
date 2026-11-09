@@ -3,6 +3,7 @@
 
 using Cratis.Identity.Device;
 using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using OpenIddict.Abstractions;
@@ -19,7 +20,11 @@ public class when_csrf_evidence_is_invalid : for_DeviceGrantAdmission.given.an_a
 
     async Task Because()
     {
-        _http = new DefaultHttpContext();
+        var authentication = Substitute.For<IAuthenticationService>();
+        authentication.AuthenticateAsync(default!, default).ReturnsForAnyArgs(AuthenticateResult.NoResult());
+        var services = Substitute.For<IServiceProvider>();
+        services.GetService(typeof(IAuthenticationService)).Returns(authentication);
+        _http = new DefaultHttpContext { RequestServices = services };
         _http.Request.Method = HttpMethods.Post;
         _antiforgery = Substitute.For<IAntiforgery>();
         _antiforgery.IsRequestValidAsync(_http).Returns(false);

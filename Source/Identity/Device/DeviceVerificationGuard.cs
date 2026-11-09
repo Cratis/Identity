@@ -1,8 +1,10 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Authorization;
 using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Authentication;
 using OpenIddict.Server;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 using static OpenIddict.Server.OpenIddictServerEvents;
@@ -38,6 +40,11 @@ internal sealed class DeviceVerificationGuard(IHttpContextAccessor accessor, IAn
         http.Response.Headers.Pragma = "no-cache";
         http.Response.Headers["Referrer-Policy"] = "no-referrer";
         if (HttpMethods.IsGet(http.Request.Method) && string.IsNullOrEmpty(context.UserCode)) return;
+
+        // OpenIddict handles this request inside the authentication middleware, before HttpContext.User is populated; the antiforgery token is bound to the signed-in user.
+        var session = await http.AuthenticateAsync(IdentitySchemes.Session);
+        if (session.Succeeded && session.Principal is not null) http.User = session.Principal;
+
         if (!HttpMethods.IsPost(http.Request.Method) || !await antiforgery.IsRequestValidAsync(http))
         {
             context.Reject(Errors.InvalidRequest, "The verification request is not valid.");
