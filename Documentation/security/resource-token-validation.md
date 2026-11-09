@@ -28,7 +28,26 @@ The shipped `Identity:IntrospectionClients` list is empty in `Source/Identity.Ho
 
 ## Revocation fence and introspection
 
-Revoking a grant marks its authorization revoked, and the fence stores on the train branch consult that authoritative state before token-entry validation, so introspection of a revoked grant's access token returns `active: false`. The code shows this for a refresh-token revoke followed by introspection of the grant's access token. Identity branches `identity-41-revocation-fence` and `identity-42-revocation-recovery` extend the fence log, outbox and recovery epoch. Whether the outbox or recovery epoch feeds any consumer other than Identity's own token validation is not verified in code; treat it as not part of this contract.
+Revoking a grant marks its authorization revoked, and the fence stores on the train branch consult that authoritative state before token-entry validation, so introspection of a revoked grant's access token returns `active: false`. The code shows this for a refresh-token revoke followed by introspection of the grant's access token. Identity branches `identity-41-revocation-fence` and `identity-42-revocation-recovery` extend the fence log, outbox and recovery epoch. Introspection now exposes the recovery epoch as `cache_epoch`; consumers must discard cached verification results when it changes. No cross-repository consumer implementation is claimed here.
+
+## Authoritative introspection metadata
+
+An authenticated, authorized resource server receives these additional members for an active OAuth grant:
+
+| Member | Meaning |
+|---|---|
+| `credential_kind` | The string `oauth-grant` (the wire value, not an enum ordinal) |
+| `credential_id` | The existing grant event-source UUID, derived from the validated authorization id using the consent/revocation outbox mapping; never the raw authorization id, `jti`, or client id |
+| `tid`, `aud`, `scope` | Only values from the validated token/grant, never introspection request parameters; missing tenant/audience values are not invented |
+| `cache_epoch` | Current nonnegative recovery epoch; invalidate cached results on change |
+
+The advisory JWT `cid` uses the same UUID as `credential_id` and is stable through refresh. It is access-token-only, not an ID-token claim. Tokens without an authorization (including token exchange) receive neither `cid` nor the grant credential pair; Identity does not substitute token/client identifiers. The initial authorization-code principal has no authorization id yet; `cid` is added on redemption.
+
+Invalid, expired, and revoked tokens remain exactly `{ "active": false }`, without ids or a cache epoch. Authentication/authorization errors and unproven recovery do not expose credential metadata. These fields grant no product authority: a product-owned resolver still maps issuer, subject, and `tid` to its user/tenant keys, roles, and permissions. Never log or audit token values.
+
+### Second step: confirmation pass-through, not DPoP
+
+OpenIddict passes through a well-formed `cnf` object from the validated token only. Identity does not currently issue DPoP-bound tokens, so bearer introspection has no `cnf`; this does not implement or claim proof validation. Malformed `cnf` errors in OpenIddict before credential metadata is attached (fail-closed, no ids), rather than being silently omitted. No request thumbprint is used.
 
 ## Failure modes
 

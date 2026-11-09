@@ -418,6 +418,7 @@ internal static class IdentityServiceCollectionExtensions
                     .AddEventHandler(RefuseIssuanceDuringRecovery.ValidationDescriptor)
                     .AddEventHandler(RefuseIssuanceDuringRecovery.EntryValidationDescriptor)
                     .AddEventHandler(RefuseIssuanceDuringRecovery.RequestDescriptor)
+                    .AddEventHandler(IntrospectionCredentialClaims.Descriptor)
                     .AddEventHandler(RejectExpiredTokenEntries.Descriptor)
                     .AddEventHandler(RejectFencedGrants.Descriptor)
                     .AddEventHandler(RejectFencedGrants.SignInDescriptor)

@@ -140,3 +140,25 @@ Machine-readable group: [principals and workload cache](../../Source/Identity.Sp
 ## Versioning
 
 This spec MUST change only through a new version file. Consumers MUST reject unknown record profiles, never infer compatibility from field names, and retain the superseded document and vectors. New versions MUST identify their predecessor and migration requirements. A new verifier MUST preserve authenticated actors, represented persons, and declared clients as distinct concepts.
+
+## Appendix A: Identity wire implementation status
+
+This implementation note does not change the locked caller record or supply an Arc verifier/product resolver.
+
+### A1. Access-token claims
+
+Identity's OAuth access tokens retain their existing claims. Code redemption and refresh also emit advisory `cid`: the non-secret grant event-source UUID, derived from the authorization with the existing consent/revocation outbox mapping. It is stable through refresh and equals introspection `credential_id`. It is not an ID-token claim, a raw authorization id, `jti`, a client id, a product key, or proof of authorization. No id is invented for an authorization-code principal before its authorization exists, or for token exchange without a grant.
+
+### A2. Introspection
+
+After validating the token and introspection caller and proving recovery, Identity adds:
+
+| Member | Wire value/source |
+| --- | --- |
+| `credential_kind` | The string `oauth-grant` for a token bound to an OAuth authorization; this does not settle other credential-kind spellings |
+| `credential_id` | The same non-secret grant UUID as `cid`; omitted with `credential_kind` if no authorization exists |
+| `tid`, `aud`, `scope` | Validated token/grant values only, never request parameters; missing tenant/audience values are not invented |
+| `cache_epoch` | Current nonnegative recovery epoch; consumers invalidate cached verification on change |
+| `cnf` | **Second step: pass-through only**, not DPoP enforcement. A well-formed confirmation comes only from the validated token. Identity does not issue it until DPoP lands; bearer replies omit it. Malformed confirmation errors in OpenIddict before ids are attached, rather than being silently omitted. |
+
+Invalid, expired, or revoked tokens remain exactly `{ "active": false }`. Errors and unproven recovery disclose no credential metadata. These fields do not carry product user/tenant keys, roles, or permissions: the product-owned resolver and live authorization checks remain required. Raw tokens must never be logged or used as audit identifiers.
