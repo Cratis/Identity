@@ -38,6 +38,7 @@ public class when_mapped_before_authentication : given.an_identity_host
                 return default;
             })));
         App = Builder.Build();
+        App.UseCratisIdentity();
         App.MapCratisIdentity();
     }
 
