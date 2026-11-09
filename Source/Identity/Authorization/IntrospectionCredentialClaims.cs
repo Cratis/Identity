@@ -30,7 +30,9 @@ internal sealed class IntrospectionCredentialClaims(RecoveryGate recovery) : IOp
             return ValueTask.CompletedTask;
         }
 
-        if (!recovery.Ready)
+        // ObserveEpoch closes the gate before publishing the new epoch: bracket the Ready read with two epoch reads.
+        var epoch = recovery.Epoch;
+        if (!recovery.Ready || recovery.Epoch != epoch)
         {
             context.Reject(Errors.InvalidToken);
             return ValueTask.CompletedTask;
@@ -50,7 +52,7 @@ internal sealed class IntrospectionCredentialClaims(RecoveryGate recovery) : IOp
         }
 
         context.Scopes.UnionWith(principal.GetScopes());
-        context.Claims["cache_epoch"] = recovery.Epoch;
+        context.Claims["cache_epoch"] = epoch;
 
         // Second step: cnf is well-formed token-only pass-through via AttachMetadataClaims, not DPoP validation.
         // Identity does not issue it until DPoP lands. Malformed cnf errors in OpenIddict before this handler.
@@ -59,5 +61,6 @@ internal sealed class IntrospectionCredentialClaims(RecoveryGate recovery) : IOp
 
     static bool CanAttach(HandleIntrospectionRequestContext context) =>
         !context.IsRejected && !context.IsRequestHandled && !context.IsRequestSkipped &&
-        context.GenericTokenPrincipal is { } principal && principal.HasTokenType(TokenTypeIdentifiers.AccessToken);
+        context.GenericTokenPrincipal is { } principal && principal.HasTokenType(TokenTypeIdentifiers.AccessToken) &&
+        !string.IsNullOrEmpty(context.Request?.ClientId) && principal.HasAudience(context.Request.ClientId);
 }
