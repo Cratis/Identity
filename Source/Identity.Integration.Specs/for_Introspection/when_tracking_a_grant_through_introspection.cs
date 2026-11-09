@@ -7,7 +7,7 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Cratis.Identity.Integration.for_Introspection;
 
-[Requirement(Requirements.IntrospectionAuthenticated), Requirement(Requirements.IntrospectionInactiveAfterRevoke)]
+[Requirement(Conformance.Requirements.IntrospectionAuthenticated), Requirement(Conformance.Requirements.IntrospectionInactiveAfterRevoke)]
 [Collection(IdentityCollection.Name)]
 public class when_tracking_a_grant_through_introspection(IdentityHost host) : IAsyncLifetime
 {
@@ -24,11 +24,11 @@ public class when_tracking_a_grant_through_introspection(IdentityHost host) : IA
         var browser = host.CreateBrowser();
         var (verifier, challenge) = Browser.Pkce();
         var (_, tokens) = await browser.RedeemCode(await browser.LoginForCode(challenge), verifier);
-        _firstToken = new(tokens.GetProperty("access_token").GetString()!);
+        _firstToken = new(tokens.GetProperty("access_token").GetString());
         (_, _active) = await browser.Introspect(_firstToken.EncodedToken);
         var (refreshStatus, refreshed) = await browser.Refresh(tokens.GetProperty("refresh_token").GetString());
         refreshStatus.ShouldEqual(HttpStatusCode.OK);
-        _nextToken = new(refreshed.GetProperty("access_token").GetString()!);
+        _nextToken = new(refreshed.GetProperty("access_token").GetString());
         (_, _refreshed) = await browser.Introspect(_nextToken.EncodedToken);
         var (revocationStatus, _) = await browser.Revoke(refreshed.GetProperty("refresh_token").GetString());
         revocationStatus.ShouldEqual(HttpStatusCode.OK);
@@ -54,7 +54,7 @@ public class when_tracking_a_grant_through_introspection(IdentityHost host) : IA
     [Fact] void should_not_use_jti_as_the_credential_id() => (_active.GetProperty("credential_id").GetString() == _firstToken.Id).ShouldBeFalse();
     [Fact] void should_not_use_client_id_as_the_credential_id() => (_active.GetProperty("credential_id").GetString() == Browser.ClientId).ShouldBeFalse();
     [Fact] void should_return_the_token_tenant() => _active.GetProperty("tid").GetString().ShouldEqual(_firstToken.GetClaim("tid").Value);
-    [Fact] void should_return_the_granted_scope() => _active.GetProperty("scope").GetString()!.Split(' ').ShouldContainOnly(_firstToken.GetClaim("scope").Value.Split(' '));
+    [Fact] void should_return_the_granted_scope() => _active.GetProperty("scope").GetString().Split(' ').ShouldContainOnly(_firstToken.GetClaim("scope").Value.Split(' '));
     [Fact] void should_report_a_nonnegative_cache_epoch() => (_active.GetProperty("cache_epoch").GetInt64() >= 0).ShouldBeTrue();
     [Fact] void should_keep_the_epoch_without_a_recovery_boundary() => _refreshed.GetProperty("cache_epoch").GetInt64().ShouldEqual(_active.GetProperty("cache_epoch").GetInt64());
     [Fact] void should_not_fabricate_bearer_confirmation() => _active.TryGetProperty("cnf", out _).ShouldBeFalse();
