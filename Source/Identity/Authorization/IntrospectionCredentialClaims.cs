@@ -14,6 +14,9 @@ namespace Cratis.Identity.Authorization;
 /// <param name="recovery">The realm's independently observed recovery state.</param>
 internal sealed class IntrospectionCredentialClaims(RecoveryGate recovery) : IOpenIddictServerHandler<HandleIntrospectionRequestContext>
 {
+    /// <summary>The transaction epoch captured before introspection token validation.</summary>
+    internal const string RecoveryEpochProperty = "Cratis.Identity.IntrospectionRecoveryEpoch";
+
     /// <summary>Gets the descriptor, after the built-in metadata and application claims.</summary>
     public static OpenIddictServerHandlerDescriptor Descriptor { get; } = OpenIddictServerHandlerDescriptor.CreateBuilder<HandleIntrospectionRequestContext>()
         .UseScopedHandler<IntrospectionCredentialClaims>()
@@ -30,11 +33,10 @@ internal sealed class IntrospectionCredentialClaims(RecoveryGate recovery) : IOp
             return ValueTask.CompletedTask;
         }
 
-        // ObserveEpoch closes the gate before publishing the new epoch: bracket the Ready read with two epoch reads.
-        var epoch = recovery.Epoch;
-        if (!recovery.Ready || recovery.Epoch != epoch)
+        var epoch = context.Transaction.Properties.GetValueOrDefault(RecoveryEpochProperty) is long observed ? observed : -1;
+        if (!IsCurrent(epoch))
         {
-            context.Reject(Errors.InvalidToken);
+            Reject(context);
             return ValueTask.CompletedTask;
         }
 
@@ -53,14 +55,24 @@ internal sealed class IntrospectionCredentialClaims(RecoveryGate recovery) : IOp
 
         context.Scopes.UnionWith(principal.GetScopes());
         context.Claims["cache_epoch"] = epoch;
+        if (!IsCurrent(epoch)) Reject(context);
 
         // Second step: cnf is well-formed token-only pass-through via AttachMetadataClaims, not DPoP validation.
         // Identity does not issue it until DPoP lands. Malformed cnf errors in OpenIddict before this handler.
         return ValueTask.CompletedTask;
     }
 
+    static void Reject(HandleIntrospectionRequestContext context)
+    {
+        context.Claims.Clear();
+        context.Scopes.Clear();
+        context.Reject(Errors.InvalidToken);
+    }
+
     static bool CanAttach(HandleIntrospectionRequestContext context) =>
         !context.IsRejected && !context.IsRequestHandled && !context.IsRequestSkipped &&
         context.GenericTokenPrincipal is { } principal && principal.HasTokenType(TokenTypeIdentifiers.AccessToken) &&
         !string.IsNullOrEmpty(context.Request?.ClientId) && principal.HasAudience(context.Request.ClientId);
+
+    bool IsCurrent(long epoch) => recovery.Ready && recovery.Epoch == epoch;
 }

@@ -78,6 +78,6 @@ internal sealed class IdentityRealmMiddleware
         path.StartsWithSegments("/signin-github") || _prefixes.Any(path.StartsWithSegments);
 
     bool MatchesPrefixedRoute(PathString path) => path.StartsWithSegments("/connect") ||
-        (_deviceEnabled && path == "/device") ||
+        (_deviceEnabled && (path == "/device" || path == "/device/")) ||
         (_endpoints.MapSignOut && path.StartsWithSegments("/logout"));
 }

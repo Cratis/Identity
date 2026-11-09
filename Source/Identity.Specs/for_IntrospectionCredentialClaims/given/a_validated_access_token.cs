@@ -19,8 +19,9 @@ public class a_validated_access_token : Specification
     private protected RecoveryGate _gate;
     protected HandleIntrospectionRequestContext _context;
     private protected IntrospectionCredentialClaims _handler;
+    private protected RefuseIssuanceDuringRecovery _validation;
 
-    void Establish()
+    async Task Establish()
     {
         _gate = new();
         _gate.ObserveEpoch(7);
@@ -46,6 +47,10 @@ public class a_validated_access_token : Specification
         _context.Request["tid"] = "request-tenant";
         _context.Request["audience"] = "request-audience";
         _handler = new(_gate);
+        var log = Substitute.For<IRecoveryLog>();
+        log.RecoveryEpoch(Arg.Any<CancellationToken>()).Returns(_ => _gate.Epoch);
+        _validation = new RefuseIssuanceDuringRecovery(_gate, log, Substitute.For<IOpenIddictTokenManager>(), Substitute.For<IOpenIddictAuthorizationManager>());
+        await _validation.HandleAsync(new ValidateTokenContext(_context.Transaction));
     }
 
     protected async Task Populate()
