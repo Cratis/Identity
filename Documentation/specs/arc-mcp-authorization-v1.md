@@ -3,6 +3,7 @@
 ```text
 Spec id: arc-mcp-authorization
 Version: 1
+MCP authorization revision: 2026-07-28
 Status: Signed off
 Signed off: 2026-11-05 by woksin, https://github.com/Cratis/Identity/issues/14; owner confirmation pending
 Issue: https://github.com/Cratis/Arc/issues/3703
@@ -162,6 +163,69 @@ Content-Type: application/json
 For example, a fixture retry limit of 2 allows no third step-up attempt. This value is a test setting, not a locked production default. A PAT request in the combined profile remains an application PAT flow and MUST NOT be sent through OAuth step-up automatically.
 
 Machine-readable group: [profiles and discovery](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/profiles-and-discovery.json), repository path `Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/profiles-and-discovery.json`. Successful fixture requests assert handler admission, not a particular MCP method's response payload. The group has `name`, `description`, `given`, `when.action`, and `then`; `given.vectors` contains individual cases. These data vectors do not demonstrate runtime conformance. Outcomes and reasons are vector vocabulary, not public error messages.
+
+## Vector artifact
+
+Vector artifact version: 1.0.0
+
+The [manifest](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/manifest.json)
+assigns stable case IDs without modifying the signed-off vector bytes. Each case uses
+`file` and a zero-based `index` into `given.vectors`. Its `sha256` hashes the UTF-8
+compact JSON object (property order preserved, no whitespace or trailing newline,
+unescaped Unicode, as produced by JavaScript `JSON.stringify`). File hashes cover the
+original bytes. The [changelog](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/CHANGELOG.md)
+versions the artifact independently of contract version 1.
+
+The independently reviewed [v1.0.0 baseline](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/baselines/v1.0.0.json)
+locks the case-ID-to-content-hash bindings and vector-file hashes. Specs and packaging
+compare the manifest against `baselines/v<version>.json`, not against values regenerated
+from the manifest. Released baselines are immutable: never edit or regenerate them.
+Every version bump adds a new independently approved baseline, a changelog section,
+and a `## Vector artifact` section with its own `Vector artifact version:` metadata;
+retain older baselines and both versioned sections byte-identically. The checks require one
+baseline per changelog heading, including the initial release. The release tag
+`vectors/arc-mcp-authorization/v<version>` is the trust anchor, not the mutable working-tree
+baseline. `node scripts/check-vector-baseline-immutability.mjs` compares every released
+baseline with `git show <tag>:<path>` and, while the manifest selects that version,
+compares the manifest and vector content hashes with the tagged revision. It also compares
+the tagged version's changelog and vector-artifact sections byte-for-byte. Historical
+baselines and sections remain unchanged when the manifest and vectors advance to a new version.
+An untagged baseline passes with an unreleased notice; v1.0.0 is anchored when its first
+release tag is cut after the next train merges. On pull requests, the checker also compares
+against `BASE_REF` (or `--base-ref <ref>`, default `origin/main` for pull requests): old
+baselines and versioned documentation sections must remain byte-identical, and changing
+the manifest, vectors, or versioned prose requires a version bump with a new baseline
+and new documentation sections. Build CI and the packaging workflow run this check
+with full Git history and tags. Run `node scripts/check-vector-baseline-immutability.mjs
+--self-test` to exercise the rejection rules in disposable Git repositories.
+IDs are never reassigned to different behavior. Changing a case requires a new ID or an
+artifact version bump; even with a bump, an existing ID must not acquire different meaning.
+Any ID or hash change at the current version fails baseline validation.
+
+### Packaging and manual publication
+
+Run `node scripts/check-vector-baseline-immutability.mjs` before
+`node scripts/package-authorization-vectors.mjs .ai-work/identity-134/artifacts`
+from the repository root. This Node-stdlib script produces
+`arc-mcp-authorization-v1-vectors-1.0.0.tar.gz` and its `.sha256` sidecar. The archive
+contains `manifest.json`, `CHANGELOG.md`, every listed vector file at its root, and all
+versioned baselines under `baselines/`. Packaging validates the current baseline and
+baseline/changelog history before writing the archive.
+Entries are sorted with fixed mode, owner, and timestamp fields; gzip timestamps and
+OS metadata are normalized. Use the same Node version for byte-identical compression.
+
+The release owner can run the **Package authorization vectors** `workflow_dispatch`
+workflow on the reviewed commit to download the pair as a workflow artifact. It does
+not create a Git tag or GitHub release and never runs on push. Publication of the pair
+as immutable assets under the separately approved trust-anchor tag
+`vectors/arc-mcp-authorization/v1.0.0` remains a release-owner action. No cross-repository
+dispatch or token is used.
+
+Arc and AuthProxy consumers should pin the published artifact version and SHA-256,
+verify the sidecar before extraction, verify the manifest and case coverage, and run
+their own conformance specs by case ID. A missing, duplicate, or unexecuted case must
+fail their gate. Consumer CI wiring and local overrides are separate deliverables;
+this package does not assert consumer conformance.
 
 ## Decisions recorded at sign-off
 

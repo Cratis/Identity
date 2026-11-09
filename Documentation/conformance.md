@@ -105,3 +105,7 @@ Before accepting an upgrade:
 5. Update this catalogue if supported behavior intentionally changes. Name its normative reference, proof and any explicitly owned non-MUST gap in review.
 
 Scope deliberately excludes OIDC provider behavior, logout protocols, resource-server DPoP, JAR/PAR, upstream login changes and production key management. Changes to those profiles need their own reviewed requirements.
+
+## Client compatibility
+
+How each MCP client registers, discovers and redirects is recorded in the [MCP client compatibility matrix](design/mcp-client-compatibility-matrix.md). It is documented behavior, not a tested claim.

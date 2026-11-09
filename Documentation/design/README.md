@@ -9,3 +9,4 @@ Design notes guide implementation; they do not replace the [specifications](../s
 | identity-module-outline | 1 | Draft | [Identity module outline](identity-module-outline-v1.md) |
 | identity-platform-corrections | 1 | Draft | [Identity platform corrections](identity-platform-corrections-v1.md) |
 | identity-erasure-consumers | 1 | Draft | [Identity erasure: consumer obligations](identity-erasure-consumers-v1.md) |
+| mcp-client-compatibility-matrix | 1 | Draft | [MCP client compatibility matrix](mcp-client-compatibility-matrix.md) |
