@@ -6,6 +6,7 @@ using Cratis.Identity.Accounts;
 using Cratis.Identity.Accounts.Linking;
 using Cratis.Identity.Accounts.Lookup;
 using Cratis.Identity.Authorization;
+using Cratis.Identity.Authorization.RateLimiting;
 using Cratis.Identity.Authorization.TokenExchange;
 using Cratis.Identity.Clients;
 using Cratis.Identity.Configuration;
@@ -281,6 +282,7 @@ internal static class IdentityServiceCollectionExtensions
         services.AddScoped<TokenEndpoint>();
         services.AddScoped<TokenExchangeGrant>();
         services.AddSingleton<SubjectTokenReplayGuard>();
+        services.AddSingleton<TokenRequestRateLimiter>();
         services.AddSingleton<ISubjectTokenValidator, SubjectTokenValidator>();
         services.AddSingleton<IExternalIssuerKeys, ExternalIssuerKeys>();
         services.AddHttpClient(ExternalIssuerKeys.HttpClientName)

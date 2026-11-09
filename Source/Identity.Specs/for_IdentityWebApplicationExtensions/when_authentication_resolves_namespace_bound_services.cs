@@ -3,6 +3,7 @@
 
 using Cratis.Chronicle;
 using Cratis.Identity.Authorization;
+using Cratis.Identity.Authorization.RateLimiting;
 using Cratis.Identity.Realm;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Builder;
@@ -28,6 +29,9 @@ public class when_authentication_resolves_namespace_bound_services : Specificati
         var tenantResolver = Substitute.For<IEventStoreNamespaceResolver>();
         tenantResolver.Resolve().Returns(new EventStoreNamespaceName("tenant-alpha"));
         var builder = WebApplication.CreateBuilder();
+        builder.Services.AddOptions();
+        builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddSingleton<TokenRequestRateLimiter>();
         builder.Services.AddSingleton<IEventStoreNamespaceResolver>(new IdentityRealmNamespaceResolver(tenantResolver));
         builder.Services.AddTransient<AuthorizationEndpoint>();
         builder.Services.AddTransient<TokenEndpoint>();
