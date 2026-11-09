@@ -116,6 +116,9 @@ jobs:
       - name: Integration specs
         run: ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs -notrait "Category=Conformance"
 
+      - name: Release gate - Chronicle-down behaviour
+        run: ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs -class Cratis.Identity.Integration.for_Revocation.when_chronicle_is_unavailable
+
       - name: Protocol conformance (RFCs)
         run: ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs -trait "Category=Conformance"
 

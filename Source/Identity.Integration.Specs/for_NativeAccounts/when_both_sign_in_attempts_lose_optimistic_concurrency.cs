@@ -28,12 +28,12 @@ public class when_both_sign_in_attempts_lose_optimistic_concurrency(IdentityHost
         var adapter = provider.GetRequiredService<EventSourcedAccountAdapter>();
         var connection = new GitHubConnection(GitHubConnection.FixedConnectionId, provider.GetRequiredService<TimeProvider>());
         var user = new GitHubUser(UpstreamUserIds.Next(), "bounded-concurrency", "Before Conflicts");
-        var initial = await adapter.SignIn(connection.From(user, FactId.New()), new(null, user.Name, user.Login));
+        var initial = await adapter.SignIn(connection.From(user, FactId.New()), new(null, user.Name, user.Login), TestContext.Current.CancellationToken);
         var store = provider.GetRequiredService<IEventStore>();
         var before = (await store.EventLog.GetFromSequenceNumber(EventSequenceNumber.First, initial.Id.Value)).Count;
         using var run = provider.GetRequiredService<NativeSignInInterleaving>().Begin(2);
         _run = run;
-        var signIn = SignInOutcome.Observe(adapter.SignIn(connection.From(user, FactId.New()), new(null, "Stale On Both Attempts", "stale-on-both-attempts")));
+        var signIn = SignInOutcome.Observe(adapter.SignIn(connection.From(user, FactId.New()), new(null, "Stale On Both Attempts", "stale-on-both-attempts"), TestContext.Current.CancellationToken));
         var first = await run.Next();
         first.Decision.Subject.ShouldEqual(initial.Id);
         first.Decision.Account.Name.Value.ShouldEqual(user.Name);

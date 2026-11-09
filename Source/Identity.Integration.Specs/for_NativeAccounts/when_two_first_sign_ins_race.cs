@@ -38,8 +38,8 @@ public class when_two_first_sign_ins_race(IdentityHost host) : IAsyncLifetime
         _run = run;
         var attempts = new Dictionary<FactId, Task<SignInOutcome>>
         {
-            [first.OperationId] = SignInOutcome.Observe(adapter.SignIn(first, new(null, user.Name, user.Login))),
-            [second.OperationId] = SignInOutcome.Observe(adapter.SignIn(second, new(null, user.Name, user.Login)))
+            [first.OperationId] = SignInOutcome.Observe(adapter.SignIn(first, new(null, user.Name, user.Login), TestContext.Current.CancellationToken)),
+            [second.OperationId] = SignInOutcome.Observe(adapter.SignIn(second, new(null, user.Name, user.Login), TestContext.Current.CancellationToken))
         };
         var winning = await run.Next();
         var losing = await run.Next();
