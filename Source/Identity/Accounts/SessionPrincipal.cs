@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Globalization;
 using System.Security.Claims;
 using Cratis.Identity.Contracts;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -17,8 +18,9 @@ internal static class SessionPrincipal
     /// </summary>
     /// <param name="account">The signed-in <see cref="Account"/>.</param>
     /// <param name="upstreamScheme">The upstream scheme the account signed in through.</param>
+    /// <param name="authTime">When the upstream authentication of this session was verified.</param>
     /// <returns>The session <see cref="ClaimsPrincipal"/>.</returns>
-    public static ClaimsPrincipal For(Account account, string upstreamScheme)
+    public static ClaimsPrincipal For(Account account, string upstreamScheme, DateTimeOffset authTime)
     {
         var identity = new ClaimsIdentity(upstreamScheme, Claims.Name, Claims.Role);
         identity.AddClaim(new Claim(Claims.Subject, account.Id.Value));
@@ -26,8 +28,17 @@ internal static class SessionPrincipal
         identity.AddClaim(new Claim(IdentityClaims.GitHubId, account.GitHubId.Value));
         identity.AddClaim(new Claim(IdentityClaims.GitHubLogin, account.GitHubLogin.Value));
         identity.AddClaim(new Claim(Claims.PreferredUsername, account.GitHubLogin.Value));
+        identity.AddClaim(new Claim(Claims.AuthenticationTime, authTime.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64));
         return new ClaimsPrincipal(identity);
     }
+
+    /// <summary>
+    /// Gets the upstream authentication time of a session principal.
+    /// </summary>
+    /// <param name="principal">The session <see cref="ClaimsPrincipal"/>.</param>
+    /// <returns>The authentication time, or <see langword="null"/> if the principal carries none (such a session must sign in again).</returns>
+    public static DateTimeOffset? AuthTime(ClaimsPrincipal principal) =>
+        long.TryParse(principal.FindFirst(Claims.AuthenticationTime)?.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds) ? DateTimeOffset.FromUnixTimeSeconds(seconds) : null;
 
     /// <summary>
     /// Gets the account identifier of a session principal.

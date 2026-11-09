@@ -1,6 +1,8 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Contracts.Accounts;
+
 namespace Cratis.Identity.ConsentFlow.Deciding.given;
 
 internal class MemoryRequests : IConsentRequestStore
@@ -23,6 +25,15 @@ internal class MemoryRequests : IConsentRequestStore
         lock (_gate) return Task.FromResult(_rows.GetValueOrDefault(id));
     }
 
+    public Task<ConsentRequest?> FindPending(AccountSubject account, string session, string realm, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        lock (_gate)
+        {
+            return Task.FromResult(_rows.Values.Where(_ => _.Binding.Account == account && _.Binding.Session == session && _.Binding.Realm == realm &&
+                _.State == ConsentRequestState.Pending && _.Deadline > now).OrderByDescending(_ => _.CreatedAt).FirstOrDefault());
+        }
+    }
+
     public async Task<bool> CompareExchange(ConsentRequest expected, ConsentRequest replacement, DateTimeOffset now, CancellationToken cancellationToken)
     {
         if (BeforeCompareExchange is not null) await BeforeCompareExchange(expected, replacement);
@@ -42,14 +53,15 @@ internal class MemoryRequests : IConsentRequestStore
 
             if (!_rows.TryGetValue(expected.Id, out var current) || current != expected) return Complete(expected, replacement, false);
             if (!ConsentRequestTransitions.CanReplace(expected, replacement)) throw new InvalidOperationException("Invalid CAS");
-            if (IsExpiredActiveWrite(replacement, now)) return Complete(expected, replacement, false);
+            if (IsExpiredWrite(expected, replacement, now)) return Complete(expected, replacement, false);
             _rows[expected.Id] = replacement;
             return Complete(expected, replacement, true);
         }
     }
 
-    bool IsExpiredActiveWrite(ConsentRequest replacement, DateTimeOffset now) =>
-        replacement.State == ConsentRequestState.Active && (replacement.Deadline <= now || replacement.Deadline <= Clock.GetUtcNow());
+    bool IsExpiredWrite(ConsentRequest expected, ConsentRequest replacement, DateTimeOffset now) =>
+        ((expected.State == ConsentRequestState.Pending && replacement.State is ConsentRequestState.Decided or ConsentRequestState.Denied) || replacement.State == ConsentRequestState.Active) &&
+        (replacement.Deadline <= now || replacement.Deadline <= Clock.GetUtcNow());
 
     bool Complete(ConsentRequest expected, ConsentRequest replacement, bool won)
     {

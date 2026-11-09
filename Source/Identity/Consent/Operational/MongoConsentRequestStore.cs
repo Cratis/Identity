@@ -25,6 +25,7 @@ internal sealed class MongoConsentRequestStore(IMongoDatabase database) : IConse
         database.GetCollection<BsonDocument>(CollectionName).Indexes.CreateManyAsync(
         [
             new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("State").Ascending("_id")),
+            new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("Account").Ascending("Session").Ascending("Realm").Ascending("State").Descending("CreatedAt").Ascending("Deadline")),
             new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("PurgeAt"), new CreateIndexOptions { ExpireAfter = TimeSpan.Zero })
         ],
         cancellationToken);
@@ -32,7 +33,7 @@ internal sealed class MongoConsentRequestStore(IMongoDatabase database) : IConse
     /// <inheritdoc/>
     public async Task<bool> Create(ConsentRequest request, CancellationToken cancellationToken)
     {
-        if (request is not { State: ConsentRequestState.Pending, Revision: 0, AuthorizationId: null, CodeClaimed: false, PurgeAt: null }) return false;
+        if (request is not { State: ConsentRequestState.Pending, Revision: 0, AuthorizationId: null, CodeClaimed: false, PurgeAt: null, Selection: null }) return false;
         try
         {
             await _requests.InsertOneAsync(ToDocument(request), cancellationToken: cancellationToken);
@@ -52,6 +53,17 @@ internal sealed class MongoConsentRequestStore(IMongoDatabase database) : IConse
     }
 
     /// <inheritdoc/>
+    public async Task<ConsentRequest?> FindPending(AccountSubject account, string session, string realm, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var filter = Builders<BsonDocument>.Filter;
+        var condition = filter.Eq("Account", account.Value) & filter.Eq("Session", session) & filter.Eq("Realm", realm) &
+            filter.Eq("State", nameof(ConsentRequestState.Pending)) & filter.Gt("Deadline", new BsonDateTime(now.UtcDateTime)) &
+            new BsonDocument("$expr", new BsonDocument("$gt", new BsonArray { "$Deadline", "$$NOW" }));
+        var document = await _requests.Find(condition).Sort(Builders<BsonDocument>.Sort.Descending("CreatedAt")).FirstOrDefaultAsync(cancellationToken);
+        return document is null ? null : FromDocument(document);
+    }
+
+    /// <inheritdoc/>
     public async Task<bool> CompareExchange(ConsentRequest expected, ConsentRequest replacement, DateTimeOffset now, CancellationToken cancellationToken)
     {
         if (!ConsentRequestTransitions.CanReplace(expected, replacement)) return false;
@@ -60,7 +72,7 @@ internal sealed class MongoConsentRequestStore(IMongoDatabase database) : IConse
         condition &= expected.RecoveryEpoch == 0
             ? filter.Eq("RecoveryEpoch", 0L) | filter.Exists("RecoveryEpoch", false)
             : filter.Eq("RecoveryEpoch", expected.RecoveryEpoch);
-        if (replacement.State == ConsentRequestState.Active)
+        if (RequiresDeadline(expected.State, replacement.State))
         {
             condition &= filter.Gt("Deadline", new BsonDateTime(now.UtcDateTime)) &
                 new BsonDocument("$expr", new BsonDocument("$gt", new BsonArray { "$Deadline", "$$NOW" }));
@@ -84,6 +96,9 @@ internal sealed class MongoConsentRequestStore(IMongoDatabase database) : IConse
         return rows.Select(FromDocument).ToArray();
     }
 
+    static bool RequiresDeadline(ConsentRequestState before, ConsentRequestState after) =>
+        after == ConsentRequestState.Active || (before == ConsentRequestState.Pending && after is ConsentRequestState.Decided or ConsentRequestState.Denied);
+
     static BsonDocument ToDocument(ConsentRequest request)
     {
         var binding = request.Binding;
@@ -99,12 +114,14 @@ internal sealed class MongoConsentRequestStore(IMongoDatabase database) : IConse
             ["Session"] = binding.Session,
             ["AuthorizationRequest"] = binding.AuthorizationRequest.Value.ToString("D"),
             ["Deadline"] = new BsonDateTime(request.Deadline.UtcDateTime),
+            ["CreatedAt"] = new BsonDateTime(request.CreatedAt.UtcDateTime),
             ["State"] = request.State.ToString(),
             ["Revision"] = request.Revision,
             ["RecoveryEpoch"] = request.RecoveryEpoch,
             ["CodeClaimed"] = request.CodeClaimed,
             ["AuthorizationId"] = request.AuthorizationId is null ? BsonNull.Value : new BsonString(request.AuthorizationId)
         };
+        if (request.Selection is { } selection) document["Selection"] = new BsonDocument { ["Tenant"] = selection.Tenant, ["Scopes"] = selection.Scopes };
         if (request.PurgeAt is { } purgeAt) document["PurgeAt"] = new BsonDateTime(purgeAt.UtcDateTime);
         return document;
     }
@@ -118,5 +135,7 @@ internal sealed class MongoConsentRequestStore(IMongoDatabase database) : IConse
         document["AuthorizationId"].IsBsonNull ? null : document["AuthorizationId"].AsString,
         document["CodeClaimed"].AsBoolean,
         document.TryGetValue("PurgeAt", out var purgeAt) ? new DateTimeOffset(purgeAt.ToUniversalTime()) : null,
+        document.TryGetValue("CreatedAt", out var createdAt) ? new DateTimeOffset(createdAt.ToUniversalTime()) : default,
+        document.TryGetValue("Selection", out var selection) ? new(selection["Tenant"].AsString, selection["Scopes"].AsString) : null,
         document.TryGetValue("RecoveryEpoch", out var epoch) ? epoch.AsInt64 : 0);
 }

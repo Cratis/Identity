@@ -8,7 +8,7 @@ builder.Host.UseDefaultServiceProvider(options =>
     options.ValidateOnBuild = true;
 });
 
-builder.AddCratisArc();
+builder.AddCratisArc(options => options.GeneratedApis.SegmentsToSkipForRoute = 2);
 builder.AddCratisChronicle(options =>
 {
     options.EventStore = "Identity";
@@ -18,7 +18,9 @@ builder.AddCratisChronicle(options =>
 builder.AddCratisIdentity();
 
 var app = builder.Build();
-app.MapCratisIdentity();
+app.UseCratisIdentity();
+app.MapCratisIdentity(options => options.MapSignOut = true);
+app.MapGet("/healthz", () => Results.Text("ok"));
 app.UseCratisArc();
 app.UseCratisChronicle();
 await app.RunAsync();

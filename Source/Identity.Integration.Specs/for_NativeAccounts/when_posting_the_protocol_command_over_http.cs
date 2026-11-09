@@ -4,6 +4,7 @@
 using System.Net.Http.Json;
 using System.Security.Claims;
 using Cratis.Chronicle;
+using Cratis.Chronicle.Events;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Contracts.Accounts;
 using Microsoft.AspNetCore.Authentication;
@@ -48,11 +49,18 @@ public class when_posting_the_protocol_command_over_http(IdentityHost host)
         var handlersBefore = host.NativeCommands.HandlerInvocations;
         var route = "/api/accounts/signing-in/sign-in-with-upstream-key" + (validate ? "/validate" : string.Empty);
         using var response = await client.PostAsJsonAsync(route, new { OperationId = FactId.New().Value }, TestContext.Current.CancellationToken);
-        response.StatusCode.ShouldEqual(authenticated ? HttpStatusCode.Forbidden : HttpStatusCode.Unauthorized);
+        response.StatusCode.ShouldEqual(HttpStatusCode.Forbidden);
         host.NativeCommands.ArgumentResolutions.ShouldEqual(argumentsBefore);
         host.NativeCommands.HandlerInvocations.ShouldEqual(handlersBefore);
-        (await realm.EventLog.GetTailSequenceNumber()).ShouldEqual(before);
-        (await tenantStore.EventLog.GetTailSequenceNumber()).ShouldEqual(tenantBefore);
+
+        // Recovery and publication workers append their own facts concurrently, so the global tail is not stable; no account event may appear.
+        var accountEventTypes = typeof(Contracts.Accounts.Events.AccountEnabled).Assembly.GetTypes()
+            .Where(_ => _.Namespace?.StartsWith("Cratis.Identity.Contracts.Accounts", StringComparison.Ordinal) == true)
+            .Select(_ => _.GetCustomAttributes(typeof(EventTypeAttribute), false).Cast<EventTypeAttribute>().FirstOrDefault()?.Id.ToString())
+            .OfType<string>()
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var added = (await realm.EventLog.GetFromSequenceNumber(before.Next())).Concat(await tenantStore.EventLog.GetFromSequenceNumber(tenantBefore.Next()));
+        added.Where(_ => accountEventTypes.Contains(_.Context.EventType.Id.ToString())).ShouldBeEmpty();
         response.Headers.Contains("Set-Cookie").ShouldBeFalse();
     }
 }

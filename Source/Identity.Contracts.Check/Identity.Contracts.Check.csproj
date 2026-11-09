@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Cratis.Identity.Contracts.Check</AssemblyName>
+    <RootNamespace>Cratis.Identity.Contracts.Check</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Identity.Contracts/Identity.Contracts.csproj" />
+    <ProjectReference Include="../Identity/Identity.csproj" />
+    <ProjectReference Include="../Identity.FenceLog/Identity.FenceLog.csproj" />
+    <ProjectReference Include="../Identity.FenceLog.Mongo/Identity.FenceLog.Mongo.csproj" />
+    <ProjectReference Include="../Identity.Host/Identity.Host.csproj" />
+    <ProjectReference Include="../Identity.CratisId/Identity.CratisId.csproj" />
+    <InternalsVisibleTo Include="Cratis.Identity.Specs" />
+    <EmbeddedResource Include="catalogue/identity-events-v1.json" />
+    <EmbeddedResource Include="catalogue/event-schemas.json" />
+    <EmbeddedResource Include="fixtures/**/*.json">
+      <LogicalName>Cratis.Identity.Contracts.Check.$([System.String]::Copy('%(Identity)').Replace('/', '.').Replace('\', '.'))</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <!-- Always run: a solution/project change must not reuse a stale coverage result. -->
+  <Target Name="CheckEventContent" AfterTargets="Build">
+    <Exec Command="dotnet &quot;$(TargetPath)&quot; @(_ResolvedProjectReferencePaths->'&quot;%(FullPath)&quot;', ' ') &quot;$(MSBuildThisFileDirectory)../../Identity.slnx&quot;" />
+  </Target>
+</Project>

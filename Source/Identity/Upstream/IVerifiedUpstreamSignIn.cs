@@ -19,4 +19,9 @@ internal interface IVerifiedUpstreamSignIn
     /// Gets the observed profile, if supplied.
     /// </summary>
     ObservedProfile? Profile { get; }
+
+    /// <summary>
+    /// Gets the cancellation of the originating request, observed while waiting for read-model catch-up.
+    /// </summary>
+    CancellationToken CancellationToken { get; }
 }

@@ -47,8 +47,8 @@ public class when_persisting_a_consent_request : given.an_activation
             Arg.Any<ReplaceOptions>(),
             Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<ReplaceOneResult>(new ReplaceOneResult.Acknowledged(1, 1, null)));
-        _updated = await mongo.CompareExchange(_roundTrip, _roundTrip with { State = ConsentRequestState.Decided, Revision = 1 }, clock.Now, CancellationToken.None);
-        _epochChange = await mongo.CompareExchange(_roundTrip, _roundTrip with { State = ConsentRequestState.Decided, Revision = 1, RecoveryEpoch = 8 }, clock.Now, CancellationToken.None);
+        _updated = await mongo.CompareExchange(_roundTrip, _roundTrip with { State = ConsentRequestState.Decided, Revision = 1, Selection = new(binding.Tenant, binding.Scopes) }, clock.Now, CancellationToken.None);
+        _epochChange = await mongo.CompareExchange(_roundTrip, _roundTrip with { State = ConsentRequestState.Decided, Revision = 1, Selection = new(binding.Tenant, binding.Scopes), RecoveryEpoch = 8 }, clock.Now, CancellationToken.None);
         _invalidTransition = await mongo.CompareExchange(_roundTrip, _roundTrip with { State = ConsentRequestState.Active, Revision = 1, AuthorizationId = "injected" }, clock.Now, CancellationToken.None);
         var evidenced = _roundTrip with { State = ConsentRequestState.EvidenceRecorded, Revision = 2 };
         var active = evidenced with { State = ConsentRequestState.Active, Revision = 3, AuthorizationId = "prepared" };
@@ -58,7 +58,7 @@ public class when_persisting_a_consent_request : given.an_activation
     void CaptureFilter(FilterDefinition<BsonDocument> filter)
     {
         var document = filter.Render(new RenderArgs<BsonDocument>(BsonSerializer.SerializerRegistry.GetSerializer<BsonDocument>(), BsonSerializer.SerializerRegistry));
-        if (document.Contains("$expr")) _activeFilter = document;
+        if (document["State"].AsString == nameof(ConsentRequestState.EvidenceRecorded)) _activeFilter = document;
         else _filter = document;
     }
 
@@ -68,6 +68,9 @@ public class when_persisting_a_consent_request : given.an_activation
     [Fact] void should_round_trip_the_immutable_binding() => _roundTrip.ShouldEqual(request);
     [Fact] void should_use_the_request_identity_as_the_unique_document_id() => _inserted["_id"].AsString.ShouldEqual(request.Id.Value.ToString("D"));
     [Fact] void should_not_ttl_unresolved_work() => _inserted.Contains("PurgeAt").ShouldBeFalse();
+    [Fact] void should_guard_the_pending_decision_with_database_execution_time() => _filter["$expr"]["$gt"].AsBsonArray.ShouldEqual(new BsonArray { "$Deadline", "$$NOW" });
+    [Fact] void should_persist_the_immutable_creation_time() => _inserted["CreatedAt"].ToUniversalTime().ShouldEqual(request.CreatedAt.UtcDateTime);
+    [Fact] void should_persist_the_selection() => _replacement["Selection"]["Tenant"].AsString.ShouldEqual(binding.Tenant);
     [Fact] void should_persist_the_creation_epoch_in_the_insert() => _inserted["RecoveryEpoch"].AsInt64.ShouldEqual(7);
     [Fact] void should_compare_the_observed_epoch() => _filter["RecoveryEpoch"].AsInt64.ShouldEqual(7);
     [Fact] void should_read_a_legacy_row_as_epoch_zero() => _legacy.RecoveryEpoch.ShouldEqual(0);

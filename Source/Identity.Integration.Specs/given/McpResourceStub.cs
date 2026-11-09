@@ -26,7 +26,7 @@ public sealed class McpResourceStub : IAsyncDisposable
         {
             resource = IdentityHost.DirectMcp,
             authorization_servers = new[] { IdentityHost.Issuer },
-            scopes_supported = new[] { "direct:read" }
+            scopes_supported = new[] { "direct:mcp:read" }
         }));
         app.MapGet("/mcp", (Delegate)Protect);
     }

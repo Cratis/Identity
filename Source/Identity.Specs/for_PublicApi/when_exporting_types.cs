@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Configuration;
+using Cratis.Identity.Hosting;
 using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
@@ -24,7 +25,9 @@ public class when_exporting_types : Specification
             typeof(AccountsOptions),
             typeof(DeviceGrantOptions),
             typeof(DPoPOptions),
+            typeof(ExternalIssuerOptions),
             typeof(GitHubOptions),
+            typeof(IdentityEndpointOptions),
             typeof(IdentityOptions),
             typeof(IntrospectionClientOptions),
             typeof(MongoDBOptions),
@@ -33,7 +36,10 @@ public class when_exporting_types : Specification
             typeof(SecretStoreOptions),
             typeof(TenantOptions),
             typeof(TenantsCallbackOptions),
+            typeof(TokenExchangeClientOptions),
+            typeof(TokenExchangeOptions),
             typeof(TokenOptions),
+            typeof(TokenRateLimitOptions),
             typeof(UpstreamLoginOptions),
 
             // Emitted by the Arc source generator, not an Identity public API.

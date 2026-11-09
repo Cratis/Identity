@@ -38,7 +38,7 @@ public class a_token_store : Specification
         {
             Id = ObjectId.Parse("65ab56ef0123456789012345"),
             AuthorizationId = ObjectId.Parse("65ab56ef0123456789012346"),
-            Type = TokenTypeHints.RefreshToken,
+            Type = TokenTypeIdentifiers.RefreshToken,
             Subject = FenceDoubles.Subject,
             CreationDate = DateTime.UnixEpoch,
             ExpirationDate = DateTime.UnixEpoch.AddDays(30)

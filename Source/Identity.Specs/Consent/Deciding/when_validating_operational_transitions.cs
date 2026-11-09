@@ -28,7 +28,11 @@ public class when_validating_operational_transitions : given.an_activation
         _graphMatches = Enum.GetValues<ConsentRequestState>().All(before => Enum.GetValues<ConsentRequestState>().All(after =>
         {
             var source = Snapshot(before, 0);
-            var target = Snapshot(after, 1) with { CodeClaimed = before == ConsentRequestState.Active && after == ConsentRequestState.Active };
+            var target = Snapshot(after, 1) with
+            {
+                CodeClaimed = before == ConsentRequestState.Active && after == ConsentRequestState.Active,
+                Selection = before == ConsentRequestState.Pending ? Snapshot(after, 1).Selection : source.Selection
+            };
             return ConsentRequestTransitions.CanReplace(source, target) == allowed.Contains((before, after));
         }));
         var decision = Snapshot(ConsentRequestState.Decided, 1);
@@ -44,6 +48,7 @@ public class when_validating_operational_transitions : given.an_activation
     {
         State = state,
         Revision = revision,
+        Selection = state is ConsentRequestState.Pending or ConsentRequestState.Denied or ConsentRequestState.Abandoned ? null : new(binding.Tenant, binding.Scopes),
         AuthorizationId = state == ConsentRequestState.Active ? "authorization" : null,
         PurgeAt = state is ConsentRequestState.Denied or ConsentRequestState.Abandoned or ConsentRequestState.EvidenceWithheld ? clock.Now + options.TerminalRetention : null
     };

@@ -32,12 +32,14 @@ public class when_the_pipeline_throws : Specification
         var boundary = new ProtocolCommands(_services.GetRequiredService<IServiceScopeFactory>(), pipeline);
         try
         {
-            await boundary.Execute(new object(), provider =>
+            void Prepare(IServiceProvider provider)
             {
                 ProtocolCommandScope.IsActive.ShouldBeTrue();
                 IdentityRealmScope.IsActive.ShouldBeTrue();
                 provider.GetRequiredService<IDisposable>().ShouldEqual(_dependency);
-            });
+            }
+
+            await boundary.Execute(new object(), Prepare, CancellationToken.None);
         }
         catch (InvalidOperationException exception)
         {

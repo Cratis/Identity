@@ -10,7 +10,7 @@ public class for_the_granted_resource : given.a_grant_policy
 {
     NotGrantable? _result;
 
-    void Because() => _result = _policy.EvaluateTokenRequest([Configurations.DirectV1], [Configurations.DirectAudience]);
+    void Because() => _result = _policy.EvaluateTokenRequest([Configurations.DirectMcp], [Configurations.DirectAudience]);
 
     [Fact] void should_accept_it() => _result.ShouldBeNull();
 }

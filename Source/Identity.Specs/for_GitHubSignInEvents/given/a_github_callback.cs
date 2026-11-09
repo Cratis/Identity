@@ -24,7 +24,7 @@ public class a_github_callback : Specification
     {
         _account = new(AccountSubject.New(), "Synthetic User", null, "42", "synthetic-login", AccountStatus.Active, []);
         var signIn = Substitute.For<IAccountSignIn>();
-        signIn.SignIn(Arg.Any<VerifiedAuthentication>(), Arg.Do<ObservedProfile>(profile => _profile = profile)).Returns(_account);
+        signIn.SignIn(Arg.Any<VerifiedAuthentication>(), Arg.Do<ObservedProfile>(profile => _profile = profile), Arg.Any<CancellationToken>()).Returns(_account);
         using var http = new HttpClient(new ProfileHandler(response));
         using var token = OAuthTokenResponse.Success(JsonDocument.Parse("{\"access_token\":\"synthetic-test-token\"}"));
         using var user = JsonDocument.Parse("{}");

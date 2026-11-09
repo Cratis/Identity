@@ -17,6 +17,10 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
     public ValidateOptionsResult Validate(string? name, IdentityOptions options)
     {
         var failures = new List<string>();
+        if (options.SecurityOwners.Any(string.IsNullOrWhiteSpace))
+        {
+            failures.Add("Identity:SecurityOwners must contain only non-empty subjects.");
+        }
 
         if (!string.IsNullOrWhiteSpace(options.Issuer))
         {
@@ -36,6 +40,11 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
             failures.Add("The secret store reload interval must be between one second and five minutes.");
         }
 
+        if (options.Tokens.AccessTokenLifetime <= TimeSpan.Zero || options.Tokens.AccessTokenLifetime > TimeSpan.FromMinutes(10))
+        {
+            failures.Add("Identity:Tokens:AccessTokenLifetime must be positive and no greater than 00:10:00.");
+        }
+
         failures.AddRange(Duplicates(options.Resources.Select(_ => _.Audience), "audience"));
         failures.AddRange(Duplicates(options.Resources.SelectMany(_ => _.Indicators.Select(i => ResourceIndicator.Normalize(i) ?? i)), "resource indicator"));
         failures.AddRange(Duplicates(options.Resources.SelectMany(_ => _.Scopes.Select(s => s.Name)), "scope"));
@@ -48,6 +57,8 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
 
         ValidateDPoP(options.DPoP, environment.IsDevelopment(), failures);
         ValidateDeviceGrant(options.DeviceGrant, failures);
+        failures.AddRange(TokenExchangeOptionsValidation.Validate(options, environment.IsDevelopment()));
+        failures.AddRange(TokenRateLimitOptionsValidation.Validate(options.TokenRateLimit));
         ValidateAccounts(options.Accounts, failures);
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }
@@ -126,6 +137,11 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
         if (resource.Indicators.Count == 0)
         {
             yield return $"Resource server \"{resource.Audience}\" has no resource indicators.";
+        }
+
+        if (resource.Indicators.Count > 1)
+        {
+            yield return $"Resource server \"{resource.Audience}\" must have exactly one resource indicator.";
         }
 
         foreach (var indicator in resource.Indicators.Where(_ => ResourceIndicator.Normalize(_) is null))

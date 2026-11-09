@@ -52,15 +52,17 @@ internal sealed class DeviceVerificationEndpoint(SignedInAccounts accounts, IAnt
     {
         Secure(context.Response);
         if (!options.Value.DeviceGrant.Enabled) return Results.NotFound();
-        var account = await accounts.Find(context, new OpenIddictRequest());
-        if (account is null)
+        var path = context.Request.PathBase.Add(context.Request.Path).Value!;
+        var signedIn = await accounts.Find(context, new OpenIddictRequest());
+        if (signedIn is null)
         {
-            return Results.Challenge(new AuthenticationProperties { RedirectUri = "/device" }, [upstream.Value.Scheme]);
+            return Results.Challenge(new AuthenticationProperties { RedirectUri = path }, [upstream.Value.Scheme]);
         }
 
+        var account = signedIn.Account;
         if (HttpMethods.IsGet(context.Request.Method))
         {
-            return context.Request.Query.ContainsKey("done") ? DeviceGrantPages.Complete() : DeviceGrantPages.Entry(antiforgery.GetAndStoreTokens(context), IssuerHost(context));
+            return context.Request.Query.ContainsKey("done") ? DeviceGrantPages.Complete() : DeviceGrantPages.Entry(antiforgery.GetAndStoreTokens(context), IssuerHost(context), path);
         }
 
         if (!await antiforgery.IsRequestValidAsync(context)) return DeviceGrantPages.Unavailable();
@@ -89,11 +91,11 @@ internal sealed class DeviceVerificationEndpoint(SignedInAccounts accounts, IAnt
         if (action == "review")
         {
             var name = await applications.GetDisplayNameAsync(client, context.RequestAborted) ?? clientId!;
-            return DeviceGrantPages.Review(name, grant, DeviceGrantUserCode.Normalize(form[Parameters.UserCode], options.Value.DeviceGrant.UserCodeLength, options.Value.DeviceGrant.UserCodeCharset)!, approval.Create(binding), selectable, antiforgery.GetAndStoreTokens(context), IssuerHost(context), clientId, account.GitHubLogin.Value);
+            return DeviceGrantPages.Review(name, grant, DeviceGrantUserCode.Normalize(form[Parameters.UserCode], options.Value.DeviceGrant.UserCodeLength, options.Value.DeviceGrant.UserCodeCharset)!, approval.Create(binding), selectable, antiforgery.GetAndStoreTokens(context), IssuerHost(context), clientId, account.GitHubLogin.Value, path);
         }
 
         if ((action != "approve" && action != "deny") || !approval.Matches(form["proof"], binding)) return DeviceGrantPages.Unavailable();
-        var properties = new AuthenticationProperties { RedirectUri = "/device?done=1" };
+        var properties = new AuthenticationProperties { RedirectUri = $"{path}?done=1" };
         if (action == "deny")
         {
             properties.Items[OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.AccessDenied;
@@ -106,7 +108,7 @@ internal sealed class DeviceVerificationEndpoint(SignedInAccounts accounts, IAnt
         var tenant = selectable.FirstOrDefault(_ => string.Equals(_.Id, form["tenant"], StringComparison.Ordinal));
         if (tenant is null) return DeviceGrantPages.Unavailable();
         context.GetOpenIddictServerRequest()!.ClientId = clientId;
-        var identity = AccessTokenIdentity.Create(account, clientId, grant, tenant);
+        var identity = AccessTokenIdentity.Create(account, clientId, grant, tenant, signedIn.AuthTime);
         identity.SetPresenters(clientId);
         identity.SetClaim(Claims.Private.DeviceCodeId, principal.GetClaim(Claims.Private.DeviceCodeId));
         principal = new ClaimsPrincipal(identity);

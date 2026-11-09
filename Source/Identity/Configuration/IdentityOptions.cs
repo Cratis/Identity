@@ -21,6 +21,12 @@ public class IdentityOptions
     /// </remarks>
     public string Issuer { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets the subjects explicitly authorized to administer issuer client and resource registrations.
+    /// An empty list grants no administrative authority.
+    /// </summary>
+    public IList<string> SecurityOwners { get; set; } = [];
+
     /// <summary>Gets or sets the native account options.</summary>
     public AccountsOptions Accounts { get; set; } = new();
 
@@ -65,4 +71,14 @@ public class IdentityOptions
     /// Gets or sets the confidential clients resource servers use to call the introspection endpoint.
     /// </summary>
     public IList<IntrospectionClientOptions> IntrospectionClients { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the RFC 8693 token-exchange configuration. Empty by default, which leaves the grant disabled.
+    /// </summary>
+    public TokenExchangeOptions TokenExchange { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the per-process token endpoint admission limits.
+    /// </summary>
+    public TokenRateLimitOptions TokenRateLimit { get; set; } = new();
 }

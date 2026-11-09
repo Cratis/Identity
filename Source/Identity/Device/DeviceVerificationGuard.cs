@@ -51,7 +51,7 @@ internal sealed class DeviceVerificationGuard(IHttpContextAccessor accessor, IAn
             return;
         }
 
-        if (!await rates.Verify(context.UserCode, account.Id.Value, http.Connection.RemoteIpAddress?.ToString(), context.CancellationToken))
+        if (!await rates.Verify(context.UserCode, account.Account.Id.Value, http.Connection.RemoteIpAddress?.ToString(), context.CancellationToken))
         {
             http.Response.StatusCode = StatusCodes.Status429TooManyRequests;
             http.Response.Headers.RetryAfter = "300";

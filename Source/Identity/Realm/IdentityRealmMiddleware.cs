@@ -7,6 +7,7 @@ using Cratis.Arc.Commands.ModelBound;
 using Cratis.Arc.Http;
 using Cratis.Arc.Queries.ModelBound;
 using Cratis.Identity.Configuration;
+using Cratis.Identity.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.Realm;
@@ -17,14 +18,17 @@ internal sealed class IdentityRealmMiddleware
     readonly RequestDelegate _next;
     readonly PathString[] _prefixes;
     readonly bool _deviceEnabled;
+    readonly IdentityEndpointOptions _endpoints;
 
     /// <summary>Initializes realm route matching from the same options as Arc.</summary>
     /// <param name="next">The next middleware.</param>
     /// <param name="options">Arc endpoint options.</param>
+    /// <param name="identityEndpoints">Identity endpoint paths.</param>
     /// <param name="identity">The opt-in device route configuration.</param>
-    public IdentityRealmMiddleware(RequestDelegate next, IOptions<ArcOptions> options, IOptions<IdentityOptions>? identity = null)
+    public IdentityRealmMiddleware(RequestDelegate next, IOptions<ArcOptions> options, IOptions<IdentityEndpointOptions>? identityEndpoints = null, IOptions<IdentityOptions>? identity = null)
     {
         _next = next;
+        _endpoints = identityEndpoints?.Value ?? new IdentityEndpointOptions();
         _deviceEnabled = identity?.Value.DeviceGrant.Enabled == true;
         var endpoints = options.Value.GeneratedApis;
         _prefixes = typeof(IdentityRealmMiddleware).Assembly.GetTypes()
@@ -39,11 +43,7 @@ internal sealed class IdentityRealmMiddleware
     public async Task InvokeAsync(HttpContext context)
     {
         var type = context.GetEndpoint()?.Metadata.GetMetadata<EndpointMetadata>()?.RequestBodyType;
-        var path = context.Request.Path;
-        var identity = type?.Namespace?.StartsWith("Cratis.Identity.", StringComparison.Ordinal) == true ||
-            path.StartsWithSegments("/connect") || (_deviceEnabled && path == "/device") || path.StartsWithSegments("/.well-known") ||
-            path.StartsWithSegments("/signin-github") || path.StartsWithSegments("/logout") ||
-            _prefixes.Any(path.StartsWithSegments);
+        var identity = type?.Namespace?.StartsWith("Cratis.Identity.", StringComparison.Ordinal) == true || IsIdentityPath(context.Request.Path);
         if (!identity)
         {
             await _next(context);
@@ -53,4 +53,31 @@ internal sealed class IdentityRealmMiddleware
         using var realm = IdentityRealmScope.Begin();
         await _next(context);
     }
+
+    bool IsIdentityPath(PathString path)
+    {
+        if (IdentityEndpointOptions.HasUnsafeSegments(path.Value ?? string.Empty))
+        {
+            return false;
+        }
+
+        if (MatchesUnprefixedRoute(path))
+        {
+            return true;
+        }
+
+        if (_endpoints.RoutePrefix.HasValue && !path.StartsWithSegments(_endpoints.RoutePrefix, out path))
+        {
+            return false;
+        }
+
+        return MatchesPrefixedRoute(path);
+    }
+
+    bool MatchesUnprefixedRoute(PathString path) => path.StartsWithSegments("/.well-known") ||
+        path.StartsWithSegments("/signin-github") || _prefixes.Any(path.StartsWithSegments);
+
+    bool MatchesPrefixedRoute(PathString path) => path.StartsWithSegments("/connect") ||
+        (_deviceEnabled && path == "/device") ||
+        (_endpoints.MapSignOut && path.StartsWithSegments("/logout"));
 }

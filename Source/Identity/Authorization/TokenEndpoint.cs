@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Accounts;
+using Cratis.Identity.Authorization.TokenExchange;
 using Cratis.Identity.Contracts;
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Device;
@@ -29,6 +30,7 @@ namespace Cratis.Identity.Authorization;
 /// <param name="logger">The <see cref="ILogger"/>.</param>
 /// <param name="fences">The primary grant authority.</param>
 /// <param name="deviceAdmission">The device recovery and epoch checks.</param>
+/// <param name="exchange">The RFC 8693 <see cref="TokenExchangeGrant"/>.</param>
 internal class TokenEndpoint(
     IAccountReader accounts,
     IGrantPolicy grantPolicy,
@@ -36,7 +38,8 @@ internal class TokenEndpoint(
     ITenantDirectory tenants,
     ILogger<TokenEndpoint> logger,
     IFenceStore fences,
-    DeviceGrantAdmission deviceAdmission)
+    DeviceGrantAdmission deviceAdmission,
+    TokenExchangeGrant exchange)
 {
     /// <summary>
     /// Handles a token request.
@@ -47,6 +50,11 @@ internal class TokenEndpoint(
     public async Task<IResult> Handle(HttpContext context)
     {
         var request = context.GetOpenIddictServerRequest() ?? throw new OpenIddictRequestMissing(context.Request.Path);
+        if (string.Equals(request.GrantType, TokenExchangeConstants.GrantType, StringComparison.Ordinal))
+        {
+            return await exchange.Handle(request, context.RequestAborted);
+        }
+
         if (!request.IsAuthorizationCodeGrantType() && !request.IsRefreshTokenGrantType() && !request.IsDeviceCodeGrantType())
         {
             return OAuthResults.Error(Errors.UnsupportedGrantType, "The grant type is not supported.");
@@ -115,6 +123,13 @@ internal class TokenEndpoint(
         // Offline access JWTs retain the accepted 630-second lifetime+skew window after a fence.
         // Online refresh admission is decided again by the single-document consume/install CAS.
         // A known non-current entry must reach redemption so concurrent reuse fences the family.
-        return OAuthResults.Issue(AccessTokenIdentity.Renew(granted, account, request.ClientId!));
+        // A grant without its original authentication time cannot be renewed: auth_time is never invented from the current time.
+        if (AccessTokenIdentity.AuthTimeOf(granted) is null)
+        {
+            return OAuthResults.Error(Errors.InvalidGrant, "The refresh token is no longer valid.");
+        }
+
+        var receivesUpstreamIdentity = grantedAudiences.All(_ => resources.FindByAudience(_)?.ReceivesUpstreamIdentity == true);
+        return OAuthResults.Issue(AccessTokenIdentity.Renew(granted, account, request.ClientId!, receivesUpstreamIdentity));
     }
 }

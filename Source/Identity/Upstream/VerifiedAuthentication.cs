@@ -18,7 +18,7 @@ internal sealed class VerifiedAuthentication
     {
         ConnectionId = connectionId;
         IdpIssuer = issuer;
-        Subject = subject;
+        Subject = UpstreamSubject.Create(subject.Value);
         AuthTime = authTime;
         OperationId = operationId;
     }

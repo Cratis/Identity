@@ -17,12 +17,13 @@ internal static class DeviceGrantPages
     /// <param name="csrf">The session's antiforgery token.</param>
     /// <returns>The entry page.</returns>
     /// <param name="issuer">The trusted issuer host.</param>
-    internal static IResult Entry(AntiforgeryTokenSet csrf, string issuer) => Page(
+    /// <param name="path">The prefixed verification path.</param>
+    internal static IResult Entry(AntiforgeryTokenSet csrf, string issuer, string path = "/device") => Page(
         Header(issuer) +
         "<h1>Connect a device</h1>" +
         "<p>Enter the code shown on the device you are connecting.</p>" +
         Warning +
-        "<form method=\"post\" action=\"/device\">" + Csrf(csrf) +
+        $"<form method=\"post\" action=\"{Encode(path)}\">" + Csrf(csrf) +
         "<input name=\"user_code\" maxlength=\"64\" autocomplete=\"off\" required>" +
         "<button name=\"action\" value=\"review\">Review request</button></form>");
 
@@ -37,14 +38,15 @@ internal static class DeviceGrantPages
     /// <param name="issuer">The trusted issuer host.</param>
     /// <param name="clientId">The asserted public client identifier.</param>
     /// <param name="login">The signed-in GitHub login.</param>
-    internal static IResult Review(string client, Grant grant, string code, string proof, IEnumerable<SelectableTenant> tenants, AntiforgeryTokenSet csrf, string issuer, string clientId, string login) => Page(
+    /// <param name="path">The prefixed verification path.</param>
+    internal static IResult Review(string client, Grant grant, string code, string proof, IEnumerable<SelectableTenant> tenants, AntiforgeryTokenSet csrf, string issuer, string clientId, string login, string path = "/device") => Page(
         Header(issuer) +
         $"<h1>Approve device access</h1><p>Client: {Encode(client)} <code>{Encode(clientId)}</code></p>" +
         $"<p>Signed in as <strong>{Encode(login)}</strong> (GitHub).</p>" +
         $"<p>Resource: {Encode(grant.Resource.DisplayName)} ({Encode(grant.Resource.Audience)})</p>" +
         "<ul>" + ScopeDescriptions(grant) + "</ul>" +
         Warning +
-        "<form method=\"post\" action=\"/device\">" + Csrf(csrf) +
+        $"<form method=\"post\" action=\"{Encode(path)}\">" + Csrf(csrf) +
         $"<input type=\"hidden\" name=\"user_code\" value=\"{Encode(code)}\">" +
         $"<input type=\"hidden\" name=\"proof\" value=\"{Encode(proof)}\">" +
         "<label>Tenant <select name=\"tenant\" required>" + TenantOptions(tenants) + "</select></label>" +

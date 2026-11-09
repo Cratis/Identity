@@ -23,7 +23,7 @@ public class when_device_authorization_is_disabled : Specification
                 return Task.CompletedTask;
             },
             Options.Create(new ArcOptions()),
-            Options.Create(new IdentityOptions()));
+            identity: Options.Create(new IdentityOptions()));
         var context = new DefaultHttpContext();
         context.Request.Path = "/device";
         await middleware.InvokeAsync(context);

@@ -17,7 +17,7 @@ public class when_reappending_the_independent_log(IdentityHost host) : IAsyncLif
     public async ValueTask InitializeAsync()
     {
         var log = await FenceLogDatabase.Create(host);
-        var store = new MongoFenceStore(host.Database, TimeProvider.System, log);
+        var store = new MongoFenceStore(FenceLogDatabase.Operational(host), TimeProvider.System, log);
         _fence = await store.Commit(Guid.NewGuid().ToString("D"), Guid.NewGuid().ToString("D"), RevocationReason.Revoked, CancellationToken.None);
         var state = await store.Read(_fence.GrantId, CancellationToken.None);
         var record = FenceRecordFactory.Record(state);

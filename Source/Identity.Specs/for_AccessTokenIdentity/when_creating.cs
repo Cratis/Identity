@@ -7,6 +7,7 @@ using Cratis.Identity.Contracts;
 using Cratis.Identity.given;
 using Cratis.Identity.Tenants;
 using OpenIddict.Abstractions;
+using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Cratis.Identity.for_AccessTokenIdentity;
 
@@ -14,10 +15,23 @@ public class when_creating : given.an_account_and_a_grant
 {
     ClaimsIdentity _identity;
 
-    void Because() => _identity = AccessTokenIdentity.Create(_account, ClientId, _grant, new SelectableTenant("cratis", "Cratis"));
+    void Because() => _identity = AccessTokenIdentity.Create(_account, ClientId, _grant, new SelectableTenant("cratis", "Cratis"), AuthTime);
 
+    [Fact] void should_carry_the_upstream_authentication_time() => _identity.GetClaim(Claims.AuthenticationTime).ShouldEqual("1700000000");
+    [Fact] void should_carry_the_authentication_time_as_an_integer() => _identity.FindFirst(Claims.AuthenticationTime).ValueType.ShouldEqual(ClaimValueTypes.Integer64);
+    [Fact] void should_carry_basic_assurance() => _identity.GetClaim(Claims.AuthenticationContextReference).ShouldEqual("basic");
+    [Fact] void should_send_auth_time_only_to_the_access_token() => _identity.FindFirst(Claims.AuthenticationTime).GetDestinations().ShouldContainOnly("access_token");
+    [Fact] void should_send_acr_only_to_the_access_token() => _identity.FindFirst(Claims.AuthenticationContextReference).GetDestinations().ShouldContainOnly("access_token");
     [Fact] void should_use_the_canonical_account_id_as_subject() => _identity.GetClaim("sub").ShouldEqual(_account.Id.Value);
     [Fact] void should_carry_the_github_id() => _identity.GetClaim(IdentityClaims.GitHubId).ShouldEqual("134365");
+    [Fact] void should_carry_the_github_issuer_as_idp() => _identity.GetClaim(IdentityClaims.Idp).ShouldEqual("https://github.com");
+    [Fact] void should_carry_the_github_id_as_idp_sub() => _identity.GetClaim(IdentityClaims.IdpSub).ShouldEqual("134365");
+    [Fact] void should_send_idp_only_to_the_access_token() => _identity.FindFirst(IdentityClaims.Idp).GetDestinations().ShouldContainOnly("access_token");
+    [Fact] void should_send_idp_sub_only_to_the_access_token() => _identity.FindFirst(IdentityClaims.IdpSub).GetDestinations().ShouldContainOnly("access_token");
+    [Fact] void should_carry_the_preferred_username_for_an_upstream_identity_consumer() => _identity.GetClaim(Claims.PreferredUsername).ShouldEqual("einari");
+    [Fact] void should_send_the_preferred_username_only_to_the_access_token() => _identity.FindFirst(Claims.PreferredUsername).GetDestinations().ShouldContainOnly("access_token");
+    [Fact] void should_carry_the_display_name_as_name() => _identity.GetClaim(Claims.Name).ShouldEqual("Einar Ingebrigtsen");
+    [Fact] void should_send_the_name_only_to_the_access_token() => _identity.FindFirst(Claims.Name).GetDestinations().ShouldContainOnly("access_token");
     [Fact] void should_carry_the_github_login() => _identity.GetClaim(IdentityClaims.GitHubLogin).ShouldEqual("einari");
     [Fact] void should_carry_the_selected_tenant() => _identity.GetClaim(IdentityClaims.TenantId).ShouldEqual("cratis");
     [Fact] void should_carry_the_client_as_authorized_party() => _identity.GetClaim("azp").ShouldEqual(ClientId);

@@ -6,6 +6,8 @@ using Cratis.Identity.Accounts;
 using Cratis.Identity.Accounts.Linking;
 using Cratis.Identity.Accounts.Lookup;
 using Cratis.Identity.Authorization;
+using Cratis.Identity.Authorization.RateLimiting;
+using Cratis.Identity.Authorization.TokenExchange;
 using Cratis.Identity.Clients;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.ConsentFlow;
@@ -51,6 +53,7 @@ internal static class IdentityServiceCollectionExtensions
     /// <returns>The <see cref="IServiceCollection"/> for continuation.</returns>
     /// <exception cref="KeysInConfiguration">Thrown when a signing or encryption certificate is still configured.</exception>
     /// <exception cref="SecretStoreNotConfigured">Thrown outside development without a secret store.</exception>
+    /// <exception cref="OptionsValidationException">The hosted-shared preset has missing or invalid production settings.</exception>
     /// <exception cref="ChronicleNotConfigured">The native account path has no configured Chronicle client.</exception>
     /// <exception cref="InvalidMongoDBConnectionString">Thrown when the MongoDB client is first resolved with a connection string that cannot be parsed.</exception>
     internal static IServiceCollection AddCratisIdentity(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
@@ -64,6 +67,16 @@ internal static class IdentityServiceCollectionExtensions
             throw new KeysInConfiguration($"{IdentityOptions.SectionName}:{setting}");
         }
 
+        var hostedValidation = new HostedSharedConfiguration(configuration, environment).Validate(null, startupOptions);
+        if (hostedValidation.Failed)
+        {
+            throw new OptionsValidationException(Options.DefaultName, typeof(IdentityOptions), hostedValidation.Failures);
+        }
+
+        // Entirely unconfigured optional resources are disabled once, here, so every consumer and every reload sees the same catalog.
+        var disabledAudiences = new HostedSharedConfiguration(configuration, environment).DisabledAudiences(startupOptions);
+        HostedSharedConfiguration.Remove(startupOptions, disabledAudiences);
+
         if (!environment.IsDevelopment() && !startupOptions.SecretStore.IsConfigured)
         {
             throw new SecretStoreNotConfigured();
@@ -74,11 +87,20 @@ internal static class IdentityServiceCollectionExtensions
             throw new ChronicleNotConfigured();
         }
 
-        services.AddOptions<IdentityOptions>().Bind(section).ValidateOnStart();
+        services.AddOptions<IdentityOptions>().Bind(section).PostConfigure(options => HostedSharedConfiguration.Remove(options, disabledAudiences)).ValidateOnStart();
+        if (disabledAudiences.Count > 0)
+        {
+            services.AddHostedService(provider => new DisabledResourcesNotice(provider.GetRequiredService<ILogger<DisabledResourcesNotice>>(), disabledAudiences));
+        }
+
+        services.AddOptions<DeviceGrantOptions>().Bind(section.GetSection("Device"));
         services.AddSingleton<IValidateOptions<IdentityOptions>, IdentityOptionsValidation>();
         services.AddSingleton(TimeProvider.System);
 
         AddRealmNamespaceResolver(services);
+
+        // Protected-decision commands (sign-in) need the command-aware Chronicle decision reader.
+        services.AddCommandAwareDecisionReads();
         services.AddStorage();
         services.AddSecretStoreKeys(startupOptions);
         services.AddDomain(configuration, startupOptions.DeviceGrant.Enabled);
@@ -86,7 +108,8 @@ internal static class IdentityServiceCollectionExtensions
         services.AddConsentActivation(configuration.GetSection("Identity:ConsentActivation"));
 
         services.AddSessionAndUpstreamLogin(environment);
-        services.AddAuthorizationServer(startupOptions, environment);
+        services.AddIdentityAuthorization();
+        services.AddAuthorizationServer(startupOptions, configuration, environment);
         if (startupOptions.DPoP.Enabled)
         {
             services.AddScoped<DPoPBinding>();
@@ -96,6 +119,24 @@ internal static class IdentityServiceCollectionExtensions
             services.AddSingleton<IDPoPReplayStore, MongoDPoPReplayStore>();
         }
 
+        return services;
+    }
+
+    /// <summary>Adds the explicit issuer security owner authorization policy.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The service collection for further configuration.</returns>
+    internal static IServiceCollection AddIdentityAuthorization(this IServiceCollection services)
+    {
+        services.AddAuthorization();
+        services.AddOptions<Microsoft.AspNetCore.Authorization.AuthorizationOptions>()
+            .Configure<IOptions<IdentityOptions>>((authorization, identity) =>
+                authorization.AddPolicy(IdentityPolicies.IssuerSecurityOwner, policy => policy
+                    .AddAuthenticationSchemes(IdentitySchemes.Session)
+                    .RequireAuthenticatedUser()
+                    .RequireAssertion(context => context.User.Identities
+                        .Where(_ => _.IsAuthenticated)
+                        .SelectMany(_ => _.FindAll(Claims.Subject))
+                        .Any(subject => identity.Value.SecurityOwners.Contains(subject.Value, StringComparer.Ordinal)))));
         return services;
     }
 
@@ -113,6 +154,7 @@ internal static class IdentityServiceCollectionExtensions
         services.AddSingleton<VerifiedKeyGate>();
         services.AddScoped<AccountStore>();
         services.AddScoped<UpstreamLookups>();
+        services.AddScoped<IUpstreamKeyResolver, UpstreamKeyResolver>();
         services.AddScoped<AccountReader>();
         services.AddScoped<IAccountReader>(provider => provider.GetRequiredService<AccountReader>());
         services.AddScoped<EventSourcedAccountAdapter>();
@@ -173,6 +215,11 @@ internal static class IdentityServiceCollectionExtensions
         services.TryAddScoped<IConsentEvidence, UnavailableConsentServices>();
         services.TryAddScoped<IRevocationFence, UnavailableConsentServices>();
         services.TryAddScoped<IAuthorizationActivator, UnavailableConsentServices>();
+        services.TryAddScoped<ICurrentConsentSession, UnavailableConsentSession>();
+        services.TryAddScoped<IConsentEligibility, ConsentEligibilityReader>();
+        services.TryAddSingleton<IConsentProof, ConsentProof>();
+        services.TryAddScoped<ConsentCaller>();
+        services.TryAddScoped<ConsentInteraction>();
         services.TryAddScoped<ConsentActivation>();
         services.AddHostedService<ConsentReconciler>();
     }
@@ -258,6 +305,14 @@ internal static class IdentityServiceCollectionExtensions
             services.AddScoped<DeviceVerificationEndpoint>();
             services.AddSingleton<DeviceGrantApproval>();
         }
+        services.AddScoped<TokenExchangeGrant>();
+        services.AddSingleton<ISubjectTokenReplayGuard, MongoSubjectTokenReplayGuard>();
+        services.AddSingleton<TokenRequestRateLimiter>();
+        services.AddSingleton<ISubjectTokenValidator, SubjectTokenValidator>();
+        services.AddSingleton<IExternalIssuerKeys, ExternalIssuerKeys>();
+        services.AddHttpClient(ExternalIssuerKeys.HttpClientName)
+            .ConfigurePrimaryHttpMessageHandler(ExternalIssuerKeys.CreateHandler)
+            .RemoveAllLoggers();
         services.AddSingleton(configuration.GetSection("Identity:FenceLog").Get<FenceLogOptions>() ?? new FenceLogOptions());
         services.AddSingleton<IndependentFenceLogConnection>();
         services.AddSingleton(sp => new MongoIndependentFenceLog(() => sp.GetRequiredService<IndependentFenceLogConnection>().Database, sp.GetRequiredService<TimeProvider>(), () => sp.GetRequiredService<RecoverySession>().Verified));
@@ -284,8 +339,9 @@ internal static class IdentityServiceCollectionExtensions
         services.AddScoped<GrantRevocation>();
     }
 
-    static void AddAuthorizationServer(this IServiceCollection services, IdentityOptions startupOptions, IHostEnvironment environment)
+    static void AddAuthorizationServer(this IServiceCollection services, IdentityOptions startupOptions, IConfiguration configuration, IHostEnvironment environment)
     {
+        var endpoints = services.AddIdentityEndpoints(configuration);
         if (!environment.IsDevelopment() && string.IsNullOrWhiteSpace(startupOptions.Issuer))
         {
             throw new IssuerNotConfigured();
@@ -300,12 +356,13 @@ internal static class IdentityServiceCollectionExtensions
             .AddServer(options =>
             {
                 options
-                    .SetAuthorizationEndpointUris("connect/authorize")
-                    .SetTokenEndpointUris("connect/token")
-                    .SetRevocationEndpointUris("connect/revocation")
-                    .SetIntrospectionEndpointUris("connect/introspect")
+                    .SetAuthorizationEndpointUris($"{endpoints.RoutePrefix}/connect/authorize".TrimStart('/'))
+                    .SetTokenEndpointUris($"{endpoints.RoutePrefix}/connect/token".TrimStart('/'))
+                    .SetRevocationEndpointUris($"{endpoints.RoutePrefix}/connect/revocation".TrimStart('/'))
+                    .SetIntrospectionEndpointUris($"{endpoints.RoutePrefix}/connect/introspect".TrimStart('/'))
                     .AllowAuthorizationCodeFlow()
                     .AllowRefreshTokenFlow()
+                    .AddTokenExchangeFlow(startupOptions)
                     .RequireProofKeyForCodeExchange()
                     .DisableSlidingRefreshTokenExpiration()
                     .SetRefreshTokenReuseLeeway(null)
@@ -314,8 +371,8 @@ internal static class IdentityServiceCollectionExtensions
                 if (startupOptions.DeviceGrant.Enabled)
                 {
                     options.AllowDeviceAuthorizationFlow()
-                        .SetDeviceAuthorizationEndpointUris("connect/device")
-                        .SetEndUserVerificationEndpointUris("device")
+                        .SetDeviceAuthorizationEndpointUris($"{endpoints.RoutePrefix}/connect/device".TrimStart('/'))
+                        .SetEndUserVerificationEndpointUris($"{endpoints.RoutePrefix}/device".TrimStart('/'))
                         .AddEventHandler<OpenIddictServerEvents.HandleDeviceAuthorizationRequestContext>(builder => builder.UseInlineHandler(context =>
                         {
                             context.SkipRequest();

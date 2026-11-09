@@ -23,8 +23,8 @@ internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginO
     /// </summary>
     /// <param name="context">The <see cref="HttpContext"/>.</param>
     /// <param name="request">The <see cref="OpenIddictRequest"/>.</param>
-    /// <returns>The <see cref="Account"/>, or <see langword="null"/> when the user must sign in (again).</returns>
-    public async Task<Account?> Find(HttpContext context, OpenIddictRequest request)
+    /// <returns>The <see cref="Account"/> with its upstream authentication time, or <see langword="null"/> when the user must sign in (again), including a session without an authentication time.</returns>
+    public async Task<SignedInAccount?> Find(HttpContext context, OpenIddictRequest request)
     {
         var session = await context.AuthenticateAsync(IdentitySchemes.Session);
         if (!session.Succeeded || request.HasPromptValue(PromptValues.Login))
@@ -33,7 +33,14 @@ internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginO
         }
 
         var accountId = SessionPrincipal.AccountId(session.Principal);
-        return AccountSubject.TryParse(accountId, out var subject) ? await accounts.FindActive(subject!, context.RequestAborted) : null;
+        var authTime = SessionPrincipal.AuthTime(session.Principal);
+        if (authTime is null || !AccountSubject.TryParse(accountId, out var subject))
+        {
+            return null;
+        }
+
+        var account = await accounts.FindActive(subject!, context.RequestAborted);
+        return account is null ? null : new SignedInAccount(account, authTime.Value);
     }
 
     /// <summary>

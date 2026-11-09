@@ -26,8 +26,8 @@ public class when_projection_progress_times_out(IdentityHost host) : IAsyncLifet
         var provider = scope.ServiceProvider;
         var adapter = provider.GetRequiredService<EventSourcedAccountAdapter>();
         var connection = new GitHubConnection(GitHubConnection.FixedConnectionId, provider.GetRequiredService<TimeProvider>());
-        var user = new GitHubUser(987654323, "progress-timeout", "Before Timeout");
-        var initial = await adapter.SignIn(connection.From(user, FactId.New()), new(null, "Before Timeout", "progress-timeout"));
+        var user = new GitHubUser(given.UpstreamUserIds.Next(), "progress-timeout", "Before Timeout");
+        var initial = await adapter.SignIn(connection.From(user, FactId.New()), new(null, "Before Timeout", "progress-timeout"), TestContext.Current.CancellationToken);
         var store = provider.GetRequiredService<IEventStore>();
         var position = await provider.GetRequiredService<IObserverProgress>().Position(typeof(Account));
         host.ProjectionProgress.Freeze(typeof(Account), position);
@@ -38,7 +38,7 @@ public class when_projection_progress_times_out(IdentityHost host) : IAsyncLifet
             _before = await store.EventLog.GetTailSequenceNumber(eventSourceId: initial.Id.Value);
             try
             {
-                _sessionAccount = await adapter.SignIn(connection.From(user, FactId.New()), new(null, "Must Not Append", "progress-timeout"));
+                _sessionAccount = await adapter.SignIn(connection.From(user, FactId.New()), new(null, "Must Not Append", "progress-timeout"), TestContext.Current.CancellationToken);
             }
             catch (AccountOperationRefused refusal)
             {

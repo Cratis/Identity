@@ -30,6 +30,7 @@ public class when_a_tenant_request_completes_the_github_callback(IdentityHost ho
             services.PostConfigure<UpstreamLoginOptions>(options => options.Scheme = IdentitySchemes.GitHub);
             services.PostConfigure<OAuthOptions>(IdentitySchemes.GitHub, options => options.Backchannel = upstream);
         }));
+        await IdentityHost.WaitForRecovery(oauthHost.Services);
         using var client = oauthHost.CreateClient(new WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false,

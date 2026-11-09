@@ -1,6 +1,8 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Reflection;
+
 namespace Cratis.Identity.Protocol.Stores;
 
 public class when_attempting_to_write_configuration_stores : given.a_configuration_catalog
@@ -21,6 +23,23 @@ public class when_attempting_to_write_configuration_stores : given.a_configurati
         _errors.Add(await Catch.Exception(async () => await Scopes.SetNameAsync(scope, Secret, CancellationToken.None)));
         _errors.Add(await Catch.Exception(async () => await Applications.InstantiateAsync(CancellationToken.None)));
         _errors.Add(await Catch.Exception(async () => await Scopes.InstantiateAsync(CancellationToken.None)));
+    }
+
+    [Fact] void should_refuse_every_application_mutator() => AssertReadOnly(Applications);
+    [Fact] void should_refuse_every_scope_mutator() => AssertReadOnly(Scopes);
+
+    static void AssertReadOnly(object store)
+    {
+        var mutators = store.GetType().GetMethods().Where(method =>
+            method.Name.StartsWith("Set", StringComparison.Ordinal) ||
+            new[] { "CreateAsync", "DeleteAsync", "UpdateAsync", "InstantiateAsync" }.Contains(method.Name, StringComparer.Ordinal)).ToArray();
+        mutators.Length.ShouldBeGreaterThan(0);
+        foreach (var method in mutators)
+        {
+            var arguments = method.GetParameters().Select(parameter => parameter.ParameterType.IsValueType ? Activator.CreateInstance(parameter.ParameterType) : null).ToArray();
+            var exception = Assert.Throws<TargetInvocationException>(() => method.Invoke(store, arguments));
+            Assert.IsType<NotSupportedException>(exception.InnerException);
+        }
     }
 
     [Fact] void should_reject_every_write() => _errors.TrueForAll(_ => _ is NotSupportedException).ShouldBeTrue();

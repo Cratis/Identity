@@ -25,11 +25,11 @@ It is built on [OpenIddict](https://documentation.openiddict.com/) 7 as an embed
 
 | Package | Contents |
 | --- | --- |
-| `Cratis.Identity` | The module: OpenIddict server, stores, `AddCratisIdentity()` and `MapCratisIdentity()`. |
+| `Cratis.Identity` | The module: OpenIddict server, stores, `AddCratisIdentity()`, `UseCratisIdentity()` and `MapCratisIdentity()`. |
 | `Cratis.Identity.Contracts` | The contracts a resource server reads, such as the access token claim types. |
 | `@cratis/identity` | TypeScript proxies generated from the module by the Arc proxy generator. |
 
-CI builds and packs all three as artifacts. Nothing is published until the W0 specs (#24, #26) are locked. The supported surface is `AddCratisIdentity`, `MapCratisIdentity` and the `Identity` configuration section; other public types are implementation detail and may become internal.
+CI builds and packs all three as artifacts. Nothing is published until the W0 specs (#24, #26) are locked. The supported surface is `AddCratisIdentity`, `UseCratisIdentity`, `MapCratisIdentity`, `IdentityEndpointOptions` and the `Identity` configuration section; other public types are implementation detail and may become internal.
 
 ## Hosting Identity
 
@@ -44,13 +44,15 @@ builder.AddCratisChronicle(options =>
 builder.AddCratisIdentity();
 
 var app = builder.Build();
-app.MapCratisIdentity();
+app.UseCratisIdentity();
+app.MapCratisIdentity(options => options.MapSignOut = true);
+app.MapGet("/healthz", () => Results.Text("ok"));
 app.UseCratisArc();
 app.UseCratisChronicle();
 await app.RunAsync();
 ```
 
-`MapCratisIdentity` owns the Identity pipeline order: routing → realm scope → security headers → authentication, followed by endpoint mapping. Call it once, before the host's own endpoints and Arc/Chronicle middleware; do not call `UseAuthentication` or `UseRouting` ahead of it for Identity routes. Authentication and generated Identity API routes use the realm namespace; non-Identity routes retain the host's namespace resolver. `Source/Identity.Host` is the sample host and the standalone server that the Docker image runs.
+`UseCratisIdentity` explicitly installs the Identity pipeline: routing → realm scope → security headers → authentication. Call it once before Arc/Chronicle middleware and endpoint execution; do not put authentication ahead of it for Identity routes. Its security headers apply globally in hosts that opt in. Authentication and generated Identity API routes use the realm namespace; non-Identity routes retain the host's namespace resolver. `MapCratisIdentity` only maps authorization and token endpoints; it adds no middleware, `/`, or `/healthz`. Hosts own their health and root routes, without collisions regardless of mapping order. Sign-out HTML is off by default; opt in with `MapSignOut = true` as above. Call `MapCratisIdentity` once per host: repeated mapping throws rather than changing the sign-out setting shared with realm middleware. Mapping alone does not validate protocol requests. Without the OpenIddict middleware context, authorization and token handlers fail closed with `OpenIddictRequestMissing` before business logic runs; install `UseCratisIdentity` for the required pipeline order. `Source/Identity.Host` remains the sample host and default Docker/compose target. `Source/Identity.CratisId` is the hosted-shared Cratis ID server; its [image contract](Documentation/deployment/cratis-id-image-contract.md) defines configuration, readiness and the D13 prerequisites before production issuance.
 
 ## What v1 implements
 
@@ -58,9 +60,10 @@ await app.RunAsync();
 | --- | --- |
 | Authorization code flow | Mandatory PKCE, `S256` only (`plain` is refused). No implicit, password or client-credentials grants. |
 | Native clients | Pre-registered public client `cratis-cli` (no secret). Redirect URIs `http://127.0.0.1:<ephemeral-port>/callback` and `http://[::1]:<ephemeral-port>/callback` (RFC 8252). The path and IP literal must match; `localhost` is refused. |
-| Resource indicators (RFC 8707) | `https://cratis.direct/mcp` and `https://cratis.direct/v1` both map to audience `direct-api`. Every grant is bound to exactly one resource server. Without a `resource` parameter the resource is inferred from the scopes, but only when they belong to a single resource server. |
-| Scopes | `direct:read`, `direct:content.write`, `direct:work`, plus `offline_access` for a refresh token. Requested scopes that belong to another resource server are dropped. There is no approve or admin scope: approval is a domain action in Direct, never a token capability. |
+| Resource indicators (RFC 8707) | `https://cratis.direct/mcp` maps to audience `direct-api`, as required by [N1](Documentation/specs/arc-scope-catalog-v1.md#n1-catalog); `https://cratis.direct/v1` maps to the distinct audience `direct-v1`. Every grant is bound to exactly one resource server. Without a `resource` parameter the resource is inferred from the scopes, but only when they belong to a single resource server. |
+| Scopes | API: `direct:read`, `direct:content.write`, `direct:work`. MCP: `direct:mcp:read`, `direct:mcp:content.write`, `direct:mcp:work`. Add `offline_access` for a refresh token. Requested scopes that belong to another resource server are dropped. There is no approve or admin scope: approval is a domain action in Direct, never a token capability. |
 | Refresh tokens | Rotated on every use. Concurrent redemption has a single winner; a failed redemption revokes the grant authorization and its tokens, so even the winner's successor is unusable. Reuse has zero leeway. The family has an absolute lifetime (30 days by default) that rotation does not extend. |
+| Token exchange (RFC 8693) | Off by default. A configured confidential client exchanges a token from a trusted external issuer for a short-lived access token bound to one resource and one tenant. See [Token exchange](Documentation/token-exchange.md). |
 | Revocation (RFC 7009) | `POST /connect/revocation`. Revoking a refresh token revokes the whole grant, including its access tokens for introspection. |
 | Introspection (RFC 7662) | `POST /connect/introspect` for configured confidential resource-server clients only. |
 | Metadata | `/.well-known/oauth-authorization-server` (RFC 8414), `/.well-known/openid-configuration`, and JWKS at `/.well-known/jwks`. |
@@ -129,8 +132,12 @@ A resource server must validate `iss`, the signature against the JWKS, `aud`, `e
 | `GET /.well-known/openid-configuration` | OpenIddict's discovery fallback. This server does **not** offer the `openid` scope or issue ID tokens in v1. |
 | `GET /.well-known/jwks` | Public signing keys. |
 | `GET /signin-github` | GitHub OAuth callback. Register it on the GitHub OAuth app. |
-| `GET/POST /logout` | Identity site cookie sign-out: GET serves an antiforgery-protected form; POST clears the session cookie. This does not revoke CLI grants. |
-| `GET /healthz` | Liveness. |
+| `GET/POST /logout` (opt-in) | Identity site cookie sign-out: GET serves an antiforgery-protected form; POST clears the session cookie. This does not revoke CLI grants. |
+| `GET /healthz` (host-owned) | Liveness in the sample and Cratis ID hosts, not mapped by the package. |
+
+Set `Identity:Endpoints:RoutePrefix` before `AddCratisIdentity` to move the four `/connect/*` endpoints and optional `/logout`, for example to `/id/connect/token`. The default is empty. Prefixes must be at most 128 ASCII unreserved path characters, start with one `/`, and have no trailing slash, empty or dot segments, escapes, whitespace, query, fragment or backslash. `/.well-known`, `/signin-github`, `/healthz` and `/readyz` prefixes are reserved (including descendants). Invalid shapes fail registration and mapping. A mapping delegate that supplies a different prefix fails rather than diverging from OpenIddict. Discovery/JWKS, the issuer and the registered GitHub callback remain unprefixed. Arc-generated API routes also stay at their original paths; realm matching does not prepend the protocol prefix to them. GitHub sign-in failure or denial may resume only at `{PathBase}{RoutePrefix}/connect/authorize?…`, using the registered endpoint options.
+
+The validated prefix is available through `IOptions<IdentityEndpointOptions>` for token-endpoint middleware, including rate limiting. This base has no token limiter; this is its integration boundary, not a claim that prefixed limiting has been verified. A limiter added later must match `{RoutePrefix}/connect/token` using those options.
 
 ## Configuration
 
@@ -138,6 +145,7 @@ Everything is under the `Identity` section (environment variables use `Identity_
 
 | Key | Default | Notes |
 | --- | --- | --- |
+| `Endpoints:RoutePrefix` | empty | Validated endpoint prefix, shared by mapping, OpenIddict and realm matching through `IOptions<IdentityEndpointOptions>`. |
 | `Issuer` | — | Absolute public URI, normally `https://auth.example/` (including trailing `/`, no path). **Required outside development**; the service refuses to start without it. Its scheme and host must match the public authorization/discovery origin. |
 | `MongoDB:ConnectionString` | `mongodb://localhost:27017` | |
 | `MongoDB:Database` | `cratis-identity` | Holds OpenIddict applications, authorizations and and tokens. Tokens have a TTL index on their expiry; keys are never stored here. |
@@ -145,9 +153,10 @@ Everything is under the `Identity` section (environment variables use `Identity_
 | `GitHub:ClientId`, `GitHub:ClientSecret` | — | GitHub OAuth app. Callback URL: `<issuer>signin-github`. |
 | `SecretStore:Path` | — | Directory the platform mounts from its secret store, holding realm signing keys, encryption keys and the Data Protection key ring (see [Keys and the secret store](#keys-and-the-secret-store)). **Required outside development.** The old `SigningCertificate` and `EncryptionCertificate` settings are refused at startup. |
 | `SecretStore:ReloadInterval` | `00:01:00` | How often the directory is read again; between one second and five minutes. |
-| `Tokens:AccessTokenLifetime` | `00:15:00` | Also the longest a revoked grant keeps working at a resource server that does not introspect. |
+| `Tokens:AccessTokenLifetime` | `00:05:00` | Startup refuses zero or more than ten minutes. Also the longest a revoked grant keeps working at a resource server that does not introspect. |
 | `Tokens:AuthorizationCodeLifetime` | `00:02:00` | |
 | `Tokens:RefreshTokenLifetime` | `30.00:00:00` | Absolute lifetime of a refresh-token family. |
+| `TokenExchange` | none | `Issuers[]` and `Clients[]` for token exchange; nothing is enabled until both are configured. See [Token exchange](Documentation/token-exchange.md). |
 | `SessionLifetime` | `01:00:00` | The Identity site session cookie; not sliding. |
 | `DeviceGrant:Enabled` | `true` | Enables the RFC 8628 device authorization grant for `cratis-cli`. |
 | `DeviceGrant:CodeLifetime` | `00:10:00` | User and device codes expire together, between one and fifteen minutes; approval does not extend this deadline. |
@@ -155,7 +164,9 @@ Everything is under the `Identity` section (environment variables use `Identity_
 | `DeviceGrant:VerificationWindow` | `00:10:00` | One-to-sixty-minute verification attempt window. |
 | `DeviceGrant:AttemptsPerCode`, `AttemptsPerAccount`, `AttemptsPerIp` | `5`, `20`, `30` | All three budgets apply before code lookup. Upper bounds are 10, 100 and 300 respectively. |
 | `Resources[]` | Direct | `Audience`, `DisplayName`, `Indicators[]`, `Scopes[]` (`Name`, `Description`), `TenantsCallback` (`Url`, `Secret`, `Timeout`). `Tenants[]` (`Id`, `Name`, `Members[]` as numeric GitHub ids, `AllowAllAccounts`) is Development only and cannot be combined with a callback. Validated at startup: duplicate audiences, indicators or scopes, fragments, and protocol scopes are rejected. Outside Development every resource requires an HTTPS callback and a secret of at least 32 characters. |
-| `IntrospectionClients[]` | none | `ClientId`, `ClientSecret` for resource servers that introspect. |
+| `IntrospectionClients[]` | none | `ClientId`, `ClientSecret` for confidential resource servers that introspect. Use the token's audience as the client id: `direct-api` for `direct:mcp:*` tokens, `direct-v1` for `direct:*` API tokens. Configure a separate secret for each client through the platform's secret configuration mechanism. |
+
+OpenIddict rejects introspection by a client that is neither the token's audience nor its presenter. Application-specific claims are returned only to a confidential audience client. The integration fixture registers `direct-api` with a test-only secret because its default CLI flow requests `direct:mcp:read` and issues tokens for `direct-api` with presenter `cratis-cli`.
 
 Clients are declared in code (`ClientDescriptors`) and configuration (introspection clients). The client store is reconciled at startup: undeclared clients are deleted.
 
@@ -171,11 +182,11 @@ The host owner must configure ASP.NET Core `UseForwardedHeaders` **before** `Map
 
 ### Event-sourced accounts
 
-Accounts use native Arc commands and Chronicle projections by default; there is no legacy MongoDB account writer or opt-in switch. The host connects through `ConnectionStrings:chronicle` (outside the `Identity` section). Keep MongoDB for OpenIddict clients, grants, tokens and operational metadata. Existing MongoDB account rows are not imported into Chronicle.
+Accounts use native Arc commands and Chronicle projections by default; there is no legacy MongoDB account writer or opt-in switch. The reference `Identity.Host` connects through `ConnectionStrings:chronicle` (default `chronicle://localhost:35000`, outside the `Identity` section). The hosted Cratis ID image instead binds the `Cratis:Chronicle` section (`ConnectionString`, `EventStore`; environment form `Cratis__Chronicle__ConnectionString`) and ignores `ConnectionStrings:chronicle`. Keep MongoDB for OpenIddict clients, grants, tokens and operational metadata. Existing MongoDB account rows are not imported into Chronicle.
 
 **Upgrading from the MongoDB account store.** Identity never imports, changes or deletes the old `accounts` collection, and starting over it would make those accounts disappear. So at startup, before anything else touches MongoDB, Identity does a read-only check of the `accounts` collection in the configured `MongoDB:ConnectionString` and `MongoDB:Database`, and in the historic default (`mongodb://localhost:27017`, `cratis-identity`). It refuses to start if either has documents, and also if either cannot be checked (unreachable, timeout, authentication failure), because it cannot prove nothing would be lost; the error names only "configured" or "default", never a host, credential or database. Export or retire the legacy collection yourself, or, once you have confirmed the data is obsolete or that no legacy store exists, set `Identity:Accounts:ConfirmNoLegacyMongoStore=true` (`Identity__Accounts__ConfirmNoLegacyMongoStore=true`); the check is then skipped with a warning. Development configuration, the compose file and the specs set it. A legacy store under a different server or database name than those two cannot be detected; that is the operator's responsibility. Follow-up export tool: Cratis/Identity#105.
 
-Outside Development, provide `Identity:Accounts:LookupKey` through the platform's secret configuration mechanism: base64 containing at least 256 bits of key material. `LookupKeyRevision` defaults to `1`; changing the revision against an existing realm store is refused. `ReadModelCatchUpTimeout` defaults to 30 seconds and must be positive. Never log or publish the lookup key.
+Outside Development, provide `Identity:Accounts:LookupKey` through the platform's secret configuration mechanism: standard base64 (not base64url, not a plain password) that decodes to at least 32 bytes (256 bits); generate it by base64-encoding 32 random bytes. `LookupKeyRevision` defaults to `1`; changing the revision against an existing realm store is refused. `ReadModelCatchUpTimeout` defaults to 30 seconds and must be positive. Never log or publish the lookup key.
 
 Accounts and permanent upstream-key reservations belong to Chronicle's `Default` realm namespace, not an application's tenant namespace. A verified GitHub callback supplies the immutable numeric upstream id; login, name and email observations cannot establish identity. A new account receives an immutable UUID subject. Unlinking retains the reservation, and disabling or tombstoning an account prevents sign-in.
 
@@ -268,27 +279,29 @@ Configure, for example, `Identity__Resources__0__TenantsCallback__Url=https://di
 
 4. Check the metadata at <http://localhost:5100/.well-known/oauth-authorization-server>.
 
-To run from source instead, start MongoDB on `localhost:27017` and set `Identity__Issuer=http://localhost:5100/`, `Identity__GitHub__ClientId`, `Identity__GitHub__ClientSecret`, `Identity__Resources__0__Tenants__0__Id=local` and `Identity__Resources__0__Tenants__0__Members__0` (your numeric GitHub id). Then run `ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5100 dotnet run --project Source/Identity.Host`. Your GitHub OAuth app must have the matching callback URL.
+To run from source instead, start MongoDB on `localhost:27017` and set `Identity__Issuer=http://localhost:5100/`, `Identity__GitHub__ClientId`, `Identity__GitHub__ClientSecret`, `Identity__Resources__0__Tenants__0__Id=local` and `Identity__Resources__0__Tenants__0__Members__0` (your numeric GitHub id). Repeat the tenant settings at `Identity__Resources__1__Tenants__0` for MCP. Then run `ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5100 dotnet run --project Source/Identity.Host`. Your GitHub OAuth app must have the matching callback URL.
 
-The compose file configures one tenant, `local`, for your GitHub user and binds the HTTP port to loopback only. The Dockerfile builds the app in the .NET 10 SDK and runs it as a non-root user in the .NET 10 chiseled image; compose is **development only**, not a production deployment recipe.
+The compose file configures one tenant, `local`, for your GitHub user on both Direct resources and binds the HTTP port to loopback only. The Dockerfile builds the app in the .NET 10 SDK and runs it as a non-root user in the .NET 10 chiseled image; compose is **development only**, not a production deployment recipe.
 
 ## CLI protocol contract
 
 For the compose setup, the issuer is exactly `http://localhost:5100/` and the discovery URL is `http://localhost:5100/.well-known/oauth-authorization-server`. For a deployed service, the CLI must request `/.well-known/oauth-authorization-server` on the issuer origin (or `/.well-known/openid-configuration` as fallback) and compare the discovered `issuer` with its configured issuer. The returned endpoint URLs are absolute. Authorization responses include `iss` on the loopback redirect, including OAuth error responses; the CLI must compare it to the discovered issuer along with its `state`.
 
-The CLI sends `client_id=cratis-cli`, `response_type=code`, `code_challenge_method=S256`, its challenge, a random `state`, `redirect_uri=http://127.0.0.1:<ephemeral-port>/callback` (or `[::1]`), `scope=direct:read direct:content.write direct:work offline_access` (request only what is needed), `resource=https://cratis.direct/mcp` or `https://cratis.direct/v1`, and optionally `tenant=<requested-tenant>` to the authorization endpoint. No secret is sent. The user must consent and choose a tenant; the hint cannot grant access. The CLI redeems the code at the discovered token endpoint using the **same** redirect URI, its PKCE verifier and the same `resource` value; refresh requests also send `client_id`, `refresh_token`, `grant_type=refresh_token` and `resource`. It posts `client_id`, `token` and `token_type_hint=refresh_token` to the discovered revocation endpoint on logout. Both resource indicators yield one access-token audience: `direct-api`. A new grant is required to switch tenants; changing a CLI context alone cannot change `tid`.
+The CLI sends `client_id=cratis-cli`, `response_type=code`, `code_challenge_method=S256`, its challenge, a random `state`, `redirect_uri=http://127.0.0.1:<ephemeral-port>/callback` (or `[::1]`), `scope=direct:mcp:read direct:mcp:content.write direct:mcp:work offline_access` with `resource=https://cratis.direct/mcp`, or `scope=direct:read direct:content.write direct:work offline_access` with `resource=https://cratis.direct/v1` (request only what is needed), and optionally `tenant=<requested-tenant>` to the authorization endpoint. No secret is sent. The user must consent and choose a tenant; the hint cannot grant access. The CLI redeems the code at the discovered token endpoint using the **same** redirect URI, its PKCE verifier and the same `resource` value; refresh requests also send `client_id`, `refresh_token`, `grant_type=refresh_token` and `resource`. It posts `client_id`, `token` and `token_type_hint=refresh_token` to the discovered revocation endpoint on logout. Each resource indicator yields one access-token audience: `direct-api` for MCP or `direct-v1` for API. A new grant is required to switch tenants; changing a CLI context alone cannot change `tid`.
 
 ## Development
 
 ```shell
 dotnet build Identity.slnx -c Release
 ./Source/Identity.Specs/bin/Release/net10.0/Cratis.Identity.Specs
-./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs   # needs Docker: starts MongoDB 8.0.14 and Chronicle 19.111.0-development
+./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs   # needs Docker: starts MongoDB 8.0.14 and Chronicle 19.144.0-development
 dotnet pack Identity.slnx -c Release --no-build --output Artifacts/NuGet
 (cd Source/JavaScript/Identity && npm ci && npm run build && npm pack --pack-destination ../../../Artifacts/npm)
 ```
 
 The integration specs host the real pipeline (Arc, Chronicle, OpenIddict, MongoDB, consent, antiforgery, token endpoint). They replace GitHub's network login with a fake upstream that supplies verified observations to the same native command adapter. A test-local progress gate can hold projection acknowledgments without replacing the kernel, command pipeline or filtered target reader. The Chronicle development container is pinned to the client version and exposes only a dynamically assigned loopback port.
+
+Every change to the OpenIddict server or validation configuration (grant types, flows, event handlers, options, endpoint wiring) ships a host-startup unit spec in the same change: no containers, a service collection with `AddCratisIdentity` and the feature enabled, resolving the OpenIddict server options. Review reads code and does not run it, and the integration specs run only in CI, so only this spec catches a host that cannot start before the push.
 
 ## Security notes
 

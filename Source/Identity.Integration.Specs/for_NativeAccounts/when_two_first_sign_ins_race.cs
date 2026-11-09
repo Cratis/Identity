@@ -31,15 +31,15 @@ public class when_two_first_sign_ins_race(IdentityHost host) : IAsyncLifetime
         var provider = scope.ServiceProvider;
         var adapter = provider.GetRequiredService<EventSourcedAccountAdapter>();
         var connection = new GitHubConnection(GitHubConnection.FixedConnectionId, provider.GetRequiredService<TimeProvider>());
-        var user = new GitHubUser(987654324, "first-sign-in-race", "Concurrent Sign In");
+        var user = new GitHubUser(UpstreamUserIds.Next(), "first-sign-in-race", "Concurrent Sign In");
         var first = connection.From(user, FactId.New());
         var second = connection.From(user, FactId.New());
         using var run = provider.GetRequiredService<NativeSignInInterleaving>().Begin(2);
         _run = run;
         var attempts = new Dictionary<FactId, Task<SignInOutcome>>
         {
-            [first.OperationId] = SignInOutcome.Observe(adapter.SignIn(first, new(null, user.Name, user.Login))),
-            [second.OperationId] = SignInOutcome.Observe(adapter.SignIn(second, new(null, user.Name, user.Login)))
+            [first.OperationId] = SignInOutcome.Observe(adapter.SignIn(first, new(null, user.Name, user.Login), TestContext.Current.CancellationToken)),
+            [second.OperationId] = SignInOutcome.Observe(adapter.SignIn(second, new(null, user.Name, user.Login), TestContext.Current.CancellationToken))
         };
         var winning = await run.Next();
         var losing = await run.Next();

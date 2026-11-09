@@ -1,0 +1,15 @@
+// Copyright (c) Cratis. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Net;
+
+namespace Cratis.Identity.for_ExternalIssuerKeys;
+
+public class when_the_issuer_redirects : given.an_issuer_that_serves_keys
+{
+    void Establish() => _respond = () => new(HttpStatusCode.Redirect);
+
+    async Task Because() => await Get();
+
+    [Fact] void should_return_no_keys() => _result.ShouldBeNull();
+}

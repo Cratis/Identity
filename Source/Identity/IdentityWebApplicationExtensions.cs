@@ -3,6 +3,7 @@
 
 using System.Net;
 using Cratis.Identity.Authorization;
+using Cratis.Identity.Authorization.RateLimiting;
 using Cratis.Identity.Device;
 using Cratis.Identity.Hosting;
 using Cratis.Identity.Realm;
@@ -17,38 +18,67 @@ namespace Microsoft.AspNetCore.Builder;
 public static class IdentityWebApplicationExtensions
 {
     /// <summary>
-    /// Adds routing, the Identity realm scope, security headers and authentication middleware, then maps the logout, health and root endpoints. Call it
-    /// before the host's own endpoints. The protocol endpoints themselves (discovery, JWKS,
-    /// revocation, introspection) are served by OpenIddict; authorization and token requests pass through to
-    /// <see cref="AuthorizationEndpoint"/> and <see cref="TokenEndpoint"/> once OpenIddict has validated them.
+    /// Adds routing, the Identity realm scope, security headers and authentication middleware.
+    /// Call before Arc/Chronicle middleware and endpoint execution. This does not map endpoints.
     /// </summary>
     /// <param name="app">The <see cref="WebApplication"/>.</param>
     /// <returns>The <see cref="WebApplication"/> for continuation.</returns>
-    public static WebApplication MapCratisIdentity(this WebApplication app)
+    public static WebApplication UseCratisIdentity(this WebApplication app)
     {
         app.UseRouting();
+        app.UseMiddleware<TokenRateLimitMiddleware>();
         app.UseMiddleware<IdentityRealmMiddleware>();
         app.UseSecurityHeaders();
         app.UseAuthentication();
+        return app;
+    }
 
-        if (app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<Cratis.Identity.Configuration.IdentityOptions>>().Value.DeviceGrant.Enabled)
+    /// <summary>
+    /// Maps authorization and token endpoints, and optionally the sign-out form. No middleware, health or root routes are added.
+    /// OpenIddict serves discovery, JWKS, revocation and introspection through authentication middleware.
+    /// </summary>
+    /// <param name="app">The endpoint route builder.</param>
+    /// <returns>The endpoint route builder for continuation.</returns>
+    public static IEndpointRouteBuilder MapCratisIdentity(this IEndpointRouteBuilder app) => app.MapCratisIdentity(null);
+
+    /// <summary>
+    /// Maps Identity endpoints with explicit mapping settings. No middleware, health or root routes are added.
+    /// </summary>
+    /// <param name="app">The endpoint route builder.</param>
+    /// <param name="configure">Endpoint mapping settings. The prefix must match Identity:Endpoints:RoutePrefix.</param>
+    /// <returns>The endpoint route builder for continuation.</returns>
+    public static IEndpointRouteBuilder MapCratisIdentity(this IEndpointRouteBuilder app, Action<IdentityEndpointOptions>? configure)
+    {
+        var options = app.ServiceProvider.ResolveIdentityEndpoints(configure);
+        var group = app.MapGroup(options.RoutePrefix.Value ?? string.Empty);
+        if (app.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<Cratis.Identity.Configuration.DeviceGrantOptions>>().Value.Enabled)
         {
-            DeviceAuthorizationEndpoint.Map(app);
-            DeviceVerificationEndpoint.Map(app);
+            DeviceAuthorizationEndpoint.Map(group);
+            DeviceVerificationEndpoint.Map(group);
         }
 
-        app.MapMethods("/connect/authorize", [HttpMethods.Get, HttpMethods.Post], (HttpContext context, AuthorizationEndpoint endpoint) => endpoint.Handle(context))
+        group.MapMethods("/connect/authorize", [HttpMethods.Get, HttpMethods.Post], (HttpContext context, AuthorizationEndpoint endpoint) => endpoint.Handle(context))
             .DisableAntiforgery();
-        app.MapPost("/connect/token", (HttpContext context, TokenEndpoint endpoint) => endpoint.Handle(context))
+        group.MapPost("/connect/token", (HttpContext context, TokenEndpoint endpoint) => endpoint.Handle(context))
             .DisableAntiforgery();
-        app.MapGet("/logout", (HttpContext context, IAntiforgery antiforgery) =>
+        if (options.MapSignOut)
+        {
+            MapSignOut(app, $"{options.RoutePrefix}/logout");
+        }
+
+        return app;
+    }
+
+    static void MapSignOut(IEndpointRouteBuilder app, string path)
+    {
+        app.MapGet(path, (HttpContext context, IAntiforgery antiforgery) =>
         {
             var token = antiforgery.GetAndStoreTokens(context);
             context.Response.Headers.CacheControl = "no-store";
             context.Response.Headers.ContentSecurityPolicy = "default-src 'none'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'";
-            return Results.Content($"<!doctype html><html lang=\"en\"><title>Sign out</title><form method=\"post\" action=\"/logout\"><input type=\"hidden\" name=\"{WebUtility.HtmlEncode(token.FormFieldName)}\" value=\"{WebUtility.HtmlEncode(token.RequestToken)}\"><button type=\"submit\">Sign out</button></form></html>", "text/html; charset=utf-8");
+            return Results.Content($"<!doctype html><html lang=\"en\"><title>Sign out</title><form method=\"post\" action=\"{WebUtility.HtmlEncode(path)}\"><input type=\"hidden\" name=\"{WebUtility.HtmlEncode(token.FormFieldName)}\" value=\"{WebUtility.HtmlEncode(token.RequestToken)}\"><button type=\"submit\">Sign out</button></form></html>", "text/html; charset=utf-8");
         });
-        app.MapPost("/logout", async (HttpContext context, IAntiforgery antiforgery) =>
+        app.MapPost(path, async (HttpContext context, IAntiforgery antiforgery) =>
         {
             if (!await antiforgery.IsRequestValidAsync(context))
             {
@@ -59,9 +89,5 @@ public static class IdentityWebApplicationExtensions
             context.Response.Headers.CacheControl = "no-store";
             return Results.Text("Signed out.");
         }).DisableAntiforgery();
-        app.MapGet("/healthz", () => Results.Text("ok"));
-        app.MapGet("/", () => Results.Text("Cratis Identity - OAuth 2.1 authorization server. Metadata: /.well-known/oauth-authorization-server"));
-
-        return app;
     }
 }

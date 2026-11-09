@@ -2,9 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Accounts;
+using Cratis.Identity.Accounts.Lookup;
 using Cratis.Identity.Authorization;
+using Cratis.Identity.Authorization.TokenExchange;
 using Cratis.Identity.Contracts;
 using Cratis.Identity.Contracts.Accounts;
+using Cratis.Identity.given;
 using Cratis.Identity.Resources;
 using Cratis.Identity.Revocation;
 using Cratis.Identity.Tenants;
@@ -52,28 +55,55 @@ public class a_contended_refresh : for_RedeemRefreshTokenOnce.given.a_refresh_to
         };
     }
 
-    protected async Task<IResult> ReachTokenEndpoint()
+    protected Task<IResult> ReachTokenEndpoint() => ReachTokenEndpoint("1700000000", new Dictionary<string, bool> { ["audience"] = false });
+
+    /// <summary>
+    /// Reaches the token endpoint with a refresh grant carrying the given authentication time, bound to the given audiences (audience to whether the resource receives upstream identity).
+    /// </summary>
+    /// <param name="authTime">The grant's <c language="text">auth_time</c> claim, or <see langword="null"/> for none.</param>
+    /// <param name="audiences">The granted audiences and their upstream-identity flag.</param>
+    /// <returns>The endpoint's <see cref="IResult"/>.</returns>
+    protected async Task<IResult> ReachTokenEndpoint(string? authTime, IReadOnlyDictionary<string, bool> audiences)
     {
         var account = new Account(new(FenceDoubles.Subject), "Member", null, "42", "member", AccountStatus.Active, []);
         var principal = _validation.Principal.Clone()
             .SetClaim(Claims.Subject, FenceDoubles.Subject)
             .SetClaim(IdentityClaims.TenantId, "tenant")
-            .SetResources("audience");
+            .SetClaim(Claims.AuthenticationTime, authTime)
+            .SetClaim(Claims.Name, "Member")
+            .SetClaim(Claims.PreferredUsername, "member")
+            .SetClaim(IdentityClaims.GitHubId, "42")
+            .SetResources([.. audiences.Keys]);
         var accounts = Substitute.For<IAccountReader>();
         accounts.FindActive(Arg.Any<AccountSubject>(), Arg.Any<CancellationToken>()).Returns(account);
-        var resource = new ResourceServer("audience", "Resource", [], []);
         var resources = Substitute.For<IResourceCatalog>();
-        resources.FindByAudience("audience").Returns(resource);
         var tenants = Substitute.For<ITenantDirectory>();
-        tenants.SelectableTenants(account, resource, Arg.Any<CancellationToken>()).Returns(new TenantsListed([new("tenant", "Tenant")]));
+        foreach (var (audience, receivesUpstreamIdentity) in audiences)
+        {
+            var resource = new ResourceServer(audience, "Resource", [], [], receivesUpstreamIdentity);
+            resources.FindByAudience(audience).Returns(resource);
+            tenants.SelectableTenants(account, resource, Arg.Any<CancellationToken>()).Returns(new TenantsListed([new("tenant", "Tenant")]));
+        }
+
         var authentication = Substitute.For<IAuthenticationService>();
         authentication.AuthenticateAsync(Arg.Any<HttpContext>(), Arg.Any<string>()).Returns(AuthenticateResult.Success(new(principal, "test")));
         await using var services = new ServiceCollection().AddSingleton(authentication).BuildServiceProvider();
         var http = new DefaultHttpContext { RequestServices = services };
         http.Features.Set(new OpenIddictServerAspNetCoreFeature { Transaction = _context.Transaction });
-        var endpoint = new TokenEndpoint(accounts, Substitute.For<IGrantPolicy>(), resources, tenants, NullLogger<TokenEndpoint>.Instance, _authority, new Device.DeviceGrantAdmission(new RecoveryGate(), Substitute.For<IIndependentFenceLog>(), _tokens, _authorizations, _authority, accounts));
+        var endpoint = new TokenEndpoint(accounts, Substitute.For<IGrantPolicy>(), resources, tenants, NullLogger<TokenEndpoint>.Instance, _authority, new Device.DeviceGrantAdmission(new RecoveryGate(), Substitute.For<IIndependentFenceLog>(), _tokens, _authorizations, _authority, accounts), ExchangeGrant());
         return await endpoint.Handle(http);
     }
+
+    static TokenExchangeGrant ExchangeGrant() => new(
+        Substitute.For<ISubjectTokenValidator>(),
+        new SubjectTokenReplayGuard(TimeProvider.System),
+        Substitute.For<IUpstreamKeyResolver>(),
+        Substitute.For<IAccountReader>(),
+        Substitute.For<IResourceCatalog>(),
+        Substitute.For<ITenantDirectory>(),
+        Configurations.WithTokenExchange().AsOptions(),
+        TimeProvider.System,
+        NullLogger<TokenExchangeGrant>.Instance);
 
     async Task<bool> CompleteRedemption()
     {

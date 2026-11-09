@@ -14,6 +14,9 @@ namespace Cratis.Identity.Upstream;
 /// <param name="time">The trusted clock.</param>
 internal class GitHubConnection(ConnectionId connectionId, TimeProvider time)
 {
+    /// <summary>The exact upstream issuer/authority of GitHub sign-ins.</summary>
+    public const string Issuer = "https://github.com";
+
     /// <summary>The stable connection identity for the configured GitHub provider.</summary>
     public static readonly ConnectionId FixedConnectionId = new(new Guid(0xc36fad37, 0x7df9, 0x4bad, 0x9b, 0x3c, 0x46, 0xc1, 0x66, 0x57, 0x20, 0x21));
 
@@ -40,6 +43,6 @@ internal class GitHubConnection(ConnectionId connectionId, TimeProvider time)
         {
             throw new AccountOperationRefused("invalid_upstream_subject");
         }
-        return new(connectionId, "https://github.com", user.Id.ToString(CultureInfo.InvariantCulture), time.GetUtcNow(), operationId);
+        return new(connectionId, Issuer, user.Id.ToString(CultureInfo.InvariantCulture), time.GetUtcNow(), operationId);
     }
 }

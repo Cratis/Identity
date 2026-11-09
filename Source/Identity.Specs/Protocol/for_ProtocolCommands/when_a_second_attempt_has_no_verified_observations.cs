@@ -40,12 +40,14 @@ public class when_a_second_attempt_has_no_verified_observations : Specification
             return Task.FromResult(new CommandResult { ValidationResults = [ValidationResult.Error("refused")] });
         });
         var boundary = new ProtocolCommands(_services.GetRequiredService<IServiceScopeFactory>(), pipeline);
-        await boundary.Execute(new object(), provider =>
+        void Prepare(IServiceProvider provider)
         {
             _first = provider.GetRequiredService<VerifiedUpstreamSignIn>();
-            _first.Set(new(GitHubConnection.FixedConnectionId, "https://github.com", "42", DateTimeOffset.UtcNow, FactId.New()), new(null, "Person", "login"));
-        });
-        await boundary.Execute(new object());
+            _first.Set(new(GitHubConnection.FixedConnectionId, "https://github.com", "42", DateTimeOffset.UtcNow, FactId.New()), new(null, "Person", "login"), CancellationToken.None);
+        }
+
+        await boundary.Execute(new object(), Prepare, CancellationToken.None);
+        await boundary.Execute(new object(), null, CancellationToken.None);
     }
 
     void Destroy() => _services.Dispose();
