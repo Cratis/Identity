@@ -14,6 +14,10 @@
     <ProjectReference Include="../Identity.CratisId/Identity.CratisId.csproj" />
     <InternalsVisibleTo Include="Cratis.Identity.Specs" />
     <EmbeddedResource Include="catalogue/identity-events-v1.json" />
+    <EmbeddedResource Include="catalogue/event-schemas.json" />
+    <EmbeddedResource Include="fixtures/**/*.json">
+      <LogicalName>Cratis.Identity.Contracts.Check.$([System.String]::Copy('%(Identity)').Replace('/', '.').Replace('\', '.'))</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <!-- Always run: a solution/project change must not reuse a stale coverage result. -->
   <Target Name="CheckEventContent" AfterTargets="Build">
