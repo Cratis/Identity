@@ -261,6 +261,9 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         ["Identity:FenceLog:Database"] = _fenceDatabase,
         ["Identity:FenceLog:InstanceId"] = _fenceInstance,
         ["Identity:FenceLog:MinimumSequence"] = "0",
+
+        // Ordinary specs redeem many codes from one source; the limiter specs enable it explicitly.
+        ["Identity:TokenRateLimit:Enabled"] = "false",
         ["Identity:GitHub:ClientId"] = "unused-in-specs",
         ["Identity:GitHub:ClientSecret"] = "unused-in-specs"
     };

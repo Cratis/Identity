@@ -25,6 +25,7 @@ public class when_the_token_endpoint_is_flooded(IdentityHost host) : IAsyncLifet
             services.PostConfigure<IdentityOptions>(options => options.TokenRateLimit = new() { PerSourceRequests = 1 });
         }));
         using var client = factory.CreateClient(new() { BaseAddress = new(IdentityHost.Issuer) });
+        await IdentityHost.WaitForRecovery(factory.Services);
         _first = await Send(client);
         _limited = await Send(client);
         _body = await _limited.Content.ReadAsStringAsync();
