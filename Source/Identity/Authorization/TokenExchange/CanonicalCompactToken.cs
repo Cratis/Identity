@@ -25,7 +25,12 @@ internal static class CanonicalCompactToken
     public static bool IsCanonical(string rawToken)
     {
         var segments = rawToken.Split('.');
-        if (segments.Length != 3 || segments[0].Length == 0 || segments[1].Length == 0)
+        if (segments.Length != 3)
+        {
+            return false;
+        }
+
+        if (segments.Take(2).Any(string.IsNullOrEmpty))
         {
             return false;
         }
@@ -67,8 +72,37 @@ internal static class CanonicalCompactToken
     static bool IsClaims(byte[] json) =>
         TryParse(json, out var root) &&
         _stringClaims.All(_ => !root.TryGetProperty(_, out var value) || value.ValueKind == JsonValueKind.String) &&
-        _numericClaims.All(_ => !root.TryGetProperty(_, out var value) || (value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out var number))) &&
+        _numericClaims.All(_ => !root.TryGetProperty(_, out var value) || IsNumericDate(value)) &&
         (!root.TryGetProperty("aud", out var audience) || IsAudience(audience));
+
+    /// <summary>
+    /// RFC 7519 permits fractional seconds. Bound dates through 9999-12-31T23:59:59Z,
+    /// before converting to DateTimeOffset; overflow exponents must never become infinity.
+    /// </summary>
+    /// <param name="value">The JSON claim.</param>
+    /// <returns>Whether the value is a finite, non-negative NumericDate within the supported range.</returns>
+    static bool IsNumericDate(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Number || !value.TryGetDouble(out var seconds))
+        {
+            return false;
+        }
+
+        return double.IsFinite(seconds) && seconds is >= 0 and <= 253_402_300_799 && !IsNegative(value.GetRawText());
+    }
+
+    static bool IsNegative(string number)
+    {
+        if (number[0] != '-')
+        {
+            return false;
+        }
+
+        // A negative number can underflow to -0 as a double; inspect the significand too.
+        var exponent = number.IndexOfAny(['e', 'E']);
+        var significand = exponent < 0 ? number.AsSpan() : number.AsSpan(0, exponent);
+        return significand.ContainsAnyInRange('1', '9');
+    }
 
     static bool IsAudience(JsonElement audience) =>
         audience.ValueKind == JsonValueKind.String ||

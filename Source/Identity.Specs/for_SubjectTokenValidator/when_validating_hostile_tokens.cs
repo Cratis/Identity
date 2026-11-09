@@ -20,7 +20,6 @@ public class when_validating_hostile_tokens : given.a_subject_token_validator
     SubjectTokenRefusal _numericSubject;
     SubjectTokenRefusal _emptySubject;
     SubjectTokenRefusal _stringIssuedAt;
-    SubjectTokenRefusal _fractionalIssuedAt;
     SubjectTokenRefusal _numericTokenId;
     SubjectTokenRefusal _differentlyCasedIssuer;
     SubjectTokenRefusal _payloadNotJson;
@@ -58,7 +57,6 @@ public class when_validating_hostile_tokens : given.a_subject_token_validator
         _numericSubject = await RefusalOf(Manual(header + "}", Replace("sub", "12345"), rsa));
         _emptySubject = await RefusalOf(Manual(header + "}", Replace("sub", "\"\""), rsa));
         _stringIssuedAt = await RefusalOf(Manual(header + "}", Replace("iat", $"\"{time.Now.ToUnixTimeSeconds()}\""), rsa));
-        _fractionalIssuedAt = await RefusalOf(Manual(header + "}", Replace("iat", $"{time.Now.ToUnixTimeSeconds()}.5"), rsa));
         _numericTokenId = await RefusalOf(Manual(header + "}", Replace("jti", "42"), rsa));
         _differentlyCasedIssuer = await RefusalOf(Manual(header + "}", Replace("iss", $"\"{Configurations.ExternalIssuer.ToUpperInvariant()}\""), rsa));
 
@@ -102,7 +100,6 @@ public class when_validating_hostile_tokens : given.a_subject_token_validator
     [Fact] void should_refuse_a_numeric_subject() => _numericSubject.ShouldNotEqual(SubjectTokenRefusal.None);
     [Fact] void should_refuse_an_empty_subject() => _emptySubject.ShouldEqual(SubjectTokenRefusal.MissingClaim);
     [Fact] void should_refuse_a_string_issued_at() => _stringIssuedAt.ShouldNotEqual(SubjectTokenRefusal.None);
-    [Fact] void should_refuse_a_fractional_issued_at() => _fractionalIssuedAt.ShouldNotEqual(SubjectTokenRefusal.None);
     [Fact] void should_refuse_a_numeric_token_id() => _numericTokenId.ShouldNotEqual(SubjectTokenRefusal.None);
     [Fact] void should_refuse_an_issuer_that_differs_only_in_case() => _differentlyCasedIssuer.ShouldEqual(SubjectTokenRefusal.UnknownIssuer);
     [Fact] void should_refuse_a_payload_that_is_not_json() => _payloadNotJson.ShouldEqual(SubjectTokenRefusal.Malformed);

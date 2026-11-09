@@ -3,6 +3,7 @@
 
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.Contracts.Accounts;
 using Microsoft.Extensions.Options;
@@ -67,9 +68,14 @@ internal class SubjectTokenValidator(IOptions<IdentityOptions> options, IExterna
             return SubjectTokenResult.Refused(SubjectTokenRefusal.KeysUnavailable);
         }
 
-        var token = await Verify(rawToken, issuer, signingKeys);
-        return token is null ? SubjectTokenResult.Refused(SubjectTokenRefusal.Invalid) : Interpret(token, issuer);
+        // Read the checked JSON numbers directly: JWT convenience properties can truncate fractions.
+        using var payload = JsonDocument.Parse(Base64UrlEncoder.DecodeBytes(parsed.EncodedPayload));
+        var claims = payload.RootElement;
+        var token = await Verify(rawToken, issuer, signingKeys, claims);
+        return token is null ? SubjectTokenResult.Refused(SubjectTokenRefusal.Invalid) : Interpret(token, issuer, claims);
     }
+
+    static DateTimeOffset NumericDate(JsonElement claim) => DateTimeOffset.UnixEpoch.AddSeconds(claim.GetDouble());
 
     (ExternalIssuerOptions? Issuer, JsonWebToken? Token, SubjectTokenRefusal Refusal) Select(string rawToken, TokenExchangeClientOptions client)
     {
@@ -98,7 +104,7 @@ internal class SubjectTokenValidator(IOptions<IdentityOptions> options, IExterna
         return client.Issuers.Contains(issuer.Issuer, StringComparer.Ordinal) ? (issuer, parsed, SubjectTokenRefusal.None) : (null, null, SubjectTokenRefusal.IssuerNotAllowed);
     }
 
-    async Task<JsonWebToken?> Verify(string rawToken, ExternalIssuerOptions issuer, IReadOnlyCollection<SecurityKey> signingKeys)
+    async Task<JsonWebToken?> Verify(string rawToken, ExternalIssuerOptions issuer, IReadOnlyCollection<SecurityKey> signingKeys, JsonElement claims)
     {
         var parameters = new TokenValidationParameters
         {
@@ -115,7 +121,7 @@ internal class SubjectTokenValidator(IOptions<IdentityOptions> options, IExterna
             IssuerSigningKeys = signingKeys,
             ValidAlgorithms = [.. issuer.SigningAlgorithms],
             ValidTypes = _validTypes,
-            LifetimeValidator = (notBefore, expires, _, validation) => expires is not null && Utc(expires.Value) + validation.ClockSkew > time.GetUtcNow() && (notBefore is null || Utc(notBefore.Value) - validation.ClockSkew <= time.GetUtcNow())
+            LifetimeValidator = (_, _, _, validation) => HasValidLifetime(claims, validation.ClockSkew)
         };
 
         try
@@ -129,15 +135,26 @@ internal class SubjectTokenValidator(IOptions<IdentityOptions> options, IExterna
         }
     }
 
-    SubjectTokenResult Interpret(JsonWebToken token, ExternalIssuerOptions issuer)
+    bool HasValidLifetime(JsonElement claims, TimeSpan clockSkew)
     {
-        if (!token.TryGetPayloadValue<long>("iat", out var issuedAt) || string.IsNullOrEmpty(token.Subject))
+        var now = time.GetUtcNow();
+        if (!claims.TryGetProperty("exp", out var expires) || NumericDate(expires) <= now - clockSkew)
+        {
+            return false;
+        }
+
+        return !claims.TryGetProperty("nbf", out var notBefore) || NumericDate(notBefore) <= now + clockSkew;
+    }
+
+    SubjectTokenResult Interpret(JsonWebToken token, ExternalIssuerOptions issuer, JsonElement claims)
+    {
+        if (!claims.TryGetProperty("iat", out var issuedAt) || string.IsNullOrEmpty(token.Subject))
         {
             return SubjectTokenResult.Refused(SubjectTokenRefusal.MissingClaim);
         }
 
         var now = time.GetUtcNow();
-        var issued = DateTimeOffset.FromUnixTimeSeconds(issuedAt);
+        var issued = NumericDate(issuedAt);
         if (issued - now > issuer.ClockSkew || now - issued > issuer.MaxTokenAge)
         {
             return SubjectTokenResult.Refused(SubjectTokenRefusal.Stale);
@@ -155,8 +172,8 @@ internal class SubjectTokenValidator(IOptions<IdentityOptions> options, IExterna
             return SubjectTokenResult.Refused(SubjectTokenRefusal.MissingClaim);
         }
 
-        var expiry = Utc(token.ValidTo);
-        var replayKey = ReplayKey(issuer.Issuer, token.Subject, token.Id, issuedAt, expiry.ToUnixTimeSeconds());
+        var expiry = NumericDate(claims.GetProperty("exp"));
+        var replayKey = ReplayKey(issuer.Issuer, token.Subject, token.Id, issued.ToUnixTimeSeconds(), expiry.ToUnixTimeSeconds());
         long? authTime = token.TryGetPayloadValue<long>("auth_time", out var seconds) ? seconds : null;
         return SubjectTokenResult.Accepted(new ValidatedSubject(upstreamIssuer, upstreamSubject, authTime, expiry, issued, replayKey));
     }

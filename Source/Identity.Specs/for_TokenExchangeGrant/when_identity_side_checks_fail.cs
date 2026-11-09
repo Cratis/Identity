@@ -10,10 +10,12 @@ namespace Cratis.Identity.for_TokenExchangeGrant;
 
 public class when_identity_side_checks_fail : given.a_token_exchange_request
 {
-    [Fact]
-    async Task should_refuse_a_token_the_validator_rejects_with_the_common_description()
+    [Theory]
+    [InlineData(SubjectTokenRefusal.Invalid)]
+    [InlineData(SubjectTokenRefusal.Malformed)]
+    async Task should_refuse_a_token_the_validator_rejects_with_the_common_description(SubjectTokenRefusal refusal)
     {
-        _validator.Validate(default!, default!, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(SubjectTokenResult.Refused(SubjectTokenRefusal.Invalid)));
+        _validator.Validate(default!, default!, TestContext.Current.CancellationToken).ReturnsForAnyArgs(Task.FromResult(SubjectTokenResult.Refused(refusal)));
         await Handle();
         Error.ShouldEqual(Errors.InvalidGrant);
         Description.ShouldEqual(TokenExchangeGrant.InvalidSubjectDescription);
