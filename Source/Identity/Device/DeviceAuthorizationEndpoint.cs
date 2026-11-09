@@ -49,7 +49,7 @@ internal sealed class DeviceAuthorizationEndpoint(IGrantPolicy policy, IOpenIddi
         }
 
         var grant = ((Grantable)evaluation).Grant;
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme));
+        var principal = new ClaimsPrincipal(new ClaimsIdentity());
         principal.SetScopes(grant.Scopes);
         principal.SetResources(grant.Resource.Audience);
         principal.SetClaim(ResourceClaim, grant.Resource.Indicators.First());

@@ -184,7 +184,13 @@ internal static class IdentityServiceCollectionExtensions
         });
 
         services
-            .AddAuthentication(IdentitySchemes.Session)
+            .AddAuthentication(options =>
+            {
+                options.DefaultScheme = IdentitySchemes.Session;
+
+                // The device authorization endpoint signs in a deliberately unauthenticated principal, as OpenIddict requires.
+                options.RequireAuthenticatedSignIn = false;
+            })
             .AddCookie(IdentitySchemes.Session, options =>
             {
                 options.Cookie.Name = "cratis-identity-session";
