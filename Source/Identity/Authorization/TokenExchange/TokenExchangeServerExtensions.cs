@@ -12,8 +12,7 @@ namespace Cratis.Identity.Authorization.TokenExchange;
 internal static class TokenExchangeServerExtensions
 {
     /// <summary>
-    /// Enables the token-exchange grant as a custom flow (OpenIddict's built-in flow validates only Identity's own tokens)
-    /// and adds <c language="text">issued_token_type</c> to successful exchange responses.
+    /// Enables the built-in token-exchange grant with Identity's validation of external subject tokens.
     /// </summary>
     /// <param name="options">The <see cref="OpenIddictServerBuilder"/>.</param>
     /// <param name="identity">The startup <see cref="IdentityOptions"/>.</param>
@@ -25,16 +24,17 @@ internal static class TokenExchangeServerExtensions
             return options;
         }
 
+        // External tokens are validated by SubjectTokenValidator in TokenExchangeGrant, not with Identity's keys.
         return options
-            .AllowCustomFlow(TokenExchangeConstants.GrantType)
-            .AddEventHandler<OpenIddictServerEvents.ApplyTokenResponseContext>(builder => builder.UseInlineHandler(context =>
+            .AllowTokenExchangeFlow()
+            .RemoveEventHandler(OpenIddictServerHandlers.ValidateSubjectToken.Descriptor)
+            .Configure(server =>
             {
-                if (string.IsNullOrEmpty(context.Error) && string.Equals(context.Request?.GrantType, TokenExchangeConstants.GrantType, StringComparison.Ordinal))
-                {
-                    context.Response.SetParameter(TokenExchangeConstants.IssuedTokenType, TokenExchangeConstants.AccessTokenType);
-                }
-
-                return default;
-            }));
+                server.SubjectTokenTypes.Clear();
+                server.SubjectTokenTypes.UnionWith([TokenExchangeConstants.JwtTokenType, TokenExchangeConstants.AccessTokenType]);
+                server.ActorTokenTypes.Clear();
+                server.RequestedTokenTypes.Clear();
+                server.RequestedTokenTypes.Add(TokenExchangeConstants.AccessTokenType);
+            });
     }
 }
