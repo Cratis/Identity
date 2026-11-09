@@ -180,19 +180,22 @@ The independently reviewed [v1.0.0 baseline](../../Source/Identity.Specs/Vectors
 locks the case-ID-to-content-hash bindings and vector-file hashes. Specs and packaging
 compare the manifest against `baselines/v<version>.json`, not against values regenerated
 from the manifest. Released baselines are immutable: never edit or regenerate them.
-Every version bump adds a new independently approved baseline and a changelog heading;
-all older baselines and their changelog headings must remain. The checks require one
+Every version bump adds a new independently approved baseline, a changelog section,
+and a `## Vector artifact` section with its own `Vector artifact version:` metadata;
+retain older baselines and both versioned sections byte-identically. The checks require one
 baseline per changelog heading, including the initial release. The release tag
 `vectors/arc-mcp-authorization/v<version>` is the trust anchor, not the mutable working-tree
 baseline. `node scripts/check-vector-baseline-immutability.mjs` compares every released
 baseline with `git show <tag>:<path>` and, while the manifest selects that version,
-compares the manifest and vector content hashes with the tagged revision. Historical
-baselines remain unchanged when the current manifest and vectors advance to a new version.
+compares the manifest and vector content hashes with the tagged revision. It also compares
+the tagged version's changelog and vector-artifact sections byte-for-byte. Historical
+baselines and sections remain unchanged when the manifest and vectors advance to a new version.
 An untagged baseline passes with an unreleased notice; v1.0.0 is anchored when its first
 release tag is cut after the next train merges. On pull requests, the checker also compares
 against `BASE_REF` (or `--base-ref <ref>`, default `origin/main` for pull requests): old
-baselines must remain byte-identical, and changing the manifest or vectors requires a
-version bump with a new baseline. Build CI and the packaging workflow run this check
+baselines and versioned documentation sections must remain byte-identical, and changing
+the manifest, vectors, or versioned prose requires a version bump with a new baseline
+and new documentation sections. Build CI and the packaging workflow run this check
 with full Git history and tags. Run `node scripts/check-vector-baseline-immutability.mjs
 --self-test` to exercise the rejection rules in disposable Git repositories.
 IDs are never reassigned to different behavior. Changing a case requires a new ID or an

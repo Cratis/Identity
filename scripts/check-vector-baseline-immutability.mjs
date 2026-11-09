@@ -11,6 +11,8 @@ import { parseArgs } from 'node:util';
 
 const directory = 'Source/Identity.Specs/Vectors/arc-mcp-authorization-v1';
 const spec = 'arc-mcp-authorization';
+const changelog = `${directory}/CHANGELOG.md`;
+const contract = 'Documentation/specs/arc-mcp-authorization-v1.md';
 const semver = '(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)';
 const baselineName = new RegExp(`^v${semver}\\.json$`);
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -40,6 +42,42 @@ async function unchanged(root, commit, path, anchor) {
     assert.equal(hash(actual), hash(expected), `${path} changed relative to ${anchor}. ${remedy}`);
 }
 
+function sectionVersion(heading, section, path) {
+    if (path === changelog) return heading;
+    if (heading !== 'Vector artifact') return undefined;
+    const versions = [...section.matchAll(/^Vector artifact version: ([^\r\n]+)\r?$/gm)];
+    assert.equal(versions.length, 1, `Expected one vector artifact version in ${path}`);
+    assert.match(versions[0][1], new RegExp(`^${semver}$`), `Invalid vector artifact version in ${path}`);
+    return versions[0][1];
+}
+
+function versionSections(text, path) {
+    const headings = [...text.matchAll(/^## ([^\r\n]+)(?:\r?\n|$)/gm)];
+    const sections = new Map();
+    for (const [index, heading] of headings.entries()) {
+        const section = text.slice(heading.index, headings[index + 1]?.index);
+        const version = sectionVersion(heading[1], section, path);
+        if (!version || !new RegExp(`^${semver}$`).test(version)) continue;
+        assert(!sections.has(version), `Duplicate version ${version} in ${path}`);
+        sections.set(version, section);
+    }
+    assert(sections.size > 0, `No versioned sections in ${path}`);
+    return sections;
+}
+
+async function unchangedDocumentation(root, commit, manifest, anchor, versions) {
+    for (const path of [changelog, contract]) {
+        const expected = versionSections(git(root, 'show', `${commit}:${path}`).toString(), path);
+        const actual = versionSections(await readFile(join(root, path), 'utf8'), path);
+        for (const version of versions ?? expected.keys()) {
+            assert(expected.has(version), `${path} has no section for ${version} at ${anchor}`);
+            assert(actual.has(version), `${path} is missing section ${version} relative to ${anchor}. ${remedy}`);
+            assert.equal(hash(actual.get(version)), hash(expected.get(version)), `${path} section ${version} changed relative to ${anchor}. ${remedy}`);
+        }
+        assert(actual.has(manifest.version), `${path} requires a new section for ${manifest.version}. ${remedy}`);
+    }
+}
+
 async function unchangedVersion(root, commit, manifest, anchor) {
     const path = `${directory}/manifest.json`;
     const released = JSON.parse(git(root, 'show', `${commit}:${path}`));
@@ -59,6 +97,7 @@ async function checkTag(root, tag, manifest) {
     assert.equal(taggedManifest.version, version, `Tag version mismatch: ${tag}`);
     await unchanged(root, commit, `${directory}/baselines/v${version}.json`, tag);
     await unchangedVersion(root, commit, manifest, tag);
+    await unchangedDocumentation(root, commit, manifest, tag, [version]);
 }
 
 async function checkBase(root, baseRef, manifest) {
@@ -74,6 +113,7 @@ async function checkBase(root, baseRef, manifest) {
     if (manifest.version !== previous.version) {
         assert(!baselines.includes(`${directory}/baselines/v${manifest.version}.json`), `Version bump must add a new baseline. ${remedy}`);
     }
+    await unchangedDocumentation(root, commit, manifest, baseRef);
     console.log(`Checked ${baselines.length} base baselines against ${baseRef}.`);
 }
 
