@@ -28,7 +28,9 @@ HostedSharedHosting.AddProxyHeaders(builder);
 
 var app = builder.Build();
 app.UseForwardedHeaders();
-app.MapCratisIdentity();
+app.UseCratisIdentity();
+app.MapCratisIdentity(options => options.MapSignOut = true);
+app.MapGet("/healthz", () => Results.Text("ok"));
 HostedSharedHosting.MapReadiness(app);
 app.UseCratisArc();
 app.UseCratisChronicle();

@@ -22,7 +22,7 @@ public class when_the_sign_in_command_is_refused : Specification
     async Task Because()
     {
         var signIn = Substitute.For<IAccountSignIn>();
-        signIn.SignIn(Arg.Any<VerifiedAuthentication>(), Arg.Any<ObservedProfile>()).Returns(Task.FromException<Account>(new AccountOperationRefused("account_not_active")));
+        signIn.SignIn(Arg.Any<VerifiedAuthentication>(), Arg.Any<ObservedProfile>(), Arg.Any<CancellationToken>()).Returns(Task.FromException<Account>(new AccountOperationRefused("account_not_active")));
         using var http = new HttpClient(new ProfileHandler());
         using var token = OAuthTokenResponse.Success(JsonDocument.Parse("{\"access_token\":\"synthetic-test-token\"}"));
         using var user = JsonDocument.Parse("{}");

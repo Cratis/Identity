@@ -25,6 +25,7 @@ public class a_token_exchange_request : for_AccessTokenIdentity.given.an_account
     private protected FixedTimeProvider _time;
     private protected ISubjectTokenValidator _validator;
     private protected SubjectTokenReplayGuard _replay;
+    private protected ISubjectTokenReplayGuard _replayGuard;
     private protected IUpstreamKeyResolver _keys;
     private protected IAccountReader _accounts;
     private protected ITenantDirectory _tenants;
@@ -39,6 +40,7 @@ public class a_token_exchange_request : for_AccessTokenIdentity.given.an_account
         _options = Configurations.WithTokenExchange();
         _time = new(DateTimeOffset.UtcNow);
         _replay = new(_time);
+        _replayGuard = _replay;
         _logger = new();
         _subject = new(new UpstreamIssuer(Configurations.ExternalIssuer), new UpstreamSubject("external-subject-1"), 1_700_000_000, _time.Now.AddMinutes(5), _time.Now, "key-1");
 
@@ -86,7 +88,7 @@ public class a_token_exchange_request : for_AccessTokenIdentity.given.an_account
 
     private protected async Task Handle()
     {
-        _handler = new(_validator, _replay, _keys, _accounts, new ResourceCatalog(_options.AsOptions()), _tenants, _options.AsOptions(), _time, _logger);
+        _handler = new(_validator, _replayGuard, _keys, _accounts, new ResourceCatalog(_options.AsOptions()), _tenants, _options.AsOptions(), _time, _logger);
         _result = await _handler.Handle(_request);
     }
 

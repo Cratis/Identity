@@ -29,10 +29,10 @@ public class when_scanning_the_event_log_for_secrets : Accounts.SigningIn.given.
         _readModels.GetInstances<UpstreamKeyLookup>(default).ReturnsForAnyArgs(Task.FromResult<IEnumerable<UpstreamKeyLookup>>([]));
         _account = null!;
         var accounts = Substitute.For<IAccountSignIn>();
-        accounts.SignIn(Arg.Any<VerifiedAuthentication>(), Arg.Any<ObservedProfile>()).Returns(async call =>
+        accounts.SignIn(Arg.Any<VerifiedAuthentication>(), Arg.Any<ObservedProfile>(), Arg.Any<CancellationToken>()).Returns(async call =>
         {
             _verified = new VerifiedUpstreamSignIn();
-            _verified.Set(call.Arg<VerifiedAuthentication>(), call.Arg<ObservedProfile>());
+            _verified.Set(call.Arg<VerifiedAuthentication>(), call.Arg<ObservedProfile>(), CancellationToken.None);
             _command = new(call.Arg<VerifiedAuthentication>().OperationId);
             await Decide();
             foreach (var @event in _events) await log.Append(_subject.Value, @event);

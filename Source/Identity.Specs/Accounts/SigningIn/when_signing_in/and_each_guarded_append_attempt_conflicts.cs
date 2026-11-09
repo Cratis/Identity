@@ -29,7 +29,7 @@ public class and_each_guarded_append_attempt_conflicts : given.conflicting_guard
     [Fact] void should_run_exactly_two_whole_decisions() => _attempts.Count.ShouldEqual(2);
     [Fact] void should_use_a_new_command_for_the_retry() => ReferenceEquals(_attempts[0], _attempts[1]).ShouldBeFalse();
     [Fact] void should_produce_a_fresh_event_batch_on_each_attempt() => _decisionEvents.Select(events => events.Length).ShouldEqual([1, 1]);
-    [Fact] void should_wait_once_between_attempts() => _commands.Received(1).BeforeRetry();
+    [Fact] void should_wait_once_between_attempts() => _commands.Received(1).BeforeRetry(Arg.Any<CancellationToken>());
     [Fact] void should_stop_after_retry_exhaustion() => _refusal.ShouldEqual("account_concurrency_conflict");
     [Fact] void should_not_return_a_session_account() => _signedIn.ShouldBeNull();
 }

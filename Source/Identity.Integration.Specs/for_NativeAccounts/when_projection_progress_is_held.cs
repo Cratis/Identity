@@ -24,7 +24,7 @@ public class when_projection_progress_is_held(IdentityHost host) : IAsyncLifetim
         var adapter = provider.GetRequiredService<EventSourcedAccountAdapter>();
         var connection = new GitHubConnection(GitHubConnection.FixedConnectionId, provider.GetRequiredService<TimeProvider>());
         var user = new GitHubUser(given.UpstreamUserIds.Next(), "progress-hold", "Before Progress");
-        var initial = await adapter.SignIn(connection.From(user, FactId.New()), new(null, "Before Progress", "progress-hold"));
+        var initial = await adapter.SignIn(connection.From(user, FactId.New()), new(null, "Before Progress", "progress-hold"), TestContext.Current.CancellationToken);
         var store = provider.GetRequiredService<IEventStore>();
         var position = await provider.GetRequiredService<IObserverProgress>().Position(typeof(Account));
         host.ProjectionProgress.Freeze(typeof(Account), position);
@@ -32,7 +32,7 @@ public class when_projection_progress_is_held(IdentityHost host) : IAsyncLifetim
         {
             var append = await store.EventLog.Append(initial.Id.Value, new AccountNameChanged("External Observation"));
             append.IsSuccess.ShouldBeTrue();
-            var attempt = adapter.SignIn(connection.From(user, FactId.New()), new(null, "After Progress", "progress-hold"));
+            var attempt = adapter.SignIn(connection.From(user, FactId.New()), new(null, "After Progress", "progress-hold"), TestContext.Current.CancellationToken);
             await host.ProjectionProgress.Observed.WaitAsync(TimeSpan.FromSeconds(5));
             _pendingAtFence = !attempt.IsCompleted;
             host.ProjectionProgress.Release();

@@ -16,13 +16,17 @@ internal sealed class VerifiedUpstreamSignIn : IVerifiedUpstreamSignIn
     /// <inheritdoc/>
     public ObservedProfile? Profile { get; private set; }
 
+    /// <inheritdoc/>
+    public CancellationToken CancellationToken { get; private set; }
+
     /// <summary>
     /// Supplies the observations from the trusted protocol adapter exactly once.
     /// </summary>
     /// <param name="authentication">The verified authentication.</param>
     /// <param name="profile">The observed profile.</param>
+    /// <param name="cancellationToken">The cancellation of the originating request.</param>
     /// <exception cref="AccountOperationRefused">The scope already contains verified observations.</exception>
-    internal void Set(VerifiedAuthentication authentication, ObservedProfile profile)
+    internal void Set(VerifiedAuthentication authentication, ObservedProfile profile, CancellationToken cancellationToken)
     {
         if (Authentication is not null)
         {
@@ -31,5 +35,6 @@ internal sealed class VerifiedUpstreamSignIn : IVerifiedUpstreamSignIn
 
         Authentication = authentication;
         Profile = profile;
+        CancellationToken = cancellationToken;
     }
 }

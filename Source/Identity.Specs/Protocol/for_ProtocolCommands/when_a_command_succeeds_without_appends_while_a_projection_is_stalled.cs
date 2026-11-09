@@ -40,7 +40,7 @@ public class when_a_command_succeeds_without_appends_while_a_projection_is_stall
         var pipeline = Substitute.For<ICommandPipeline>();
         pipeline.Execute(Arg.Any<object>(), Arg.Any<IServiceProvider>()).Returns(Task.FromResult(new CommandResult()));
         var boundary = new ProtocolCommands(_services.GetRequiredService<IServiceScopeFactory>(), pipeline);
-        _error = await Catch.Exception(() => boundary.Execute(new object()));
+        _error = await Catch.Exception(() => boundary.Execute(new object(), null, CancellationToken.None));
     }
 
     void Destroy()

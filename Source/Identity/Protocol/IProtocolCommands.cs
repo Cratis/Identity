@@ -11,10 +11,12 @@ internal interface IProtocolCommands
     /// <summary>Executes in an independent dependency scope pinned to the Identity realm.</summary>
     /// <param name="command">The protocol command.</param>
     /// <param name="prepare">Optional initialization of verified protocol state in the child scope.</param>
+    /// <param name="cancellationToken">The request cancellation, observed while waiting for read-model catch-up.</param>
     /// <returns>The command result.</returns>
-    Task<CommandResult> Execute(object command, Action<IServiceProvider>? prepare = null);
+    Task<CommandResult> Execute(object command, Action<IServiceProvider>? prepare, CancellationToken cancellationToken);
 
     /// <summary>Waits for filtered projection progress in the realm before the single bounded retry.</summary>
+    /// <param name="cancellationToken">The request cancellation, observed while waiting.</param>
     /// <returns>The projection progress fence.</returns>
-    Task BeforeRetry();
+    Task BeforeRetry(CancellationToken cancellationToken);
 }

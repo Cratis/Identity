@@ -15,7 +15,7 @@ public class an_account_adapter : a_sign_in_decision
     void Establish()
     {
         _commands = Substitute.For<IProtocolCommands>();
-        _commands.Execute(Arg.Any<object>(), Arg.Any<Action<IServiceProvider>>()).Returns(Task.FromResult<CommandResult>(new CommandResult<Contracts.Accounts.AccountSubject> { Response = _subject }));
+        _commands.Execute(Arg.Any<object>(), Arg.Any<Action<IServiceProvider>>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult<CommandResult>(new CommandResult<Contracts.Accounts.AccountSubject> { Response = _subject }));
         _adapter = new(_commands, new(_readModels));
     }
 
@@ -23,7 +23,7 @@ public class an_account_adapter : a_sign_in_decision
     {
         try
         {
-            _signedIn = await _adapter.SignIn(_verified.Authentication, _verified.Profile);
+            _signedIn = await _adapter.SignIn(_verified.Authentication, _verified.Profile, TestContext.Current.CancellationToken);
         }
         catch (AccountOperationRefused refusal)
         {

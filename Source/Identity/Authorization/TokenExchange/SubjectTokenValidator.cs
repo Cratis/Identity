@@ -18,9 +18,8 @@ namespace Cratis.Identity.Authorization.TokenExchange;
 /// </summary>
 /// <param name="options">The <see cref="IdentityOptions"/>.</param>
 /// <param name="keys">The <see cref="IExternalIssuerKeys"/>.</param>
-/// <param name="replay">The <see cref="SubjectTokenReplayGuard"/>.</param>
 /// <param name="time">The <see cref="TimeProvider"/>.</param>
-internal class SubjectTokenValidator(IOptions<IdentityOptions> options, IExternalIssuerKeys keys, SubjectTokenReplayGuard replay, TimeProvider time) : ISubjectTokenValidator
+internal class SubjectTokenValidator(IOptions<IdentityOptions> options, IExternalIssuerKeys keys, TimeProvider time) : ISubjectTokenValidator
 {
     /// <summary>
     /// The longest subject token accepted, in characters.
@@ -158,11 +157,6 @@ internal class SubjectTokenValidator(IOptions<IdentityOptions> options, IExterna
 
         var expiry = Utc(token.ValidTo);
         var replayKey = ReplayKey(issuer.Issuer, token.Subject, token.Id, issuedAt, expiry.ToUnixTimeSeconds());
-        if (replay.WasUsed(replayKey))
-        {
-            return SubjectTokenResult.Refused(SubjectTokenRefusal.Replayed);
-        }
-
         long? authTime = token.TryGetPayloadValue<long>("auth_time", out var seconds) ? seconds : null;
         return SubjectTokenResult.Accepted(new ValidatedSubject(upstreamIssuer, upstreamSubject, authTime, expiry, issued, replayKey));
     }

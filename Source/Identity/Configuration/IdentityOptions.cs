@@ -69,4 +69,9 @@ public class IdentityOptions
     /// Gets or sets the RFC 8693 token-exchange configuration. Empty by default, which leaves the grant disabled.
     /// </summary>
     public TokenExchangeOptions TokenExchange { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the per-process token endpoint admission limits.
+    /// </summary>
+    public TokenRateLimitOptions TokenRateLimit { get; set; } = new();
 }

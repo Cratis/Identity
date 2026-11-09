@@ -27,7 +27,7 @@ public class when_validating_a_token_that_was_already_used : given.a_subject_tok
 
     [Fact] void should_accept_the_first_use() => _first.Refusal.ShouldEqual(SubjectTokenRefusal.None);
     [Fact] void should_refuse_recording_it_twice() => _recordedTwice.ShouldBeFalse();
-    [Fact] void should_refuse_the_second_use() => _second.ShouldEqual(SubjectTokenRefusal.Replayed);
+    [Fact] void should_leave_replay_refusal_to_the_atomic_grant_check() => _second.ShouldEqual(SubjectTokenRefusal.None);
     [Fact] void should_accept_a_token_with_another_jti() => _anotherJti.ShouldEqual(SubjectTokenRefusal.None);
     [Fact] void should_not_report_replay_once_the_token_has_expired() => _afterExpiry.ShouldNotEqual(SubjectTokenRefusal.Replayed);
 }
