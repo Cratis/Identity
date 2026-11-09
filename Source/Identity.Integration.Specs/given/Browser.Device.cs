@@ -9,7 +9,7 @@ public partial class Browser
     /// <param name="scope">The requested scopes.</param>
     /// <param name="resource">The requested resource.</param>
     /// <returns>The protocol response.</returns>
-    public Task<(HttpStatusCode Status, JsonElement Body)> StartDevice(string scope = "direct:read offline_access", string resource = IdentityHost.DirectMcp) => PostForm("/connect/device",
+    public Task<(HttpStatusCode Status, JsonElement Body)> StartDevice(string scope = "direct:mcp:read offline_access", string resource = IdentityHost.DirectMcp) => PostForm("/connect/device",
     [
         new("client_id", ClientId),
         new("scope", scope),
