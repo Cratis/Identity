@@ -23,6 +23,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+          fetch-tags: true
 
       # Keep NuGet packages on the runner's scratch volume beside the checkout, not on the node's small
       # ephemeral storage, where the kubelet evicts the runner under disk pressure.
@@ -42,6 +43,14 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22.x
+
+      - name: Check vector baseline immutability
+        env:
+          BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+        run: node scripts/check-vector-baseline-immutability.mjs
+
+      - name: Vector tooling tests
+        run: node --test scripts/package-authorization-vectors.test.mjs scripts/check-vector-baseline-immutability.test.mjs
 
       - name: Remove generated proxies before rebuilding
         shell: bash

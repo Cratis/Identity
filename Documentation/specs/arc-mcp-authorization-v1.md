@@ -182,15 +182,27 @@ compare the manifest against `baselines/v<version>.json`, not against values reg
 from the manifest. Released baselines are immutable: never edit or regenerate them.
 Every version bump adds a new independently approved baseline and a changelog heading;
 all older baselines and their changelog headings must remain. The checks require one
-baseline per changelog heading, including the initial release. Review must reject edits
-to released baselines; these consistency checks do not compare them against Git history.
+baseline per changelog heading, including the initial release. The release tag
+`vectors/arc-mcp-authorization/v<version>` is the trust anchor, not the mutable working-tree
+baseline. `node scripts/check-vector-baseline-immutability.mjs` compares every released
+baseline with `git show <tag>:<path>` and, while the manifest selects that version,
+compares the manifest and vector content hashes with the tagged revision. Historical
+baselines remain unchanged when the current manifest and vectors advance to a new version.
+An untagged baseline passes with an unreleased notice; v1.0.0 is anchored when its first
+release tag is cut after the next train merges. On pull requests, the checker also compares
+against `BASE_REF` (or `--base-ref <ref>`, default `origin/main` for pull requests): old
+baselines must remain byte-identical, and changing the manifest or vectors requires a
+version bump with a new baseline. Build CI and the packaging workflow run this check
+with full Git history and tags. Run `node scripts/check-vector-baseline-immutability.mjs
+--self-test` to exercise the rejection rules in disposable Git repositories.
 IDs are never reassigned to different behavior. Changing a case requires a new ID or an
 artifact version bump; even with a bump, an existing ID must not acquire different meaning.
 Any ID or hash change at the current version fails baseline validation.
 
 ### Packaging and manual publication
 
-Run `node scripts/package-authorization-vectors.mjs .ai-work/identity-134/artifacts`
+Run `node scripts/check-vector-baseline-immutability.mjs` before
+`node scripts/package-authorization-vectors.mjs .ai-work/identity-134/artifacts`
 from the repository root. This Node-stdlib script produces
 `arc-mcp-authorization-v1-vectors-1.0.0.tar.gz` and its `.sha256` sidecar. The archive
 contains `manifest.json`, `CHANGELOG.md`, every listed vector file at its root, and all
@@ -202,8 +214,8 @@ OS metadata are normalized. Use the same Node version for byte-identical compres
 The release owner can run the **Package authorization vectors** `workflow_dispatch`
 workflow on the reviewed commit to download the pair as a workflow artifact. It does
 not create a Git tag or GitHub release and never runs on push. Publication of the pair
-as immutable assets under a separately approved artifact tag such as
-`arc-mcp-authorization-v1/v1.0.0` remains a release-owner action. No cross-repository
+as immutable assets under the separately approved trust-anchor tag
+`vectors/arc-mcp-authorization/v1.0.0` remains a release-owner action. No cross-repository
 dispatch or token is used.
 
 Arc and AuthProxy consumers should pin the published artifact version and SHA-256,
