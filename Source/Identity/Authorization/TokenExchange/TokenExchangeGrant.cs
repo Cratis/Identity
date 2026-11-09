@@ -18,7 +18,7 @@ namespace Cratis.Identity.Authorization.TokenExchange;
 /// so a caller cannot tell which check failed, and nothing is issued unless every check passed.
 /// </summary>
 /// <param name="validator">The <see cref="ISubjectTokenValidator"/>.</param>
-/// <param name="replay">The <see cref="SubjectTokenReplayGuard"/>.</param>
+/// <param name="replay">The <see cref="ISubjectTokenReplayGuard"/>.</param>
 /// <param name="keys">The <see cref="IUpstreamKeyResolver"/>.</param>
 /// <param name="accounts">The <see cref="IAccountReader"/>.</param>
 /// <param name="resources">The <see cref="IResourceCatalog"/>.</param>
@@ -28,7 +28,7 @@ namespace Cratis.Identity.Authorization.TokenExchange;
 /// <param name="logger">The <see cref="ILogger"/>.</param>
 internal class TokenExchangeGrant(
     ISubjectTokenValidator validator,
-    SubjectTokenReplayGuard replay,
+    ISubjectTokenReplayGuard replay,
     IUpstreamKeyResolver keys,
     IAccountReader accounts,
     IResourceCatalog resources,
@@ -123,13 +123,18 @@ internal class TokenExchangeGrant(
 
         var issuerOptions = options.Value.TokenExchange.Issuers.Single(_ => string.Equals(_.Issuer, verified.Issuer.Value, StringComparison.Ordinal));
         var remembered = verified.Expiry < verified.IssuedAt + issuerOptions.MaxTokenAge ? verified.Expiry : verified.IssuedAt + issuerOptions.MaxTokenAge;
-        switch (replay.Record(verified.ReplayKey, remembered + issuerOptions.ClockSkew))
+        switch (await replay.Record(verified.ReplayKey, remembered + issuerOptions.ClockSkew, cancellationToken))
         {
+            case ReplayRecordResult.Recorded:
+                break;
             case ReplayRecordResult.AlreadyUsed:
                 logger.RefusedForIssuer(client.ClientId, SubjectTokenRefusal.Replayed, verified.Issuer.Value, "replay");
                 return Invalid();
             case ReplayRecordResult.Full:
                 logger.RefusedForIssuer(client.ClientId, SubjectTokenRefusal.ReplayGuardFull, verified.Issuer.Value, "replay-guard-full");
+                return OAuthResults.Error(Errors.TemporarilyUnavailable, "Token exchange is unavailable right now. Try again later.");
+            default:
+                logger.RefusedForIssuer(client.ClientId, SubjectTokenRefusal.ReplayGuardUnavailable, verified.Issuer.Value, "replay-guard-unavailable");
                 return OAuthResults.Error(Errors.TemporarilyUnavailable, "Token exchange is unavailable right now. Try again later.");
         }
 

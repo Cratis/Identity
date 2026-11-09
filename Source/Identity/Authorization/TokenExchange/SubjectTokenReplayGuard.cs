@@ -8,7 +8,7 @@ namespace Cratis.Identity.Authorization.TokenExchange;
 /// survive a restart and is not shared between replicas. When it is full the guard refuses, never forgets.
 /// </summary>
 /// <param name="time">The <see cref="TimeProvider"/>.</param>
-internal class SubjectTokenReplayGuard(TimeProvider time)
+internal class SubjectTokenReplayGuard(TimeProvider time) : ISubjectTokenReplayGuard
 {
     /// <summary>
     /// The most tokens remembered at once.
@@ -17,6 +17,13 @@ internal class SubjectTokenReplayGuard(TimeProvider time)
 
     readonly Lock _lock = new();
     readonly Dictionary<string, DateTimeOffset> _seen = new(StringComparer.Ordinal);
+
+    /// <inheritdoc/>
+    Task<ReplayRecordResult> ISubjectTokenReplayGuard.Record(string key, DateTimeOffset until, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(RecordCore(key, until));
+    }
 
     /// <summary>
     /// Checks whether a token was already used.
@@ -45,7 +52,9 @@ internal class SubjectTokenReplayGuard(TimeProvider time)
     /// <param name="key">The <see cref="ValidatedSubject.ReplayKey"/>.</param>
     /// <param name="until">How long to remember the token.</param>
     /// <returns>The <see cref="ReplayRecordResult"/>.</returns>
-    public ReplayRecordResult Record(string key, DateTimeOffset until)
+    public ReplayRecordResult Record(string key, DateTimeOffset until) => RecordCore(key, until);
+
+    ReplayRecordResult RecordCore(string key, DateTimeOffset until)
     {
         lock (_lock)
         {

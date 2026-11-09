@@ -281,7 +281,7 @@ internal static class IdentityServiceCollectionExtensions
         services.AddScoped<AuthorizationEndpoint>();
         services.AddScoped<TokenEndpoint>();
         services.AddScoped<TokenExchangeGrant>();
-        services.AddSingleton<SubjectTokenReplayGuard>();
+        services.AddSingleton<ISubjectTokenReplayGuard, MongoSubjectTokenReplayGuard>();
         services.AddSingleton<TokenRequestRateLimiter>();
         services.AddSingleton<ISubjectTokenValidator, SubjectTokenValidator>();
         services.AddSingleton<IExternalIssuerKeys, ExternalIssuerKeys>();
