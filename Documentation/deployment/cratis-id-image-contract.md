@@ -86,6 +86,27 @@ These are not changed by this document and belong to L0:
 - **Key-per-file source (M11):** not added. It adds a package and lets a mount override any setting. Recommended: keep `secretKeyRef`; if wanted, a separate change that loads it only from a directory named by one variable, with precedence and trailing-newline specifications.
 - **Passphrase lookup key (M14):** not added. Recommended: keep base64 only and have the Infrastructure automation encode; a passphrase form would freeze key-derivation parameters into every stored value. A cheap follow-up is naming the setting and shape in diagnostics.
 
+## Token endpoint rate limits
+
+`Identity:TokenRateLimit` bounds `/connect/token` admission before realm processing and client authentication. Environment variables use `Identity__TokenRateLimit__<setting>`.
+
+| Setting | Default | Accepted value |
+| --- | --- | --- |
+| `Enabled` | `true` | Set `false` to bypass all admission counters. |
+| `Window` | `00:01:00` | Positive duration, at most one hour. |
+| `PerSourceRequests` | `300` | Positive integer; IPv4 address or IPv6 /64 budget. |
+| `PerClientRequests` | `120` | Positive integer; claimed client id budget across grants. |
+| `PerClientExchangeRequests` | `30` | Positive integer; additional token-exchange budget. |
+| `MaxTrackedKeys` | `10000` | Integer from 100 through 1,000,000. |
+
+Validation is skipped when disabled. Counters are local to each process, reset on restart and are not shared by replicas. At capacity, live partitions are retained and new keys share a bounded overflow budget per partition kind; expired entries are reclaimed. Missing, malformed or oversized client ids still consume the source budget. GET requests consume only the source budget. IPv4-mapped IPv6 is normalized to IPv4; native IPv6 is grouped by /64.
+
+Only `Connection.RemoteIpAddress` is used. The limiter never reads forwarding headers: configure forwarded-headers middleware **before** `MapCratisIdentity` with the explicit trusted proxies/networks above. Untrusted headers do not select a source partition.
+
+A refusal returns HTTP 429 and OAuth `temporarily_unavailable` with the generic description "Too many requests. Try again later." Responses are not cacheable and `Retry-After` is the full window rounded up to integer seconds (minimum one), not partition-specific remaining time. Clients should wait at least that long. Warning logs are throttled to one per reason per window; the next warning reports the previous window's suppressed refusals. Client references are truncated hashes of tracked ids, otherwise `unknown`; tokens, secrets and raw claimed ids are not logged.
+
+Tune budgets for shared egress and client traffic; keep edge-level rate limits. This in-memory admission control is not a distributed DoS defense and adds no database, Chronicle or Redis storage.
+
 ## Secret mount and state ownership
 
 Use the [key-file contract](../../README.md#keys-and-the-secret-store): `signing.<name>.crt/.key`, `encryption.<name>.crt/.key` and `data-protection.<name>.xml`. The server reads and reloads this directory; it does not create keys or persist a replacement ring. All replicas of one realm need consistent active key versions and ring custody. Keep staging and production keys separate. Rotate and recover keys through the platform secret mechanism, not an image rebuild.

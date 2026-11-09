@@ -3,6 +3,7 @@
 
 using System.Net;
 using Cratis.Identity.Authorization;
+using Cratis.Identity.Authorization.RateLimiting;
 using Cratis.Identity.Hosting;
 using Cratis.Identity.Realm;
 using Microsoft.AspNetCore.Antiforgery;
@@ -26,6 +27,7 @@ public static class IdentityWebApplicationExtensions
     public static WebApplication MapCratisIdentity(this WebApplication app)
     {
         app.UseRouting();
+        app.UseMiddleware<TokenRateLimitMiddleware>();
         app.UseMiddleware<IdentityRealmMiddleware>();
         app.UseSecurityHeaders();
         app.UseAuthentication();

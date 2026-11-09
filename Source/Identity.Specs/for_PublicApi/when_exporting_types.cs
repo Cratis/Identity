@@ -35,6 +35,7 @@ public class when_exporting_types : Specification
             typeof(TokenExchangeClientOptions),
             typeof(TokenExchangeOptions),
             typeof(TokenOptions),
+            typeof(TokenRateLimitOptions),
             typeof(UpstreamLoginOptions),
 
             // Emitted by the Arc source generator, not an Identity public API.
