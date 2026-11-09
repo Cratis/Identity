@@ -3,7 +3,6 @@
 
 using System.Security.Cryptography;
 using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
 using DotNet.Testcontainers.Networks;
 using MongoDB.Bson;
@@ -74,7 +73,7 @@ public sealed class CratisIdImageFixture : IAsyncDisposable
 
         var builder = new ContainerBuilder(CratisIdImage.Name)
             .WithNetwork(_network)
-            .WithBindMount(_secrets.Path, "/secrets", AccessMode.ReadOnly)
+            .WithResourceMapping(new DirectoryInfo(_secrets.Path), "/secrets")
             .WithPortBinding(ImagePort, true)
             .WithCreateParameterModifier(parameters =>
             {
