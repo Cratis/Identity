@@ -94,8 +94,9 @@ dotnet test Source/Identity.Specs/Identity.Specs.csproj -c Release --filter Full
 ## Released-ref immutability gate
 
 The ordinary build compares declarations with the embedded manifest. To prevent a
-change from rewriting code, manifest rows, and fixtures together, CI must also run
-the standalone released-ref mode **after** the Release build:
+change from rewriting code, manifest rows, and fixtures together,
+`.github/workflows/build.yml` runs the standalone released-ref mode **after** the
+Release warnings-as-errors build and format verification. For example, locally:
 
 ```sh
 dotnet Source/Identity.Contracts.Check/bin/Release/net10.0/Cratis.Identity.Contracts.Check.dll --released-ref origin/main Identity.slnx
@@ -111,27 +112,40 @@ same bytes and path. New rows and fixtures are allowed. Diagnostics never print
 fixture contents.
 
 A missing/unresolvable ref, unavailable Git, unreadable or malformed catalogue,
-or empty released catalogue or fixture set fails closed. There is no environment
-variable skip. The trusted ref must already contain the initial schema baseline;
-bootstrap the baseline before enabling this required CI step, rather than allowing
-missing history to pass.
+or empty released catalogue or fixture set fails closed in the checker. There is
+no environment variable skip.
 
-**Follow-up wiring in `.github/workflows/build.yml`:** configure the existing
-`actions/checkout` step with `fetch-depth: 0`, then add these exact steps after the
-Release warnings-as-errors build (or fetch the trusted base explicitly as below):
+The workflow checks out full history (`fetch-depth: 0`). For a pull request, it
+validates and fetches the base branch into `origin/<base>`; for a push to main, it
+uses `github.event.before`, fetching that commit if necessary. A first push with
+no previous commit emits a notice and skips this comparison. Event name, PR base,
+and previous commit are passed through step environment variables, never
+interpolated into shell source. The selected base is resolved to a commit before
+checking it, so subsequent ref movement cannot change the comparison.
 
-```yaml
-- name: Fetch trusted schema base
-  run: git fetch --no-tags origin main:refs/remotes/origin/main
-- name: Preserve released event schemas and fixtures
-  run: >-
-    dotnet Source/Identity.Contracts.Check/bin/Release/net10.0/Cratis.Identity.Contracts.Check.dll
-    --released-ref origin/main Identity.slnx
+The workflow has one narrow bootstrap exemption for landing this initial schema
+baseline. It tests the resolved base with:
+
+```sh
+baseline="Source/Identity.Contracts.Check/catalogue/event-schemas.json"
+git cat-file -e "$base_commit:$baseline"
 ```
 
-This change provides the mode but does not edit `build.yml`; that required-check
-wiring remains a follow-up. The trusted ref is supplied explicitly by CI, never
-selected from proposed fixture or catalogue content.
+Only if that fails **and** a successful `git ls-tree --full-tree` lookup confirms
+that the baseline path has no tree entry does the step emit a clear bootstrap
+notice and skip. An existing but unreadable blob, unresolved ref, failed fetch or
+tree lookup, missing Git, and every checker error fail the job. An empty or invalid
+baseline is not an exemption. As soon as the baseline exists in the trusted base,
+this bootstrap exemption no longer applies. Otherwise the workflow runs:
+
+```sh
+dotnet Source/Identity.Contracts.Check/bin/Release/net10.0/Cratis.Identity.Contracts.Check.dll --released-ref "$base_commit" Identity.slnx
+```
+
+The same job runs `dotnet build Identity.slnx --configuration Release -warnaserror`
+and `dotnet format Identity.slnx --verify-no-changes --no-restore`, matching the
+local gates. No follow-up workflow wiring is needed. The trusted base comes from
+the event, never from proposed fixture or catalogue content.
 
 The initial `WireName` snapshot preserves reflection names/explicit aliases;
 Chronicle's default camelCase serialization is exercised by the fixture round-trip
