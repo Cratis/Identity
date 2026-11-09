@@ -24,7 +24,7 @@ internal static class IdentityEndpointConfiguration
     /// <param name="services">The host service provider.</param>
     /// <param name="configure">Optional mapping settings.</param>
     /// <returns>The shared endpoint options.</returns>
-    /// <exception cref="InvalidOperationException">The mapping prefix differs from the registered protocol prefix.</exception>
+    /// <exception cref="InvalidOperationException">The prefix differs from registration or endpoints have already been mapped.</exception>
     internal static IdentityEndpointOptions ResolveIdentityEndpoints(this IServiceProvider services, Action<IdentityEndpointOptions>? configure)
     {
         var registered = services.GetService<IOptions<IdentityEndpointOptions>>()?.Value ?? new IdentityEndpointOptions();
@@ -36,7 +36,13 @@ internal static class IdentityEndpointConfiguration
             throw new InvalidOperationException($"Identity endpoint prefix '{mapped.RoutePrefix}' does not match the registered prefix '{registered.RoutePrefix}'. Configure Identity:Endpoints:RoutePrefix before AddCratisIdentity so OpenIddict and middleware use the same paths.");
         }
 
+        if (registered.IsMapped)
+        {
+            throw new InvalidOperationException("Identity endpoints have already been mapped. Call MapCratisIdentity once per host; its sign-out setting cannot be changed by a later mapping.");
+        }
+
         registered.MapSignOut = mapped.MapSignOut;
+        registered.IsMapped = true;
         return registered;
     }
 }

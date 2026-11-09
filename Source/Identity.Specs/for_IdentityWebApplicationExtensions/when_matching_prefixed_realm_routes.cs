@@ -29,9 +29,11 @@ public class when_matching_prefixed_realm_routes : given.an_identity_host
     [InlineData("/id/connect/../host-work", false, false)]
     [InlineData("/id/connect/%2e%2e/host-work", false, false)]
     [InlineData("/id/connect//token", false, false)]
-    [InlineData("/id/api/cratis/identity/accounts/mine", false, true)]
+    [InlineData("/id/api/cratis/identity/accounts/mine", false, false)]
     [InlineData("/id/api/cratis/identity/accountsevil", false, false)]
-    [InlineData("/api/cratis/identity/accounts/mine", false, false)]
+    [InlineData("/api/cratis/identity/accounts/mine", false, true)]
+    [InlineData("/id/api/cratis/identity/accounts/mineevil", false, false)]
+    [InlineData("/id/api/cratis/identity/accounts/mine/../host-work", false, false)]
     [InlineData("/healthz", false, false)]
     async Task should_scope_before_authentication_only_for_matching_routes(string path, bool signOut, bool expected)
     {

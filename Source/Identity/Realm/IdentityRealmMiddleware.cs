@@ -57,7 +57,7 @@ internal sealed class IdentityRealmMiddleware
             return false;
         }
 
-        if (path.StartsWithSegments("/.well-known") || path.StartsWithSegments("/signin-github"))
+        if (MatchesUnprefixedRoute(path))
         {
             return true;
         }
@@ -70,6 +70,9 @@ internal sealed class IdentityRealmMiddleware
         return MatchesPrefixedRoute(path);
     }
 
+    bool MatchesUnprefixedRoute(PathString path) => path.StartsWithSegments("/.well-known") ||
+        path.StartsWithSegments("/signin-github") || _prefixes.Any(path.StartsWithSegments);
+
     bool MatchesPrefixedRoute(PathString path) => path.StartsWithSegments("/connect") ||
-        (_endpoints.MapSignOut && path.StartsWithSegments("/logout")) || _prefixes.Any(path.StartsWithSegments);
+        (_endpoints.MapSignOut && path.StartsWithSegments("/logout"));
 }

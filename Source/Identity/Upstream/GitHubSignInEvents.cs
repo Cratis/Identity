@@ -6,8 +6,10 @@ using System.Text.Json;
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Contracts.Accounts;
+using Cratis.Identity.Hosting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.Upstream;
 
@@ -18,7 +20,8 @@ namespace Cratis.Identity.Upstream;
 /// <param name="accounts">The verified account sign-in boundary.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
 /// <param name="timeProvider">The trusted clock.</param>
-internal class GitHubSignInEvents(IAccountSignIn accounts, ILogger<GitHubSignInEvents> logger, TimeProvider timeProvider) : OAuthEvents
+/// <param name="endpoints">The registered Identity endpoint paths.</param>
+internal class GitHubSignInEvents(IAccountSignIn accounts, ILogger<GitHubSignInEvents> logger, TimeProvider timeProvider, IOptions<IdentityEndpointOptions>? endpoints = null) : OAuthEvents
 {
     /// <inheritdoc/>
     public override Task AccessDenied(AccessDeniedContext context)
@@ -58,10 +61,10 @@ internal class GitHubSignInEvents(IAccountSignIn accounts, ILogger<GitHubSignInE
     static bool TemporaryFailure(Exception? failure) => (failure is AccountOperationRefused && string.Equals(failure.Message, "temporarily_unavailable", StringComparison.Ordinal)) ||
         (failure?.InnerException is { } inner && TemporaryFailure(inner));
 
-    static async Task Fail(HttpContext context, AuthenticationProperties? properties, string reason = "access_denied")
+    async Task Fail(HttpContext context, AuthenticationProperties? properties, string reason = "access_denied")
     {
         var returnUrl = properties?.RedirectUri;
-        var path = $"{context.Request.PathBase}/connect/authorize?";
+        var path = $"{context.Request.PathBase}{endpoints?.Value.RoutePrefix}/connect/authorize?";
         if (returnUrl?.StartsWith(path, StringComparison.Ordinal) == true &&
             Uri.TryCreate(returnUrl, UriKind.Relative, out _))
         {

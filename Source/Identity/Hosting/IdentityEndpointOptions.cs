@@ -11,7 +11,7 @@ public class IdentityEndpointOptions
     static readonly string[] _reservedPrefixes = ["/.well-known", "/signin-github", "/healthz", "/readyz"];
 
     /// <summary>
-    /// Gets or sets the prefix for protocol and optional sign-out routes and generated API realm matching. Discovery and the GitHub callback remain at the root.
+    /// Gets or sets the prefix for protocol and optional sign-out routes. Generated APIs, discovery and the GitHub callback remain unprefixed.
     /// </summary>
     public PathString RoutePrefix { get; set; }
 
@@ -19,6 +19,9 @@ public class IdentityEndpointOptions
     /// Gets or sets whether to map the optional antiforgery-protected sign-out form. Defaults to false.
     /// </summary>
     public bool MapSignOut { get; set; }
+
+    /// <summary>Gets or sets whether endpoint mapping has finalized the sign-out setting.</summary>
+    internal bool IsMapped { get; set; }
 
     /// <summary>Checks paths for ambiguous encodings and traversal segments.</summary>
     /// <param name="path">The request or prefix path.</param>
