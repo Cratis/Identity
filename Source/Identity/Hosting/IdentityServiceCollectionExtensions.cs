@@ -104,7 +104,7 @@ internal static class IdentityServiceCollectionExtensions
 
         services.AddSessionAndUpstreamLogin(environment);
         services.AddIdentityAuthorization();
-        services.AddAuthorizationServer(startupOptions, environment);
+        services.AddAuthorizationServer(startupOptions, configuration, environment);
 
         return services;
     }
@@ -314,8 +314,9 @@ internal static class IdentityServiceCollectionExtensions
         services.AddScoped<GrantRevocation>();
     }
 
-    static void AddAuthorizationServer(this IServiceCollection services, IdentityOptions startupOptions, IHostEnvironment environment)
+    static void AddAuthorizationServer(this IServiceCollection services, IdentityOptions startupOptions, IConfiguration configuration, IHostEnvironment environment)
     {
+        var endpoints = services.AddIdentityEndpoints(configuration);
         if (!environment.IsDevelopment() && string.IsNullOrWhiteSpace(startupOptions.Issuer))
         {
             throw new IssuerNotConfigured();
@@ -330,10 +331,10 @@ internal static class IdentityServiceCollectionExtensions
             .AddServer(options =>
             {
                 options
-                    .SetAuthorizationEndpointUris("connect/authorize")
-                    .SetTokenEndpointUris("connect/token")
-                    .SetRevocationEndpointUris("connect/revocation")
-                    .SetIntrospectionEndpointUris("connect/introspect")
+                    .SetAuthorizationEndpointUris($"{endpoints.RoutePrefix}/connect/authorize".TrimStart('/'))
+                    .SetTokenEndpointUris($"{endpoints.RoutePrefix}/connect/token".TrimStart('/'))
+                    .SetRevocationEndpointUris($"{endpoints.RoutePrefix}/connect/revocation".TrimStart('/'))
+                    .SetIntrospectionEndpointUris($"{endpoints.RoutePrefix}/connect/introspect".TrimStart('/'))
                     .AllowAuthorizationCodeFlow()
                     .AllowRefreshTokenFlow()
                     .AddTokenExchangeFlow(startupOptions)

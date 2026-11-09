@@ -60,7 +60,9 @@ public class when_serving_health_probes : Specification
         }
 
         var app = builder.Build();
+        app.UseCratisIdentity();
         app.MapCratisIdentity();
+        app.MapGet("/healthz", () => Results.Text("ok"));
         HostedSharedHosting.MapReadiness(app);
         app.Run(context => context.GetEndpoint().RequestDelegate(context));
         return app;
