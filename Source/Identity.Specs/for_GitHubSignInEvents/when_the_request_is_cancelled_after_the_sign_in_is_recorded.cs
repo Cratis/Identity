@@ -6,6 +6,8 @@ using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
 using Cratis.Arc.Commands;
+using Cratis.Chronicle.ReadModels;
+using Cratis.Identity.Accounts;
 using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OAuth;
@@ -24,16 +26,23 @@ public class when_the_request_is_cancelled_after_the_sign_in_is_recorded : Accou
     DefaultHttpContext _http;
     Exception _error;
     RemoteFailureContext _failure;
+    int _appended;
 
     void Establish()
     {
         _aborted = new();
+        _account = _account with { Status = AccountStatus.Disabled };
 
-        // The command succeeds (the sign-in is recorded) and only then does the caller go away.
-        _commands.Execute(Arg.Any<object>(), Arg.Any<Action<IServiceProvider>>(), Arg.Any<CancellationToken>()).Returns(async _ =>
+        // The command succeeds and the sign-in is recorded (appended); the caller goes away while the account is read afterwards.
+        _commands.Execute(Arg.Any<object>(), Arg.Any<Action<IServiceProvider>>(), Arg.Any<CancellationToken>()).Returns(_ =>
+        {
+            _appended++;
+            return Task.FromResult<CommandResult>(new CommandResult<Contracts.Accounts.AccountSubject> { Response = _subject });
+        });
+        _readModels.GetInstanceById<Account>(Arg.Any<ReadModelKey>(), default).ReturnsForAnyArgs(async _ =>
         {
             await _aborted.CancelAsync();
-            return (CommandResult)new CommandResult<Contracts.Accounts.AccountSubject> { Response = _subject };
+            return _account;
         });
     }
 
@@ -59,8 +68,10 @@ public class when_the_request_is_cancelled_after_the_sign_in_is_recorded : Accou
 
     void Destroy() => _aborted.Dispose();
 
+    [Fact] void should_have_recorded_the_sign_in() => _appended.ShouldEqual(1);
     [Fact] void should_surface_the_cancellation() => (_error is OperationCanceledException).ShouldBeTrue();
     [Fact] void should_not_issue_a_session_principal() => _context.Principal.ShouldEqual(_initial);
+    [Fact] void should_not_report_the_account_as_inactive() => (_error is AccountOperationRefused).ShouldBeFalse();
     [Fact] void should_not_redirect_with_a_denial() => _http.Response.Headers.Location.ToString().ShouldEqual(string.Empty);
     [Fact] void should_handle_the_failure_without_a_response() => _failure.Result.Handled.ShouldBeTrue();
 
