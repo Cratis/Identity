@@ -28,13 +28,7 @@ internal sealed class DeviceAuthorizationEndpoint(IGrantPolicy policy, IOpenIddi
     /// <param name="endpoints">The host routes.</param>
     internal static void Map(IEndpointRouteBuilder endpoints) => endpoints.MapPost("/connect/device", (HttpContext context, [FromServices] DeviceAuthorizationEndpoint endpoint) => endpoint.Handle(context)).DisableAntiforgery();
 
-    static IResult Failure(string error) => Results.Forbid(
-        new Microsoft.AspNetCore.Authentication.AuthenticationProperties(new Dictionary<string, string?>
-        {
-            [OpenIddictServerAspNetCoreConstants.Properties.Error] = error,
-            [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The device authorization request cannot be completed."
-        }),
-        [OpenIddictServerAspNetCoreDefaults.AuthenticationScheme]);
+    static DeviceAuthorizationError Failure(string error) => new(error, "The device authorization request cannot be completed.");
 
     async Task<IResult> Handle(HttpContext context)
     {
@@ -47,7 +41,7 @@ internal sealed class DeviceAuthorizationEndpoint(IGrantPolicy policy, IOpenIddi
         }
 
         var evaluation = policy.Evaluate(new GrantRequest(request.GetScopes(), request.GetResources()));
-        if (evaluation is NotGrantable rejected) return OAuthResults.Error(rejected.Error, rejected.Description);
+        if (evaluation is NotGrantable rejected) return new DeviceAuthorizationError(rejected.Error, rejected.Description);
         if (!await rates.Issue(context.Connection.RemoteIpAddress?.ToString(), context.RequestAborted))
         {
             context.Response.Headers.RetryAfter = "60";

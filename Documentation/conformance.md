@@ -44,7 +44,9 @@ For runnable assertions, `Conformance.Expect` runs unlisted assertions normally.
 
 ## Device authorization profile
 
-Device authorization is opt-in through `Identity:Device:Enabled`; the integration fixture explicitly enables it. The shared fixture uses higher bounded account and IP limits so independent scenarios can share one account and peer. Unit specs cover default bounds, shared limit exhaustion, failure-closed admission and logical expiry.
+Device authorization is opt-in through `Identity:Device:Enabled`; the integration fixture explicitly enables it. The shared fixture uses higher bounded account and IP limits so independent scenarios can share one account and peer. Unit specs cover default bounds, shared limit exhaustion, failure-closed admission and logical expiry. Deliberate Chronicle outages use a separate host so their recovery state cannot affect ordinary protocol scenarios.
+
+Device authorization errors return uncacheable OAuth JSON, including when admission is unavailable or a requested resource is invalid. `for_DeviceAuthorizationError/when_returning_a_protocol_error` verifies the response envelope without an external host.
 
 | Id | Source | Obligation | Executable proof |
 | --- | --- | --- | --- |
