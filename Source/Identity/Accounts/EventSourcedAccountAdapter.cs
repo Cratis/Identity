@@ -46,12 +46,15 @@ internal class EventSourcedAccountAdapter(IProtocolCommands commands, AccountRea
                 throw new AccountOperationRefused("temporarily_unavailable");
             }
 
-            var account = await accounts.FindActive(subject) ?? throw new AccountOperationRefused("account_not_active");
+            var account = await accounts.FindActive(subject);
+
+            // A gone caller wins over a refusal derived from what the read returned.
             cancellationToken.ThrowIfCancellationRequested();
-            return account;
+            return account ?? throw new AccountOperationRefused("account_not_active");
         }
         catch (ReadModelsNotCaughtUp)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             throw new AccountOperationRefused("temporarily_unavailable");
         }
     }
