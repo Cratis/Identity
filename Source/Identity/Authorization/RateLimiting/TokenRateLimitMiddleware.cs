@@ -11,6 +11,7 @@ namespace Cratis.Identity.Authorization.RateLimiting;
 
 /// <summary>Limits token requests before realm processing and authentication.</summary>
 /// <param name="next">The next middleware.</param>
+/// <param name="endpoints">The endpoint options that define the token endpoint route prefix.</param>
 internal sealed class TokenRateLimitMiddleware(RequestDelegate next, IOptions<IdentityEndpointOptions>? endpoints = null)
 {
     readonly string _tokenEndpoint = $"{endpoints?.Value.RoutePrefix.Value}/connect/token".TrimStart('/');
