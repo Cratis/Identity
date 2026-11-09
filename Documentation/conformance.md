@@ -48,7 +48,7 @@ Local gate (never run the integration executable locally):
 
 ```sh
 dotnet build Identity.slnx --configuration Release
-./Source/Identity.Specs/bin/Release/net10.0/Cratis.Identity.Specs
+./Source/Identity.Specs/bin/Release/net11.0/Cratis.Identity.Specs
 actionlint .github/workflows/*.yml # if installed
 ```
 
@@ -56,9 +56,9 @@ CI separates these steps without duplicating tagged proofs:
 
 ```sh
 # Integration specs
-./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs -notrait "Category=Conformance"
+./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs -notrait "Category=Conformance"
 # Protocol conformance (RFCs)
-./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs -trait "Category=Conformance"
+./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs -trait "Category=Conformance"
 ```
 
 OpenIddict is centrally pinned to **7.7.1** in `Directory.Packages.props`; this change does not bump it. Dependabot checks NuGet monthly, allows only `OpenIddict*`, groups those updates and opens at most one PR. There is no automatic merge/publish path.

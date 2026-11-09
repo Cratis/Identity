@@ -232,7 +232,7 @@ Configure, for example, `Identity__Resources__0__TenantsCallback__Url=https://di
 
 To run from source instead, start MongoDB on `localhost:27017` and set `Identity__Issuer=http://localhost:5100/`, `Identity__GitHub__ClientId`, `Identity__GitHub__ClientSecret`, `Identity__Resources__0__Tenants__0__Id=local` and `Identity__Resources__0__Tenants__0__Members__0` (your numeric GitHub id). Repeat the tenant settings at `Identity__Resources__1__Tenants__0` for MCP. Then run `ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5100 dotnet run --project Source/Identity.Host`. Your GitHub OAuth app must have the matching callback URL.
 
-The compose file configures one tenant, `local`, for your GitHub user on both Direct resources and binds the HTTP port to loopback only. The Dockerfile builds the app in the .NET 10 SDK and runs it as a non-root user in the .NET 10 chiseled image; compose is **development only**, not a production deployment recipe.
+The compose file configures one tenant, `local`, for your GitHub user on both Direct resources and binds the HTTP port to loopback only. The Dockerfile builds the app in the .NET 11 SDK and runs it as a non-root user in the .NET 11 chiseled image; compose is **development only**, not a production deployment recipe.
 
 ## CLI protocol contract
 
@@ -244,8 +244,8 @@ The CLI sends `client_id=cratis-cli`, `response_type=code`, `code_challenge_meth
 
 ```shell
 dotnet build Identity.slnx -c Release
-./Source/Identity.Specs/bin/Release/net10.0/Cratis.Identity.Specs
-./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs   # needs Docker: starts MongoDB 8.0.14 and Chronicle 19.144.0-development
+./Source/Identity.Specs/bin/Release/net11.0/Cratis.Identity.Specs
+./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs   # needs Docker: starts MongoDB 8.0.14 and Chronicle 19.144.0-development
 dotnet pack Identity.slnx -c Release --no-build --output Artifacts/NuGet
 (cd Source/JavaScript/Identity && npm ci && npm run build && npm pack --pack-destination ../../../Artifacts/npm)
 ```

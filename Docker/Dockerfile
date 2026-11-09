@@ -5,7 +5,7 @@
 # Build: docker build -f Docker/Dockerfile -t cratis/identity .
 ####################################
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 WORKDIR /src
 
 # Keep the reference host as the default for local compose users.
@@ -22,10 +22,10 @@ COPY Source/Identity/ Source/Identity/
 COPY Source/Identity.Contracts/ Source/Identity.Contracts/
 COPY Source/Identity.Host/ Source/Identity.Host/
 COPY Source/Identity.CratisId/ Source/Identity.CratisId/
-RUN dotnet publish Source/${HOST}/${HOST}.csproj -c Release -o /app --no-restore -p:CratisProxiesOutputPath=
+RUN dotnet publish Source/${HOST}/${HOST}.csproj -c Release -f net11.0 -o /app --no-restore -p:CratisProxiesOutputPath=
 
 # Chiseled: no shell or package manager, runs as a non-root user by default.
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0-noble-chiseled AS runtime
 WORKDIR /app
 COPY --from=build /app ./
 
