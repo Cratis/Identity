@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using Cratis.Identity.Configuration;
+using Cratis.Identity.Hosting;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Options;
 
@@ -10,8 +11,10 @@ namespace Cratis.Identity.Authorization.RateLimiting;
 
 /// <summary>Limits token requests before realm processing and authentication.</summary>
 /// <param name="next">The next middleware.</param>
-internal sealed class TokenRateLimitMiddleware(RequestDelegate next)
+internal sealed class TokenRateLimitMiddleware(RequestDelegate next, IOptions<IdentityEndpointOptions>? endpoints = null)
 {
+    readonly string _tokenEndpoint = $"{endpoints?.Value.RoutePrefix.Value}/connect/token".TrimStart('/');
+
     /// <summary>Admits a request or returns a non-cacheable OAuth refusal.</summary>
     /// <param name="context">The HTTP context.</param>
     /// <param name="limiter">The process-local admission limiter.</param>
@@ -19,7 +22,7 @@ internal sealed class TokenRateLimitMiddleware(RequestDelegate next)
     /// <returns>The asynchronous operation.</returns>
     public async Task InvokeAsync(HttpContext context, TokenRequestRateLimiter limiter, IOptions<IdentityOptions> options)
     {
-        if (!options.Value.TokenRateLimit.Enabled || !IsTokenRequest(context.Request))
+        if (!options.Value.TokenRateLimit.Enabled || !IsTokenRequest(context.Request, _tokenEndpoint))
         {
             await next(context);
             return;
@@ -41,7 +44,7 @@ internal sealed class TokenRateLimitMiddleware(RequestDelegate next)
         await context.Response.WriteAsync(/*lang=json*/ "{\"error\":\"temporarily_unavailable\",\"error_description\":\"Too many requests. Try again later.\"}", context.RequestAborted);
     }
 
-    static bool IsTokenRequest(HttpRequest request)
+    static bool IsTokenRequest(HttpRequest request, string tokenEndpoint)
     {
         // Match OpenIddict 7.8.0 ResolveRequestUri/InferEndpointType: canonicalize the
         // combined PathBase + Path with System.Uri, ignore query/case/trailing slash.
@@ -54,7 +57,7 @@ internal sealed class TokenRateLimitMiddleware(RequestDelegate next)
         }
 
         if (!baseUri.AbsolutePath.EndsWith('/')) baseUri = new UriBuilder(baseUri) { Path = baseUri.AbsolutePath + "/" }.Uri;
-        var endpoint = new Uri(baseUri, "connect/token");
+        var endpoint = new Uri(baseUri, tokenEndpoint);
         return string.Equals(endpoint.AbsolutePath.TrimEnd('/'), requestUri.AbsolutePath.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
     }
 }
