@@ -15,12 +15,12 @@ public class when_validating_hostile_subjects
     [InlineData(31)]
     [InlineData(127)]
     [InlineData(133)]
-    void should_refuse_embedded_control_characters(int character) => Catch.Exception(() => _ = new UpstreamSubject($"immutable{(char)character}subject")).ShouldBeOfExactType<InvalidAccountValue>();
+    void should_refuse_embedded_control_characters(int character) => Catch.Exception(() => _ = UpstreamSubject.Create($"immutable{(char)character}subject")).ShouldBeOfExactType<InvalidAccountValue>();
 
     [Theory]
     [InlineData('a', 257)]
     [InlineData('é', 129)]
-    void should_refuse_subjects_over_the_utf8_byte_limit(char character, int count) => Catch.Exception(() => _ = new UpstreamSubject(new string(character, count))).ShouldBeOfExactType<InvalidAccountValue>();
+    void should_refuse_subjects_over_the_utf8_byte_limit(char character, int count) => Catch.Exception(() => _ = UpstreamSubject.Create(new string(character, count))).ShouldBeOfExactType<InvalidAccountValue>();
 
     [Theory]
     [InlineData('a', 256)]
@@ -28,6 +28,6 @@ public class when_validating_hostile_subjects
     void should_preserve_subjects_at_the_exact_utf8_byte_limit(char character, int count)
     {
         var subject = new string(character, count);
-        new UpstreamSubject(subject).Value.ShouldEqual(subject);
+        UpstreamSubject.Create(subject).Value.ShouldEqual(subject);
     }
 }

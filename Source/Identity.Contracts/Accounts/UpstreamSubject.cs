@@ -13,18 +13,30 @@ namespace Cratis.Identity.Contracts.Accounts;
 public record UpstreamSubject : ConceptAs<string>
 {
     /// <summary>Initializes a new instance of the <see cref="UpstreamSubject"/> record.</summary>
-    /// <param name="value">The exact subject.</param>
+    /// <param name="value">The stored subject, or an empty string after compliance erasure.</param>
+    /// <remarks>The constructor supports replay. Use <see cref="Create"/> for new upstream observations.</remarks>
     public UpstreamSubject(string value) : base(value)
     {
+    }
+
+    /// <summary>Converts and validates a verified upstream subject.</summary>
+    /// <param name="value">The subject.</param>
+    public static implicit operator UpstreamSubject(string value) => Create(value);
+
+    /// <summary>Validates a new upstream observation, never an erased replay value.</summary>
+    /// <param name="value">The exact subject.</param>
+    /// <returns>The validated subject.</returns>
+    /// <exception cref="InvalidAccountValue">The subject is blank, too long or contains control characters.</exception>
+    public static UpstreamSubject Create(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
         if (!IsValid(value))
         {
             throw new InvalidAccountValue(nameof(UpstreamSubject));
         }
-    }
 
-    /// <summary>Converts a verified upstream subject.</summary>
-    /// <param name="value">The subject.</param>
-    public static implicit operator UpstreamSubject(string value) => new(value);
+        return new(value);
+    }
 
     static bool IsValid(string value) => !string.IsNullOrWhiteSpace(value) && Encoding.UTF8.GetByteCount(value) <= 256 && !value.Any(char.IsControl);
 }
