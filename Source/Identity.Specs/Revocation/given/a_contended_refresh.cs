@@ -96,7 +96,7 @@ public class a_contended_refresh : for_RedeemRefreshTokenOnce.given.a_refresh_to
 
     static TokenExchangeGrant ExchangeGrant() => new(
         Substitute.For<ISubjectTokenValidator>(),
-        new(TimeProvider.System),
+        new SubjectTokenReplayGuard(TimeProvider.System),
         Substitute.For<IUpstreamKeyResolver>(),
         Substitute.For<IAccountReader>(),
         Substitute.For<IResourceCatalog>(),

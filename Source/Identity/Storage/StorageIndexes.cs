@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.ConsentFlow.Operational;
+using Cratis.Identity.Operational;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -27,6 +28,7 @@ internal class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddic
         var options = openIddict.CurrentValue;
         await MongoConsentRequestStore.EnsureIndexes(database, cancellationToken);
         await EnsureGrantFences(cancellationToken);
+        await EnsureSubjectTokenReplays(cancellationToken);
 
         await database.GetCollection<OpenIddictMongoDbAuthorization>(options.AuthorizationsCollectionName).Indexes.CreateOneAsync(
             new CreateIndexModel<OpenIddictMongoDbAuthorization>(
@@ -63,6 +65,13 @@ internal class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddic
             ],
             cancellationToken);
     }
+
+    async Task EnsureSubjectTokenReplays(CancellationToken cancellationToken) =>
+        await database.GetCollection<BsonDocument>(MongoSubjectTokenReplayGuard.CollectionName).Indexes.CreateOneAsync(
+            new CreateIndexModel<BsonDocument>(
+                Builders<BsonDocument>.IndexKeys.Ascending("Until"),
+                new CreateIndexOptions { Name = "subject_token_replay_expiry", ExpireAfter = TimeSpan.Zero }),
+            cancellationToken: cancellationToken);
 
     async Task EnsureGrantFences(CancellationToken cancellationToken)
     {

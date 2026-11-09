@@ -15,5 +15,10 @@ internal enum ReplayRecordResult
     AlreadyUsed = 1,
 
     /// <summary>The guard is full, so nothing more is accepted.</summary>
-    Full = 2
+    Full = 2,
+
+    /// <summary>
+    /// The guard could not durably record the token.
+    /// </summary>
+    Unavailable = 3
 }
