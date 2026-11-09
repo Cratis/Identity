@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.DependencyInjection;
 using Cratis.Identity.Configuration;
 using Microsoft.AspNetCore;
 using Microsoft.Extensions.Options;
@@ -9,12 +10,14 @@ using static OpenIddict.Server.OpenIddictServerEvents;
 namespace Cratis.Identity.DPoP;
 
 /// <summary>Admits proofs before any grant consumption, failing closed on shared state failure.</summary>
+/// <remarks>Only the enabled profile may register this optional refresh-handler dependency.</remarks>
 /// <param name="validator">The cryptographic validator.</param>
 /// <param name="nonces">The stateless nonce service.</param>
 /// <param name="replay">The shared replay reservation store.</param>
 /// <param name="binding">The request binding.</param>
 /// <param name="options">The opt-in policy.</param>
 /// <param name="time">The shared clock.</param>
+[IgnoreConvention]
 internal sealed class DPoPAdmission(DPoPProofValidator validator, DPoPNonce nonces, IDPoPReplayStore replay, DPoPBinding binding, IOptions<IdentityOptions> options, TimeProvider time)
 {
     /// <summary>Checks a new grant, or a refresh entry's authoritative existing binding.</summary>
@@ -42,15 +45,7 @@ internal sealed class DPoPAdmission(DPoPProofValidator validator, DPoPNonce nonc
             return Refuse(context, DPoPFailure.NonceRequired);
         }
 
-        try
-        {
-            if (!await replay.TryReserve("as", origin, proof.Jkt, proof.Jti, time.GetUtcNow().AddSeconds(390), context.CancellationToken)) return Refuse(context, DPoPFailure.ReusedJti);
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException)
-        {
-            // No exception details: drivers and implementations may include untrusted inputs.
-            return Refuse(context, DPoPFailure.JtiCacheUnavailable);
-        }
+        if (!await Reserve(context, origin, proof)) return false;
 
         binding.Jkt = proof.Jkt;
         NonceHeader(context, nonces.Issue(origin, proof.Jkt));
@@ -87,6 +82,19 @@ internal sealed class DPoPAdmission(DPoPProofValidator validator, DPoPNonce nonc
             response.Headers["DPoP-Nonce"] = nonce;
             response.Headers.CacheControl = "no-store";
             response.Headers.Pragma = "no-cache";
+        }
+    }
+
+    async Task<bool> Reserve(ProcessSignInContext context, string origin, DPoPProof proof)
+    {
+        try
+        {
+            return await replay.TryReserve("as", origin, proof.Jkt, proof.Jti, time.GetUtcNow().AddSeconds(390), context.CancellationToken) || Refuse(context, DPoPFailure.ReusedJti);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // No exception details: drivers and implementations may include untrusted inputs.
+            return Refuse(context, DPoPFailure.JtiCacheUnavailable);
         }
     }
 }
