@@ -67,8 +67,8 @@ public class concurrent_commands : Specification
         pipeline.Execute(first, Arg.Any<IServiceProvider>()).Returns(_firstPipeline.Task);
         pipeline.Execute(second, Arg.Any<IServiceProvider>()).Returns(_secondPipeline.Task);
         var boundary = new ProtocolCommands(_services.GetRequiredService<IServiceScopeFactory>(), pipeline);
-        _firstExecution = boundary.Execute(first);
-        _secondExecution = boundary.Execute(second);
+        _firstExecution = boundary.Execute(first, null, CancellationToken.None);
+        _secondExecution = boundary.Execute(second, null, CancellationToken.None);
     }
 
     void Destroy()

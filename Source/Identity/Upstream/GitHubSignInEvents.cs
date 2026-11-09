@@ -50,7 +50,7 @@ internal class GitHubSignInEvents(IAccountSignIn accounts, ILogger<GitHubSignInE
         var user = GitHubUserResponse.Read(body.RootElement) ?? throw new GitHubUserResponseInvalid();
 
         var authentication = new GitHubConnection(GitHubConnection.FixedConnectionId, timeProvider).From(user, FactId.New());
-        var account = await accounts.SignIn(authentication, new(user.Email, user.Name, user.Login));
+        var account = await accounts.SignIn(authentication, new(user.Email, user.Name, user.Login), context.HttpContext.RequestAborted);
         logger.SignedIn(account.Id, user.Id, user.Login);
         context.Principal = SessionPrincipal.For(account, IdentitySchemes.GitHub, authentication.AuthTime);
     }

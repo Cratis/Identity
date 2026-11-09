@@ -12,23 +12,22 @@ using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.Protocol.for_ProtocolCommands;
 
-public class when_the_request_is_cancelled_while_a_projection_is_catching_up : Specification
+public class when_a_command_succeeds_with_an_active_request : Specification
 {
     ServiceProvider _services;
     Subject<IEnumerable<AppendedEventWithResult>> _appends;
     CancellationTokenSource _request;
-    ProtocolCommands _boundary;
-    Exception _executeError;
-    Exception _retryError;
+    CommandResult _result;
 
     void Establish()
     {
         _appends = new();
+        _request = new();
         var log = Substitute.For<IEventLog>();
         log.AppendOperations.Returns(_appends);
         var progress = Substitute.For<IObserverProgress>();
         progress.Tail(Arg.Any<Type>()).Returns(Task.FromResult(new EventSequenceNumber(5)));
-        progress.Position(Arg.Any<Type>()).Returns(Task.FromResult(new ObserverPosition(ObserverRunningState.Active, false, false, new(1))));
+        progress.Position(Arg.Any<Type>()).Returns(Task.FromResult(new ObserverPosition(ObserverRunningState.Active, false, false, new(5))));
         _services = new ServiceCollection()
             .AddSingleton(log)
             .AddSingleton(progress)
@@ -36,17 +35,14 @@ public class when_the_request_is_cancelled_while_a_projection_is_catching_up : S
             .AddSingleton(TimeProvider.System)
             .AddScoped<ReadModelCatchUp>()
             .BuildServiceProvider();
-        var pipeline = Substitute.For<ICommandPipeline>();
-        pipeline.Execute(Arg.Any<object>(), Arg.Any<IServiceProvider>()).Returns(Task.FromResult(new CommandResult()));
-        _boundary = new ProtocolCommands(_services.GetRequiredService<IServiceScopeFactory>(), pipeline);
-        _request = new();
-        _request.Cancel();
     }
 
     async Task Because()
     {
-        _executeError = await Catch.Exception(() => _boundary.Execute(new object(), cancellationToken: _request.Token));
-        _retryError = await Catch.Exception(() => _boundary.BeforeRetry(_request.Token));
+        var pipeline = Substitute.For<ICommandPipeline>();
+        pipeline.Execute(Arg.Any<object>(), Arg.Any<IServiceProvider>()).Returns(Task.FromResult(new CommandResult()));
+        var boundary = new ProtocolCommands(_services.GetRequiredService<IServiceScopeFactory>(), pipeline);
+        _result = await boundary.Execute(new object(), null, _request.Token);
     }
 
     void Destroy()
@@ -56,6 +52,5 @@ public class when_the_request_is_cancelled_while_a_projection_is_catching_up : S
         _appends.Dispose();
     }
 
-    [Fact] void should_observe_the_cancellation_while_executing() => (_executeError is OperationCanceledException).ShouldBeTrue();
-    [Fact] void should_observe_the_cancellation_before_the_retry() => (_retryError is OperationCanceledException).ShouldBeTrue();
+    [Fact] void should_complete_the_command_successfully() => _result.IsSuccess.ShouldBeTrue();
 }

@@ -22,17 +22,18 @@ internal class EventSourcedAccountAdapter(IProtocolCommands commands, AccountRea
     /// </summary>
     /// <param name="authentication">The verified upstream authentication.</param>
     /// <param name="profile">The observed profile.</param>
+    /// <param name="cancellationToken">The request cancellation, observed while waiting for read-model catch-up.</param>
     /// <returns>The caught-up active account for session construction.</returns>
     /// <exception cref="AccountOperationRefused">The guarded decision or required projection progress was refused.</exception>
-    public async Task<Account> SignIn(VerifiedAuthentication authentication, ObservedProfile profile)
+    public async Task<Account> SignIn(VerifiedAuthentication authentication, ObservedProfile profile, CancellationToken cancellationToken)
     {
         try
         {
-            var result = await Execute(authentication, profile);
+            var result = await Execute(authentication, profile, cancellationToken);
             if (Retryable(result))
             {
-                await commands.BeforeRetry();
-                result = await Execute(authentication, profile);
+                await commands.BeforeRetry(cancellationToken);
+                result = await Execute(authentication, profile, cancellationToken);
             }
 
             if (!result.IsSuccess)
@@ -78,7 +79,8 @@ internal class EventSourcedAccountAdapter(IProtocolCommands commands, AccountRea
         return result.ValidationResults.FirstOrDefault()?.Message ?? "temporarily_unavailable";
     }
 
-    Task<CommandResult> Execute(VerifiedAuthentication authentication, ObservedProfile profile) => commands.Execute(
+    Task<CommandResult> Execute(VerifiedAuthentication authentication, ObservedProfile profile, CancellationToken cancellationToken) => commands.Execute(
         new SignInWithUpstreamKey(authentication.OperationId),
-        provider => provider.GetRequiredService<VerifiedUpstreamSignIn>().Set(authentication, profile));
+        provider => provider.GetRequiredService<VerifiedUpstreamSignIn>().Set(authentication, profile, cancellationToken),
+        cancellationToken);
 }

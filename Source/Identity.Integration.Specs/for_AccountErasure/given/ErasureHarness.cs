@@ -58,7 +58,7 @@ internal sealed class ErasureHarness(IServiceProvider provider)
         var timeProvider = provider.GetRequiredService<TimeProvider>();
         var connection = new GitHubConnection(GitHubConnection.FixedConnectionId, timeProvider);
         var user = new GitHubUser(UpstreamUserIds.Next(), "erasure-spec-login", "Erasure Spec Person");
-        var account = await adapter.SignIn(connection.From(user, FactId.New()), new(null, user.Name, user.Login));
+        var account = await adapter.SignIn(connection.From(user, FactId.New()), new(null, user.Name, user.Login), TestContext.Current.CancellationToken);
         (await Store.EventLog.Append(account.Id.Value, new AccountNameChanged(RenamedPersonalName))).IsSuccess.ShouldBeTrue();
         (await Store.EventLog.Append(account.Id.Value, new AccountTombstoneRecorded(timeProvider.GetUtcNow(), FactId.New()))).IsSuccess.ShouldBeTrue();
         return account.Id;

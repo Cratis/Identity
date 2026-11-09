@@ -8,7 +8,7 @@ namespace Cratis.Identity.Accounts.SigningIn.when_signing_in;
 
 public class and_both_append_attempts_conflict : given.an_account_adapter
 {
-    void Establish() => _commands.Execute(Arg.Any<object>(), Arg.Any<Action<IServiceProvider>>()).Returns(Task.FromResult(new CommandResult { ValidationResults = [ValidationResult.Error("Conflict") with { Reason = ValidationResultReason.ConcurrencyViolation }] }));
+    void Establish() => _commands.Execute(Arg.Any<object>(), Arg.Any<Action<IServiceProvider>>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult(new CommandResult { ValidationResults = [ValidationResult.Error("Conflict") with { Reason = ValidationResultReason.ConcurrencyViolation }] }));
     Task Because() => SignIn();
     [Fact] void should_fail_with_the_defined_reason() => _refusal.ShouldEqual("account_concurrency_conflict");
     [Fact] void should_not_return_a_session_account() => _signedIn.ShouldBeNull();

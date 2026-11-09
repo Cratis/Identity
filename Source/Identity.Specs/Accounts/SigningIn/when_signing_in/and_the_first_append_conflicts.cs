@@ -9,7 +9,7 @@ namespace Cratis.Identity.Accounts.SigningIn.when_signing_in;
 
 public class and_the_first_append_conflicts : given.an_account_adapter
 {
-    void Establish() => _commands.Execute(Arg.Any<object>(), Arg.Any<Action<IServiceProvider>>()).Returns(
+    void Establish() => _commands.Execute(Arg.Any<object>(), Arg.Any<Action<IServiceProvider>>(), Arg.Any<CancellationToken>()).Returns(
         Task.FromResult(new CommandResult { ValidationResults = [ValidationResult.Error("Conflict") with { Reason = ValidationResultReason.ConcurrencyViolation }] }),
         Task.FromResult<CommandResult>(new CommandResult<AccountSubject> { Response = _subject }));
 

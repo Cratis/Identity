@@ -28,12 +28,12 @@ public class when_an_account_is_disabled_after_the_sign_in_recheck(IdentityHost 
         var adapter = provider.GetRequiredService<EventSourcedAccountAdapter>();
         var connection = new GitHubConnection(GitHubConnection.FixedConnectionId, provider.GetRequiredService<TimeProvider>());
         var user = new GitHubUser(UpstreamUserIds.Next(), "disabled-after-recheck", "Before Disable");
-        var initial = await adapter.SignIn(connection.From(user, FactId.New()), new(null, user.Name, user.Login));
+        var initial = await adapter.SignIn(connection.From(user, FactId.New()), new(null, user.Name, user.Login), TestContext.Current.CancellationToken);
         var store = provider.GetRequiredService<IEventStore>();
         var before = (await store.EventLog.GetFromSequenceNumber(EventSequenceNumber.First, initial.Id.Value)).Count;
         using var run = provider.GetRequiredService<NativeSignInInterleaving>().Begin(1);
         _run = run;
-        var signIn = SignInOutcome.Observe(adapter.SignIn(connection.From(user, FactId.New()), new(null, "Stale Sign In Name", "stale-sign-in-login")));
+        var signIn = SignInOutcome.Observe(adapter.SignIn(connection.From(user, FactId.New()), new(null, "Stale Sign In Name", "stale-sign-in-login"), TestContext.Current.CancellationToken));
         var paused = await run.Next();
         paused.Decision.Subject.ShouldEqual(initial.Id);
         paused.Decision.Reservation.Active.ShouldBeTrue();

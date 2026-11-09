@@ -16,7 +16,7 @@ namespace Cratis.Identity.Protocol;
 internal sealed class ProtocolCommands(IServiceScopeFactory scopes, ICommandPipeline pipeline) : IProtocolCommands
 {
     /// <inheritdoc/>
-    public async Task BeforeRetry(CancellationToken cancellationToken = default)
+    public async Task BeforeRetry(CancellationToken cancellationToken)
     {
         using var realm = IdentityRealmScope.Begin();
         await using var child = scopes.CreateAsyncScope();
@@ -24,7 +24,7 @@ internal sealed class ProtocolCommands(IServiceScopeFactory scopes, ICommandPipe
     }
 
     /// <inheritdoc/>
-    public async Task<CommandResult> Execute(object command, Action<IServiceProvider>? prepare = null, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> Execute(object command, Action<IServiceProvider>? prepare, CancellationToken cancellationToken)
     {
         using var protocol = ProtocolCommandScope.Begin();
         using var realm = IdentityRealmScope.Begin();
