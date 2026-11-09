@@ -15,10 +15,10 @@ For previously built Release assemblies, run the same checker directly from the
 repository root. Supply every production output, followed by the solution path:
 
 ```sh
-dotnet Source/Identity.Contracts.Check/bin/Release/net10.0/Cratis.Identity.Contracts.Check.dll \
-  Source/Identity.Contracts/bin/Release/net10.0/Cratis.Identity.Contracts.dll \
-  Source/Identity/bin/Release/net10.0/Cratis.Identity.dll \
-  Source/Identity.Host/bin/Release/net10.0/Cratis.Identity.Host.dll \
+dotnet Source/Identity.Contracts.Check/bin/Release/net11.0/Cratis.Identity.Contracts.Check.dll \
+  Source/Identity.Contracts/bin/Release/net11.0/Cratis.Identity.Contracts.dll \
+  Source/Identity/bin/Release/net11.0/Cratis.Identity.dll \
+  Source/Identity.Host/bin/Release/net11.0/Cratis.Identity.Host.dll \
   Identity.slnx
 ```
 
