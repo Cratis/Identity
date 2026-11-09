@@ -14,5 +14,5 @@ public class and_the_fresh_retry_observes_an_unlink : given.an_account_adapter
     Task Because() => SignIn();
     [Fact] void should_refuse_instead_of_replaying_stale_events() => _refusal.ShouldEqual("upstream_key_reserved_but_inactive");
     [Fact] void should_not_return_a_session_account() => _signedIn.ShouldBeNull();
-    [Fact] void should_decide_at_most_twice() => _commands.Received(2).Execute(Arg.Any<object>(), Arg.Any<Action<IServiceProvider>>());
+    [Fact] void should_decide_at_most_twice() => _commands.Received(2).Execute(Arg.Any<object>(), Arg.Any<Action<IServiceProvider>>(), Arg.Any<CancellationToken>());
 }

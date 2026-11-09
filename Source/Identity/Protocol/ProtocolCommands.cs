@@ -16,15 +16,15 @@ namespace Cratis.Identity.Protocol;
 internal sealed class ProtocolCommands(IServiceScopeFactory scopes, ICommandPipeline pipeline) : IProtocolCommands
 {
     /// <inheritdoc/>
-    public async Task BeforeRetry()
+    public async Task BeforeRetry(CancellationToken cancellationToken = default)
     {
         using var realm = IdentityRealmScope.Begin();
         await using var child = scopes.CreateAsyncScope();
-        await child.ServiceProvider.GetRequiredService<ReadModelCatchUp>().BeforeRetry(CancellationToken.None);
+        await child.ServiceProvider.GetRequiredService<ReadModelCatchUp>().BeforeRetry(cancellationToken);
     }
 
     /// <inheritdoc/>
-    public async Task<CommandResult> Execute(object command, Action<IServiceProvider>? prepare = null)
+    public async Task<CommandResult> Execute(object command, Action<IServiceProvider>? prepare = null, CancellationToken cancellationToken = default)
     {
         using var protocol = ProtocolCommandScope.Begin();
         using var realm = IdentityRealmScope.Begin();
@@ -64,12 +64,12 @@ internal sealed class ProtocolCommands(IServiceScopeFactory scopes, ICommandPipe
             var catchUp = child.ServiceProvider.GetRequiredService<ReadModelCatchUp>();
             if (ownAppends.Length != 0)
             {
-                await catchUp.AfterCommand(ownAppends, CancellationToken.None);
+                await catchUp.AfterCommand(ownAppends, cancellationToken);
             }
             else
             {
                 // This command appended nothing (appends by concurrent commands do not count): fence on the sign-in read models' current tails instead of assuming nothing changed.
-                await catchUp.BeforeRetry(CancellationToken.None);
+                await catchUp.BeforeRetry(cancellationToken);
             }
         }
 

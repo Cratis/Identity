@@ -12,5 +12,5 @@ public class and_both_append_attempts_conflict : given.an_account_adapter
     Task Because() => SignIn();
     [Fact] void should_fail_with_the_defined_reason() => _refusal.ShouldEqual("account_concurrency_conflict");
     [Fact] void should_not_return_a_session_account() => _signedIn.ShouldBeNull();
-    [Fact] void should_not_exceed_two_whole_decisions() => _commands.Received(2).Execute(Arg.Any<object>(), Arg.Any<Action<IServiceProvider>>());
+    [Fact] void should_not_exceed_two_whole_decisions() => _commands.Received(2).Execute(Arg.Any<object>(), Arg.Any<Action<IServiceProvider>>(), Arg.Any<CancellationToken>());
 }

@@ -32,6 +32,8 @@ Notify Infrastructure incident authority, accountable issuer/security owner, all
 
 Infrastructure must establish clean administration, custody and recovery evidence before Identity verification has meaning. Then require all affected host/edge/product runbooks' old-key and old-credential denial, trusted fences/epochs/watermarks, fresh authorized access and cross-app/realm isolation checks across replicas. Cluster-level approval and the accountable Identity owner's acceptance are prerequisites; a single successful login or rotated signing key is not proof of recovery.
 
+See also: [Outage behavior](../outage-behavior.md) for what keeps working while a store is down.
+
 ## Rehearsal
 
 **rehearsal issue needed** for cluster-wide compromise/recovery and an approved Infrastructure runbook link. [Cratis/Infrastructure #294](https://github.com/Cratis/Infrastructure/issues/294) (edge keys) and [#299](https://github.com/Cratis/Infrastructure/issues/299) (products-realm restore/signing keys) are linked sub-drills, not a full control-plane recovery rehearsal.

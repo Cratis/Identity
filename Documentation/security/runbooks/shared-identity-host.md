@@ -34,6 +34,8 @@ Notify accountable issuer/security owner, Identity/OpenIddict and event-contract
 
 For each realm and consumer replica prove old-key rejection, fresh signed-token validation, retired session/refresh/grant/approval denial and current epoch enforcement. Prove trusted issuer-to-realm selection cannot choose another realm's keys/store, foreign audiences fail and fresh authentication still requires live product membership/roles under [verified caller](../../specs/arc-verified-caller-v1.md). Validate per-partition recovery barriers, outbox reconciliation, consumption invalidation and clean custody before reopening. Recheck D13/D19 release acceptance and isolation-tier inventory; separate realm names are not separate process authority.
 
+See also: [Outage behavior](../outage-behavior.md) for what keeps working while a store is down.
+
 ## Rehearsal
 
 [Cratis/Infrastructure #299](https://github.com/Cratis/Infrastructure/issues/299): restore and signing-key rotation drills for the products realm, including D13 controls and fence-log recovery. **rehearsal issue needed** for multi-realm shared Stage-host recovery and any per-Performance variant; #299 is not evidence of that coverage. [#294](https://github.com/Cratis/Infrastructure/issues/294) applies only if edge keys were also exposed. No completed drill is claimed.

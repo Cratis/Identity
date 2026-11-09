@@ -1,0 +1,21 @@
+# Outage behavior
+
+What Identity keeps doing, and what it refuses, when a store or dependency is down. The contract is **fail closed**: a credential is never honored on the strength of a store that cannot answer. Related: [Cratis/Identity #121](https://github.com/Cratis/Identity/issues/121), [#57](https://github.com/Cratis/Identity/issues/57).
+
+Rows marked **open** have no spec yet; treat them as intent, not proof.
+
+| Outage | Keeps working | Refused | Recovery and evidence |
+| --- | --- | --- | --- |
+| Chronicle kernel down | Revocation is acknowledged: the fence and outbox entry commit in the operational store and the fence log, never reading a projection. Resources keep validating unexpired signed tokens offline. | Online refresh is denied as `invalid_grant` (HTTP 400). Sign-in that needs a read-model catch-up is refused as `temporarily_unavailable`. | The dispatcher retries the outbox append until Chronicle returns. Specs: `Source/Identity.Integration.Specs/for_Revocation/when_chronicle_is_unavailable.cs` (CI release gate "Release gate - Chronicle-down behaviour"), `Source/Identity.Specs/Revocation/when_both_stores_are_restored_and_chronicle_is_unavailable.cs`. Design: `Documentation/design/identity-design.md` revocation protocol steps 1-3. |
+| Read model behind or stalled (Chronicle up) | Everything not waiting on the projection. | Sign-in is refused as `temporarily_unavailable` once the catch-up budget (`Accounts.ReadModelCatchUpTimeout`) elapses (`Source/Identity/Protocol/ReadModelCatchUp.cs`, `EventSourcedAccountAdapter.SignIn`). | Specs: `Source/Identity.Specs/Protocol/for_ReadModelCatchUp/when_the_projection_times_out.cs`, `for_ProtocolCommands/when_a_command_succeeds_without_appends_while_a_projection_is_stalled.cs`. |
+| Request abandoned during catch-up | Other requests. | The abandoned request stops waiting; caller cancellation propagates and is not reported as `temporarily_unavailable`. | Specs: `for_ReadModelCatchUp/when_the_request_is_cancelled_while_waiting_for_a_projection.cs`, `for_ProtocolCommands/when_the_request_is_cancelled_while_a_projection_is_catching_up.cs`. Known limit: the upstream sign-in command handler (`Accounts/SigningIn/SignInWithUpstreamKey.cs`) and `IAccountSignIn.SignIn` carry no request token, so the sign-in wait is still bounded only by the catch-up budget. |
+| Operational store (Mongo) down | Unexpired signed tokens validate offline at resources. | Refresh, exchange, introspection, code redemption and revocation commands cannot read or commit fences, so they fail rather than honor a credential (design: serialised redemption). | **Open:** no spec stops the operational store. Recovery after a restore is covered by `Source/Identity.Specs/Revocation/` recovery specs. |
+| Fence-log store down | Redemption that only reads fences. | A revocation is not acknowledged without the fence-log append, so new revocations fail rather than ack unprotected. | **Open:** no outage spec. Restore and completeness behavior: `Source/Identity.Specs/Revocation/when_a_backup_omits_denials_above_its_checkpoint.cs`. |
+| Upstream provider (GitHub) down | Existing sessions and tokens. | New upstream sign-in is refused as `temporarily_unavailable` (`Source/Identity/Upstream/GitHubSignInEvents.cs`). | **Open:** no spec for a provider outage end to end. |
+| Identity process restart or restore | Resources validating unexpired signed tokens. | In recovery mode refresh, exchange and new grants are refused until fences are reconciled (health check `identity-restriction-recovery`, `Source/Identity/Hosting/IdentityServiceCollectionExtensions.cs`). | The integration host waits for recovery after an outage (`IdentityHost.WaitForRecovery`). Design: revocation protocol step 5. |
+
+## Notes
+
+- Offline JWT validation at a resource continues until token expiry during any Identity outage; see [Resource token validation](resource-token-validation.md) for the revocation window.
+- Recovery after compromise follows the runbooks in [Compromise matrix and recovery runbooks](compromise-matrix-v1.md).
+- Making the Chronicle-down gate a required check is a repository setting (list the `Build and specs` job as a required status check on `main`), not a file in this repository.
