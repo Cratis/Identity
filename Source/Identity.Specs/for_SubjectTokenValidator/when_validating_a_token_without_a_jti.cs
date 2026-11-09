@@ -24,7 +24,7 @@ public class when_validating_a_token_without_a_jti : given.a_subject_token_valid
     }
 
     [Fact] void should_accept_the_token() => _first.Refusal.ShouldEqual(SubjectTokenRefusal.None);
-    [Fact] void should_key_it_by_a_digest_of_the_token_itself() => _first.Subject.ReplayKey.ShouldEqual(_same.Subject.ReplayKey);
+    [Fact] void should_key_it_the_same_for_the_same_token() => _first.Subject.ReplayKey.ShouldEqual(_same.Subject.ReplayKey);
     [Fact] void should_key_a_different_token_differently() => _other.Subject.ReplayKey.ShouldNotEqual(_first.Subject.ReplayKey);
     [Fact] void should_not_put_the_token_in_the_key() => _first.Subject.ReplayKey.StartsWith($"{Configurations.ExternalIssuer}\nsha256:", StringComparison.Ordinal).ShouldBeTrue();
 }
