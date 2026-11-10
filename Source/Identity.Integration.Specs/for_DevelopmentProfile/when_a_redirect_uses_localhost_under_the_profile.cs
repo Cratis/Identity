@@ -34,7 +34,7 @@ public class when_a_redirect_uses_localhost_under_the_profile(DevelopmentProfile
     static List<KeyValuePair<string, string?>> Parameters(string clientId, string redirect, string challenge)
     {
         var parameters = Browser.CliAuthorization(challenge, [DevelopmentProfileHost.LocalDirectMcp], "direct:mcp:read");
-        parameters.RemoveAll(_ => _.Key is "client_id" or "redirect_uri");
+        parameters.RemoveAll(_ => string.Equals(_.Key, "client_id", StringComparison.Ordinal) || string.Equals(_.Key, "redirect_uri", StringComparison.Ordinal));
         parameters.Add(new("client_id", clientId));
         parameters.Add(new("redirect_uri", redirect));
         return parameters;
