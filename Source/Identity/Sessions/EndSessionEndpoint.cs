@@ -67,9 +67,13 @@ internal class EndSessionEndpoint(EndSessionHintValidator hints, IOpenIddictAppl
     }
 
     static bool AcceptsHint(EndSessionRequest request, EndSessionHint? hint) =>
-        (request.Hint is null || hint is not null) &&
-        (request.RedirectUri is null || hint is not null) &&
-        (request.ClientId is null || hint is null || string.Equals(request.ClientId, hint.ClientId, StringComparison.Ordinal));
+        HasRequiredHint(request, hint) && MatchesClient(request.ClientId, hint);
+
+    static bool HasRequiredHint(EndSessionRequest request, EndSessionHint? hint) =>
+        hint is not null || (request.Hint is null && request.RedirectUri is null);
+
+    static bool MatchesClient(string? clientId, EndSessionHint? hint) =>
+        clientId is null || hint is null || string.Equals(clientId, hint.ClientId, StringComparison.Ordinal);
 
     async Task<bool> IsKnownClient(string? clientId, CancellationToken cancellationToken) =>
         clientId is null || await applications.FindByClientIdAsync(clientId, cancellationToken) is not null;
@@ -81,9 +85,12 @@ internal class EndSessionEndpoint(EndSessionHintValidator hints, IOpenIddictAppl
             return true;
         }
 
-        return hint is not null && Uri.TryCreate(redirect, UriKind.Absolute, out var uri) && string.IsNullOrEmpty(uri.Fragment) &&
+        return hint is not null && IsAbsoluteRedirectWithoutFragment(redirect) &&
             (await applications.GetPostLogoutRedirectUrisAsync(hint.Application, cancellationToken)).Contains(redirect, StringComparer.Ordinal);
     }
+
+    static bool IsAbsoluteRedirectWithoutFragment(string redirect) =>
+        Uri.TryCreate(redirect, UriKind.Absolute, out var uri) && string.IsNullOrEmpty(uri.Fragment);
 
     static async Task<bool> MatchesSession(HttpContext context, EndSessionHint? hint)
     {

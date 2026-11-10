@@ -35,13 +35,19 @@ internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginO
 
         var accountId = SessionPrincipal.AccountId(session.Principal);
         var authTime = SessionPrincipal.AuthTime(session.Principal);
-        if (authTime is null || RequiresReauthentication(request, authTime.Value) || !AccountSubject.TryParse(accountId, out var subject))
+        if (authTime is null || !TryGetReusableSubject(request, authTime.Value, accountId, out var subject))
         {
             return null;
         }
 
         var account = await accounts.FindActive(subject!, context.RequestAborted);
         return account is null ? null : new SignedInAccount(account, authTime.Value, SessionPrincipal.SessionId(session.Principal));
+    }
+
+    bool TryGetReusableSubject(OpenIddictRequest request, DateTimeOffset authTime, string? accountId, out AccountSubject? subject)
+    {
+        subject = null;
+        return !RequiresReauthentication(request, authTime) && AccountSubject.TryParse(accountId, out subject);
     }
 
     bool RequiresReauthentication(OpenIddictRequest request, DateTimeOffset authTime) =>

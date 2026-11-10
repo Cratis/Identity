@@ -40,14 +40,25 @@ internal class EndSessionHintValidator(IOptionsMonitor<OpenIddictServerOptions> 
             return null;
         }
 
-        var application = await applications.FindByClientIdAsync(clientId, cancellationToken);
-        if (application is null || !(await applications.GetPermissionsAsync(application, cancellationToken)).Contains(Permissions.Prefixes.Scope + Scopes.OpenId, StringComparer.Ordinal))
+        var application = await FindOpenIdApplication(clientId, cancellationToken);
+        if (application is null)
         {
             return null;
         }
 
         token.TryGetPayloadValue<string>("sid", out var sessionId);
         return new(clientId, token.Subject, sessionId, application);
+    }
+
+    async Task<object?> FindOpenIdApplication(string clientId, CancellationToken cancellationToken)
+    {
+        var application = await applications.FindByClientIdAsync(clientId, cancellationToken);
+        if (application is null || !(await applications.GetPermissionsAsync(application, cancellationToken)).Contains(Permissions.Prefixes.Scope + Scopes.OpenId, StringComparer.Ordinal))
+        {
+            return null;
+        }
+
+        return application;
     }
 
     async Task<JsonWebToken?> Verify(string hint)
@@ -115,10 +126,16 @@ internal class EndSessionHintValidator(IOptionsMonitor<OpenIddictServerOptions> 
 
     static bool HasIdentityClaims(JsonWebToken token) =>
         !string.IsNullOrWhiteSpace(token.Subject) &&
-        !token.TryGetPayloadValue<object>(Claims.Scope, out _) &&
-        !token.TryGetPayloadValue<object>("cid", out _) &&
-        (!token.TryGetPayloadValue<string>("oi_tkn_typ", out var type) || type == "id_token") &&
-        (HasValue(token, Claims.Nonce) || HasValue(token, Claims.AccessTokenHash) || token.TryGetPayloadValue<long>(Claims.AuthenticationTime, out _));
+        HasNoAccessTokenClaims(token) && HasIdTokenType(token) && HasIdTokenMarker(token);
+
+    static bool HasNoAccessTokenClaims(JsonWebToken token) =>
+        !token.TryGetPayloadValue<object>(Claims.Scope, out _) && !token.TryGetPayloadValue<object>("cid", out _);
+
+    static bool HasIdTokenType(JsonWebToken token) =>
+        !token.TryGetPayloadValue<string>("oi_tkn_typ", out var type) || type == "id_token";
+
+    static bool HasIdTokenMarker(JsonWebToken token) =>
+        HasValue(token, Claims.Nonce) || HasValue(token, Claims.AccessTokenHash) || token.TryGetPayloadValue<long>(Claims.AuthenticationTime, out _);
 
     static bool HasValue(JsonWebToken token, string name) => token.TryGetPayloadValue<string>(name, out var value) && !string.IsNullOrEmpty(value);
 
