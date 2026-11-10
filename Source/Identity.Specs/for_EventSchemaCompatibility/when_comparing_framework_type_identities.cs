@@ -8,12 +8,20 @@ namespace Cratis.Identity.for_EventSchemaCompatibility;
 
 public class when_comparing_framework_type_identities : Specification
 {
+    public enum AssemblyIdentity
+    {
+        SystemCollections,
+        MicrosoftExtensionsOptions,
+        CratisIdentity,
+        OtherLibrary
+    }
+
     [Fact]
     public void should_accept_core_runtime_version_differences_on_either_side()
     {
         var reflected = Field(typeof(IEnumerable<string>).FullName);
-        var retained = reflected with { Type = FrameworkVersion(reflected.Type, "10.0.0.0") };
-        var next = reflected with { Type = FrameworkVersion(reflected.Type, "11.0.0.0") };
+        var retained = reflected with { Type = FrameworkVersion(reflected.Type, new Version(10, 0, 0, 0)) };
+        var next = reflected with { Type = FrameworkVersion(reflected.Type, new Version(11, 0, 0, 0)) };
         Compare(retained, next).ShouldBeEmpty();
         Compare(next, retained).ShouldBeEmpty();
         SchemaField.Equivalent([retained], [next]).ShouldBeTrue();
@@ -24,8 +32,8 @@ public class when_comparing_framework_type_identities : Specification
     public void should_preserve_nested_generic_structure()
     {
         var identity = typeof(Dictionary<string, IEnumerable<int>>).FullName;
-        FrameworkTypeIdentity.Canonicalize(FrameworkVersion(identity, "10.0.0.0"))
-            .ShouldEqual(FrameworkTypeIdentity.Canonicalize(FrameworkVersion(identity, "11.0.0.0")));
+        FrameworkTypeIdentity.Canonicalize(FrameworkVersion(identity, new Version(10, 0, 0, 0)))
+            .ShouldEqual(FrameworkTypeIdentity.Canonicalize(FrameworkVersion(identity, new Version(11, 0, 0, 0))));
     }
 
     [Fact]
@@ -47,10 +55,11 @@ public class when_comparing_framework_type_identities : Specification
     }
 
     [Theory]
-    [InlineData("System.Collections")]
-    [InlineData("Microsoft.Extensions.Options")]
-    public void should_ignore_only_the_version_for_framework_assemblies(string assembly)
+    [InlineData(AssemblyIdentity.SystemCollections)]
+    [InlineData(AssemblyIdentity.MicrosoftExtensionsOptions)]
+    public void should_ignore_only_the_version_for_framework_assemblies(AssemblyIdentity assemblyIdentity)
     {
+        var assembly = AssemblyName(assemblyIdentity);
         var identity = $"Example.Type, {assembly}, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e";
         FrameworkTypeIdentity.Canonicalize(identity).ShouldEqual($"Example.Type, {assembly}, Culture=neutral, PublicKeyToken=7cec85d7bea7798e");
     }
@@ -66,10 +75,11 @@ public class when_comparing_framework_type_identities : Specification
     }
 
     [Theory]
-    [InlineData("Cratis.Identity")]
-    [InlineData("Other.Library")]
-    public void should_retain_non_framework_versions(string assembly)
+    [InlineData(AssemblyIdentity.CratisIdentity)]
+    [InlineData(AssemblyIdentity.OtherLibrary)]
+    public void should_retain_non_framework_versions(AssemblyIdentity assemblyIdentity)
     {
+        var assembly = AssemblyName(assemblyIdentity);
         var original = Field($"Example.Type, {assembly}, Version=10.0.0.0, Culture=neutral, PublicKeyToken=null");
         FrameworkTypeIdentity.Canonicalize(original.Type).ShouldEqual(original.Type);
         ShouldReject(original, original with { Type = original.Type.Replace("10.0.0.0", "11.0.0.0", StringComparison.Ordinal) });
@@ -88,14 +98,23 @@ public class when_comparing_framework_type_identities : Specification
     public void should_canonicalize_underlying_type_metadata()
     {
         var original = Field("Example.Concept") with { UnderlyingType = typeof(IEnumerable<string>).FullName };
-        var next = original with { UnderlyingType = FrameworkVersion(original.UnderlyingType, "11.0.0.0") };
+        var next = original with { UnderlyingType = FrameworkVersion(original.UnderlyingType, new Version(11, 0, 0, 0)) };
         Compare(original, next).ShouldBeEmpty();
         SchemaField.Equivalent([original], [next]).ShouldBeTrue();
     }
 
+    static string AssemblyName(AssemblyIdentity identity) => identity switch
+    {
+        AssemblyIdentity.SystemCollections => "System.Collections",
+        AssemblyIdentity.MicrosoftExtensionsOptions => "Microsoft.Extensions.Options",
+        AssemblyIdentity.CratisIdentity => "Cratis.Identity",
+        AssemblyIdentity.OtherLibrary => "Other.Library",
+        _ => throw new ArgumentOutOfRangeException(nameof(identity))
+    };
+
     static SchemaField Field(string type) => new("Values", "values", type, false, false, null, []);
 
-    static string FrameworkVersion(string identity, string version) =>
+    static string FrameworkVersion(string identity, Version version) =>
         identity.Replace($", Version={typeof(object).Assembly.GetName().Version}", $", Version={version}", StringComparison.Ordinal);
 
     static IReadOnlyList<Violation> Compare(SchemaField retained, SchemaField reflected)
