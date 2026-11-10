@@ -121,7 +121,7 @@ internal class EndSessionHintValidator(IOptionsMonitor<OpenIddictServerOptions> 
             return null;
         }
 
-        return token.TryGetPayloadValue<string>(Claims.AuthorizedParty, out var party) && party != audiences[0] ? null : audiences[0];
+        return MatchesOptionalClaim(token, Claims.AuthorizedParty, audiences[0]) ? audiences[0] : null;
     }
 
     static bool HasIdentityClaims(JsonWebToken token) =>
@@ -129,10 +129,14 @@ internal class EndSessionHintValidator(IOptionsMonitor<OpenIddictServerOptions> 
         HasNoAccessTokenClaims(token) && HasIdTokenType(token) && HasIdTokenMarker(token);
 
     static bool HasNoAccessTokenClaims(JsonWebToken token) =>
-        !token.TryGetPayloadValue<object>(Claims.Scope, out _) && !token.TryGetPayloadValue<object>("cid", out _);
+        !ContainsClaim(token, Claims.Scope) && !ContainsClaim(token, "cid");
 
-    static bool HasIdTokenType(JsonWebToken token) =>
-        !token.TryGetPayloadValue<string>("oi_tkn_typ", out var type) || type == "id_token";
+    static bool HasIdTokenType(JsonWebToken token) => MatchesOptionalClaim(token, "oi_tkn_typ", "id_token");
+
+    static bool ContainsClaim(JsonWebToken token, string name) => token.PayloadClaimNames.Contains(name, StringComparer.Ordinal);
+
+    static bool MatchesOptionalClaim(JsonWebToken token, string name, string expected) =>
+        !ContainsClaim(token, name) || (token.TryGetPayloadValue<string>(name, out var value) && string.Equals(value, expected, StringComparison.Ordinal));
 
     static bool HasIdTokenMarker(JsonWebToken token) =>
         HasValue(token, Claims.Nonce) || HasValue(token, Claims.AccessTokenHash) || token.TryGetPayloadValue<long>(Claims.AuthenticationTime, out _);
@@ -157,6 +161,6 @@ internal class EndSessionHintValidator(IOptionsMonitor<OpenIddictServerOptions> 
     }
 
     bool HasAcceptableNotBefore(JsonWebToken token, long expires) =>
-        !token.TryGetPayloadValue<object>(Claims.NotBefore, out _) ||
+        !ContainsClaim(token, Claims.NotBefore) ||
         (token.TryGetPayloadValue<long>(Claims.NotBefore, out var notBefore) && notBefore <= time.GetUtcNow().ToUnixTimeSeconds() && notBefore <= expires);
 }
