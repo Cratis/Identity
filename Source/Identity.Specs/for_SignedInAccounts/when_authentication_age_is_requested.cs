@@ -24,6 +24,7 @@ public class when_authentication_age_is_requested : Specification
     SignedInAccount _nonInteractive;
     SignedInAccount _legacy;
     int _staleReads;
+    int _legacyReads;
     DateTimeOffset _authTime;
     string _sessionId;
 
@@ -49,7 +50,9 @@ public class when_authentication_age_is_requested : Specification
         _nonInteractive = await finder.Find(context, new() { MaxAge = 60, Prompt = PromptValues.None });
         var legacy = new ClaimsPrincipal(new ClaimsIdentity(principal.Claims.Where(_ => _.Type != "sid"), "test"));
         authentication.AuthenticateAsync(Arg.Any<HttpContext>(), Arg.Any<string>()).Returns(AuthenticateResult.Success(new(legacy, "test")));
+        accounts.ClearReceivedCalls();
         _legacy = await finder.Find(context, new());
+        _legacyReads = accounts.ReceivedCalls().Count();
     }
 
     [Fact] void should_require_reauthentication_for_a_stale_cookie() => _stale.ShouldBeNull();
@@ -60,5 +63,6 @@ public class when_authentication_age_is_requested : Specification
     [Fact] void should_preserve_the_behavior_without_max_age() => _unbounded.ShouldNotBeNull();
     [Fact] void should_always_reauthenticate_when_max_age_is_zero() => _zero.ShouldBeNull();
     [Fact] void should_return_no_account_for_a_stale_noninteractive_request() => _nonInteractive.ShouldBeNull();
-    [Fact] void should_accept_an_old_cookie_without_inventing_a_session_identifier() => _legacy.SessionId.ShouldBeNull();
+    [Fact] void should_require_reauthentication_for_a_cookie_without_a_session_identifier() => _legacy.ShouldBeNull();
+    [Fact] void should_not_look_up_the_account_of_a_cookie_without_a_session_identifier() => _legacyReads.ShouldEqual(0);
 }

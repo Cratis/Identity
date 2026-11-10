@@ -33,6 +33,11 @@ internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginO
             return null;
         }
 
+        if (string.IsNullOrWhiteSpace(SessionPrincipal.SessionId(session.Principal)))
+        {
+            return null;
+        }
+
         var accountId = SessionPrincipal.AccountId(session.Principal);
         var authTime = SessionPrincipal.AuthTime(session.Principal);
         if (authTime is null || !TryGetReusableSubject(request, authTime.Value, accountId, out var subject))
