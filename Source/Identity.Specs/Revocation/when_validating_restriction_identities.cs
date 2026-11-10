@@ -21,10 +21,14 @@ public class when_validating_restriction_identities : Specification
     [Fact] void should_accept_random_fact_ids_for_family_start_entries() => GrantStateValidation.IsKnown(ClearState()).ShouldBeTrue();
     [Fact] void should_reject_a_detection_id_on_a_family_start_entry() => GrantStateValidation.IsKnown(ClearState(entry => entry with { DetectionId = Guid.NewGuid() })).ShouldBeFalse();
 
-    [Fact]
-    async Task should_append_nothing_when_a_stored_restriction_has_a_legacy_derived_fact_id()
+    [Fact] Task should_append_nothing_when_a_stored_restriction_has_a_legacy_derived_fact_id() => AssertNothingAppended(Tampered(_legacyAuthorizationFactId));
+    [Fact] Task should_append_nothing_when_a_stored_restriction_has_a_random_fact_id() => AssertNothingAppended(Tampered(Guid.NewGuid()));
+    [Fact] Task should_append_nothing_when_a_stored_reuse_has_an_altered_detection_id() => AssertNothingAppended(Replace(FactKind.Reuse, entry => entry with { DetectionId = Guid.NewGuid() }));
+    [Fact] Task should_append_nothing_when_a_stored_reuse_has_no_detection_id() => AssertNothingAppended(Replace(FactKind.Reuse, entry => entry with { DetectionId = null }));
+
+    static async Task AssertNothingAppended(OutboxEntry[] tampered)
     {
-        var entries = Tampered(_legacyAuthorizationFactId).Select(entry => entry with { State = OutboxState.LogConfirmed }).ToArray();
+        var entries = tampered.Select(entry => entry with { State = OutboxState.LogConfirmed }).ToArray();
         var state = new GrantState("grant", 1, null, _fence, entries);
         var store = Substitute.For<IFenceStore>();
         var writer = Substitute.For<IRevocationFactWriter>();
