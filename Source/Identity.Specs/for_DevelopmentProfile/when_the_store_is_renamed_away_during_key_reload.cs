@@ -27,7 +27,8 @@ public class when_the_store_is_renamed_away_during_key_reload : given.a_renamed_
         _canIssue = keys.CanIssue;
     });
 
-    [Fact(SkipUnless = nameof(HasHandleRelativeCustody), SkipType = typeof(given.a_renamed_store), Skip = "Requires Windows, macOS or Linux directory handles.")] void should_load_and_reload_the_pinned_keys_while_the_original_name_points_at_an_invalid_store()
+    [Fact(SkipUnless = nameof(HasHandleRelativeCustody), SkipType = typeof(given.a_renamed_store), Skip = "Requires Windows, macOS or Linux directory handles.")]
+    void should_load_and_reload_the_pinned_keys_while_the_original_name_points_at_an_invalid_store()
     {
         _exception.ShouldBeNull();
         _initialKid.ShouldNotBeNull();

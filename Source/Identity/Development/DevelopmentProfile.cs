@@ -40,7 +40,7 @@ internal static class DevelopmentProfile
     /// <exception cref="DevelopmentProfileOnlyInDevelopment">Thrown when the profile is enabled outside Development.</exception>
     /// <exception cref="DevelopmentProfileRefused">Thrown when the configuration or the key store is not safe.</exception>
     public static AppliedDevelopmentProfile? Apply(IConfiguration configuration, IHostEnvironment environment, IdentityOptions startupOptions) =>
-        Apply(configuration, environment, startupOptions, new DevelopmentKeyStore(DevelopmentKeyStore.DefaultRoot, environment.ContentRootPath, TimeProvider.System), () => EnsureParent(DevelopmentKeyStore.DefaultRoot));
+        Apply(configuration, environment, startupOptions, new DevelopmentKeyStore(DevelopmentKeyStore.DefaultRoot, environment.ContentRootPath, TimeProvider.System));
 
     /// <summary>
     /// Applies the profile when it is enabled, with an explicit key store.
@@ -49,11 +49,10 @@ internal static class DevelopmentProfile
     /// <param name="environment">The <see cref="IHostEnvironment"/>.</param>
     /// <param name="startupOptions">The startup <see cref="IdentityOptions"/>, changed in place when the profile is active.</param>
     /// <param name="store">The <see cref="DevelopmentKeyStore"/>.</param>
-    /// <param name="prepareParent">Optional host bootstrap of the per-user app-data parent, outside key custody.</param>
     /// <returns>The applied profile when it is active; otherwise <see langword="null"/>.</returns>
     /// <exception cref="DevelopmentProfileOnlyInDevelopment">Thrown when the profile is enabled outside Development.</exception>
     /// <exception cref="DevelopmentProfileRefused">Thrown when the configuration or the key store is not safe.</exception>
-    internal static AppliedDevelopmentProfile? Apply(IConfiguration configuration, IHostEnvironment environment, IdentityOptions startupOptions, DevelopmentKeyStore store, Action? prepareParent = null)
+    internal static AppliedDevelopmentProfile? Apply(IConfiguration configuration, IHostEnvironment environment, IdentityOptions startupOptions, DevelopmentKeyStore store)
     {
         var development = configuration.GetSection($"{IdentityOptions.SectionName}:{DevelopmentOptions.SectionName}").Get<DevelopmentOptions>();
         if (development?.Enabled != true)
@@ -68,41 +67,10 @@ internal static class DevelopmentProfile
 
         var issuer = Validate(configuration, startupOptions, development);
         store.ValidateLocation(Authority(issuer));
-        prepareParent?.Invoke();
         startupOptions.SecretStore.Path = store.Provision(Authority(issuer));
         startupOptions.Resources = [.. development.Resources];
 
         return new AppliedDevelopmentProfile(development, store.Custody);
-    }
-
-    /// <summary>
-    /// Creates the application-data parent folders before the key store validates its ancestor chain.
-    /// </summary>
-    /// <param name="dataRoot">The per-user application data root.</param>
-    /// <exception cref="DevelopmentProfileRefused">The application data root is unavailable.</exception>
-    internal static void EnsureParent(string dataRoot)
-    {
-        if (string.IsNullOrWhiteSpace(dataRoot))
-        {
-            throw new DevelopmentProfileRefused("the per-user application data folder is not available on this machine.");
-        }
-
-        // Host bootstrap creates only application-data folders, never a key-store leaf or key material.
-        // The store subsequently validates every ancestor and pins its leaf before touching any secrets.
-        var parent = Path.Combine(dataRoot, "cratis", "identity-dev");
-        if (Directory.Exists(parent))
-        {
-            return;
-        }
-
-        if (OperatingSystem.IsWindows())
-        {
-            WindowsOwnerOnlyAccess.CreateDirectory(parent);
-        }
-        else
-        {
-            Directory.CreateDirectory(parent, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        }
     }
 
     static string Authority(Uri issuer) => new([.. issuer.Authority.ToLowerInvariant().Select(_ => char.IsAsciiLetterOrDigit(_) ? _ : '-')]);

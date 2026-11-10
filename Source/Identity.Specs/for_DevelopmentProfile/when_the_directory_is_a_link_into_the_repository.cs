@@ -13,7 +13,7 @@ public class when_the_directory_is_a_link_into_the_repository : given.a_developm
     {
         _repositoryDirectory = Path.Combine(_contentRoot, "keys");
         Directory.CreateDirectory(_repositoryDirectory);
-        Directory.CreateDirectory(Path.GetDirectoryName(_storeDirectory)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(_storeDirectory));
         Directory.CreateSymbolicLink(_storeDirectory, _repositoryDirectory);
     }
 

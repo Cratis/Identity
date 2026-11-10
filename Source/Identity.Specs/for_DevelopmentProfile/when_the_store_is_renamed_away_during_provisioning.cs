@@ -18,7 +18,8 @@ public class when_the_store_is_renamed_away_during_provisioning : given.a_rename
         _replacementMarker = File.ReadAllText(Path.Combine(_storeDirectory, DevelopmentKeyStore.MarkerFile));
     });
 
-    [Fact(SkipUnless = nameof(HasHandleRelativeCustody), SkipType = typeof(given.a_renamed_store), Skip = "Requires Windows, macOS or Linux directory handles.")] void should_provision_only_the_validated_directory_and_leave_the_substitute_untouched_after_restore()
+    [Fact(SkipUnless = nameof(HasHandleRelativeCustody), SkipType = typeof(given.a_renamed_store), Skip = "Requires Windows, macOS or Linux directory handles.")]
+    void should_provision_only_the_validated_directory_and_leave_the_substitute_untouched_after_restore()
     {
         _exception.ShouldBeNull();
         _validatedMarker.ShouldEqual(DevelopmentKeyStore.Marker);

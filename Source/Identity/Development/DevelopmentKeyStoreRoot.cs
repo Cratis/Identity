@@ -54,15 +54,17 @@ internal sealed class DevelopmentKeyStoreRoot : IDisposable
     }
 
     /// <summary>
-    /// Validates the existing ancestor chain top-down and creates only the final leaf, if absent.
-    /// Each child is opened relative to its already validated parent, without following links or reparse points.
+    /// Validates the existing ancestor chain top-down and creates only the last <paramref name="creatableSegments"/> segments, if absent.
+    /// Each child is opened, or exclusively created owner-only, relative to its already validated parent handle, without following links or reparse points.
+    /// Nothing above the creatable segments is ever created.
     /// </summary>
     /// <param name="directory">The canonical store location.</param>
-    /// <param name="beforeDirectoryCreation">Optional synchronization seam before leaf creation.</param>
+    /// <param name="beforeDirectoryCreation">Optional synchronization seam before each directory creation, receiving that directory's path.</param>
     /// <param name="ancestorOwner">Optional ancestor ownership reader for specifications.</param>
+    /// <param name="creatableSegments">How many trailing segments may be created when missing.</param>
     /// <returns>The custody of the validated leaf handle.</returns>
     /// <exception cref="DevelopmentProfileRefused">An ancestor is missing or the created leaf disappears before it can be pinned.</exception>
-    internal static DevelopmentKeyStoreRoot Open(string directory, Action<string>? beforeDirectoryCreation = null, Func<string, int>? ancestorOwner = null)
+    internal static DevelopmentKeyStoreRoot Open(string directory, Action<string>? beforeDirectoryCreation = null, Func<string, int>? ancestorOwner = null, int creatableSegments = 1)
     {
         var path = Path.GetPathRoot(directory)!;
         var segments = directory[path.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
@@ -72,16 +74,16 @@ internal sealed class DevelopmentKeyStoreRoot : IDisposable
             for (var index = 0; index < segments.Length; index++)
             {
                 KeyStoreHandles.RequireSafeAncestor(current, path, ancestorOwner);
-                var leaf = index == segments.Length - 1;
+                var creatable = index >= segments.Length - creatableSegments;
                 var next = KeyStoreHandles.Open(current, segments[index], directory: true);
                 if (next is null)
                 {
-                    if (!leaf)
+                    if (!creatable)
                     {
-                        throw new DevelopmentProfileRefused($"the parent directory {Path.Combine(path, segments[index])} does not exist; create the parent directory before starting the local-development profile. The key store creates only its final leaf directory.");
+                        throw new DevelopmentProfileRefused($"the parent directory {Path.Combine(path, segments[index])} does not exist; create the parent directory before starting the local-development profile. Only the profile's own folders are created.");
                     }
 
-                    beforeDirectoryCreation?.Invoke(directory);
+                    beforeDirectoryCreation?.Invoke(Path.Combine(path, segments[index]));
                     KeyStoreHandles.CreateDirectory(current, segments[index]);
                     next = KeyStoreHandles.Open(current, segments[index], directory: true) ?? throw new DevelopmentProfileRefused("the key directory disappeared before it could be pinned.");
                 }

@@ -10,7 +10,7 @@ namespace Cratis.Identity.Development;
 
 /// <summary>
 /// Provisions local-development keys through process-lifetime custody of a validated, pinned directory handle.
-/// Only the final leaf may be created: every ancestor must already exist and pass the top-down ownership and access checks.
+/// Only the three profile segments (cratis, identity-dev and the leaf) may be created, each relative to its pinned parent handle: every ancestor above them must already exist and pass the top-down ownership and access checks.
 /// </summary>
 /// <remarks>
 /// Files are opened without following links, verified on their actual handles and published atomically with owner-only
@@ -20,7 +20,7 @@ namespace Cratis.Identity.Development;
 /// <param name="root">The per-user data root, normally the local application data folder.</param>
 /// <param name="contentRoot">The content root of the host; the store is refused inside it.</param>
 /// <param name="timeProvider">The <see cref="TimeProvider"/>.</param>
-/// <param name="beforeDirectoryCreation">Optional synchronization seam before leaf creation.</param>
+/// <param name="beforeDirectoryCreation">Optional synchronization seam before each profile directory is created.</param>
 /// <param name="ancestorOwner">Optional ancestor ownership reader for specifications.</param>
 /// <param name="beforeStoreUse">Optional synchronization seam after validation and pinning, before any key material is used.</param>
 internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeProvider timeProvider, Action<string>? beforeDirectoryCreation = null, Func<string, int>? ancestorOwner = null, Action<string>? beforeStoreUse = null)
@@ -65,7 +65,7 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
     public string Provision(string authority)
     {
         var directory = ResolveLocation(root, contentRoot, authority);
-        Custody = DevelopmentKeyStoreRoot.Open(directory, beforeDirectoryCreation, ancestorOwner);
+        Custody = DevelopmentKeyStoreRoot.Open(directory, beforeDirectoryCreation, ancestorOwner, creatableSegments: 3);
         try
         {
             beforeStoreUse?.Invoke(directory);

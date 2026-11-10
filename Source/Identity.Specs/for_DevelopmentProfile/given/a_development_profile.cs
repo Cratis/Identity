@@ -33,7 +33,6 @@ public class a_development_profile : Specification
         _contentRoot = Path.Combine(parent, "content");
         Directory.CreateDirectory(_root);
         Directory.CreateDirectory(_contentRoot);
-        DevelopmentProfile.EnsureParent(_root);
         _custodies = [];
         _storeDirectory = Path.Combine(_root, "cratis", "identity-dev", StoreName);
         _environment = new HostingEnvironment { EnvironmentName = "Development", ContentRootPath = _contentRoot };
@@ -66,7 +65,7 @@ public class a_development_profile : Specification
             custody.Dispose();
         }
 
-        Directory.Delete(Directory.GetParent(_root)!.FullName, true);
+        Directory.Delete(Directory.GetParent(_root).FullName, true);
     }
 
     protected IdentityOptions Startup() => _startupOptions = new ConfigurationBuilder().AddInMemoryCollection(_settings).Build().GetSection("Identity").Get<IdentityOptions>() ?? new();
