@@ -37,5 +37,5 @@ public class an_account_linking_adapter : a_link_decision
         _adapter = new(_commands);
     }
 
-    protected async Task Propose() => _proposed = await _adapter.Propose(_ceremony.Session, _ceremony.Authentication!, _ceremony.Intent);
+    protected async Task Propose() => _proposed = await _adapter.Propose(_ceremony.Session, _ceremony.Authentication, _ceremony.Intent);
 }

@@ -12,7 +12,7 @@ public class and_the_proposal_is_terminal : given.a_link_decision
 
     void Establish()
     {
-        var proof = _ceremony.Authentication!;
+        var proof = _ceremony.Authentication;
         _state = _state with { Proposals = new Dictionary<Guid, LinkProposal> { [_proposal.Value] = new(_proposal, proof.ConnectionId, proof.IdpIssuer, proof.Subject, _clock.Now, _clock.Now, "confirmed") } };
     }
 
