@@ -16,8 +16,8 @@ namespace Cratis.Identity.Upstream;
 /// </summary>
 /// <param name="accounts">The active-account reader.</param>
 /// <param name="upstream">The <see cref="UpstreamLoginOptions"/>.</param>
-/// <param name="time">The clock used to evaluate the requested maximum authentication age.</param>
-internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginOptions> upstream, TimeProvider time)
+/// <param name="time">The clock used to evaluate the requested maximum authentication age, or the system clock when omitted.</param>
+internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginOptions> upstream, TimeProvider? time = null)
 {
     /// <summary>
     /// Finds the account signed in to the Identity site for an authorization request.
@@ -45,7 +45,7 @@ internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginO
     }
 
     bool RequiresReauthentication(OpenIddictRequest request, DateTimeOffset authTime) =>
-        request.MaxAge is { } maximum && (maximum == 0 || (time.GetUtcNow() - authTime).TotalSeconds > maximum);
+        request.MaxAge is { } maximum && (maximum == 0 || ((time ?? TimeProvider.System).GetUtcNow() - authTime).TotalSeconds > maximum);
 
     /// <summary>
     /// Sends the browser to upstream login, returning to the same authorization request afterwards.
