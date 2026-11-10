@@ -170,7 +170,7 @@ async function main() {
         execFileSync(process.execPath, ['--test', fileURLToPath(new URL('./check-vector-baseline-immutability.test.mjs', import.meta.url))], { stdio: 'inherit' });
         return;
     }
-    const baseRef = values['base-ref'] ?? process.env.BASE_REF ?? (process.env.GITHUB_EVENT_NAME === 'pull_request' ? 'origin/main' : undefined);
+    const baseRef = values['base-ref'] || process.env.BASE_REF || (process.env.GITHUB_EVENT_NAME === 'pull_request' ? 'origin/main' : undefined);
     await checkBaselineImmutability(fileURLToPath(new URL('../', import.meta.url)), baseRef);
 }
 
