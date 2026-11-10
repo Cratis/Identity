@@ -16,6 +16,8 @@ public class when_reading_names : Specification
         _result = TenantsCallbackResponse.Read(document.RootElement);
     }
 
-    [Fact] void should_fall_back_to_the_id_for_empty_whitespace_or_missing_names_without_trimming_or_reordering() => _result.ShouldEqual([
-        new SelectableTenant("z", "z"), new SelectableTenant("a", "a"), new SelectableTenant("m", "m"), new SelectableTenant("b", "  Product name  ")]);
+    [Fact]
+    void should_fall_back_to_the_id_for_empty_whitespace_or_missing_names_without_trimming_or_reordering() => _result.ShouldEqual([
+        new SelectableTenant("z", "z"), new SelectableTenant("a", "a"), new SelectableTenant("m", "m"), new SelectableTenant("b", "  Product name  ")
+    ]);
 }
