@@ -10,7 +10,7 @@ namespace Cratis.Identity.Contracts.Clients.Events;
 /// <param name="ClientSecretHash">The purpose-separated, key-revision-prefixed HMAC-SHA-256 digest.</param>
 /// <param name="ActivatedAt">The activation time.</param>
 /// <param name="PreviousValidUntil">The bounded overlap end; equal to ActivatedAt when there is no overlap.</param>
-[EventType("4a913d36-056b-4e71-81ca-c90b207393b3", generation: 1)]
+[EventType]
 public record ClientSecretRotated(ClientSecretId ClientSecretId, SecretDigest ClientSecretHash, DateTimeOffset ActivatedAt, DateTimeOffset PreviousValidUntil)
 {
     readonly SecretDigest _clientSecretHash = ValidateDigest(ClientSecretHash);

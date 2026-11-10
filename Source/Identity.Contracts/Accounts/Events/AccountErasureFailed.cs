@@ -9,5 +9,5 @@ namespace Cratis.Identity.Contracts.Accounts.Events;
 /// <param name="ErasureId">The request reference.</param>
 /// <param name="StageId">The stage that failed.</param>
 /// <param name="ReasonId">The allowlisted failure reason.</param>
-[EventType("af2d3634-9adc-48eb-b00d-6565df2a38e8", generation: 1)]
+[EventType]
 public record AccountErasureFailed(ErasureId ErasureId, ErasureStageId StageId, ReasonId ReasonId);

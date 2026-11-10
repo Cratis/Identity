@@ -34,20 +34,31 @@ public sealed record OutboxEntry(string Id, FactKind Kind, Guid FactId, Guid Gra
     /// <returns>The immutable pending intent.</returns>
     public static OutboxEntry Create(FactKind kind, string grantId, string subject, DateTimeOffset occurred, DateTimeOffset? expires = null, GrantFence? fence = null)
     {
-        var factId = fence is null ? Guid.NewGuid() : RestrictionIdentity(fence.Id, $"fact:{EventTypeId(kind)}");
-        return new($"{factId:D}:{EventTypeId(kind)}", kind, factId, Source(grantId), subject, occurred, expires, fence, kind == FactKind.Reuse ? RestrictionIdentity(fence!.Id, "reuse-detection") : null, fence is null ? OutboxState.LogConfirmed : OutboxState.Pending);
+        var factId = fence is null ? Guid.NewGuid() : RestrictionFactId(fence.Id, kind);
+        return new($"{factId:D}:{EventTypeId(kind)}", kind, factId, Source(grantId), subject, occurred, expires, fence, kind == FactKind.Reuse ? DetectionIdFor(fence!.Id) : null, fence is null ? OutboxState.LogConfirmed : OutboxState.Pending);
     }
 
-    /// <summary>Gets the stable event type used in the durable deduplication pair.</summary>
+    /// <summary>Derives the canonical fact identity of a restriction from its fence.</summary>
+    /// <param name="fenceId">The fence identity.</param>
+    /// <param name="kind">The restriction kind.</param>
+    /// <returns>The deterministic fact identity.</returns>
+    public static Guid RestrictionFactId(Guid fenceId, FactKind kind) => RestrictionIdentity(fenceId, $"fact:{EventTypeId(kind)}");
+
+    /// <summary>Derives the canonical reuse-detection identity from the fence.</summary>
+    /// <param name="fenceId">The fence identity.</param>
+    /// <returns>The deterministic detection identity.</returns>
+    public static Guid DetectionIdFor(Guid fenceId) => RestrictionIdentity(fenceId, "reuse-detection");
+
+    /// <summary>Gets the stable event type used in the durable deduplication pair: the event's default Chronicle id, its CLR type name.</summary>
     /// <param name="kind">The source kind.</param>
-    /// <returns>The generation-one event identity.</returns>
+    /// <returns>The event type name.</returns>
     /// <exception cref="RevocationPending">The source kind is unknown.</exception>
     public static string EventTypeId(FactKind kind) => kind switch
     {
-        FactKind.AuthorizationRevocation => "ac88f9a7-6364-4f20-9301-d533b491b641",
-        FactKind.FamilyRevocation => "a80e52ab-051e-4771-bff2-488dccd8aa44",
-        FactKind.FamilyStarted => "d9a448be-ccf1-4ab5-b43c-f17dad0ba6c3",
-        FactKind.Reuse => "bedbc6d5-2870-4cf7-aa5e-79e7a2bf3cb6",
+        FactKind.AuthorizationRevocation => "AuthorizationRevocationRecorded",
+        FactKind.FamilyRevocation => "RefreshTokenFamilyRevocationRecorded",
+        FactKind.FamilyStarted => "RefreshTokenFamilyStarted",
+        FactKind.Reuse => "RefreshTokenReuseDetected",
         _ => throw new RevocationPending()
     };
 

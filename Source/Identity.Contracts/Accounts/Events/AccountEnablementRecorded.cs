@@ -9,5 +9,5 @@ namespace Cratis.Identity.Contracts.Accounts.Events;
 /// <param name="AccountEpoch">The epoch.</param>
 /// <param name="EnabledAt">The enable time.</param>
 /// <param name="FactId">The retry-stable fact identity; not present in the Public payload.</param>
-[EventType("46c54931-10f5-4069-9c22-b059008b3fc1", generation: 1)]
+[EventType]
 public record AccountEnablementRecorded(AccountEpoch AccountEpoch, DateTimeOffset EnabledAt, FactId FactId);

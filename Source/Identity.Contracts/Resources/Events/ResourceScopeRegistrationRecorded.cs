@@ -10,5 +10,5 @@ namespace Cratis.Identity.Contracts.Resources.Events;
 /// <param name="ScopeName">The exact scope name within the resource's prefix.</param>
 /// <param name="Description">The non-person business description, Internal only.</param>
 /// <param name="FactId">The retry-stable fact identity, Internal only.</param>
-[EventType("c1635433-c34b-4b8f-b551-f20fd541fbde", generation: 1)]
+[EventType]
 public record ResourceScopeRegistrationRecorded(string ScopeName, ResourceScopeDescription Description, FactId FactId);
