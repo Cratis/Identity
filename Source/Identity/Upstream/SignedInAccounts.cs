@@ -16,7 +16,8 @@ namespace Cratis.Identity.Upstream;
 /// </summary>
 /// <param name="accounts">The active-account reader.</param>
 /// <param name="upstream">The <see cref="UpstreamLoginOptions"/>.</param>
-internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginOptions> upstream)
+/// <param name="time">The clock used to evaluate the requested maximum authentication age.</param>
+internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginOptions> upstream, TimeProvider time)
 {
     /// <summary>
     /// Finds the account signed in to the Identity site for an authorization request.
@@ -34,14 +35,17 @@ internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginO
 
         var accountId = SessionPrincipal.AccountId(session.Principal);
         var authTime = SessionPrincipal.AuthTime(session.Principal);
-        if (authTime is null || !AccountSubject.TryParse(accountId, out var subject))
+        if (authTime is null || RequiresReauthentication(request, authTime.Value) || !AccountSubject.TryParse(accountId, out var subject))
         {
             return null;
         }
 
         var account = await accounts.FindActive(subject!, context.RequestAborted);
-        return account is null ? null : new SignedInAccount(account, authTime.Value);
+        return account is null ? null : new SignedInAccount(account, authTime.Value, SessionPrincipal.SessionId(session.Principal));
     }
+
+    bool RequiresReauthentication(OpenIddictRequest request, DateTimeOffset authTime) =>
+        request.MaxAge is { } maximum && (maximum == 0 || (time.GetUtcNow() - authTime).TotalSeconds > maximum);
 
     /// <summary>
     /// Sends the browser to upstream login, returning to the same authorization request afterwards.
