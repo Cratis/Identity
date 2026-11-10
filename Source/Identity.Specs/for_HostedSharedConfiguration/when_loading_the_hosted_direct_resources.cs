@@ -57,7 +57,7 @@ public class when_loading_the_hosted_direct_resources : Specification
     [Fact] void should_accept_complete_production_settings() => new HostedSharedConfiguration(_configuration, new HostingEnvironment { EnvironmentName = Environments.Production }).Validate(null, _options).Succeeded.ShouldBeTrue();
     [Fact] void should_have_the_two_direct_surfaces_and_studio() => _catalog.All.Count().ShouldEqual(3);
     [Fact] void should_keep_the_api_audience() => _catalog.FindByIndicator("https://cratis.direct/v1").Audience.ShouldEqual("direct-v1");
-    [Fact] void should_keep_the_mcp_audience() => _catalog.FindByIndicator("https://cratis.direct/mcp").Audience.ShouldEqual("direct-api");
+    [Fact] void should_keep_the_mcp_audience() => _catalog.FindByIndicator("https://cratis.direct/mcp").Audience.ShouldEqual("direct-mcp");
     [Fact] void should_not_have_fixed_tenants() => _options.Resources.All(resource => resource.Tenants.Count == 0).ShouldBeTrue();
     [Fact] void should_not_mix_surface_scopes() => (_policy.Evaluate(new GrantRequest(["direct:read", "direct:mcp:read"], ["https://cratis.direct/v1", "https://cratis.direct/mcp"])) is NotGrantable).ShouldBeTrue();
     [Fact] void should_not_grant_api_scopes_to_mcp() => (_policy.Evaluate(new GrantRequest(["direct:read"], ["https://cratis.direct/mcp"])) is NotGrantable).ShouldBeTrue();
