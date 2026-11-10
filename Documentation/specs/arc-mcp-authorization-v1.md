@@ -271,9 +271,14 @@ The MCP audience is `direct-mcp`; `direct-api` remains a REST audience. Version 
 and all its files and baselines remain unchanged and continue to verify.
 `Source/Identity.Specs/Vectors/v2.1.0/` is an overlay containing only
 `arc-mcp-authorization-v1/profiles-and-discovery.json` and
-`arc-scope-catalog-v1/catalog-and-policy.json`, with 57 cases. All other fixtures,
-including the signed `identity-access-token-v1` REST JWT examples, are inherited
-unchanged from 2.0.0. Apply these two files over the corresponding 2.0.0 paths.
+`arc-scope-catalog-v1/catalog-and-policy.json`, with 57 cases. The 2.0.0 archive
+contains only the top-level `profiles-and-discovery.json` vector file, with 48 cases,
+plus its manifest, changelog, and baselines. The 2.1.0 overlay replaces those
+48 authorization cases and adds nine scope-catalog cases. Load each artifact's
+files at the paths declared by its manifest; do not unpack one archive over the other.
+All other fixtures, including the signed `identity-access-token-v1` REST JWT
+examples, are inherited unchanged from the repository at the pinned
+`vectors/arc-mcp-authorization/v2.0.0` tag, not from the 2.0.0 archive.
 
 The overlay uses manifest schema 2: `inherits` pins the 2.0.0 manifest by version
 and SHA-256, `files` pins each replacement's complete bytes, and `caseIds` lists
@@ -284,12 +289,16 @@ Schema 1 and its historical case hashes remain supported without modification.
 The packaging command above verifies and packages both versions into separate
 archives and checksum sidecars. The 2.1.0 archive contains the overlay manifest,
 changelog, baseline, and two replacement files at their relative paths, not copies
-of inherited JWT fixtures. Consumers must also retain the pinned 2.0.0 fixtures.
+of inherited JWT fixtures. Consumers obtain inherited fixtures from the repository
+at the pinned 2.0.0 tag; those fixtures are not included in either archive.
 When invoked for a release tag, packaging selects that tag's version and refuses
 an unknown version. The new trust-anchor tag is
 `vectors/arc-mcp-authorization/v2.1.0`; creating it remains a release-owner action.
 The immutability check protects both trees and inherited fixtures against the base
-revision and existing release tags. Unit specs exercise authorization and token
+revision and existing release tags. The overlay also freezes the original
+`arc-scope-catalog-v1` and `identity-access-token-v1` fixtures against future edits:
+changes require a new vector version, not edits to those inherited files in place.
+Unit specs exercise authorization and token
 issuance using both versions, including the new MCP audience.
 
 ## Decisions recorded at sign-off

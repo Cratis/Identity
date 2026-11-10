@@ -35,8 +35,8 @@ public class when_enforcing_resource_and_pkce : given.an_authorization_server
         _rejections["valid-redemption"] = await Redeem(Resource, Resource);
         _rejections["wrong-verifier"] = await Redeem(Resource, Resource, "a-different-synthetic-verifier-with-forty-three-characters");
         _rejections["missing-verifier"] = await Redeem(Resource, Resource, null);
-        _rejections["audience-at-authorization"] = await Authorize("direct-api", CodeChallengeMethods.Sha256, true);
-        _rejections["audience-at-redemption"] = await Redeem(Resource, "direct-api");
+        _rejections["audience-at-authorization"] = await Authorize(Audience, CodeChallengeMethods.Sha256, true);
+        _rejections["audience-at-redemption"] = await Redeem(Resource, Audience);
         _rejections["ambiguous-inference"] = await Authorize(default, CodeChallengeMethods.Sha256, true, "direct:read studio:read");
         _rejections["empty-inference"] = await Authorize(default, CodeChallengeMethods.Sha256, true, string.Empty);
         _rejections["empty-authorization"] = await Authorize(string.Empty, CodeChallengeMethods.Sha256, true);
