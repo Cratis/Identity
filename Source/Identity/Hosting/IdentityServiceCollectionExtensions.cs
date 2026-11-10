@@ -104,6 +104,7 @@ internal static class IdentityServiceCollectionExtensions
         services.AddStorage();
         services.AddSecretStoreKeys(startupOptions);
         services.AddDomain(configuration, startupOptions.DeviceGrant.Enabled);
+        services.AddClients(configuration);
         services.AddAccountServices();
         services.AddConsentActivation(configuration.GetSection("Identity:ConsentActivation"));
 

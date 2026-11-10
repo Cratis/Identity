@@ -1,6 +1,8 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Chronicle;
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseDefaultServiceProvider(options =>
 {
@@ -9,6 +11,9 @@ builder.Host.UseDefaultServiceProvider(options =>
 });
 
 builder.AddCratisArc(options => options.GeneratedApis.SegmentsToSkipForRoute = 2);
+
+// Arc startup decision-read admission uses the client options, while requests use the ASP.NET Core options below.
+builder.Services.Configure<ChronicleClientOptions>(options => options.EventStore = "Identity");
 builder.AddCratisChronicle(options =>
 {
     options.EventStore = "Identity";
