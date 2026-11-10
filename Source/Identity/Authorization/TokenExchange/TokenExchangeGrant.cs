@@ -83,7 +83,7 @@ internal class TokenExchangeGrant(
             return OAuthResults.Error(Errors.InvalidTarget, "The requested resource is not available to this client.");
         }
 
-        if (parameters.Scopes.Any(_ => string.Equals(_, Scopes.OfflineAccess, StringComparison.Ordinal) || !resource.Owns(_) || (client.Scopes.Count > 0 && !client.Scopes.Contains(_, StringComparer.Ordinal))))
+        if (parameters.Scopes.Scopes.Any(_ => string.Equals(_.Value, Scopes.OfflineAccess, StringComparison.Ordinal) || !resource.Owns(_.Value) || (client.Scopes.Count > 0 && !client.Scopes.Contains(_.Value, StringComparer.Ordinal))))
         {
             return OAuthResults.Error(Errors.InvalidScope, "The requested scope is not available to this client for this resource.");
         }
@@ -115,9 +115,9 @@ internal class TokenExchangeGrant(
             return OAuthResults.Error(Errors.TemporarilyUnavailable, "Tenant selection is unavailable right now. Try again later.");
         }
 
-        if (!listed.Tenants.Any(_ => string.Equals(_.Id, parameters.Tenant, StringComparison.Ordinal)))
+        if (!listed.Tenants.Any(_ => string.Equals(_.Id, parameters.Tenant.Value, StringComparison.Ordinal)))
         {
-            logger.TenantNotSelectable(client.ClientId, account.Id, SafeForLog(parameters.Tenant), resource.Audience);
+            logger.TenantNotSelectable(client.ClientId, account.Id, SafeForLog(parameters.Tenant.Value), resource.Audience);
             return Invalid();
         }
 
@@ -149,8 +149,8 @@ internal class TokenExchangeGrant(
             account,
             client.ClientId,
             resource,
-            parameters.Tenant,
-            parameters.Scopes,
+            parameters.Tenant.Value,
+            parameters.Scopes.Scopes.Select(_ => _.Value).ToArray(),
             verified.Issuer.Value,
             verified.Subject.Value,
             verified.AuthTime,
@@ -180,7 +180,7 @@ internal class TokenExchangeGrant(
             return null;
         }
 
-        return new(subjectToken, resource, tenant, [.. scopes]);
+        return new(subjectToken, resource, new TenantId(tenant), new ScopeSet(string.Join(' ', scopes)));
     }
 
     static string? Single(OpenIddictRequest request, string name) =>
@@ -192,5 +192,5 @@ internal class TokenExchangeGrant(
         return match is { Active: true } ? await accounts.FindActive(match.AccountSubject, cancellationToken) : null;
     }
 
-    sealed record ExchangeParameters(string SubjectToken, string Resource, string Tenant, string[] Scopes);
+    sealed record ExchangeParameters(string SubjectToken, string Resource, TenantId Tenant, ScopeSet Scopes);
 }

@@ -36,10 +36,10 @@ internal sealed class ConsentEligibilityReader(IAccountReader accounts, IGrantPo
         if (await accounts.FindActive(request.Binding.Account, cancellationToken) is not { Status: AccountStatus.Active } account) return null;
         var resource = resources.FindByAudience(request.Binding.Resource);
         if (resource is null) return null;
-        var scopes = request.Binding.Scopes.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var scopes = request.Binding.Scopes.Scopes.Select(_ => _.Value).ToArray();
         var grant = ExactGrant(request, resource, scopes);
         if (grant is null) return null;
-        var application = await applications.FindByClientIdAsync(request.Binding.Client, cancellationToken);
+        var application = await applications.FindByClientIdAsync(request.Binding.Client.Value, cancellationToken);
         if (application is null || !await CanRequest(application, scopes, cancellationToken)) return null;
         if (await tenants.SelectableTenants(account, grant.Resource, cancellationToken) is not TenantsListed listed) return null;
         var selectable = listed.Tenants.ToArray();

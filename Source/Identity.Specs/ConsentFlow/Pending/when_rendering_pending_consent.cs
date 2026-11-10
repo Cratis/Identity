@@ -17,7 +17,7 @@ public class when_rendering_pending_consent : given.a_consent_interaction
         context.HttpContext.User = new(new System.Security.Claims.ClaimsIdentity([new(System.Security.Claims.ClaimTypes.NameIdentifier, binding.Account.Value)], "spec"));
         sessions.SessionId.Returns("other-session");
         _otherSession = await interaction.Find(CancellationToken.None);
-        sessions.SessionId.Returns(binding.Session);
+        sessions.SessionId.Returns(binding.Session.Value);
         eligibility.Evaluate(Arg.Any<ConsentRequest>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult<ConsentEligibility?>(null));
         _disabled = await interaction.Find(CancellationToken.None);
         _after = await store.Read(request.Id, CancellationToken.None);

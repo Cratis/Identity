@@ -100,6 +100,7 @@ internal static class IdentityServiceCollectionExtensions
         services.AddDeviceGrant(startupOptions.DeviceGrant.Enabled);
         services.AddRevocation(configuration);
         services.AddProtocolServices();
+        services.AddClients(configuration);
         services.AddAccountServices();
         services.AddConsentActivation(configuration.GetSection("Identity:ConsentActivation"));
 

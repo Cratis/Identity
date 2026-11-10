@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Contracts.Accounts;
+using Cratis.Identity.Realm;
+using Cratis.Identity.Sessions;
 
 namespace Cratis.Identity.ConsentFlow;
 
@@ -27,7 +29,7 @@ internal interface IConsentRequestStore
     /// <param name="now">The current server time.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The newest eligible snapshot, or null.</returns>
-    Task<ConsentRequest?> FindPending(AccountSubject account, string session, string realm, DateTimeOffset now, CancellationToken cancellationToken);
+    Task<ConsentRequest?> FindPending(AccountSubject account, SessionId session, RealmId realm, DateTimeOffset now, CancellationToken cancellationToken);
 
     /// <summary>Replaces only the matching revision and state; Active writes also atomically require an unexpired deadline at persistence time.</summary>
     /// <param name="expected">The observed snapshot.</param>

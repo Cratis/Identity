@@ -11,7 +11,9 @@ public class when_characterizing_feature_registrations : given.registered_featur
     /// <summary>
     /// Captured by running this projection against b17ded8's original, unextracted registration.
     /// Unlike e3fcaff, b17ded8 includes the merge replacing AccountStore/UpstreamKeyLinking with
-    /// LinkCeremony, ILinkCeremony and AccountLinking. The only baseline edit was analyzer-required method chaining.
+    /// LinkCeremony, ILinkCeremony and AccountLinking. The initial baseline edit was analyzer-required method chaining.
+    /// D3's AddClients(configuration) adds ClientSecretDigester, ClientRegistrationReads, ClientSecretOptions binding,
+    /// two validators and startup validation. Only those descriptors and repeated entries were added during the merge.
     /// </summary>
     static string[] ExpectedEnabled => ReadBaseline("enabled");
     static string[] ExpectedDisabled => ReadBaseline("disabled");
