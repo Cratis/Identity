@@ -8,5 +8,9 @@ internal static class ResourceServiceCollectionExtensions
 {
     /// <summary>Adds the resource catalog.</summary>
     /// <param name="services">The services.</param>
-    internal static void AddResources(this IServiceCollection services) => services.AddSingleton<IResourceCatalog, ResourceCatalog>();
+    internal static void AddResources(this IServiceCollection services)
+    {
+        services.AddSingleton<IResourceCatalog, ResourceCatalog>();
+        services.AddScoped<ResourceRegistrationReads>();
+    }
 }

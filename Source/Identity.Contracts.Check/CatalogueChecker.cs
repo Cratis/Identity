@@ -18,7 +18,7 @@ internal static class CatalogueChecker
         Rows = Events.Concat(SourceFacts.Select(fact =>
         {
             var contract = Events.Single(row => row.Name == fact.Contract);
-            return contract with { Name = fact.Name, TypeId = fact.TypeId, Visibility = "Internal", Fields = $"{contract.Fields}, FactId" };
+            return contract with { Name = fact.Name, TypeId = fact.TypeId, Visibility = "Internal", Fields = $"{contract.Fields}{InternalResourceFields(fact)}, FactId" };
         })).ToArray();
     }
 
@@ -43,13 +43,8 @@ internal static class CatalogueChecker
     /// <returns>The catalogue violations.</returns>
     internal static IReadOnlyList<Violation> Check(EventShape shape, CatalogueRow? row)
     {
-        var result = new List<Violation>();
         if (row is null) return [new("$", "event_not_catalogued")];
-        if (row.TypeId is null) result.Add(new("$", "event_id_not_allocated"));
-        if (shape.TypeId != row.TypeId || !Guid.TryParse(shape.TypeId, out var id) || id == Guid.Empty || id.Version != 4)
-            result.Add(new("$", "event_type_id_mismatch"));
-        if (shape.Generation == 0 || shape.Marker is not ("EventType" or "EventTypeGenerationFor")) result.Add(new("$", "event_marker_mismatch"));
-        if (shape.Visibility != row.Visibility) result.Add(new("$", "event_visibility_mismatch"));
+        var result = CheckIdentity(shape, row);
         var expected = row.Fields.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToDictionary(field => field.TrimEnd('†', '‡'), field => field.EndsWith('†') || field.EndsWith('‡'));
         if (!shape.Members.Select(member => member.ClrName).ToHashSet(StringComparer.Ordinal).SetEquals(expected.Keys))
             result.Add(new("$", "event_fields_mismatch"));
@@ -67,4 +62,24 @@ internal static class CatalogueChecker
     internal static IReadOnlyList<Violation> CheckIdentities(IEnumerable<EventShape> shapes) => shapes
         .GroupBy(shape => (shape.TypeId, shape.Generation)).Where(group => group.Count() > 1)
         .Select(_ => new Violation("$", "duplicate_event_identity")).ToArray();
+
+    static List<Violation> CheckIdentity(EventShape shape, CatalogueRow row)
+    {
+        var result = new List<Violation>();
+        if (row.TypeId is null) result.Add(new("$", "event_id_not_allocated"));
+        if (!MatchesTypeId(shape.TypeId, row.TypeId)) result.Add(new("$", "event_type_id_mismatch"));
+        if (shape.Generation == 0 || shape.Marker is not ("EventType" or "EventTypeGenerationFor")) result.Add(new("$", "event_marker_mismatch"));
+        if (shape.Visibility != row.Visibility) result.Add(new("$", "event_visibility_mismatch"));
+        return result;
+    }
+
+    static bool MatchesTypeId(string? actual, string? expected) => actual == expected &&
+        Guid.TryParse(actual, out var id) && id != Guid.Empty && id.Version == 4;
+
+    static string InternalResourceFields(SourceFactRow fact) => fact.Name switch
+    {
+        "ResourceRegistrationRecorded" => ", DisplayName",
+        "ResourceScopeRegistrationRecorded" => ", Description",
+        _ => string.Empty
+    };
 }

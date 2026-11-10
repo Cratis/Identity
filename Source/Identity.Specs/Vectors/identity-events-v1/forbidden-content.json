@@ -12,6 +12,24 @@
   },
   "cases": [
     {
+      "name": "resource-source-fact-cannot-carry-a-raw-display-name",
+      "given": { "event": { "name": "ResourceRegistrationRecorded", "properties": [{ "name": "DisplayName", "type": "System.String" }] } },
+      "when": { "action": "check_event_contract" },
+      "then": { "outcome": "fail", "violations": [{ "path": "DisplayName", "reason": "missing_pii" }] }
+    },
+    {
+      "name": "resource-scope-source-fact-cannot-carry-a-secret",
+      "given": { "event": { "name": "ResourceScopeRegistrationRecorded", "properties": [{ "name": "ClientSecret", "type": "System.String" }] } },
+      "when": { "action": "check_event_contract" },
+      "then": { "outcome": "fail", "violations": [{ "path": "ClientSecret", "reason": "forbidden_member_name" }] }
+    },
+    {
+      "name": "resource-retirement-source-fact-cannot-carry-open-content",
+      "given": { "event": { "name": "ResourceScopeRetirementRecorded", "properties": [{ "name": "Details", "type": "System.Object" }] } },
+      "when": { "action": "check_event_contract" },
+      "then": { "outcome": "fail", "violations": [{ "path": "Details", "reason": "open_payload_shape" }] }
+    },
+    {
       "name": "client-secret-hash-cannot-be-a-raw-string",
       "given": { "event": { "name": "ClientSecretRotated", "properties": [{ "name": "ClientSecretHash", "type": "System.String" }] } },
       "when": { "action": "check_event_contract" },

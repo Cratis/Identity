@@ -46,6 +46,12 @@ public static class SafeConceptRegistry
                 "business-label",
                 "identity-contracts-v1.1-amendment §3 and decision 4",
                 "Internal non-person application display label only.",
+                Redeemable: false),
+            [typeof(ResourceDisplayName).FullName!] = new(
+                "string",
+                "business-label",
+                "identity-contracts-v1.1-amendment decision 4; RegisterResource label admission",
+                "Internal non-person resource display label only; never accepted on a Public event.",
                 Redeemable: false)
         }.AsReadOnly();
 

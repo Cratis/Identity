@@ -69,5 +69,22 @@
   { "assembly": "Cratis.Identity.Contracts", "namespace": "Cratis.Identity.Contracts.Resources.Events", "name": "ResourceScopeRetired", "typeId": "6a6869c9-423b-4746-8aa5-93b989b6895f", "generation": 1, "visibility": "Public", "fixture": "fixtures/6a6869c9-423b-4746-8aa5-93b989b6895f/1.json", "fields": [
     { "name": "RetiredAt", "wireName": "RetiredAt", "type": "System.DateTimeOffset", "pii": false, "nullable": false, "underlyingType": null, "fields": [] },
     { "name": "ScopeName", "wireName": "ScopeName", "type": "System.String", "pii": false, "nullable": false, "underlyingType": null, "fields": [] }
+  ] },
+  { "assembly": "Cratis.Identity.Contracts", "namespace": "Cratis.Identity.Contracts.Resources.Events", "name": "ResourceRegistrationRecorded", "typeId": "9737db97-da6b-484e-afe6-760188549102", "generation": 1, "visibility": "Internal", "fixture": "fixtures/9737db97-da6b-484e-afe6-760188549102/1.json", "fields": [
+    { "name": "Audience", "wireName": "Audience", "type": "System.String", "pii": false, "nullable": false, "underlyingType": null, "fields": [] },
+    { "name": "DisplayName", "wireName": "DisplayName", "type": "Cratis.Identity.Contracts.Resources.ResourceDisplayName", "pii": false, "nullable": false, "underlyingType": "string", "fields": [] },
+    { "name": "FactId", "wireName": "FactId", "type": "Cratis.Identity.Contracts.Accounts.FactId", "pii": false, "nullable": false, "underlyingType": "Guid", "fields": [] },
+    { "name": "ResourceIndicator", "wireName": "ResourceIndicator", "type": "System.String", "pii": false, "nullable": false, "underlyingType": null, "fields": [] },
+    { "name": "ScopePrefix", "wireName": "ScopePrefix", "type": "System.String", "pii": false, "nullable": false, "underlyingType": null, "fields": [] }
+  ] },
+  { "assembly": "Cratis.Identity.Contracts", "namespace": "Cratis.Identity.Contracts.Resources.Events", "name": "ResourceScopeRegistrationRecorded", "typeId": "c1635433-c34b-4b8f-b551-f20fd541fbde", "generation": 1, "visibility": "Internal", "fixture": "fixtures/c1635433-c34b-4b8f-b551-f20fd541fbde/1.json", "fields": [
+    { "name": "Description", "wireName": "Description", "type": "Cratis.Identity.Contracts.Resources.ResourceScopeDescription", "pii": false, "nullable": false, "underlyingType": "string", "fields": [] },
+    { "name": "FactId", "wireName": "FactId", "type": "Cratis.Identity.Contracts.Accounts.FactId", "pii": false, "nullable": false, "underlyingType": "Guid", "fields": [] },
+    { "name": "ScopeName", "wireName": "ScopeName", "type": "System.String", "pii": false, "nullable": false, "underlyingType": null, "fields": [] }
+  ] },
+  { "assembly": "Cratis.Identity.Contracts", "namespace": "Cratis.Identity.Contracts.Resources.Events", "name": "ResourceScopeRetirementRecorded", "typeId": "3a28650d-61a9-4d9f-bb06-4fdebb205803", "generation": 1, "visibility": "Internal", "fixture": "fixtures/3a28650d-61a9-4d9f-bb06-4fdebb205803/1.json", "fields": [
+    { "name": "FactId", "wireName": "FactId", "type": "Cratis.Identity.Contracts.Accounts.FactId", "pii": false, "nullable": false, "underlyingType": "Guid", "fields": [] },
+    { "name": "RetiredAt", "wireName": "RetiredAt", "type": "System.DateTimeOffset", "pii": false, "nullable": false, "underlyingType": null, "fields": [] },
+    { "name": "ScopeName", "wireName": "ScopeName", "type": "System.String", "pii": false, "nullable": false, "underlyingType": null, "fields": [] }
   ] }
 ]

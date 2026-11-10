@@ -13,6 +13,7 @@ using Cratis.Identity.Accounts.Lookup;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Clients;
 using Cratis.Identity.ConsentFlow;
+using Cratis.Identity.Resources;
 using Cratis.Identity.Revocation;
 using Microsoft.Extensions.Logging;
 
@@ -21,13 +22,13 @@ namespace Cratis.Identity.Architecture;
 public class when_inspecting_observers : Specification
 {
     /// <summary>
-    /// Pure: AccountProjection, AccountGuardProjection, UpstreamKeyLookupProjection, AccountLinkStateReducer, ClientRegistrationReducer.
+    /// Pure: AccountProjection, AccountGuardProjection, UpstreamKeyLookupProjection, AccountLinkStateReducer, ClientRegistrationReducer, ResourceRegistrationReducer.
     /// Outbox publisher: AccountPublications, keyed by FactId:eventTypeId (never sequence number).
     /// </summary>
     internal static readonly Type[] Classified =
     [
         typeof(AccountProjection), typeof(AccountGuardProjection), typeof(UpstreamKeyLookupProjection),
-        typeof(AccountLinkStateReducer), typeof(ClientRegistrationReducer), typeof(AccountPublications)
+        typeof(AccountLinkStateReducer), typeof(ClientRegistrationReducer), typeof(ResourceRegistrationReducer), typeof(AccountPublications)
     ];
 
     internal static Type[] Observers => typeof(Account).Assembly.GetTypes().Where(IsObserver).ToArray();
