@@ -45,10 +45,15 @@ internal static class TokenExchangeOptionsValidation
         return failures;
     }
 
-    static IEnumerable<string> ValidateIssuer(IdentityOptions options, ExternalIssuerOptions issuer, bool isDevelopment)
+    static IEnumerable<string> ValidateIssuer(IdentityOptions options, ExternalIssuerOptions issuer, bool isDevelopment) =>
+        ValidateIssuerIdentity(options, issuer.Issuer)
+            .Concat(ValidateJwksUri(issuer, isDevelopment))
+            .Concat(ValidateIssuerTokenPolicy(issuer))
+            .Concat(ValidateIssuerTiming(issuer));
+
+    static IEnumerable<string> ValidateIssuerIdentity(IdentityOptions options, string name)
     {
-        var name = issuer.Issuer;
-        if (!Uri.TryCreate(name, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps || !string.IsNullOrEmpty(uri.Fragment) || !string.IsNullOrEmpty(uri.UserInfo))
+        if (!Uri.TryCreate(name, UriKind.Absolute, out var uri) || !ValidIssuerUri(uri))
         {
             yield return $"The token-exchange issuer \"{name}\" must be an absolute HTTPS URI without user info or a fragment.";
         }
@@ -57,9 +62,15 @@ internal static class TokenExchangeOptionsValidation
         {
             yield return $"The token-exchange issuer \"{name}\" must not be Identity's own issuer.";
         }
+    }
 
-        if (!Uri.TryCreate(issuer.JwksUri, UriKind.Absolute, out var jwks) || jwks.Scheme is not ("http" or "https") ||
-            !string.IsNullOrEmpty(jwks.UserInfo) || !string.IsNullOrEmpty(jwks.Fragment))
+    static bool ValidIssuerUri(Uri uri) =>
+        uri.Scheme == Uri.UriSchemeHttps && string.IsNullOrEmpty(uri.Fragment) && string.IsNullOrEmpty(uri.UserInfo);
+
+    static IEnumerable<string> ValidateJwksUri(ExternalIssuerOptions issuer, bool isDevelopment)
+    {
+        var name = issuer.Issuer;
+        if (!Uri.TryCreate(issuer.JwksUri, UriKind.Absolute, out var jwks) || !ValidJwksUri(jwks))
         {
             yield return $"The JWKS URI of token-exchange issuer \"{name}\" must be an absolute HTTP(S) URI without user info or a fragment.";
         }
@@ -67,7 +78,14 @@ internal static class TokenExchangeOptionsValidation
         {
             yield return $"The JWKS URI of token-exchange issuer \"{name}\" requires HTTPS outside Development.";
         }
+    }
 
+    static bool ValidJwksUri(Uri uri) =>
+        (uri.Scheme == "http" || uri.Scheme == "https") && string.IsNullOrEmpty(uri.UserInfo) && string.IsNullOrEmpty(uri.Fragment);
+
+    static IEnumerable<string> ValidateIssuerTokenPolicy(ExternalIssuerOptions issuer)
+    {
+        var name = issuer.Issuer;
         if (issuer.Audiences.Count == 0 || issuer.Audiences.Any(string.IsNullOrWhiteSpace))
         {
             yield return $"Token-exchange issuer \"{name}\" needs at least one non-empty audience.";
@@ -77,7 +95,11 @@ internal static class TokenExchangeOptionsValidation
         {
             yield return $"Token-exchange issuer \"{name}\" accepts only asymmetric signing algorithms (RS*, PS*, ES*); none and HMAC algorithms are refused.";
         }
+    }
 
+    static IEnumerable<string> ValidateIssuerTiming(ExternalIssuerOptions issuer)
+    {
+        var name = issuer.Issuer;
         if (issuer.ClockSkew < TimeSpan.Zero || issuer.ClockSkew > TimeSpan.FromSeconds(120))
         {
             yield return $"The clock skew of token-exchange issuer \"{name}\" must be between zero and two minutes.";
@@ -94,7 +116,12 @@ internal static class TokenExchangeOptionsValidation
         }
     }
 
-    static IEnumerable<string> ValidateClient(IdentityOptions options, TokenExchangeClientOptions client, bool isDevelopment)
+    static IEnumerable<string> ValidateClient(IdentityOptions options, TokenExchangeClientOptions client, bool isDevelopment) =>
+        ValidateClientCredentials(client, isDevelopment)
+            .Concat(ValidateClientIssuers(options.TokenExchange, client))
+            .Concat(ValidateClientResources(options.Resources, client));
+
+    static IEnumerable<string> ValidateClientCredentials(TokenExchangeClientOptions client, bool isDevelopment)
     {
         if (string.IsNullOrWhiteSpace(client.ClientId) || string.IsNullOrWhiteSpace(client.ClientSecret))
         {
@@ -104,28 +131,39 @@ internal static class TokenExchangeOptionsValidation
         {
             yield return $"The secret of token-exchange client \"{client.ClientId}\" must have at least 32 characters outside Development.";
         }
+    }
 
+    static IEnumerable<string> ValidateClientIssuers(TokenExchangeOptions exchange, TokenExchangeClientOptions client)
+    {
         if (client.Issuers.Count == 0)
         {
             yield return $"Token-exchange client \"{client.ClientId}\" must name at least one issuer.";
         }
 
-        foreach (var issuer in client.Issuers.Where(_ => !options.TokenExchange.Issuers.Any(i => string.Equals(i.Issuer, _, StringComparison.Ordinal))))
+        foreach (var issuer in client.Issuers.Where(_ => !exchange.Issuers.Any(i => string.Equals(i.Issuer, _, StringComparison.Ordinal))))
         {
             yield return $"Token-exchange client \"{client.ClientId}\" references an unknown issuer \"{issuer}\".";
         }
+    }
 
+    static IEnumerable<string> ValidateClientResources(IList<ResourceServerOptions> resources, TokenExchangeClientOptions client)
+    {
         if (client.Resources.Count == 0)
         {
             yield return $"Token-exchange client \"{client.ClientId}\" must name at least one resource.";
         }
 
-        var known = options.Resources.Where(_ => client.Resources.Contains(_.Audience, StringComparer.Ordinal)).ToArray();
-        foreach (var audience in client.Resources.Where(_ => !options.Resources.Any(r => string.Equals(r.Audience, _, StringComparison.Ordinal))))
+        var known = resources.Where(_ => client.Resources.Contains(_.Audience, StringComparer.Ordinal)).ToArray();
+        foreach (var audience in client.Resources.Where(_ => !resources.Any(r => string.Equals(r.Audience, _, StringComparison.Ordinal))))
         {
             yield return $"Token-exchange client \"{client.ClientId}\" references a resource \"{audience}\" that is not configured or was disabled by hosted configuration.";
         }
 
+        foreach (var failure in ValidateClientScopes(known, client)) yield return failure;
+    }
+
+    static IEnumerable<string> ValidateClientScopes(ResourceServerOptions[] known, TokenExchangeClientOptions client)
+    {
         foreach (var scope in client.Scopes.Where(_ => !known.Any(r => r.Scopes.Any(s => string.Equals(s.Name, _, StringComparison.Ordinal)))))
         {
             yield return $"Token-exchange client \"{client.ClientId}\" names scope \"{scope}\", which none of its resources own.";
