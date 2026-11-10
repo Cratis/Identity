@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <!-- Required by source-generated macOS ACL interop. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>Cratis.Identity</RootNamespace>
     <AssemblyName>Cratis.Identity</AssemblyName>
     <PackageId>Cratis.Identity</PackageId>
