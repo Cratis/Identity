@@ -42,7 +42,7 @@ public class a_development_profile : Specification
             ["Identity:Development:Clients:0:DisplayName"] = "Claude (local)",
             ["Identity:Development:Clients:0:RedirectUris:0"] = "http://localhost/callback",
             ["Identity:Development:Clients:0:RedirectUris:1"] = "http://127.0.0.1/callback",
-            ["Identity:Development:Resources:0:Audience"] = "direct-api",
+            ["Identity:Development:Resources:0:Audience"] = DevelopmentProfile.DirectMcpAudience,
             ["Identity:Development:Resources:0:DisplayName"] = "Direct MCP (local)",
             ["Identity:Development:Resources:0:Indicators:0"] = "http://localhost:5200/mcp",
             ["Identity:Development:Resources:0:Scopes:0:Name"] = "direct:mcp:read",

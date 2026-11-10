@@ -17,6 +17,17 @@ namespace Cratis.Identity.Development;
 /// </remarks>
 internal static class DevelopmentProfile
 {
+    /// <summary>
+    /// The audience of the Direct MCP resource the profile registers. The one place to change it: the profile's settings,
+    /// the documentation and the specs all name this value.
+    /// </summary>
+    internal const string DirectMcpAudience = "direct-mcp";
+
+    /// <summary>
+    /// The audience of the Direct REST API, which the profile does not register; a token for the MCP audience is never valid on it.
+    /// </summary>
+    internal const string DirectApiAudience = "direct-api";
+
     static readonly string[] _loopbackHosts = ["localhost", "127.0.0.1", "[::1]"];
 
     /// <summary>

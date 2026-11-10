@@ -13,7 +13,23 @@ The profile is not a way to reach a deployed environment. It has no deployed key
 ## Prerequisites
 
 - A running Chronicle server. The default host settings use `chronicle://localhost:35000`.
-- The upstream login settings the host already needs.
+- A GitHub OAuth app for the sign-in, described next.
+
+### GitHub OAuth app
+
+Identity signs people in through GitHub. Register an OAuth app once for your machine:
+
+1. In GitHub, open **Settings > Developer settings > OAuth Apps > New OAuth App**.
+2. Set **Homepage URL** to `http://localhost:5100/` and **Authorization callback URL** to `http://localhost:5100/signin-github`. The host must listen on the same origin; it does with the launch profile below.
+3. Generate a client secret, then store both values as user secrets, which stay outside the repository:
+
+```shell
+dotnet user-secrets init --project Source/Identity.Host
+dotnet user-secrets set "Identity:GitHub:ClientId" "<client id>" --project Source/Identity.Host
+dotnet user-secrets set "Identity:GitHub:ClientSecret" "<client secret>" --project Source/Identity.Host
+```
+
+`dotnet user-secrets init` adds a `UserSecretsId` to the project file; leave it out of any commit that is not about secrets. User secrets load in the `Development` environment, the only one the profile runs in. Environment variables `Identity__GitHub__ClientId` and `Identity__GitHub__ClientSecret` work as well. Never put either value in `appsettings.Development.json`.
 
 ## Start the host
 
@@ -33,10 +49,21 @@ The profile creates its keys on first run in a per-user directory outside the re
 
 | System | Location |
 | --- | --- |
-| macOS and Linux | `~/.local/share/cratis/identity-dev/<issuer-authority>/` |
+| macOS and Linux | `$XDG_DATA_HOME/cratis/identity-dev/<issuer-authority>/`, which is `~/.local/share/cratis/identity-dev/<issuer-authority>/` when `XDG_DATA_HOME` is not set |
 | Windows | `%LOCALAPPDATA%\cratis\identity-dev\<issuer-authority>\` |
 
-The directory is owner-only and holds a marker file, development certificates named `NOT-FOR-DEPLOYMENT`, and the Data Protection ring. Identity refuses to start when the directory holds anything else, is a link, is inside the repository, or is readable by other users. Delete the directory to start over. Never copy, commit or deploy these keys.
+The location is .NET's per-user data folder. On macOS that is also `~/.local/share`, not `~/Library/Application Support`.
+
+The directory is created owner-only and holds a marker file, development keys and certificates named `NOT-FOR-DEPLOYMENT`, and the Data Protection ring. Files are created with owner-only access and moved into place atomically. On macOS and Linux that is mode `0700` for directories and `0600` for files, and every parent directory must be owned by you or root and not writable by others. On Windows the directory and every file get an access control list that grants only your account, with inheritance from the parent turned off, set when they are created.
+
+Identity refuses to start, naming the problem, when the directory:
+
+- holds anything that is not a development key file, such as a deployed key ring, or a leftover temporary file (`.tmp-*`) from an interrupted run;
+- is a link, is reached through one, or is the repository content folder or inside it;
+- is owned by someone else, is accessible to others, or sits below a directory others can write to;
+- holds a certificate without its private key.
+
+A private key without its certificate, which an interrupted first run can leave, is removed and recreated. Delete the directory to start over. Never copy, commit or deploy these keys.
 
 New keys are added when the current ones are about to expire. Old ones stay so earlier tokens still validate.
 
@@ -46,10 +73,10 @@ The settings in `Source/Identity.Host/appsettings.Development.json` replace the 
 
 | Product | Audience | Resource indicator | Scopes |
 | --- | --- | --- | --- |
-| Direct MCP | `direct-api` | `http://localhost:5200/mcp` | `direct:mcp:read`, `direct:mcp:content.write`, `direct:mcp:work` |
+| Direct MCP | `direct-mcp` | `http://localhost:5200/mcp` | `direct:mcp:read`, `direct:mcp:content.write`, `direct:mcp:work` |
 | Studio MCP | `studio-mcp` | `http://localhost:5300/mcp` | `studio:mcp:read`, `studio:mcp:write` |
 
-The audience `direct-api` is the existing name for the Direct MCP resource, and the local profile keeps it so a product validates the same audience everywhere. The ports are placeholders. Change the indicators to match how each product runs locally.
+The audience `direct-mcp` is the Direct MCP resource's audience everywhere, so a product validates the same value locally and deployed. `direct-api` is the separate audience of the Direct REST API, which the profile does not register; a token for one audience is refused on the other. The ports are placeholders. Change the indicators to match how each product runs locally.
 
 ## Clients
 

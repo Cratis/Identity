@@ -27,7 +27,7 @@ public class when_enabled_in_development : given.a_development_profile
     [Fact] void should_not_fail() => _exception.ShouldBeNull();
     [Fact] void should_keep_the_data_protection_ring_beside_the_keys() => _dataProtectionPath.EndsWith(Path.Combine("cratis", "identity-dev", StoreName, "data-protection"), StringComparison.Ordinal).ShouldBeTrue();
     [Fact] void should_use_the_dedicated_directory_as_the_secret_store() => _startupOptions.SecretStore.Path.EndsWith(Path.Combine("cratis", "identity-dev", StoreName), StringComparison.Ordinal).ShouldBeTrue();
-    [Fact] void should_replace_the_resources() => _startupOptions.Resources.Select(_ => _.Audience).ShouldContainOnly("direct-api", "studio-mcp");
+    [Fact] void should_replace_the_resources() => _startupOptions.Resources.Select(_ => _.Audience).ShouldContainOnly(DevelopmentProfile.DirectMcpAudience, "studio-mcp");
     [Fact] void should_use_loopback_indicators() => _startupOptions.Resources.SelectMany(_ => _.Indicators).ShouldContainOnly("http://localhost:5200/mcp", "http://localhost:5300/mcp");
     [Fact] void should_register_the_profile() => _services.Any(_ => _.ServiceType == typeof(DevelopmentOptions)).ShouldBeTrue();
     [Fact] void should_write_the_provenance_marker() => File.ReadAllText(Path.Combine(_storeDirectory, DevelopmentKeyStore.MarkerFile)).ShouldEqual(DevelopmentKeyStore.Marker);
