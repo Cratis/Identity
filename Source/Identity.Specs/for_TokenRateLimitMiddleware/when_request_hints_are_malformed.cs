@@ -25,17 +25,17 @@ public class when_request_hints_are_malformed : Specification
         context.Request.Headers.Authorization = "Basic not-base64";
         context.Request.Form = new FormCollection(new Dictionary<string, StringValues> { ["client_id"] = "form-client", ["grant_type"] = "refresh_token" });
         var identified = await TokenRequestIdentification.Read(context);
-        _fallback = identified.ClientId;
+        _fallback = identified.ClientId?.Value;
         _grant = identified.GrantType;
         context.Request.Form = new FormCollection(new Dictionary<string, StringValues> { ["client_id"] = new StringValues(["a", "b"]) });
-        _repeated = (await TokenRequestIdentification.Read(context)).ClientId;
+        _repeated = (await TokenRequestIdentification.Read(context)).ClientId?.Value;
         var form = Substitute.For<IFormFeature>();
         form.HasFormContentType.Returns(true);
         form.ReadFormAsync(Arg.Any<CancellationToken>()).Returns(Task.FromException<IFormCollection>(new InvalidDataException("Malformed test form.")));
         context.Features.Set(form);
         context.Connection.RemoteIpAddress = IPAddress.Parse("192.0.2.2");
         var malformed = await TokenRequestIdentification.Read(context);
-        _malformed = malformed.ClientId;
+        _malformed = malformed.ClientId?.Value;
         _source = malformed.Source;
     }
 

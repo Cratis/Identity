@@ -6,6 +6,7 @@ using Cratis.Identity.Accounts.Lookup;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Contracts.Accounts.Events;
+using Cratis.Identity.Sessions;
 using Cratis.Identity.Upstream;
 using Microsoft.Extensions.Options;
 
@@ -156,7 +157,7 @@ internal class UpstreamKeyLinking(AccountStore store, UpstreamLookups lookups, U
         throw new AccountOperationRefused("upstream_key_already_reserved");
     }
 
-    void RequireProof(VerifiedAuthentication authentication, string sessionId)
+    void RequireProof(VerifiedAuthentication authentication, SessionId sessionId)
     {
         if (authentication is null || authentication.SessionId != sessionId)
         {

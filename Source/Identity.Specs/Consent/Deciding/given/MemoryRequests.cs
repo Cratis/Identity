@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Contracts.Accounts;
+using Cratis.Identity.Realm;
+using Cratis.Identity.Sessions;
 
 namespace Cratis.Identity.ConsentFlow.Deciding.given;
 
@@ -25,7 +27,7 @@ internal class MemoryRequests : IConsentRequestStore
         lock (_gate) return Task.FromResult(_rows.GetValueOrDefault(id));
     }
 
-    public Task<ConsentRequest?> FindPending(AccountSubject account, string session, string realm, DateTimeOffset now, CancellationToken cancellationToken)
+    public Task<ConsentRequest?> FindPending(AccountSubject account, SessionId session, RealmId realm, DateTimeOffset now, CancellationToken cancellationToken)
     {
         lock (_gate)
         {
