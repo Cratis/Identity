@@ -214,6 +214,12 @@ test('untagged baseline passes with an unreleased notice', async t => {
     assert(repo.messages.some(message => message.includes(`is unreleased (no ${tag} tag)`)));
 });
 
+test('an empty base ref on a push is treated as no base', async t => {
+    const repo = await repository(t, false);
+    await checkBaselineImmutability(repo.root, '');
+    assert(repo.messages.some(message => message.includes(`is unreleased (no ${tag} tag)`)));
+});
+
 test('PR base rejects coordinated baseline and manifest replacement before the first tag', async t => {
     const repo = await repository(t, false);
     await replaceId(repo);
