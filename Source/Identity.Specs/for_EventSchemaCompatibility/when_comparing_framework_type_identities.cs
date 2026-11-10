@@ -51,8 +51,18 @@ public class when_comparing_framework_type_identities : Specification
     [InlineData("Microsoft.Extensions.Options")]
     public void should_ignore_only_the_version_for_framework_assemblies(string assembly)
     {
-        var identity = $"Example.Type, {assembly}, Version=10.0.0.0, Culture=neutral, PublicKeyToken=null";
-        FrameworkTypeIdentity.Canonicalize(identity).ShouldEqual($"Example.Type, {assembly}, Culture=neutral, PublicKeyToken=null");
+        var identity = $"Example.Type, {assembly}, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e";
+        FrameworkTypeIdentity.Canonicalize(identity).ShouldEqual($"Example.Type, {assembly}, Culture=neutral, PublicKeyToken=7cec85d7bea7798e");
+    }
+
+    [Theory]
+    [InlineData("PublicKeyToken=null")]
+    [InlineData("PublicKeyToken=0123456789abcdef")]
+    public void should_retain_versions_of_framework_named_assemblies_without_a_microsoft_token(string token)
+    {
+        var original = Field($"Example.Type, System.Foo, Version=10.0.0.0, Culture=neutral, {token}");
+        FrameworkTypeIdentity.Canonicalize(original.Type).ShouldEqual(original.Type);
+        ShouldReject(original, original with { Type = original.Type.Replace("10.0.0.0", "11.0.0.0", StringComparison.Ordinal) });
     }
 
     [Theory]
