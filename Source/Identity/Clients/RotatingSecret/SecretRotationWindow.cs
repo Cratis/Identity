@@ -8,8 +8,24 @@ namespace Cratis.Identity.Clients.RotatingSecret;
 /// <param name="PreviousValidUntil">The old revision deadline; equality means no overlap.</param>
 internal sealed record SecretRotationWindow(DateTimeOffset ActivatedAt, DateTimeOffset PreviousValidUntil)
 {
-    /// <summary>Requires ordered deadlines and monotonic activation.</summary>
+    /// <summary>Requires bounded activation, monotonic revisions, and a capped overlap.</summary>
     /// <param name="previousActivation">The current revision activation time.</param>
-    /// <returns>Whether both timeline invariants hold.</returns>
-    public bool IsValidAfter(DateTimeOffset previousActivation) => PreviousValidUntil >= ActivatedAt && ActivatedAt >= previousActivation;
+    /// <param name="now">The trusted server time.</param>
+    /// <param name="maxOverlap">The configured maximum overlap.</param>
+    /// <returns>Whether all timeline invariants hold.</returns>
+    public bool IsValidAfter(DateTimeOffset previousActivation, DateTimeOffset now, TimeSpan maxOverlap)
+    {
+        if (ActivatedAt == DateTimeOffset.MaxValue || PreviousValidUntil == DateTimeOffset.MaxValue)
+        {
+            return false;
+        }
+
+        return IsOrderedAfter(previousActivation) && IsNear(now) && HasBoundedOverlap(maxOverlap);
+    }
+
+    bool IsOrderedAfter(DateTimeOffset previousActivation) => PreviousValidUntil >= ActivatedAt && ActivatedAt >= previousActivation;
+
+    bool IsNear(DateTimeOffset now) => (ActivatedAt - now).Duration() <= TimeSpan.FromDays(1);
+
+    bool HasBoundedOverlap(TimeSpan maxOverlap) => maxOverlap >= TimeSpan.Zero && PreviousValidUntil - ActivatedAt <= maxOverlap;
 }

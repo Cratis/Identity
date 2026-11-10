@@ -13,6 +13,7 @@ using Cratis.Identity.Contracts.Clients.Events;
 using Cratis.Identity.Hosting;
 using Cratis.Monads;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.Clients.RotatingSecret;
 
@@ -27,27 +28,35 @@ internal sealed record RotateSecret([property: Key] ClientRegistrationId Registr
     /// <summary>Returns a keyed digest fact, never the plaintext command.</summary>
     /// <param name="state">The guarded registration.</param>
     /// <param name="digester">The server-keyed producer.</param>
+    /// <param name="time">The trusted server clock.</param>
+    /// <param name="options">The server's overlap policy.</param>
     /// <returns>The Internal fact, or a refusal.</returns>
-    public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle([LookUpBy(nameof(RegistrationId))] ClientRegistration? state, ClientSecretDigester digester)
+    public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle([LookUpBy(nameof(RegistrationId))] ClientRegistration? state, ClientSecretDigester digester, TimeProvider time, IOptions<ClientSecretOptions> options)
     {
         if (ClientDecisions.RequireActive(state) is { } refusal)
         {
             return refusal;
         }
 
-        if (state!.Configuration.ClientType != ClientType.Confidential || string.IsNullOrWhiteSpace(Secret))
+        if (state!.Configuration.ClientType != ClientType.Confidential || !ClientSecretStrength.IsValid(Secret))
         {
             return ValidationResult.Error("invalid_client_secret_rotation");
         }
 
-        if (!Window.IsValidAfter(state.ActivatedAt))
+        if (!Window.IsValidAfter(state.ActivatedAt, time.GetUtcNow(), options.Value.MaxOverlap))
         {
             return ValidationResult.Error("invalid_client_secret_deadlines");
         }
 
+        var digest = digester.Digest(Secret);
+        if (digest == state.SecretHash || state.ValidSecretHashesAt(time.GetUtcNow()).Contains(digest))
+        {
+            return ValidationResult.Error("client_secret_unchanged");
+        }
+
         return new EventForEventSourceId[]
         {
-            new(RegistrationId.Value, new ClientSecretRotated(ClientSecretId.New(), digester.Digest(Secret), Window.ActivatedAt, Window.PreviousValidUntil))
+            new(RegistrationId.Value, new ClientSecretRotated(ClientSecretId.New(), digest, Window.ActivatedAt, Window.PreviousValidUntil))
         };
     }
 

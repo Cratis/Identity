@@ -33,7 +33,7 @@ internal sealed record ChangeRedirectUris([property: Key] ClientRegistrationId R
         }
 
         var configuration = state!.Configuration with { RedirectUris = RedirectUris };
-        if (configuration.Validate(state.SecretHash is null ? null : "existing-secret") is { } invalid)
+        if (configuration.Validate(state.SecretHash is null ? null : "existing-secret-placeholder") is { } invalid)
         {
             return invalid;
         }

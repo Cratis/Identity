@@ -18,13 +18,16 @@ internal sealed record ClientRegistration(Guid Id)
     /// <summary>Gets the current secret revision.</summary>
     public ClientSecretId? SecretId { get; init; }
 
-    /// <summary>Gets the current keyed digest.</summary>
+    /// <summary>Gets the latest keyed digest, which may have a future activation.</summary>
     public SecretDigest? SecretHash { get; init; }
 
     /// <summary>Gets the previous keyed digest during an overlap window.</summary>
     public SecretDigest? PreviousSecretHash { get; init; }
 
-    /// <summary>Gets the current activation time.</summary>
+    /// <summary>Gets retained revisions needed across successive scheduled rotations.</summary>
+    public ClientSecretRevision[] PreviousSecretRevisions { get; init; } = [];
+
+    /// <summary>Gets the latest revision's activation time.</summary>
     public DateTimeOffset ActivatedAt { get; init; }
 
     /// <summary>Gets the previous secret deadline; equality means no overlap.</summary>
@@ -35,4 +38,25 @@ internal sealed record ClientRegistration(Guid Id)
 
     /// <summary>Gets the recorded retirement time.</summary>
     public DateTimeOffset? RetiredAt { get; init; }
+
+    /// <summary>Gets only digests valid at an explicit instant, never at reducer execution time.</summary>
+    /// <param name="at">The verification instant.</param>
+    /// <returns>The valid digest revisions, or none for a retired registration.</returns>
+    public IEnumerable<SecretDigest> ValidSecretHashesAt(DateTimeOffset at)
+    {
+        if (Retired)
+        {
+            yield break;
+        }
+
+        foreach (var revision in PreviousSecretRevisions.Where(revision => revision.IsValidAt(at)))
+        {
+            yield return revision.Digest;
+        }
+
+        if (SecretHash is not null && at >= ActivatedAt)
+        {
+            yield return SecretHash;
+        }
+    }
 }

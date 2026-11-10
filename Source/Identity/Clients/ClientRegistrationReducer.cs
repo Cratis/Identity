@@ -55,9 +55,21 @@ internal sealed class ClientRegistrationReducer : IReducerFor<ClientRegistration
     public ClientRegistration On(ClientSecretRotated @event, ClientRegistration? current, EventContext context)
     {
         var state = Start(current, context);
+        if (state.Retired)
+        {
+            return state;
+        }
+
+        var previous = state.PreviousSecretRevisions.AsEnumerable();
+        if (state.SecretHash is not null)
+        {
+            previous = previous.Append(new(state.SecretHash, state.ActivatedAt, @event.PreviousValidUntil));
+        }
+
         return state with
         {
-            PreviousSecretHash = @event.PreviousValidUntil > @event.ActivatedAt ? state.SecretHash : null,
+            PreviousSecretHash = state.SecretHash,
+            PreviousSecretRevisions = previous.ToArray(),
             SecretId = @event.ClientSecretId,
             SecretHash = @event.ClientSecretHash,
             ActivatedAt = @event.ActivatedAt,
@@ -70,7 +82,15 @@ internal sealed class ClientRegistrationReducer : IReducerFor<ClientRegistration
     /// <param name="current">The previous state.</param>
     /// <param name="context">The source stream.</param>
     /// <returns>The next state.</returns>
-    public ClientRegistration On(ClientRetired @event, ClientRegistration? current, EventContext context) => Start(current, context) with { Retired = true, RetiredAt = @event.RetiredAt };
+    public ClientRegistration On(ClientRetired @event, ClientRegistration? current, EventContext context) => Start(current, context) with
+    {
+        Retired = true,
+        RetiredAt = @event.RetiredAt,
+        SecretId = null,
+        SecretHash = null,
+        PreviousSecretHash = null,
+        PreviousSecretRevisions = []
+    };
 
     static ClientRegistration Start(ClientRegistration? current, EventContext context) => current ?? new(Guid.Parse(context.EventSourceId));
 }

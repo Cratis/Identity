@@ -22,20 +22,25 @@ namespace Cratis.Identity.Clients.Registering;
 [Authorize(Policy = IdentityPolicies.IssuerSecurityOwner)]
 internal sealed record RegisterClient(ClientId ClientId, ClientConfiguration Configuration, [property: NotAudited] string? Secret = null)
 {
-    /// <summary>Provides a trusted registration instant.</summary>
-    /// <param name="time">The server clock.</param>
-    /// <returns>The registration time.</returns>
-    public DateTimeOffset Provide(TimeProvider time) => time.GetUtcNow();
+    /// <summary>Reads the trusted registration time and configured identifier reservations.</summary>
+    /// <param name="reads">The trusted clock and configured-identifier decision reads.</param>
+    /// <returns>The trusted registration decision context.</returns>
+    public ClientRegistrationDecision Provide(ClientRegistrationReads reads) => reads.Read(ClientId);
 
     /// <summary>Returns one atomic registration batch, including the initial secret digest when confidential.</summary>
-    /// <param name="at">The trusted registration time.</param>
+    /// <param name="decision">The trusted registration time and configured reservations.</param>
     /// <param name="digester">The server-keyed digest producer.</param>
     /// <returns>Internal facts, or a credential-free refusal.</returns>
-    public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle(DateTimeOffset at, ClientSecretDigester digester)
+    public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle(ClientRegistrationDecision decision, ClientSecretDigester digester)
     {
-        if (string.IsNullOrWhiteSpace(ClientId.Value))
+        if (!ClientIdRules.IsValid(ClientId))
         {
             return ValidationResult.Error("invalid_client_registration");
+        }
+
+        if (decision.ConfiguredClientExists)
+        {
+            return ValidationResult.Error("client_id_already_reserved");
         }
 
         if (Configuration.Validate(Secret) is { } refusal)
@@ -46,12 +51,12 @@ internal sealed record RegisterClient(ClientId ClientId, ClientConfiguration Con
         var id = ClientRegistrationId.New();
         var events = new List<EventForEventSourceId>
         {
-            new(id.Value, Configuration.Registered(ClientId, at)),
+            new(id.Value, Configuration.Registered(ClientId, decision.At)),
             new(id.Value, new ClientRedirectUrisChanged(Configuration.RedirectUris.ToArray()))
         };
         if (Configuration.ClientType == ClientType.Confidential)
         {
-            events.Add(new(id.Value, new ClientSecretRotated(ClientSecretId.New(), digester.Digest(Secret!), at, at)));
+            events.Add(new(id.Value, new ClientSecretRotated(ClientSecretId.New(), digester.Digest(Secret!), decision.At, decision.At)));
         }
 
         return events;

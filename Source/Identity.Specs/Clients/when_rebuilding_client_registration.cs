@@ -30,11 +30,14 @@ public class when_rebuilding_client_registration : given.client_commands
         var nextHash = _digester.Digest(Plaintext);
         var rotated = reducer.On(new ClientSecretRotated(ClientSecretId.New(), nextHash, Now.AddDays(1), Now.AddDays(1).AddSeconds(overlapSeconds)), first, context);
         rotated.SecretHash.ShouldEqual(nextHash);
-        rotated.PreviousSecretHash.ShouldEqual(overlapSeconds == 0 ? null : first.SecretHash);
+        rotated.PreviousSecretHash.ShouldEqual(first.SecretHash);
         var retired = reducer.On(new ClientRetired("owner_retired", Now.AddDays(2)), rotated, context);
         retired.Id.ShouldEqual(_id.Value);
         retired.ClientId.ShouldEqual(registered.ClientId);
         retired.Retired.ShouldBeTrue();
+        retired.SecretHash.ShouldBeNull();
+        retired.PreviousSecretHash.ShouldBeNull();
+        retired.PreviousSecretRevisions.ShouldBeEmpty();
         JsonSerializer.Serialize(retired).Contains(Plaintext, StringComparison.Ordinal).ShouldBeFalse();
         retired.ToString().Contains(Plaintext, StringComparison.Ordinal).ShouldBeFalse();
     }

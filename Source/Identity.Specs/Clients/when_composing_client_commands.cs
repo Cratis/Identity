@@ -4,6 +4,8 @@
 using Cratis.Identity.Contracts.Clients;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.Clients;
 
@@ -25,6 +27,55 @@ public class when_composing_client_commands : given.client_commands
         digest.Value.StartsWith("v2.", StringComparison.Ordinal).ShouldBeTrue();
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("not-base64")]
+    [InlineData("AA==")]
+    async Task should_fail_on_host_start_before_the_producer_is_resolved(string key)
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Identity:ClientSecrets:Key"] = key
+        }).Build();
+        using var host = new HostBuilder().ConfigureServices(services => services.AddClients(configuration)).Build();
+        var error = await Record.ExceptionAsync(() => host.StartAsync(TestContext.Current.CancellationToken));
+        error.ShouldBeOfExactType<OptionsValidationException>();
+        ((OptionsValidationException)error).Failures.ShouldContain("invalid_client_secret_key_configuration");
+    }
+
+    [Fact]
+    async Task should_start_with_a_valid_server_key()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Identity:ClientSecrets:Key"] = Convert.ToBase64String(Enumerable.Range(0, 32).Select(value => (byte)value).ToArray())
+        }).Build();
+        using var host = new HostBuilder().ConfigureServices(services => services.AddClients(configuration)).Build();
+        await host.StartAsync(TestContext.Current.CancellationToken);
+        await host.StopAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Theory]
+    [InlineData(0, 7)]
+    [InlineData(-1, 7)]
+    [InlineData(1, -1)]
+    async Task should_reject_invalid_revision_or_overlap_options_on_start(int revision, int overlapDays)
+    {
+        using var host = new HostBuilder().ConfigureServices(services =>
+        {
+            services.AddClients(new ConfigurationBuilder().Build());
+            services.Configure<ClientSecretOptions>(options =>
+            {
+                options.Key = _secretOptions.Value.Key;
+                options.Revision = revision;
+                options.MaxOverlap = TimeSpan.FromDays(overlapDays);
+            });
+        }).Build();
+        var error = await Record.ExceptionAsync(() => host.StartAsync(TestContext.Current.CancellationToken));
+        error.ShouldBeOfExactType<OptionsValidationException>();
+        ((OptionsValidationException)error).Failures.ShouldContain("invalid_client_secret_policy_configuration");
+    }
+
     [Fact]
     void should_fail_closed_without_a_configured_key()
     {
@@ -32,7 +83,7 @@ public class when_composing_client_commands : given.client_commands
         services.AddClients(new ConfigurationBuilder().Build());
         using var provider = services.BuildServiceProvider();
         var error = Catch.Exception(() => _ = provider.GetRequiredService<ClientSecretDigester>());
-        error.ShouldBeOfExactType<InvalidOperationException>();
-        error.Message.ShouldEqual("invalid_client_secret_key_configuration");
+        error.ShouldBeOfExactType<OptionsValidationException>();
+        ((OptionsValidationException)error).Failures.ShouldContain("invalid_client_secret_key_configuration");
     }
 }

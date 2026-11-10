@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Arc.Validation;
+using Cratis.Identity.Clients.Registering;
 using Cratis.Identity.Contracts.Clients;
 using Cratis.Identity.Contracts.Clients.Events;
 using OpenIddict.Abstractions;
@@ -51,38 +52,17 @@ internal sealed record ClientConfiguration
     /// <returns>A credential-free refusal, or null.</returns>
     public ValidationResult? Validate(string? secret)
     {
-        if (!HasSupportedKinds() || !HasSupportedPermissions())
+        if (!HasSupportedKinds() || !HasSupportedPermissions() || !HasValidSecret(secret))
         {
             return ValidationResult.Error("invalid_client_configuration");
         }
 
-        if (ClientType == ClientKind.Public && secret is not null)
+        if (!ClientRedirectRules.TryParse(RedirectUris, ApplicationType, out var redirects))
         {
-            return ValidationResult.Error("invalid_client_configuration");
+            return ValidationResult.Error("invalid_client_redirect_uri");
         }
 
-        var descriptor = new OpenIddictApplicationDescriptor
-        {
-            ClientType = ClientType == ClientKind.Public ? ClientTypes.Public : ClientTypes.Confidential,
-            ApplicationType = ApplicationType == ClientApplicationType.Native ? ApplicationTypes.Native : ApplicationTypes.Web,
-            ClientSecret = secret
-        };
-        if (RequirePkce)
-        {
-            descriptor.Requirements.Add(Requirements.Features.ProofKeyForCodeExchange);
-        }
-
-        foreach (var value in RedirectUris)
-        {
-            if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
-            {
-                return ValidationResult.Error("invalid_client_redirect_uri");
-            }
-
-            descriptor.RedirectUris.Add(uri);
-        }
-
-        var validation = ClientRegistrationRules.Validate(descriptor, [CodeChallengeMethods.Sha256]);
+        var validation = ClientRegistrationRules.Validate(CreateDescriptor(secret, redirects), [CodeChallengeMethods.Sha256]);
         return validation.IsValid ? null : ValidationResult.Error("invalid_client_configuration");
     }
 
@@ -108,4 +88,23 @@ internal sealed record ClientConfiguration
     bool HasSupportedKinds() => Enum.IsDefined(ClientType) && Enum.IsDefined(ApplicationType) && Enum.IsDefined(ConsentType);
 
     bool HasSupportedPermissions() => Endpoints.All(Enum.IsDefined) && GrantTypes.All(Enum.IsDefined) && ResponseTypes.All(Enum.IsDefined);
+
+    bool HasValidSecret(string? secret) => ClientType == ClientKind.Public ? secret is null : ClientSecretStrength.IsValid(secret);
+
+    OpenIddictApplicationDescriptor CreateDescriptor(string? secret, Uri[] redirects)
+    {
+        var descriptor = new OpenIddictApplicationDescriptor
+        {
+            ClientType = ClientType == ClientKind.Public ? ClientTypes.Public : ClientTypes.Confidential,
+            ApplicationType = ApplicationType == ClientApplicationType.Native ? ApplicationTypes.Native : ApplicationTypes.Web,
+            ClientSecret = secret
+        };
+        if (RequirePkce)
+        {
+            descriptor.Requirements.Add(Requirements.Features.ProofKeyForCodeExchange);
+        }
+
+        descriptor.RedirectUris.UnionWith(redirects);
+        return descriptor;
+    }
 }

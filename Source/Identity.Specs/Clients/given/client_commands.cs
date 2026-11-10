@@ -1,6 +1,8 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Accounts.given;
+using Cratis.Identity.Clients.Registering;
 using Cratis.Identity.Contracts.Clients;
 using Microsoft.Extensions.Options;
 
@@ -14,11 +16,17 @@ public class client_commands : Specification
     private protected ClientSecretDigester _digester;
     private protected ClientConfiguration _configuration;
     private protected ClientRegistration _active;
+    private protected ClientRegistrationDecision _registrationDecision;
+    private protected IOptions<ClientSecretOptions> _secretOptions;
+    protected AccountClock _clock;
 
     void Establish()
     {
         _id = ClientRegistrationId.New();
-        _digester = new(Options.Create(new ClientSecretOptions { Key = Convert.ToBase64String(Enumerable.Range(0, 32).Select(value => (byte)value).ToArray()) }));
+        _secretOptions = Options.Create(new ClientSecretOptions { Key = Convert.ToBase64String(Enumerable.Range(0, 32).Select(value => (byte)value).ToArray()) });
+        _digester = new(_secretOptions);
+        _clock = new() { Now = Now };
+        _registrationDecision = new(Now, false);
         _configuration = new()
         {
             ClientType = ClientType.Confidential,

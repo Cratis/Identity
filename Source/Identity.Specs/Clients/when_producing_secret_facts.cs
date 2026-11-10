@@ -20,7 +20,7 @@ public class when_producing_secret_facts : given.client_commands
     async Task should_append_only_digest_facts_for_initial_and_rotated_secrets()
     {
         var command = new RegisterClient(new("spec-client"), _configuration, Plaintext);
-        var batch = command.Handle(Now, _digester).AsT0.ToArray();
+        var batch = command.Handle(_registrationDecision, _digester).AsT0.ToArray();
         var id = batch[0].EventSourceId;
         batch.All(item => item.EventSourceId == id).ShouldBeTrue();
         Guid.TryParse(id.Value, out _).ShouldBeTrue();
@@ -35,7 +35,7 @@ public class when_producing_secret_facts : given.client_commands
             item.Event.ToString().Contains(Plaintext, StringComparison.Ordinal).ShouldBeFalse();
         }
 
-        var rotated = new RotateSecret(_id, Plaintext, new(Now, Now)).Handle(_active, _digester).AsT0.Single().Event;
+        var rotated = new RotateSecret(_id, Plaintext, new(Now, Now)).Handle(_active, _digester, _clock, _secretOptions).AsT0.Single().Event;
         JsonSerializer.Serialize(rotated, rotated.GetType()).Contains(Plaintext, StringComparison.Ordinal).ShouldBeFalse();
         command.ToString().Contains(Plaintext, StringComparison.Ordinal).ShouldBeFalse();
         new RotateSecret(_id, Plaintext, new(Now, Now)).ToString().Contains(Plaintext, StringComparison.Ordinal).ShouldBeFalse();
