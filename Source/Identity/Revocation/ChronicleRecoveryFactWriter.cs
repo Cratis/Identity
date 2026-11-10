@@ -20,7 +20,7 @@ internal sealed class ChronicleRecoveryFactWriter(IEventStore eventStore) : IRec
     public Task Publish(RecoveryEpochIntent intent, CancellationToken cancellationToken) =>
         Append(
             new RealmRecoveryEpochAdvanceRecorded(new((ulong)intent.Epoch), new("StoreRestored"), new(intent.FenceId), new((ulong)intent.FenceSequence), new(intent.FenceId)),
-            $"{intent.FenceId:D}:bf2cbb34-f181-4931-be63-52d68a143be4",
+            $"{intent.FenceId:D}:{nameof(RealmRecoveryEpochAdvanceRecorded)}",
             intent.OccurredAt,
             cancellationToken);
 

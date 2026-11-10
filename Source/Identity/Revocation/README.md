@@ -56,14 +56,14 @@ Offline access JWT validation retains the accepted **630-second residual window*
 
 ## Internal event identities
 
-These generation-one IDs follow the repository's explicit UUID `[EventType]` convention. Operational entry identities and submitted token values never enter their schemas. Grant/family event-source UUIDs use a domain-separated deterministic mapping of the operational authorization identifier. There is no Public reactor or publication until the revocation gate permits it.
+These generation-one events use Chronicle's default event type id, the short CLR type name ([identity-events v1.2 amendment](../../../Documentation/specs/identity-events-v1.2-amendment.md)). Operational entry identities and submitted token values never enter their schemas. Grant/family event-source UUIDs use a domain-separated deterministic mapping of the operational authorization identifier. There is no Public reactor or publication until the revocation gate permits it.
 
 | Internal source fact | Event type ID |
 | --- | --- |
-| `AuthorizationRevocationRecorded` | `ac88f9a7-6364-4f20-9301-d533b491b641` |
-| `RefreshTokenFamilyRevocationRecorded` | `a80e52ab-051e-4771-bff2-488dccd8aa44` |
-| `RefreshTokenFamilyStarted` | `d9a448be-ccf1-4ab5-b43c-f17dad0ba6c3` |
-| `RefreshTokenReuseDetected` | `bedbc6d5-2870-4cf7-aa5e-79e7a2bf3cb6` |
-| `RealmRecoveryEpochAdvanceRecorded` | `bf2cbb34-f181-4931-be63-52d68a143be4` |
-| `FenceLogCustodyEstablished` | `b90e65de-fd11-43c9-b032-e6f73d5ca089` |
-| `FencePublicationCheckpoint` | `507bb271-f4cf-43ca-a5a8-3e3a80fd0093` |
+| `AuthorizationRevocationRecorded` | `AuthorizationRevocationRecorded` |
+| `RefreshTokenFamilyRevocationRecorded` | `RefreshTokenFamilyRevocationRecorded` |
+| `RefreshTokenFamilyStarted` | `RefreshTokenFamilyStarted` |
+| `RefreshTokenReuseDetected` | `RefreshTokenReuseDetected` |
+| `RealmRecoveryEpochAdvanceRecorded` | `RealmRecoveryEpochAdvanceRecorded` |
+| `FenceLogCustodyEstablished` | `FenceLogCustodyEstablished` |
+| `FencePublicationCheckpoint` | `FencePublicationCheckpoint` |

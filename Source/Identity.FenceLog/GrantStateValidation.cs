@@ -36,7 +36,7 @@ public static class GrantStateValidation
     static bool PayloadIsKnown(GrantState state, OutboxEntry entry) => entry.Kind switch
     {
         FactKind.FamilyStarted => FamilyStartIsKnown(entry),
-        FactKind.Reuse => RestrictionIsKnown(state, entry) && entry.DetectionId.HasValue,
+        FactKind.Reuse => RestrictionIsKnown(state, entry) && entry.DetectionId == OutboxEntry.DetectionIdFor(entry.Fence!.Id),
         FactKind.AuthorizationRevocation or FactKind.FamilyRevocation => RestrictionIsKnown(state, entry),
         _ => false
     };
@@ -44,7 +44,12 @@ public static class GrantStateValidation
     static bool FamilyStartIsKnown(OutboxEntry entry) =>
         entry.Fence is null && entry.ExpiresAt.HasValue && entry.ExpiresAt > entry.OccurredAt && entry.State != OutboxState.Pending;
 
-    static bool RestrictionIsKnown(GrantState state, OutboxEntry entry) => entry.Fence is not null && entry.Fence == state.Fence;
+    /// <summary>Restriction fact identities are derived from the fence, so a foreign or legacy-derived identity is never evidence.</summary>
+    /// <param name="state">The grant state.</param>
+    /// <param name="entry">The outbox entry.</param>
+    /// <returns>True when the entry is the canonical restriction of the state's fence.</returns>
+    static bool RestrictionIsKnown(GrantState state, OutboxEntry entry) =>
+        entry.Fence is not null && entry.Fence == state.Fence && entry.FactId == OutboxEntry.RestrictionFactId(entry.Fence.Id, entry.Kind);
 
     static bool ClearStateIsKnown(GrantState state) =>
         !string.IsNullOrEmpty(state.CurrentRefreshTokenId) && state.Outbox.Length == 1 && state.Outbox[0].Kind == FactKind.FamilyStarted;
