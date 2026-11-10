@@ -108,7 +108,7 @@ Content-Type: application/json
 {"resource":"https://direct.example.test/mcp","authorization_servers":["https://login.example.test"],"scopes_supported":["direct:read","direct:write"]}
 ```
 
-The corresponding synthetic authorization request contains `resource=https%3A%2F%2Fdirect.example.test%2Fmcp`, `code_challenge_method=S256`, and an actual S256 challenge. The token request contains the same encoded `resource` and matching verifier. These are required fields, not complete runnable requests.
+The corresponding synthetic authorization request contains `resource=https%3A%2F%2Fdirect.example.test%2Fmcp`, `code_challenge_method=S256`, and an actual S256 challenge. The token request contains the same encoded `resource` and matching verifier. These are illustrative fields, not complete runnable requests: S256 PKCE and the matching verifier are required, but `resource` may be omitted under the inference and grant-binding rules above.
 
 | Request / configuration | Expected response or result |
 | --- | --- |
@@ -167,6 +167,21 @@ Content-Type: application/json
 For example, a fixture retry limit of 2 allows no third step-up attempt. This value is a test setting, not a locked production default. A PAT request in the combined profile remains an application PAT flow and MUST NOT be sent through OAuth step-up automatically.
 
 Machine-readable group: [profiles and discovery](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/profiles-and-discovery.json), repository path `Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/profiles-and-discovery.json`. Successful fixture requests assert handler admission, not a particular MCP method's response payload. The group has `name`, `description`, `given`, `when.action`, and `then`; `given.vectors` contains individual cases. These data vectors do not demonstrate runtime conformance. Outcomes and reasons are vector vocabulary, not public error messages.
+
+## Migrating vector consumers to 2.0.0
+
+Vector artifact **2.0.0 is breaking for vector consumers**, independently of contract
+version 1. Consumers pinned to 1.0.0 must update their case-ID mappings and expected
+outcomes before selecting the 2.0.0 manifest:
+
+- Replace `authorization-resource-required` with `authorization-resource-inferred`:
+  omitted `resource` is accepted when the authorization scopes identify one resource.
+- Replace `token-resource-required` with `token-resource-inherited`: code redemption
+  may omit `resource` and must retain the original grant audience.
+
+The former case IDs are not aliases for the new cases. Consumers that cannot migrate
+must remain pinned to the immutable 1.0.0 artifact; its historical sections and hashes
+are unchanged.
 
 ## Vector artifact
 

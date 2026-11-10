@@ -79,9 +79,14 @@ public class an_authorization_server : for_TokenRateLimitMiddleware.given.an_ide
         var recovery = Substitute.For<IRecoveryLog>();
         recovery.RecoveryEpoch(Arg.Any<CancellationToken>()).Returns(0L);
         Builder.Services.AddSingleton(recovery);
+        ConfigureServices();
         Provider = Builder.Services.BuildServiceProvider();
         Provider.GetRequiredService<RecoveryGate>().Open(true);
         Policy = Provider.GetRequiredService<IGrantPolicy>();
+    }
+
+    protected virtual void ConfigureServices()
+    {
     }
 
     protected JsonElement Case(string id)
