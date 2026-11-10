@@ -152,7 +152,6 @@ internal static class IdentityServiceCollectionExtensions
         services.AddSingleton<IUpstreamLookupKeys, ConfiguredUpstreamLookupKeys>();
         services.AddSingleton<UpstreamKeyDigester>();
         services.AddSingleton<VerifiedKeyGate>();
-        services.AddScoped<AccountStore>();
         services.AddScoped<UpstreamLookups>();
         services.AddScoped<IUpstreamKeyResolver, UpstreamKeyResolver>();
         services.AddScoped<AccountReader>();
@@ -164,7 +163,6 @@ internal static class IdentityServiceCollectionExtensions
         services.AddScoped<LinkCeremony>();
         services.AddScoped<ILinkCeremony>(provider => provider.GetRequiredService<LinkCeremony>());
         services.AddScoped<AccountLinking>();
-        services.AddScoped<UpstreamKeyLinking>();
         services.AddLookupRevisionGuard();
         return services;
     }
@@ -379,30 +377,7 @@ internal static class IdentityServiceCollectionExtensions
 
                 if (startupOptions.DeviceGrant.Enabled)
                 {
-                    options.AllowDeviceAuthorizationFlow()
-                        .SetDeviceAuthorizationEndpointUris($"{endpoints.RoutePrefix}/connect/device".TrimStart('/'))
-                        .SetEndUserVerificationEndpointUris($"{endpoints.RoutePrefix}/device".TrimStart('/'))
-                        .AddEventHandler<OpenIddictServerEvents.HandleDeviceAuthorizationRequestContext>(builder => builder.UseInlineHandler(context =>
-                        {
-                            context.SkipRequest();
-                            return ValueTask.CompletedTask;
-                        }));
-                }
-
-                if (startupOptions.DeviceGrant.Enabled)
-                {
-                    options.RemoveEventHandler(OpenIddictServerHandlers.AttachAuthorization.Descriptor)
-                        .AddEventHandler(AttachDeviceAuthorization.Descriptor)
-                        .RemoveEventHandler(OpenIddictServerHandlers.RedeemTokenEntry.Descriptor)
-                        .AddEventHandler(RedeemDeviceCodeOnce.Descriptor)
-                        .AddEventHandler(BindDeviceAuthorization.Descriptor)
-                        .AddEventHandler(DeviceVerificationGuard.Descriptor)
-                        .AddEventHandler(DevicePollingAdmissionGuard.Descriptor)
-                        .AddEventHandler(DevicePollingGuard.Descriptor)
-                        .AddEventHandler(DeviceAuthorizationResponse.Descriptor)
-                        .AddEventHandler(DeviceVerificationResponse.Descriptor)
-                        .AddEventHandler(GuardDeviceIssuance.BeforeGeneration)
-                        .AddEventHandler(GuardDeviceIssuance.BeforeResponse);
+                    ConfigureDeviceGrant(options, endpoints);
                 }
 
                 AddEphemeralCredentialsInDevelopment(options, startupOptions);
@@ -447,6 +422,30 @@ internal static class IdentityServiceCollectionExtensions
             services.AddSingleton<IPostConfigureOptions<OpenIddictServerOptions>>(sp => sp.GetRequiredService<ConfigureServerKeys>());
             services.AddSingleton<IOptionsChangeTokenSource<OpenIddictServerOptions>, SecretStoreKeysChangeTokenSource>();
         }
+    }
+
+    static void ConfigureDeviceGrant(OpenIddictServerBuilder options, IdentityEndpointOptions endpoints)
+    {
+        options.AllowDeviceAuthorizationFlow()
+            .SetDeviceAuthorizationEndpointUris($"{endpoints.RoutePrefix}/connect/device".TrimStart('/'))
+            .SetEndUserVerificationEndpointUris($"{endpoints.RoutePrefix}/device".TrimStart('/'))
+            .AddEventHandler<OpenIddictServerEvents.HandleDeviceAuthorizationRequestContext>(builder => builder.UseInlineHandler(context =>
+            {
+                context.SkipRequest();
+                return ValueTask.CompletedTask;
+            }))
+            .RemoveEventHandler(OpenIddictServerHandlers.AttachAuthorization.Descriptor)
+            .AddEventHandler(AttachDeviceAuthorization.Descriptor)
+            .RemoveEventHandler(OpenIddictServerHandlers.RedeemTokenEntry.Descriptor)
+            .AddEventHandler(RedeemDeviceCodeOnce.Descriptor)
+            .AddEventHandler(BindDeviceAuthorization.Descriptor)
+            .AddEventHandler(DeviceVerificationGuard.Descriptor)
+            .AddEventHandler(DevicePollingAdmissionGuard.Descriptor)
+            .AddEventHandler(DevicePollingGuard.Descriptor)
+            .AddEventHandler(DeviceAuthorizationResponse.Descriptor)
+            .AddEventHandler(DeviceVerificationResponse.Descriptor)
+            .AddEventHandler(GuardDeviceIssuance.BeforeGeneration)
+            .AddEventHandler(GuardDeviceIssuance.BeforeResponse);
     }
 
     static void ConfigureServer(OpenIddictServerOptions server, IOptions<IdentityOptions> identity, IResourceCatalog resources)
