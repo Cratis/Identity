@@ -12,7 +12,6 @@ using Cratis.Identity.Configuration;
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Contracts.Accounts.Events;
 using Cratis.Identity.Protocol;
-using Cratis.Identity.Upstream;
 using Cratis.Monads;
 using Microsoft.Extensions.Options;
 
@@ -24,7 +23,18 @@ namespace Cratis.Identity.Accounts.Linking.Proposing;
 [Command, ProtocolCommand, ExcludeFromDiscovery, ProtectedDecision]
 internal record ProposeLink
 {
-    public async Task<Result<LinkProposalDecision, ValidationResult>> Provide(ILinkCeremony ceremony, IDecisionReads decisions, IReadModels readModels, UpstreamLookups lookups, UpstreamKeyDigester digester, IOptions<IdentityOptions> options, TimeProvider time)
+    /// <summary>
+    /// Verifies ceremony proof and enrolls the account guard before reading link state.
+    /// </summary>
+    /// <param name="ceremony">The trusted scope-local ceremony observations.</param>
+    /// <param name="decisions">The command-owned optimistic concurrency guard.</param>
+    /// <param name="accounts">The passive account link-state reader.</param>
+    /// <param name="lookups">The permanent reservation hints.</param>
+    /// <param name="digester">The immutable upstream key digester.</param>
+    /// <param name="options">The realm hold policy.</param>
+    /// <param name="time">The trusted clock.</param>
+    /// <returns>The guarded decision inputs, or a refusal.</returns>
+    public async Task<Result<LinkProposalDecision, ValidationResult>> Provide(ILinkCeremony ceremony, IDecisionReads decisions, AccountReader accounts, UpstreamLookups lookups, UpstreamKeyDigester digester, IOptions<IdentityOptions> options, TimeProvider time)
     {
         if (ceremony.Intent.EmailOnlyProof)
         {
@@ -51,10 +61,15 @@ internal record ProposeLink
         var authentication = ceremony.Authentication!;
         var reserved = await lookups.Find(digester.Digest(authentication.IdpIssuer, authentication.Subject)) is not null;
         await decisions.Get<AccountGuard>(new ReadModelKey(existing.Account.Value));
-        var state = await readModels.GetInstanceById<AccountLinkState>(new ReadModelKey(existing.Account.Value)) ?? new(existing.Account.Value);
+        var state = await accounts.FindLinkState(existing.Account) ?? new(existing.Account.Value);
         return new LinkProposalDecision(existing.Account, state, authentication, ceremony.Intent, reserved, options.Value.Accounts.LinkHoldMinimum, time.GetUtcNow());
     }
 
+    /// <summary>
+    /// Produces proposal and optional quarantine events without appending them.
+    /// </summary>
+    /// <param name="decision">The guarded state and trusted ceremony observations.</param>
+    /// <returns>The events and proposal identifier, or a refusal without events.</returns>
     public Result<(IEnumerable<EventForEventSourceId>, LinkProposalId), ValidationResult> Handle(LinkProposalDecision decision)
     {
         if (LinkDecisions.RequireActive(decision.State) is { } refusal)
@@ -78,8 +93,3 @@ internal record ProposeLink
         return (events.Select(@event => new EventForEventSourceId(decision.Account.Value, @event) { Occurred = decision.At }).ToArray(), id);
     }
 }
-
-/// <summary>
-/// Guarded account state and trusted observations for the proposal decision.
-/// </summary>
-internal record LinkProposalDecision(AccountSubject Account, AccountLinkState State, VerifiedAuthentication Authentication, LinkIntent Intent, bool Reserved, TimeSpan Hold, DateTimeOffset At);

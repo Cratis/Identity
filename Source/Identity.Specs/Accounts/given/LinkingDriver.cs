@@ -22,6 +22,12 @@ namespace Cratis.Identity.Accounts.given;
 /// <summary>
 /// Drives the three native commands against guarded store state. Confirm and Clear stay on the old service until D3.
 /// </summary>
+/// <param name="linking">The legacy service retained for confirm and clear.</param>
+/// <param name="eventStore">The guarded event store.</param>
+/// <param name="readModels">The passive account state and reservation reader.</param>
+/// <param name="digester">The immutable upstream key digester.</param>
+/// <param name="options">The realm policy.</param>
+/// <param name="time">The trusted clock.</param>
 internal class LinkingDriver(UpstreamKeyLinking linking, IEventStore eventStore, IReadModels readModels, UpstreamKeyDigester digester, IOptions<IdentityOptions> options, TimeProvider time)
 {
     readonly AccountStore _store = new(eventStore, readModels, time);
@@ -30,7 +36,7 @@ internal class LinkingDriver(UpstreamKeyLinking linking, IEventStore eventStore,
     {
         var command = new ProposeLink();
         var read = new GuardedCommandRead(eventStore);
-        var decision = Require(await command.Provide(Ceremony(session, authentication, intent), read.Decisions, readModels, new UpstreamLookups(readModels), digester, options, time));
+        var decision = Require(await command.Provide(Ceremony(session, authentication, intent), read.Decisions, new AccountReader(readModels), new UpstreamLookups(readModels), digester, options, time));
         var (events, proposalId) = Require(command.Handle(decision));
         await Append(decision.Account, new(read.Guard, decision.State), events);
         return proposalId;
@@ -43,7 +49,7 @@ internal class LinkingDriver(UpstreamKeyLinking linking, IEventStore eventStore,
     {
         var command = new RejectLink(proposalId);
         var read = new GuardedCommandRead(eventStore);
-        var decision = Require(await command.Provide(Ceremony(session), read.Decisions, readModels, time));
+        var decision = Require(await command.Provide(Ceremony(session), read.Decisions, new AccountReader(readModels), time));
         await Append(decision.Account, new(read.Guard, decision.State), Require(command.Handle(decision)));
     }
 
@@ -51,7 +57,7 @@ internal class LinkingDriver(UpstreamKeyLinking linking, IEventStore eventStore,
     {
         var command = new UnlinkUpstreamKey(linkId);
         var read = new GuardedCommandRead(eventStore);
-        var decision = Require(await command.Provide(Ceremony(session), read.Decisions, readModels, time));
+        var decision = Require(await command.Provide(Ceremony(session), read.Decisions, new AccountReader(readModels), time));
         await Append(decision.Account, new(read.Guard, decision.State), Require(command.Handle(decision)));
     }
 

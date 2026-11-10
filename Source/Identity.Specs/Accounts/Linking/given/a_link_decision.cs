@@ -71,6 +71,7 @@ public class a_link_decision : Specification
         services.AddSingleton(_options);
         services.AddSingleton<TimeProvider>(_clock);
         services.AddScoped<UpstreamLookups>();
+        services.AddScoped<AccountReader>();
         services.AddSingleton<ICommandFilter>(new ProtocolCommandFilter());
     }
 }

@@ -16,8 +16,18 @@ namespace Cratis.Identity.Accounts.Linking;
 /// <summary>
 /// Bridges trusted link ceremonies to native protocol-only commands without appending events.
 /// </summary>
+/// <param name="commands">The guarded protocol command pipeline.</param>
 internal sealed class AccountLinking(IProtocolCommands commands)
 {
+    /// <summary>
+    /// Proposes a link using the existing session and adapter-verified upstream proof.
+    /// </summary>
+    /// <param name="session">The existing authenticated account principal.</param>
+    /// <param name="authentication">The adapter-verified upstream proof.</param>
+    /// <param name="intent">The explicit ceremony intent and trusted connection policy.</param>
+    /// <param name="cancellationToken">The originating request's cancellation.</param>
+    /// <returns>The proposal identifier.</returns>
+    /// <exception cref="AccountOperationRefused">The ceremony or command pipeline refuses the proposal.</exception>
     public async Task<LinkProposalId> Propose(ClaimsPrincipal session, VerifiedAuthentication authentication, LinkIntent intent, CancellationToken cancellationToken = default)
     {
         var result = await Execute(new ProposeLink(), session, authentication, intent, cancellationToken);
@@ -29,9 +39,25 @@ internal sealed class AccountLinking(IProtocolCommands commands)
         return proposal;
     }
 
+    /// <summary>
+    /// Terminally rejects an account owner's proposal through the command pipeline.
+    /// </summary>
+    /// <param name="session">The owning account principal.</param>
+    /// <param name="proposalId">The proposal identifier.</param>
+    /// <param name="cancellationToken">The originating request's cancellation.</param>
+    /// <returns>The command completion.</returns>
+    /// <exception cref="AccountOperationRefused">The session, account, proposal, or pipeline refuses rejection.</exception>
     public async Task Reject(ClaimsPrincipal session, LinkProposalId proposalId, CancellationToken cancellationToken = default) =>
         _ = await Execute(new RejectLink(proposalId), session, null, new(false), cancellationToken);
 
+    /// <summary>
+    /// Removes a confirmed key while preserving its permanent reservation.
+    /// </summary>
+    /// <param name="session">The owning account principal.</param>
+    /// <param name="linkId">The confirmed link identifier.</param>
+    /// <param name="cancellationToken">The originating request's cancellation.</param>
+    /// <returns>The command completion.</returns>
+    /// <exception cref="AccountOperationRefused">The session, account, key, or pipeline refuses removal.</exception>
     public async Task Unlink(ClaimsPrincipal session, LinkId linkId, CancellationToken cancellationToken = default) =>
         _ = await Execute(new UnlinkUpstreamKey(linkId), session, null, new(false), cancellationToken);
 
@@ -88,6 +114,7 @@ internal sealed class AccountLinking(IProtocolCommands commands)
     async Task<CommandResult> Attempt(object command, ClaimsPrincipal session, VerifiedAuthentication? authentication, LinkIntent intent, CancellationToken cancellationToken)
     {
         var result = await commands.Execute(command, services => services.GetRequiredService<LinkCeremony>().Set(session, authentication, intent, cancellationToken), cancellationToken);
+
         // Arc captures cancellation as a failure; a gone caller must never become a refusal.
         cancellationToken.ThrowIfCancellationRequested();
         return result;

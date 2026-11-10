@@ -17,10 +17,19 @@ namespace Cratis.Identity.Accounts.Linking.Unlinking;
 /// <summary>
 /// Removes a key only while another confirmed key remains, preserving its reservation.
 /// </summary>
+/// <param name="LinkId">The owning account's confirmed link identifier.</param>
 [Command, ProtocolCommand, ExcludeFromDiscovery, ProtectedDecision]
 internal record UnlinkUpstreamKey(LinkId LinkId)
 {
-    public async Task<Result<UnlinkDecision, ValidationResult>> Provide(ILinkCeremony ceremony, IDecisionReads decisions, IReadModels readModels, TimeProvider time)
+    /// <summary>
+    /// Verifies the owner session and enrolls the account guard before reading link state.
+    /// </summary>
+    /// <param name="ceremony">The trusted scope-local ceremony observations.</param>
+    /// <param name="decisions">The command-owned optimistic concurrency guard.</param>
+    /// <param name="accounts">The passive account link-state reader.</param>
+    /// <param name="time">The trusted clock.</param>
+    /// <returns>The guarded owner decision and current time, or a refusal.</returns>
+    public async Task<Result<UnlinkDecision, ValidationResult>> Provide(ILinkCeremony ceremony, IDecisionReads decisions, AccountReader accounts, TimeProvider time)
     {
         var session = LinkDecisions.RequireSession(ceremony.Session, time);
         if (session.TryGetError(out var refusal))
@@ -30,10 +39,15 @@ internal record UnlinkUpstreamKey(LinkId LinkId)
 
         var account = session.AsT0.Account;
         await decisions.Get<AccountGuard>(new ReadModelKey(account.Value));
-        var state = await readModels.GetInstanceById<AccountLinkState>(new ReadModelKey(account.Value)) ?? new(account.Value);
+        var state = await accounts.FindLinkState(account) ?? new(account.Value);
         return new UnlinkDecision(account, state, time.GetUtcNow());
     }
 
+    /// <summary>
+    /// Produces an unlink event only when another confirmed key remains.
+    /// </summary>
+    /// <param name="decision">The guarded owning account state and trusted unlink time.</param>
+    /// <returns>The unlink event, or a refusal without events.</returns>
     public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle(UnlinkDecision decision)
     {
         if (LinkDecisions.RequireActive(decision.State) is { } refusal)
@@ -50,8 +64,3 @@ internal record UnlinkUpstreamKey(LinkId LinkId)
         return new EventForEventSourceId[] { new(decision.Account.Value, new UpstreamKeyUnlinkRecorded(LinkId, link.KeyHash, "owner_unlinked", decision.At, fact)) { Occurred = decision.At } };
     }
 }
-
-/// <summary>
-/// Guarded confirmed links and the trusted unlink time.
-/// </summary>
-internal record UnlinkDecision(AccountSubject Account, AccountLinkState State, DateTimeOffset At);

@@ -11,7 +11,7 @@ public class and_reading_the_decision_state : given.a_link_decision
 {
     Result<LinkRejectionDecision, ValidationResult> _result;
 
-    async Task Because() => _result = await new RejectLink(Guid.NewGuid()).Provide(_ceremony, _decisions, _readModels, _clock);
+    async Task Because() => _result = await new RejectLink(Guid.NewGuid()).Provide(_ceremony, _decisions, new AccountReader(_readModels), _clock);
 
     [Fact] void should_enroll_before_reading_state() => _order.ShouldEqual(["guard", "state"]);
     [Fact] void should_guard_the_session_account() => _guardKeys.ShouldEqual([new ReadModelKey(_account.Value)]);
