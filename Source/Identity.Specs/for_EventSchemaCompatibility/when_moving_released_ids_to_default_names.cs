@@ -23,6 +23,17 @@ public class when_moving_released_ids_to_default_names : Specification
             .ShouldContain(new Violation(Legacy.Catalogue[0].Fixture, "released_fixture_changed"));
 
     [Fact]
+    public void should_reject_divergent_successor_bytes_even_when_the_old_uuid_path_is_retained()
+    {
+        var current = new ReleasedSchemaState([Original], new Dictionary<string, byte[]>
+        {
+            [Legacy.Catalogue[0].Fixture] = "{}"u8.ToArray(),
+            [Original.Fixture] = "changed"u8.ToArray()
+        });
+        Check(Legacy, current).ShouldContain(new Violation(Legacy.Catalogue[0].Fixture, "released_fixture_changed"));
+    }
+
+    [Fact]
     public void should_reject_a_uuid_row_that_moved_to_a_different_name()
     {
         var other = Original with { Name = "OtherEvent", TypeId = "OtherEvent", Fixture = "fixtures/OtherEvent/1.json" };

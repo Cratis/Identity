@@ -37,12 +37,12 @@ public static class GrantStateValidation
     {
         FactKind.FamilyStarted => FamilyStartIsKnown(entry),
         FactKind.Reuse => RestrictionIsKnown(state, entry) && entry.DetectionId == OutboxEntry.DetectionIdFor(entry.Fence!.Id),
-        FactKind.AuthorizationRevocation or FactKind.FamilyRevocation => RestrictionIsKnown(state, entry),
+        FactKind.AuthorizationRevocation or FactKind.FamilyRevocation => RestrictionIsKnown(state, entry) && entry.DetectionId is null,
         _ => false
     };
 
     static bool FamilyStartIsKnown(OutboxEntry entry) =>
-        entry.Fence is null && entry.ExpiresAt.HasValue && entry.ExpiresAt > entry.OccurredAt && entry.State != OutboxState.Pending;
+        entry.Fence is null && entry.DetectionId is null && entry.ExpiresAt.HasValue && entry.ExpiresAt > entry.OccurredAt && entry.State != OutboxState.Pending;
 
     /// <summary>Restriction fact identities are derived from the fence, so a foreign or legacy-derived identity is never evidence.</summary>
     /// <param name="state">The grant state.</param>

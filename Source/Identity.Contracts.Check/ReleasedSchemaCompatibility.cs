@@ -74,7 +74,7 @@ internal static class ReleasedSchemaCompatibility
     {
         foreach (var fixture in released)
         {
-            var path = current.ContainsKey(fixture.Key) ? fixture.Key : legacyPaths.GetValueOrDefault(fixture.Key, fixture.Key);
+            var path = legacyPaths.GetValueOrDefault(fixture.Key, fixture.Key);
             if (!current.TryGetValue(path, out var bytes)) result.Add(new(fixture.Key, "released_fixture_removed"));
             else if (!fixture.Value.AsSpan().SequenceEqual(bytes)) result.Add(new(fixture.Key, "released_fixture_changed"));
         }

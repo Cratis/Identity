@@ -39,6 +39,10 @@ public class when_resolving_default_event_type_ids : Specification
         CatalogueChecker.CheckNames(Duplicates()).ShouldContain(new Violation("$", "duplicate_event_type_name"));
 
     [Fact]
+    public void should_reject_two_current_types_with_the_same_name_and_different_generations() =>
+        CatalogueChecker.CheckNames([Dynamic("Cratis.Left", "Duplicate"), Dynamic("Cratis.Right", "Duplicate", 2)]).ShouldContain(new Violation("$", "duplicate_event_type_name"));
+
+    [Fact]
     public void should_not_treat_a_prior_generation_as_a_duplicate_name() => CatalogueChecker.CheckNames([typeof(Current), typeof(Previous)]).ShouldBeEmpty();
 
     [Fact]
@@ -81,12 +85,12 @@ public class when_resolving_default_event_type_ids : Specification
     /// <returns>Two distinct event types with the same short name.</returns>
     static Type[] Duplicates() => [Dynamic("Cratis.Left", "Duplicate"), Dynamic("Cratis.Right", "Duplicate")];
 
-    static Type Dynamic(string @namespace, string name)
+    static Type Dynamic(string @namespace, string name, int generation = 1)
     {
         var module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString("N")), AssemblyBuilderAccess.Run).DefineDynamicModule("Main");
         var type = module.DefineType($"{@namespace}.{name}", TypeAttributes.Public | TypeAttributes.Sealed);
         var constructor = typeof(EventTypeAttribute).GetConstructors().First(candidate => candidate.GetParameters().All(parameter => parameter.IsOptional));
-        type.SetCustomAttribute(new CustomAttributeBuilder(constructor, constructor.GetParameters().Select(parameter => parameter.DefaultValue).ToArray()));
+        type.SetCustomAttribute(new CustomAttributeBuilder(constructor, constructor.GetParameters().Select(parameter => parameter.Name == "generation" ? Convert.ChangeType(generation, parameter.ParameterType) : parameter.DefaultValue).ToArray()));
         return type.CreateType();
     }
 }
