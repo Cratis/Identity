@@ -112,6 +112,8 @@ A future product PAT-authority verification endpoint would need to authenticate 
 
 For MCP, the no-token-passthrough requirement in section 9 also applies. The current unwrapped forwarding path and v2's bearer-covering capability do not by themselves satisfy it. The product-local PAT verification boundary for MCP remains an outstanding adapter decision; a route MUST fail closed if it cannot satisfy both requirements, not silently forward a credential or construct an unverified envelope.
 
+This Draft does not enable the PAT envelope, so the scope of [AuthProxy #294](https://github.com/Cratis/AuthProxy/issues/294) is the bearer and DPoP adapters first; PAT stays unwrapped and product-verified until the PAT-authority endpoint decision (open question 3).
+
 ## 7. Revocation freshness and failure behavior
 
 AuthProxy MUST use a positive introspection cache of at most **30 seconds**, configurable downward, and MUST NOT cache negative results. Reuse MUST stop at token expiry or an earlier required authority deadline; a cache hit MUST NOT restart the 30-second window. Cache time is the revocation window, not extra clock skew or an extension of token lifetime.
@@ -142,7 +144,7 @@ MCP OAuth endpoints MUST accept **access tokens only, never OIDC ID tokens**. Th
 
 Studio MCP and Direct MCP MUST use distinct catalog audiences, `studio-mcp` and `direct-mcp`. A client MUST request the corresponding registered canonical HTTPS resource URI using RFC 8707 `resource`; the trusted catalog maps that URI one-to-one to its audience slug. A resource URI is not the audience string. Unknown resources, another product's audience, audience arrays or missing required tenant constraints MUST be refused. One login does not authorize token reuse across products: each resource needs its own access token and scope/tenant constraints. Exact resource URIs remain a catalog decision, not values derived from Host, headers or the presented token. **Current gap:** the signed-off [scope catalog v1](arc-scope-catalog-v1.md) names `studio-api` and `direct-api` for its MCP entries, and the reference host's Direct MCP entry uses `direct-api`. The proposed `*-mcp` audiences require a reviewed catalog/registration update; this Draft neither renames existing audiences nor makes those registrations current.
 
-MCP MUST NOT pass incoming tokens through as upstream or downstream credentials. Existing v2 support for a cryptographically covered forwarded bearer is not permission to enable MCP token passthrough. Adapters must meet the reviewed product boundary without reusing an incoming token at another resource; this Draft does not invent token exchange or a replacement issuance path. RFC 9728 protected-resource metadata and `WWW-Authenticate` discovery challenges belong to that boundary's delivery.
+MCP MUST NOT pass incoming tokens through as upstream or downstream credentials. Existing v2 support for a cryptographically covered forwarded bearer is not permission to enable MCP token passthrough. Forwarding the covered bearer to the product behind AuthProxy whose audience it carries is not token passthrough; passthrough means reusing the token at another resource or upstream. Adapters must meet the reviewed product boundary without reusing an incoming token at another resource; this Draft does not invent token exchange or a replacement issuance path. RFC 9728 protected-resource metadata and `WWW-Authenticate` discovery challenges belong to that boundary's delivery.
 
 A local issuer MUST have a distinct fixed issuer and distinct signing keys and be configuration-gated to Development. Deployed AuthProxy/Arc MUST pin production trust and reject local-issuer tokens, with no runtime trust expansion. Neither successful local introspection nor a signed envelope may widen that trust. These boundary requirements do not claim that the per-product registrations or adapters are delivered by Identity's current metadata handler.
 
@@ -176,6 +178,7 @@ These cases describe required outcomes, not an implemented or passing conformanc
 | ID token at MCP; Studio token at Direct MCP; unknown resource or audience array | Refuse, independently of a valid signature or introspection activity. |
 | Deployed configuration receives a local-issuer token | Refuse despite locally valid signing/introspection. |
 | MCP route can operate only by passing the incoming token upstream/downstream | Refuse; do not enable passthrough as an adapter fallback. |
+| Request with conflicting tenant selection (token tenant versus requested tenant/namespace) | Refuse; user mapping binds the verified `(issuer, subject)` or immutable upstream keys, never login or email. |
 
 ## 11. Open questions (outstanding decisions)
 
