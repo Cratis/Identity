@@ -17,5 +17,5 @@ public class when_comparing_values : Specification
     [Fact] void should_convert_to_the_primitive() => ((string)_value).ShouldEqual("client");
     [Fact] void should_round_trip_the_value() => new ClientId(_value.Value).ShouldEqual(_value);
     [Fact] void should_preserve_an_absent_hint() => ClientId.From(null).ShouldBeNull();
-    [Fact] void should_preserve_an_empty_hint() => ClientId.From(string.Empty)!.Value.ShouldEqual(string.Empty);
+    [Fact] void should_preserve_an_empty_hint() => ClientId.From(string.Empty).Value.ShouldEqual(string.Empty);
 }

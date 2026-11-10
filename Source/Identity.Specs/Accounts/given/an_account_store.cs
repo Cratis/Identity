@@ -82,7 +82,7 @@ public class an_account_store : Specification
             null,
             [new ConnectionId(Guid.Parse("97373bfd-7d70-429e-a795-2147fddf8108")), issuer, subject, _clock.Now, operation],
             null)!;
-        typeof(VerifiedAuthentication).GetProperty("SessionId", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(proof, session?.FindFirstValue("sid") is { } sid ? new Cratis.Identity.Sessions.SessionId(sid) : null);
+        typeof(VerifiedAuthentication).GetProperty("SessionId", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(proof, session?.FindFirstValue("sid") is { } sid ? new Sessions.SessionId(sid) : null);
         return proof;
     }
 
