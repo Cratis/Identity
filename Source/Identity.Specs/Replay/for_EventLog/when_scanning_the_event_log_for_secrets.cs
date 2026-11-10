@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Text.Json;
+using Cratis.Chronicle.Events;
 using Cratis.Chronicle.EventSequences;
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Accounts.Lookup;
@@ -57,7 +58,7 @@ public class when_scanning_the_event_log_for_secrets : Accounts.SigningIn.given.
     }
 
     [Fact] void should_cover_the_complete_registered_identity_event_surface() => _registered.OrderBy(type => type.FullName).ShouldEqual(given.EventRegistry.Types.OrderBy(type => type.FullName));
-    [Fact] void should_scan_a_nonempty_source_log() => (_sourceCount > given.EventRegistry.Types.Length).ShouldBeTrue();
+    [Fact] void should_scan_a_nonempty_source_log() => _sourceCount.ShouldBeGreaterThan(_registered.Count(type => !Attribute.IsDefined(type, typeof(PublicAttribute))));
     [Fact] void should_exercise_the_real_sign_in_decision() => _refusal.ShouldBeNull();
     [Fact] void should_append_the_real_sign_in_decision() => _events.ShouldNotBeEmpty();
     [Fact] void should_scan_every_published_contract() => _outboxCount.ShouldEqual(6);

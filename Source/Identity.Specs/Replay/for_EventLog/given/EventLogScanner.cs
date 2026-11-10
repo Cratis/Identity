@@ -3,6 +3,8 @@
 
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Cratis.Identity.Contracts.Clients;
+using Cratis.Identity.Contracts.Clients.Events;
 
 namespace Cratis.Identity.Replay.for_EventLog.given;
 
@@ -29,35 +31,54 @@ internal static class EventLogScanner
             using var document = JsonDocument.Parse(serialized);
             var root = document.RootElement;
             var type = root.TryGetProperty("eventType", out var name) ? name.GetString() ?? "unknown" : "unknown";
-            Scan(root, type, secrets, findings);
+            Scan(root, new ScanContext(type, secrets, findings, "$"));
         }
 
         return findings;
     }
 
-    static void Scan(JsonElement element, string type, string[] secrets, List<(string EventType, string Rule)> findings)
+    static void Scan(JsonElement element, ScanContext context)
     {
         if (element.ValueKind == JsonValueKind.Object)
         {
-            ScanProperties(element, type, secrets, findings);
+            ScanProperties(element, context);
         }
         else if (element.ValueKind == JsonValueKind.Array)
         {
-            foreach (var child in element.EnumerateArray()) Scan(child, type, secrets, findings);
+            foreach (var child in element.EnumerateArray()) Scan(child, context with { Path = $"{context.Path}[]" });
         }
         else if (element.ValueKind == JsonValueKind.String)
         {
-            ScanValue(element.GetString(), type, secrets, findings);
+            ScanValue(element.GetString(), context);
         }
     }
 
-    static void ScanProperties(JsonElement element, string type, string[] secrets, List<(string EventType, string Rule)> findings)
+    static void ScanProperties(JsonElement element, ScanContext context)
     {
         foreach (var property in element.EnumerateObject())
         {
-            if (IsSecretProperty(property)) findings.Add((type, "secret-property"));
-            Scan(property.Value, type, secrets, findings);
+            if (IsSecretProperty(property) && !ReviewedLeaf(context, property)) context.Findings.Add((context.EventType, "secret-property"));
+            Scan(property.Value, context with { Path = $"{context.Path}.{property.Name}" });
         }
+    }
+
+    static bool ReviewedLeaf(ScanContext context, JsonProperty property)
+    {
+        if (context.EventType != typeof(ClientSecretRotated).FullName || context.Path != "$.content") return false;
+        var value = UnwrapConcept(property.Value);
+        if (value.ValueKind != JsonValueKind.String) return false;
+        return property.Name switch
+        {
+            "ClientSecretHash" => SecretDigest.IsWellFormed(value.GetString()),
+            "ClientSecretId" => Guid.TryParseExact(value.GetString(), "D", out var id) && id != Guid.Empty,
+            _ => false
+        };
+    }
+
+    static JsonElement UnwrapConcept(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Object || value.EnumerateObject().Count() != 1) return value;
+        return value.TryGetProperty("Value", out var primitive) ? primitive : value;
     }
 
     static bool IsSecretProperty(JsonProperty property)
@@ -69,15 +90,17 @@ internal static class EventLogScanner
             (property.Value.ValueKind != JsonValueKind.String || !string.IsNullOrEmpty(property.Value.GetString()));
     }
 
-    static void ScanValue(string value, string type, string[] secrets, List<(string EventType, string Rule)> findings)
+    static void ScanValue(string value, ScanContext context)
     {
         foreach (var (rule, pattern) in _rules)
         {
-            if (pattern.IsMatch(value)) findings.Add((type, rule));
+            if (pattern.IsMatch(value)) context.Findings.Add((context.EventType, rule));
         }
 
-        if (secrets.Any(secret => value.Contains(secret, StringComparison.OrdinalIgnoreCase))) findings.Add((type, "known-secret"));
+        if (context.Secrets.Any(secret => value.Contains(secret, StringComparison.OrdinalIgnoreCase))) context.Findings.Add((context.EventType, "known-secret"));
     }
+
+    sealed record ScanContext(string EventType, string[] Secrets, List<(string EventType, string Rule)> Findings, string Path);
 
     static Regex Pattern(string expression) => new(expression, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
 }
