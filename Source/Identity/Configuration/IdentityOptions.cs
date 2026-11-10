@@ -73,6 +73,16 @@ public class IdentityOptions
     public IList<IntrospectionClientOptions> IntrospectionClients { get; set; } = [];
 
     /// <summary>
+    /// Gets or sets the confidential OpenID Connect clients. Empty by default, leaving OIDC clients disabled.
+    /// </summary>
+    public IList<OidcClientOptions> OidcClients { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the OpenID Connect identity-only issuance gate.
+    /// </summary>
+    public OidcOptions Oidc { get; set; } = new();
+
+    /// <summary>
     /// Gets or sets the RFC 8693 token-exchange configuration. Empty by default, which leaves the grant disabled.
     /// </summary>
     public TokenExchangeOptions TokenExchange { get; set; } = new();

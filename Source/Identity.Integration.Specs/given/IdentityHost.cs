@@ -34,6 +34,7 @@ namespace Cratis.Identity.Integration.given;
 /// Everything else is the production pipeline: OpenIddict, the MongoDB stores, the consent page, antiforgery and
 /// the token endpoint. The configuration preserves both shipped Direct resources and adds Studio and Stage so resource
 /// binding can be exercised, tenants the default user is a member of, and a confidential introspection client.
+/// OpenID Connect clients and identity-only issuance remain disabled; <see cref="OidcIdentityHost"/> opts in separately.
 /// </remarks>
 public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
 {
@@ -280,4 +281,20 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         ["Identity:GitHub:ClientId"] = "unused-in-specs",
         ["Identity:GitHub:ClientSecret"] = "unused-in-specs"
     };
+}
+
+/// <summary>
+/// An Identity host that opts into OpenID Connect with the three test web clients and a recorded consent decision.
+/// </summary>
+public class OidcIdentityHost : IdentityHost
+{
+    /// <inheritdoc/>
+    protected override Dictionary<string, string?> Settings()
+    {
+        var settings = base.Settings();
+        settings["Identity:Oidc:IssuanceEnabled"] = "true";
+        settings["Identity:Oidc:ConsentDecision"] = "ImplicitFencedPath";
+        SpecClientDescriptors.AddOidcClients(settings);
+        return settings;
+    }
 }

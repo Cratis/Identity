@@ -27,7 +27,7 @@ internal class ClientDescriptors(IResourceCatalog resources, IOptions<IdentityOp
     /// </summary>
     /// <returns>The <see cref="OpenIddictApplicationDescriptor"/> instances.</returns>
     public virtual IEnumerable<OpenIddictApplicationDescriptor> All() =>
-        [CratisCliDescriptor(), .. options.Value.IntrospectionClients.Select(IntrospectionClient), .. options.Value.TokenExchange.Clients.Select(ExchangeClient)];
+        [CratisCliDescriptor(), .. options.Value.IntrospectionClients.Select(IntrospectionClient), .. options.Value.TokenExchange.Clients.Select(ExchangeClient), .. OidcClientDescriptors.For(options.Value.OidcClients)];
 
     /// <summary>
     /// Creates the descriptor of the first-party Cratis CLI: a public native client (no secret) using the

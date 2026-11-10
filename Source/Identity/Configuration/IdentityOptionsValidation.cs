@@ -22,6 +22,7 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
         ValidateDPoP(options.DPoP, environment.IsDevelopment(), failures);
         ValidateDeviceGrant(options.DeviceGrant, failures);
         failures.AddRange(TokenExchangeOptionsValidation.Validate(options, environment.IsDevelopment()));
+        failures.AddRange(OidcClientOptionsValidation.Validate(options));
         failures.AddRange(TokenRateLimitOptionsValidation.Validate(options.TokenRateLimit));
         ValidateAccounts(options.Accounts, failures);
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
