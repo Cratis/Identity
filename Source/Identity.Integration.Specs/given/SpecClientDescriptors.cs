@@ -16,7 +16,8 @@ namespace Cratis.Identity.Integration.given;
 /// </summary>
 /// <param name="resources">The resource catalog.</param>
 /// <param name="options">The Identity options.</param>
-internal sealed class SpecClientDescriptors(IResourceCatalog resources, IOptions<IdentityOptions> options) : ClientDescriptors(resources, options)
+/// <param name="development">The local-development profile, when a spec host enables it.</param>
+internal sealed class SpecClientDescriptors(IResourceCatalog resources, IOptions<IdentityOptions> options, DevelopmentOptions? development = null) : ClientDescriptors(resources, options, development)
 {
     /// <summary>The client id of the extra device-capable client.</summary>
     public const string OtherDeviceClient = "device-binding-spec";
