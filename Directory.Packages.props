@@ -19,7 +19,7 @@
     <PackageVersion Include="Cratis.Arc.Chronicle.Testing" Version="22.179.0" />
     <!-- Cratis Arc -->
     <PackageVersion Include="Cratis.Arc" Version="22.179.0" />
-    <PackageVersion Include="Cratis.Arc.ProxyGenerator.Build" Version="22.179.0" />
+    <PackageVersion Include="Cratis.Arc.ProxyGenerator.Build" Version="22.184.0" />
     <!-- MongoDB -->
     <PackageVersion Include="MongoDB.Driver" Version="3.13.0" />
     <!-- System -->
