@@ -16,7 +16,7 @@ internal static class RevocationServiceCollectionExtensions
     {
         services.AddSingleton(configuration.GetSection("Identity:FenceLog").Get<FenceLogOptions>() ?? new FenceLogOptions());
         services.AddSingleton<IndependentFenceLogConnection>();
-        services.AddSingleton(sp => new MongoIndependentFenceLog(() => sp.GetRequiredService<IndependentFenceLogConnection>().Database, sp.GetRequiredService<TimeProvider>(), () => sp.GetRequiredService<RecoverySession>().Verified));
+        services.AddSingleton(IndependentFenceLogFactory.Create);
         services.AddSingleton<IIndependentFenceLog>(sp => sp.GetRequiredService<MongoIndependentFenceLog>());
         services.AddSingleton<IRecoveryLog>(sp => sp.GetRequiredService<MongoIndependentFenceLog>());
         services.AddSingleton<IReservationLog>(sp => sp.GetRequiredService<MongoIndependentFenceLog>());

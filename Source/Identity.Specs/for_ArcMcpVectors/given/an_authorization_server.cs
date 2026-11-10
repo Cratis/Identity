@@ -34,7 +34,7 @@ public class an_authorization_server : for_TokenRateLimitMiddleware.given.an_ide
         var directory = Path.Combine(AppContext.BaseDirectory, "Vectors", "arc-mcp-authorization-v1");
         Vectors = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, "profiles-and-discovery.json")));
         Manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, "manifest.json")));
-        Resource = Vectors.RootElement.GetProperty("given").GetProperty("fixtureDefaults").GetProperty("resource").GetString()!;
+        Resource = Vectors.RootElement.GetProperty("given").GetProperty("fixtureDefaults").GetProperty("resource").GetString();
         Builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["Identity:Resources:0:Audience"] = "direct-api",
@@ -58,6 +58,18 @@ public class an_authorization_server : for_TokenRateLimitMiddleware.given.an_ide
                 .AddEventHandler<ValidateEndUserVerificationRequestContext>(handler => handler.UseInlineHandler(_ => default))
                 .AddEventHandler<ValidateAuthorizationRequestContext>(handler => handler.UseInlineHandler(_ => default))
                 .AddEventHandler<ValidateTokenRequestContext>(handler => handler.UseInlineHandler(_ => default))
+                .AddEventHandler<ProcessAuthenticationContext>(handler => handler
+                    .SetOrder(OpenIddictServerHandlers.ValidateAuthorizationCode.Descriptor.Order - 1)
+                    .UseInlineHandler(context =>
+                    {
+                        if (context.Transaction.GetProperty<ClaimsPrincipal>(nameof(ProcessAuthenticationContext.AuthorizationCodePrincipal)) is { } principal)
+                        {
+                            context.AuthorizationCodePrincipal = principal;
+                            context.ValidateAuthorizationCode = false;
+                        }
+
+                        return default;
+                    }))
                 .AddEventHandler<ApplyTokenResponseContext>(handler => handler.SetOrder(int.MaxValue).UseInlineHandler(context =>
                 {
                     context.HandleRequest();
@@ -119,8 +131,9 @@ public class an_authorization_server : for_TokenRateLimitMiddleware.given.an_ide
         request[Parameters.Resource] = requestedResource;
         var transaction = Transaction(request, OpenIddictServerEndpointType.Token);
 
+        // Supply code authentication at its actual dispatch boundary: OpenIddict creates a fresh authentication context.
         // Code storage/signature is the transport fixture; resource and verifier validation remain real.
-        transaction.SetProperty(typeof(ProcessAuthenticationContext).FullName, new ProcessAuthenticationContext(transaction) { AuthorizationCodePrincipal = principal });
+        transaction.SetProperty(nameof(ProcessAuthenticationContext.AuthorizationCodePrincipal), principal);
         var context = new ValidateTokenRequestContext(transaction);
         await Provider.GetRequiredService<IOpenIddictServerDispatcher>().DispatchAsync(context);
         return !context.IsRejected && Policy.EvaluateTokenRequest(request.GetResources(), principal.GetResources()) is null;

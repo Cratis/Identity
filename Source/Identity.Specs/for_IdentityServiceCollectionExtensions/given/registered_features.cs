@@ -54,7 +54,8 @@ public class registered_features : Specification
         {
             ["Identity:Issuer"] = "https://identity.example.test/",
             ["Identity:Device:Enabled"] = deviceEnabled.ToString(),
-            ["Identity:DPoP:Enabled"] = deviceEnabled.ToString()
+            ["Identity:DPoP:Enabled"] = deviceEnabled.ToString(),
+            ["Identity:DPoP:PublicTokenEndpoint"] = "https://identity.example.test/connect/token"
         }).Build();
         var environment = new HostingEnvironment { EnvironmentName = Environments.Development };
         services.AddSingleton<IHostEnvironment>(environment);

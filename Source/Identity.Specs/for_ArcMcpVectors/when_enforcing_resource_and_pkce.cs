@@ -81,7 +81,7 @@ public class when_enforcing_resource_and_pkce : given.an_authorization_server
         var vector = Case(id);
         var given = vector.GetProperty("given");
         _outcomes[id] = (
-            await Redeem(given.GetProperty("authorizationRequestResource").GetString()!, given.GetProperty("tokenRequestResource").GetString()),
+            await Redeem(given.GetProperty("authorizationRequestResource").GetString(), given.GetProperty("tokenRequestResource").GetString()),
             vector.GetProperty("then").GetProperty("requestAccepted").GetBoolean());
     }
 
