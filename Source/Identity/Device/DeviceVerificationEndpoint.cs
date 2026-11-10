@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -46,6 +47,11 @@ internal sealed class DeviceVerificationEndpoint(SignedInAccounts accounts, IAnt
         response.Headers.ContentSecurityPolicy = "default-src 'none'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'";
     }
 
+    static bool IsAuthenticated(AuthenticateResult authentication, [NotNullWhen(true)] ClaimsPrincipal? principal) =>
+        authentication.Succeeded && principal is not null;
+
+    static bool IsDecisionAction(string action) => string.Equals(action, "approve", StringComparison.Ordinal) || string.Equals(action, "deny", StringComparison.Ordinal);
+
     string IssuerHost(HttpContext context) => string.IsNullOrEmpty(options.Value.Issuer) ? context.Request.Host.Host : new Uri(options.Value.Issuer).Host;
 
     async Task<IResult> Handle(HttpContext context)
@@ -68,7 +74,7 @@ internal sealed class DeviceVerificationEndpoint(SignedInAccounts accounts, IAnt
         if (!await antiforgery.IsRequestValidAsync(context)) return DeviceGrantPages.Unavailable();
         var authentication = await context.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         var principal = authentication.Principal;
-        if (!authentication.Succeeded || principal is null || !await admission.CanUse(principal, false, context.RequestAborted)) return DeviceGrantPages.Unavailable();
+        if (!IsAuthenticated(authentication, principal) || !await admission.CanUse(principal, false, context.RequestAborted)) return DeviceGrantPages.Unavailable();
         var clientId = principal.GetClaim(Claims.ClientId);
         if (string.IsNullOrEmpty(clientId)) return DeviceGrantPages.Unavailable();
         var client = await applications.FindByClientIdAsync(clientId, context.RequestAborted);
@@ -91,10 +97,10 @@ internal sealed class DeviceVerificationEndpoint(SignedInAccounts accounts, IAnt
         if (action == "review")
         {
             var name = await applications.GetDisplayNameAsync(client, context.RequestAborted) ?? clientId!;
-            return DeviceGrantPages.Review(name, grant, DeviceGrantUserCode.Normalize(form[Parameters.UserCode], options.Value.DeviceGrant.UserCodeLength, options.Value.DeviceGrant.UserCodeCharset)!, approval.Create(binding), selectable, antiforgery.GetAndStoreTokens(context), IssuerHost(context), clientId, account.GitHubLogin.Value, path);
+            return DeviceGrantPages.Review(new(name, grant, DeviceGrantUserCode.Normalize(form[Parameters.UserCode], options.Value.DeviceGrant.UserCodeLength, options.Value.DeviceGrant.UserCodeCharset)!, approval.Create(binding), selectable, antiforgery.GetAndStoreTokens(context), IssuerHost(context), clientId, account.GitHubLogin.Value, path));
         }
 
-        if ((action != "approve" && action != "deny") || !approval.Matches(form["proof"], binding)) return DeviceGrantPages.Unavailable();
+        if (!IsDecisionAction(action) || !approval.Matches(form["proof"], binding)) return DeviceGrantPages.Unavailable();
         var properties = new AuthenticationProperties { RedirectUri = $"{path}?done=1" };
         if (action == "deny")
         {

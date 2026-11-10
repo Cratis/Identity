@@ -43,7 +43,7 @@ public class when_a_verification_cannot_continue : given.a_verification_request
         _accounts.FindActive(Arg.Any<AccountSubject>(), Arg.Any<CancellationToken>()).Returns((Accounts.Account?)null);
         var result = (ChallengeHttpResult)await Submit();
         result.AuthenticationSchemes.ShouldContain("GitHub");
-        result.Properties!.RedirectUri.ShouldEqual("/id/device");
+        result.Properties.RedirectUri.ShouldEqual("/id/device");
     }
 
     [Theory]

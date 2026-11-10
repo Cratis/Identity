@@ -20,7 +20,7 @@ public class when_rendering_prefixed_forms : Specification
         var csrf = new AntiforgeryTokenSet("request", "cookie", "antiforgery", "header");
         var resource = new ResourceCatalog(Configurations.TwoResourceServers().AsOptions()).FindByAudience(Configurations.DirectAudience);
         var entry = (ContentHttpResult)DeviceGrantPages.Entry(csrf, "issuer.example", path);
-        var review = (ContentHttpResult)DeviceGrantPages.Review("client", new Grant(resource, ["direct:read"]), "code", "proof", [], csrf, "issuer.example", "client-id", "login", path);
+        var review = (ContentHttpResult)DeviceGrantPages.Review(new("client", new Grant(resource, ["direct:read"]), "code", "proof", [], csrf, "issuer.example", "client-id", "login", path));
         entry.ResponseContent.ShouldContain($"action=\"{path}\"");
         review.ResponseContent.ShouldContain($"action=\"{path}\"");
     }

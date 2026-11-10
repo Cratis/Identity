@@ -68,7 +68,7 @@ public class when_reviewing_a_device_request : given.a_verification_request
         if (action == "deny" && validProof)
         {
             var denial = (ForbidHttpResult)result;
-            denial.Properties!.Items[OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreConstants.Properties.Error].ShouldEqual("access_denied");
+            denial.Properties.Items[OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreConstants.Properties.Error].ShouldEqual("access_denied");
             return;
         }
 

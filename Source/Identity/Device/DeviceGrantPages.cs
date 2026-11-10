@@ -28,28 +28,19 @@ internal static class DeviceGrantPages
         "<button name=\"action\" value=\"review\">Review request</button></form>");
 
     /// <summary>Renders the exact client, audience and scopes being approved.</summary>
-    /// <param name="client">The client display name.</param>
-    /// <param name="grant">The admitted grant.</param>
-    /// <param name="code">The canonical entered code.</param>
-    /// <param name="proof">The session-bound consent evidence.</param>
-    /// <param name="tenants">The live selectable tenants.</param>
-    /// <param name="csrf">The session's antiforgery token.</param>
+    /// <param name="review">The review fields, encoded at the HTML boundary.</param>
     /// <returns>The confirmation page.</returns>
-    /// <param name="issuer">The trusted issuer host.</param>
-    /// <param name="clientId">The asserted public client identifier.</param>
-    /// <param name="login">The signed-in GitHub login.</param>
-    /// <param name="path">The prefixed verification path.</param>
-    internal static IResult Review(string client, Grant grant, string code, string proof, IEnumerable<SelectableTenant> tenants, AntiforgeryTokenSet csrf, string issuer, string clientId, string login, string path = "/device") => Page(
-        Header(issuer) +
-        $"<h1>Approve device access</h1><p>Client: {Encode(client)} <code>{Encode(clientId)}</code></p>" +
-        $"<p>Signed in as <strong>{Encode(login)}</strong> (GitHub).</p>" +
-        $"<p>Resource: {Encode(grant.Resource.DisplayName)} ({Encode(grant.Resource.Audience)})</p>" +
-        "<ul>" + ScopeDescriptions(grant) + "</ul>" +
+    internal static IResult Review(ReviewFields review) => Page(
+        Header(review.Issuer) +
+        $"<h1>Approve device access</h1><p>Client: {Encode(review.Client)} <code>{Encode(review.ClientId)}</code></p>" +
+        $"<p>Signed in as <strong>{Encode(review.Login)}</strong> (GitHub).</p>" +
+        $"<p>Resource: {Encode(review.Grant.Resource.DisplayName)} ({Encode(review.Grant.Resource.Audience)})</p>" +
+        "<ul>" + ScopeDescriptions(review.Grant) + "</ul>" +
         Warning +
-        $"<form method=\"post\" action=\"{Encode(path)}\">" + Csrf(csrf) +
-        $"<input type=\"hidden\" name=\"user_code\" value=\"{Encode(code)}\">" +
-        $"<input type=\"hidden\" name=\"proof\" value=\"{Encode(proof)}\">" +
-        "<label>Tenant <select name=\"tenant\" required>" + TenantOptions(tenants) + "</select></label>" +
+        $"<form method=\"post\" action=\"{Encode(review.Path)}\">" + Csrf(review.Csrf) +
+        $"<input type=\"hidden\" name=\"user_code\" value=\"{Encode(review.Code)}\">" +
+        $"<input type=\"hidden\" name=\"proof\" value=\"{Encode(review.Proof)}\">" +
+        "<label>Tenant <select name=\"tenant\" required>" + TenantOptions(review.Tenants) + "</select></label>" +
         "<button name=\"action\" value=\"approve\">Approve</button>" +
         "<button name=\"action\" value=\"deny\">Deny</button></form>");
 
@@ -77,4 +68,17 @@ internal static class DeviceGrantPages
     static string Encode(string value) => HtmlEncoder.Default.Encode(value);
 
     static IResult Page(string body, int status = StatusCodes.Status200OK) => Results.Content($"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Device verification</title></head><body>{body}</body></html>", "text/html", statusCode: status);
+
+    /// <summary>The unencoded fields of a device approval review.</summary>
+    /// <param name="Client">The client display name.</param>
+    /// <param name="Grant">The admitted grant.</param>
+    /// <param name="Code">The canonical entered code.</param>
+    /// <param name="Proof">The session-bound consent evidence.</param>
+    /// <param name="Tenants">The live selectable tenants.</param>
+    /// <param name="Csrf">The session's antiforgery token.</param>
+    /// <param name="Issuer">The trusted issuer host.</param>
+    /// <param name="ClientId">The asserted public client identifier.</param>
+    /// <param name="Login">The signed-in GitHub login.</param>
+    /// <param name="Path">The prefixed verification path.</param>
+    internal sealed record ReviewFields(string Client, Grant Grant, string Code, string Proof, IEnumerable<SelectableTenant> Tenants, AntiforgeryTokenSet Csrf, string Issuer, string ClientId, string Login, string Path = "/device");
 }

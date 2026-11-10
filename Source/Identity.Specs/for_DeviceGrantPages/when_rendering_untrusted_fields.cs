@@ -21,7 +21,7 @@ public class when_rendering_untrusted_fields : Specification
         var csrf = new AntiforgeryTokenSet(Untrusted, "cookie", Untrusted, "header");
         var resource = new ResourceServer(Untrusted, Untrusted, ["https://resource.example"], [new(Untrusted, Untrusted)]);
         var grant = new Grant(resource, [Untrusted]);
-        _html = ((ContentHttpResult)DeviceGrantPages.Review(Untrusted, grant, Untrusted, Untrusted, [new SelectableTenant(Untrusted, Untrusted)], csrf, Untrusted, Untrusted, Untrusted, Untrusted)).ResponseContent!;
+        _html = ((ContentHttpResult)DeviceGrantPages.Review(new(Untrusted, grant, Untrusted, Untrusted, [new SelectableTenant(Untrusted, Untrusted)], csrf, Untrusted, Untrusted, Untrusted, Untrusted))).ResponseContent;
     }
 
     [Theory]
@@ -39,5 +39,6 @@ public class when_rendering_untrusted_fields : Specification
     [InlineData("<option value=\"&lt;script&gt;&quot;&amp;&#x27;\">", "</option>")]
     public void should_encode_fields_at_the_html_boundary(string before, string after) => _html.ShouldContain(before + Encoded + after);
 
-    [Fact] void should_never_render_raw_field_values() => _html.ShouldNotContain(Untrusted);
+    [Fact]
+    void should_never_render_raw_field_values() => _html.ShouldNotContain(Untrusted);
 }

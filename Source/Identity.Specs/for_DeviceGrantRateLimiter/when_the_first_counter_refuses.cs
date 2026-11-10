@@ -27,6 +27,9 @@ public class when_the_first_counter_refuses : Specification
         _result = await limiter.Verify("BCDFGHJK", "account", "192.0.2.1", CancellationToken.None);
     }
 
-    [Fact] void should_refuse_the_request() => _result.ShouldBeFalse();
-    [Fact] void should_never_increment_account_code_or_global_counters() => _store.ReceivedCalls().Count().ShouldEqual(1);
+    [Fact]
+    void should_refuse_the_request() => _result.ShouldBeFalse();
+
+    [Fact]
+    void should_never_increment_account_code_or_global_counters() => _store.ReceivedCalls().Count().ShouldEqual(1);
 }

@@ -192,6 +192,8 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
     static bool InvalidResourceScope(string name) =>
         string.IsNullOrWhiteSpace(name) || name.Contains(' ', StringComparison.Ordinal) || ProtocolScopes.Contains(name);
 
+    static string NormalizeIndicator(string indicator) => ResourceIndicator.Normalize(indicator) ?? indicator;
+
     static IEnumerable<string> Duplicates(IEnumerable<string> values, string kind) =>
         values.GroupBy(_ => _, StringComparer.Ordinal).Where(_ => _.Count() > 1).Select(_ => $"The {kind} \"{_.Key}\" is configured more than once.");
 
@@ -211,7 +213,7 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
     void ValidateResources(IdentityOptions options, List<string> failures)
     {
         failures.AddRange(Duplicates(options.Resources.Select(_ => _.Audience), "audience"));
-        failures.AddRange(Duplicates(options.Resources.SelectMany(_ => _.Indicators.Select(i => ResourceIndicator.Normalize(i) ?? i)), "resource indicator"));
+        failures.AddRange(Duplicates(options.Resources.SelectMany(_ => _.Indicators.Select(NormalizeIndicator)), "resource indicator"));
         failures.AddRange(Duplicates(options.Resources.SelectMany(_ => _.Scopes.Select(s => s.Name)), "scope"));
         failures.AddRange(Duplicates(options.IntrospectionClients.Select(_ => _.ClientId), "introspection client"));
         failures.AddRange(options.Resources.SelectMany(ValidateResource));

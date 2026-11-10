@@ -136,15 +136,15 @@ public class a_verification_request : Specification
         if (_done is not null) http.Request.QueryString = QueryString.Create("done", _done);
         var upstream = Options.Create(new UpstreamLoginOptions());
         var endpoint = new DeviceVerificationEndpoint(new(_accounts, upstream), _antiforgery, _applications, _tokens, _policy, _admission, _approval, _tenants, upstream, Options.Create(_options), TimeProvider.System);
-        var handle = typeof(DeviceVerificationEndpoint).GetMethod("Handle", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        return await (Task<IResult>)handle.Invoke(endpoint, [http])!;
+        var handle = typeof(DeviceVerificationEndpoint).GetMethod("Handle", BindingFlags.Instance | BindingFlags.NonPublic);
+        return await (Task<IResult>)handle.Invoke(endpoint, [http]);
     }
 
     protected async Task CaptureProof()
     {
         var review = (Microsoft.AspNetCore.Http.HttpResults.ContentHttpResult)await Submit();
         const string marker = "name=\"proof\" value=\"";
-        var start = review.ResponseContent!.IndexOf(marker, StringComparison.Ordinal) + marker.Length;
+        var start = review.ResponseContent.IndexOf(marker, StringComparison.Ordinal) + marker.Length;
         _proof = System.Net.WebUtility.HtmlDecode(review.ResponseContent[start..review.ResponseContent.IndexOf('"', start)]);
     }
 }
