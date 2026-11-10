@@ -21,7 +21,7 @@ public class when_a_key_file_is_exposed_through_a_hardlink : given.a_development
             var start = new ProcessStartInfo("/bin/ln") { UseShellExecute = false };
             start.ArgumentList.Add(key);
             start.ArgumentList.Add(alias);
-            using var process = Process.Start(start)!;
+            using var process = Process.Start(start);
             process.WaitForExit();
             process.ExitCode.ShouldEqual(0);
             File.SetUnixFileMode(alias, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.OtherRead);

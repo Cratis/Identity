@@ -38,7 +38,7 @@ public class when_a_profile_client_signs_in(DevelopmentProfileHost host) : IAsyn
         ]);
         _consentPage = await _authorization.Content.ReadAsStringAsync();
         _redirect = await browser.Consent(_consentPage, tenant: DevelopmentProfileHost.LocalTenant);
-        var code = QueryHelpers.ParseQuery(_redirect.Headers.Location!.Query)["code"].ToString();
+        var code = QueryHelpers.ParseQuery(_redirect.Headers.Location.Query)["code"].ToString();
         (_tokenStatus, _token) = await browser.PostForm("/connect/token",
         [
             new("grant_type", "authorization_code"),
@@ -49,7 +49,7 @@ public class when_a_profile_client_signs_in(DevelopmentProfileHost host) : IAsyn
             new("resource", DevelopmentProfileHost.LocalDirectMcp)
         ]);
 
-        var accessToken = _token.GetProperty("access_token").GetString()!;
+        var accessToken = _token.GetProperty("access_token").GetString();
         var keys = new JsonWebKeySet(await browser.Client.GetStringAsync("/.well-known/jwks")).GetSigningKeys();
         using var unrelated = RSA.Create(2048);
         _local = await Validate(accessToken, DevelopmentProfileHost.LocalIssuer, DevelopmentProfileHost.DirectMcpAudience, keys);
@@ -67,7 +67,7 @@ public class when_a_profile_client_signs_in(DevelopmentProfileHost host) : IAsyn
 
     [Fact] void should_ask_for_consent_before_issuing_a_code() => _authorization.Headers.Location.ShouldBeNull();
     [Fact] void should_show_the_consent_form() => _consentPage.ShouldContain("__consent_antiforgery");
-    [Fact] void should_redirect_to_the_localhost_callback_on_the_port_the_tool_chose() => _redirect.Headers.Location!.GetLeftPart(UriPartial.Path).ShouldEqual(DevelopmentProfileHost.LocalRedirect);
+    [Fact] void should_redirect_to_the_localhost_callback_on_the_port_the_tool_chose() => _redirect.Headers.Location.GetLeftPart(UriPartial.Path).ShouldEqual(DevelopmentProfileHost.LocalRedirect);
     [Fact] void should_issue_the_token() => _tokenStatus.ShouldEqual(HttpStatusCode.OK);
     [Fact] void should_not_issue_an_id_token() => _token.TryGetProperty("id_token", out _).ShouldBeFalse();
     [Fact] void should_accept_it_against_the_local_issuer_keys_and_mcp_audience() => _local.IsValid.ShouldBeTrue();

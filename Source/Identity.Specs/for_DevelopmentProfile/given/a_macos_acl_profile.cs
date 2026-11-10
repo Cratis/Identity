@@ -20,7 +20,7 @@ public class a_macos_acl_profile : a_development_profile
         start.ArgumentList.Add("+a");
         start.ArgumentList.Add(entry);
         start.ArgumentList.Add(path);
-        using var process = Process.Start(start)!;
+        using var process = Process.Start(start);
         var error = process.StandardError.ReadToEnd();
         process.WaitForExit();
         Assert.True(process.ExitCode == 0, error);

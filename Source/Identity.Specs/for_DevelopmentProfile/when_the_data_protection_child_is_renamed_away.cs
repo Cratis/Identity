@@ -39,7 +39,8 @@ public class when_the_data_protection_child_is_renamed_away : given.a_renamed_st
         }
     }
 
-    [Fact(SkipUnless = nameof(HasHandleRelativeCustody), SkipType = typeof(given.a_renamed_store), Skip = "Requires Windows, macOS or Linux directory handles.")] void should_keep_using_the_child_pinned_during_provisioning()
+    [Fact(SkipUnless = nameof(HasHandleRelativeCustody), SkipType = typeof(given.a_renamed_store), Skip = "Requires Windows, macOS or Linux directory handles.")]
+    void should_keep_using_the_child_pinned_during_provisioning()
     {
         _elements.ShouldContainOnly("<key id=\"child-custody-spec\" />");
         _decoy.ShouldEqual(DecoyXml);

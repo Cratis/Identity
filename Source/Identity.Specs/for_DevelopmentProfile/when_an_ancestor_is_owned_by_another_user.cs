@@ -27,7 +27,8 @@ public class when_an_ancestor_is_owned_by_another_user : given.a_development_pro
         }
     });
 
-    [Fact(SkipUnless = nameof(IsPosix), Skip = "Requires POSIX ownership checks.")] void should_refuse_the_foreign_owner_before_creating_the_leaf()
+    [Fact(SkipUnless = nameof(IsPosix), Skip = "Requires POSIX ownership checks.")]
+    void should_refuse_the_foreign_owner_before_creating_the_leaf()
     {
         _exception.ShouldBeOfExactType<DevelopmentProfileRefused>();
         _exception.Message.ShouldContain("owned by another user");

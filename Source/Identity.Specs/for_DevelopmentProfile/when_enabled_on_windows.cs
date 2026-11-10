@@ -35,7 +35,7 @@ public class when_enabled_on_windows : given.a_development_profile
     [SupportedOSPlatform("windows")]
     void Inspect()
     {
-        var user = WindowsIdentity.GetCurrent().User!;
+        var user = WindowsIdentity.GetCurrent().User;
         var directory = new DirectoryInfo(_storeDirectory).GetAccessControl();
         _directoryProtected = directory.AreAccessRulesProtected;
         _directoryOwnerOnly = OwnerOnly(directory, user);

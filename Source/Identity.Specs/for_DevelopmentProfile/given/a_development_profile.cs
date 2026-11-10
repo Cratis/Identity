@@ -66,7 +66,7 @@ public class a_development_profile : Specification
             custody.Dispose();
         }
 
-        Directory.Delete(Directory.GetParent(_root)!.FullName, true);
+        Directory.Delete(Directory.GetParent(_root).FullName, true);
     }
 
     protected IdentityOptions Startup() => _startupOptions = new ConfigurationBuilder().AddInMemoryCollection(_settings).Build().GetSection("Identity").Get<IdentityOptions>() ?? new();

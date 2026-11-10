@@ -18,7 +18,8 @@ public class when_the_host_prepares_the_app_data_parent : given.a_development_pr
         Apply();
     }
 
-    [Fact] void should_bootstrap_app_data_outside_the_store_and_leave_only_the_leaf_for_custody_to_create()
+    [Fact]
+    void should_bootstrap_app_data_outside_the_store_and_leave_only_the_leaf_for_custody_to_create()
     {
         _leafExistedAfterBootstrap.ShouldBeFalse();
         _exception.ShouldBeNull();
