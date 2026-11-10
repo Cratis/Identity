@@ -3,9 +3,9 @@
 
 using Cratis.Identity.Contracts.Accounts;
 
-namespace Cratis.Identity.Accounts.for_UpstreamKeyLinking;
+namespace Cratis.Identity.Accounts.Linking.Confirming.when_confirming_a_link;
 
-public class when_applying_the_realm_hold_vector : given.a_contract_vector
+public class and_the_hold_has_not_elapsed : Accounts.given.a_contract_vector
 {
     AccountSubject _account;
     LinkProposalId _proposal;

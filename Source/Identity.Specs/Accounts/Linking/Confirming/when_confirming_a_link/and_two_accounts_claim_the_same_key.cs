@@ -3,9 +3,9 @@
 
 using Cratis.Identity.Contracts.Accounts;
 
-namespace Cratis.Identity.Accounts.for_UpstreamKeyLinking;
+namespace Cratis.Identity.Accounts.Linking.Confirming.when_confirming_a_link;
 
-public class when_two_accounts_claim_the_same_candidate : given.a_link_proposal
+public class and_two_accounts_claim_the_same_key : Accounts.given.a_link_proposal
 {
     AccountSubject _other;
     LinkProposalId _otherProposal;

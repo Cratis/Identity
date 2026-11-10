@@ -4,9 +4,9 @@
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Contracts.Accounts.Events;
 
-namespace Cratis.Identity.Accounts.for_UpstreamKeyLinking;
+namespace Cratis.Identity.Accounts.Linking.Clearing.when_clearing_a_link;
 
-public class when_resolving_quarantine : given.a_link_proposal
+public class and_a_resolver_clears_with_fresh_proof : Accounts.given.a_link_proposal
 {
     string _timeOnly;
     string _wrongAuthority;

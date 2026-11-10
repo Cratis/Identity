@@ -3,9 +3,9 @@
 
 using Cratis.Identity.Contracts.Accounts;
 
-namespace Cratis.Identity.Accounts.for_UpstreamKeyLinking;
+namespace Cratis.Identity.Accounts.Linking.Proposing;
 
-public class when_applying_the_email_only_proof_vector : given.a_contract_vector
+public class when_applying_the_email_only_proof_vector : Accounts.given.a_contract_vector
 {
     AccountOperationRefused _refusal;
 

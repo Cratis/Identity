@@ -27,7 +27,7 @@ public class an_account_store : Specification
     private protected UpstreamKeyDigester _digester;
     private protected ReadModelScenario<Account> _profiles;
     AccountStore _store;
-    private protected UpstreamKeyLinking _linking;
+    private protected LinkingDriver _linking;
     private protected GitHubConnection _github;
     private protected UpstreamLookups _lookups;
     private protected ReadModelScenario<AccountLinkState> _states;
@@ -172,6 +172,6 @@ public class an_account_store : Specification
         _lookups = new(reader);
         var store = new AccountStore(_events, reader, _clock);
         _store = store;
-        _linking = new(store, _lookups, _digester, Options.Create(_options), _clock);
+        _linking = new(new(store, _lookups, _digester, Options.Create(_options), _clock));
     }
 }

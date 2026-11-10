@@ -1,9 +1,9 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Cratis.Identity.Accounts.for_UpstreamKeyLinking;
+namespace Cratis.Identity.Accounts.Linking.Proposing.when_proposing_a_link;
 
-public class when_linking_was_not_explicitly_requested : given.a_link_proposal
+public class and_linking_was_not_explicit : Accounts.given.a_link_proposal
 {
     string _refusal;
 

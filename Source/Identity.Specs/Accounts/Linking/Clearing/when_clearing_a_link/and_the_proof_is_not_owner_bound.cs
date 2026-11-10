@@ -3,9 +3,9 @@
 
 using Cratis.Identity.Contracts.Accounts;
 
-namespace Cratis.Identity.Accounts.for_UpstreamKeyLinking;
+namespace Cratis.Identity.Accounts.Linking.Clearing.when_clearing_a_link;
 
-public class when_clearance_has_no_owner_bound_upstream_proof : given.a_link_proposal
+public class and_the_proof_is_not_owner_bound : Accounts.given.a_link_proposal
 {
     Task Establish() => Propose(true);
 

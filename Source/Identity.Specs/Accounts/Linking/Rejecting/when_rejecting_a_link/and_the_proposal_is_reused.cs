@@ -1,9 +1,9 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Cratis.Identity.Accounts.for_UpstreamKeyLinking;
+namespace Cratis.Identity.Accounts.Linking.Rejecting.when_rejecting_a_link;
 
-public class when_reusing_a_rejected_proposal : given.a_link_proposal
+public class and_the_proposal_is_reused : Accounts.given.a_link_proposal
 {
     string _confirmation;
     string _clearance;

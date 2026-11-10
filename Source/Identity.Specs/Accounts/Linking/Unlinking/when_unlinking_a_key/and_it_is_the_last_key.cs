@@ -1,9 +1,9 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Cratis.Identity.Accounts.for_UpstreamKeyLinking;
+namespace Cratis.Identity.Accounts.Linking.Unlinking.when_unlinking_a_key;
 
-public class when_trying_to_remove_the_last_key : given.a_link_proposal
+public class and_it_is_the_last_key : Accounts.given.a_link_proposal
 {
     string _refusal;
 

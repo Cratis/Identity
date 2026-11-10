@@ -3,9 +3,9 @@
 
 using Cratis.Identity.Contracts.Accounts;
 
-namespace Cratis.Identity.Accounts.for_UpstreamKeyLinking;
+namespace Cratis.Identity.Accounts.Linking.Confirming.when_confirming_a_link;
 
-public class when_confirming_after_a_hold : given.a_link_proposal
+public class and_the_hold_has_elapsed : Accounts.given.a_link_proposal
 {
     string _staleProof;
 

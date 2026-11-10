@@ -3,9 +3,9 @@
 
 using Cratis.Identity.Contracts.Accounts;
 
-namespace Cratis.Identity.Accounts.for_UpstreamKeyLinking;
+namespace Cratis.Identity.Accounts.Linking.Unlinking.when_unlinking_a_key;
 
-public class when_unlinking_a_confirmed_key : given.a_link_proposal
+public class and_another_key_remains : Accounts.given.a_link_proposal
 {
     string _signIn;
     string _relink;

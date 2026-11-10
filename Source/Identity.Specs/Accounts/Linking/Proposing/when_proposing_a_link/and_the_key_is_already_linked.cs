@@ -3,9 +3,9 @@
 
 using Cratis.Identity.Contracts.Accounts;
 
-namespace Cratis.Identity.Accounts.for_UpstreamKeyLinking;
+namespace Cratis.Identity.Accounts.Linking.Proposing.when_proposing_a_link;
 
-public class when_applying_the_reserved_key_vector : given.a_contract_vector
+public class and_the_key_is_already_linked : Accounts.given.a_contract_vector
 {
     AccountSubject _requester;
     LinkProposalId _proposal;

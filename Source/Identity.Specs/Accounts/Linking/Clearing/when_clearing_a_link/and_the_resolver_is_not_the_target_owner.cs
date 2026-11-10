@@ -3,9 +3,9 @@
 
 using Cratis.Identity.Contracts.Accounts;
 
-namespace Cratis.Identity.Accounts.for_UpstreamKeyLinking;
+namespace Cratis.Identity.Accounts.Linking.Clearing.when_clearing_a_link;
 
-public class when_a_resolver_tries_to_clear_another_accounts_proposal : given.a_link_proposal
+public class and_the_resolver_is_not_the_target_owner : Accounts.given.a_link_proposal
 {
     string _refusal;
 

@@ -4,9 +4,9 @@
 using System.Security.Claims;
 using Cratis.Identity.Contracts.Accounts;
 
-namespace Cratis.Identity.Accounts.for_UpstreamKeyLinking;
+namespace Cratis.Identity.Accounts.Linking.Proposing.when_proposing_a_link;
 
-public class when_control_proofs_are_missing_or_stale : given.a_link_proposal
+public class and_the_proofs_are_missing_or_stale : Accounts.given.a_link_proposal
 {
     string _missingAccount;
     string _staleAccount;
