@@ -13,15 +13,15 @@ internal static class ConsentPresentation
     /// <param name="eligible">The current catalogue inputs.</param>
     /// <param name="proof">The protected decision proof.</param>
     /// <returns>The escaped display.</returns>
-    internal static PendingConsent Create(ConsentRequest request, ConsentEligibility eligible, string proof) => new(
+    internal static PendingConsent Create(ConsentRequest request, ConsentEligibility eligible, ConsentProofToken proof) => new(
         request.Id,
-        WebUtility.HtmlEncode(eligible.ClientName ?? request.Binding.Client),
+        WebUtility.HtmlEncode(eligible.ClientName ?? request.Binding.Client.Value),
         WebUtility.HtmlEncode(eligible.Grant.Resource.DisplayName),
-        request.Binding.Scopes.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(scope => Scope(scope, eligible)).ToArray(),
+        request.Binding.Scopes.Scopes.Select(scope => Scope(scope.Value, eligible)).ToArray(),
         eligible.Tenants.Select(tenant => new ConsentTenant(tenant.Id, WebUtility.HtmlEncode(tenant.Name))).ToArray(),
         request.Deadline,
         "Only continue if you started this.",
-        proof);
+        proof.Value);
 
     static ConsentScope Scope(string scope, ConsentEligibility eligible) => new(
         scope,

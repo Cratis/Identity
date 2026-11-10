@@ -31,7 +31,7 @@ public class when_refusing_hostile_decisions : a_consent_interaction
         await Refused(() => Approve());
         sessions.SessionId.Returns((string?)null);
         await Refused(() => Deny());
-        sessions.SessionId.Returns(binding.Session);
+        sessions.SessionId.Returns(binding.Session.Value);
         eligibility.Evaluate(Arg.Any<ConsentRequest>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult<ConsentEligibility?>(null));
         await Refused(() => Approve());
         eligibility.Evaluate(Arg.Any<ConsentRequest>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult<ConsentEligibility?>(available));

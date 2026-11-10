@@ -26,15 +26,15 @@ public class when_identifying_requests : Specification
         var context = Context("form-client", "2001:db8:1234:5678::1");
         context.Request.Headers.Authorization = $"Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes("encoded%3Aclient:synthetic-secret"))}";
         var basic = await TokenRequestIdentification.Read(context);
-        _basic = basic.ClientId;
+        _basic = basic.ClientId?.Value;
         _prefixA = basic.Source;
         _prefixB = (await TokenRequestIdentification.Read(Context("a", "2001:db8:1234:5678::abcd"))).Source;
         _mapped = (await TokenRequestIdentification.Read(Context("a", "::ffff:192.0.2.1"))).Source;
-        _oversized = (await TokenRequestIdentification.Read(Context(new string('a', 257), "192.0.2.1"))).ClientId;
-        _control = (await TokenRequestIdentification.Read(Context("bad\nclient", "192.0.2.1"))).ClientId;
-        _form = (await TokenRequestIdentification.Read(Context("form-client", "192.0.2.1"))).ClientId;
+        _oversized = (await TokenRequestIdentification.Read(Context(new string('a', 257), "192.0.2.1"))).ClientId?.Value;
+        _control = (await TokenRequestIdentification.Read(Context("bad\nclient", "192.0.2.1"))).ClientId?.Value;
+        _form = (await TokenRequestIdentification.Read(Context("form-client", "192.0.2.1"))).ClientId?.Value;
         context.Request.Method = "GET";
-        _get = (await TokenRequestIdentification.Read(context)).ClientId;
+        _get = (await TokenRequestIdentification.Read(context)).ClientId?.Value;
         _unknown = (await TokenRequestIdentification.Read(new DefaultHttpContext())).Source;
     }
 

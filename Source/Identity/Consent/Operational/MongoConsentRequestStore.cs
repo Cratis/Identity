@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Contracts.Accounts;
+using Cratis.Identity.Realm;
+using Cratis.Identity.Sessions;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
@@ -53,10 +55,10 @@ internal sealed class MongoConsentRequestStore(IMongoDatabase database) : IConse
     }
 
     /// <inheritdoc/>
-    public async Task<ConsentRequest?> FindPending(AccountSubject account, string session, string realm, DateTimeOffset now, CancellationToken cancellationToken)
+    public async Task<ConsentRequest?> FindPending(AccountSubject account, SessionId session, RealmId realm, DateTimeOffset now, CancellationToken cancellationToken)
     {
         var filter = Builders<BsonDocument>.Filter;
-        var condition = filter.Eq("Account", account.Value) & filter.Eq("Session", session) & filter.Eq("Realm", realm) &
+        var condition = filter.Eq("Account", account.Value) & filter.Eq("Session", session.Value) & filter.Eq("Realm", realm.Value) &
             filter.Eq("State", nameof(ConsentRequestState.Pending)) & filter.Gt("Deadline", new BsonDateTime(now.UtcDateTime)) &
             new BsonDocument("$expr", new BsonDocument("$gt", new BsonArray { "$Deadline", "$$NOW" }));
         var document = await _requests.Find(condition).Sort(Builders<BsonDocument>.Sort.Descending("CreatedAt")).FirstOrDefaultAsync(cancellationToken);
@@ -105,13 +107,13 @@ internal sealed class MongoConsentRequestStore(IMongoDatabase database) : IConse
         var document = new BsonDocument
         {
             ["_id"] = request.Id.Value.ToString("D"),
-            ["Realm"] = binding.Realm,
+            ["Realm"] = binding.Realm.Value,
             ["Account"] = binding.Account.Value,
-            ["Client"] = binding.Client,
-            ["Tenant"] = binding.Tenant,
+            ["Client"] = binding.Client.Value,
+            ["Tenant"] = binding.Tenant.Value,
             ["Resource"] = binding.Resource,
-            ["Scopes"] = binding.Scopes,
-            ["Session"] = binding.Session,
+            ["Scopes"] = binding.Scopes.Value,
+            ["Session"] = binding.Session.Value,
             ["AuthorizationRequest"] = binding.AuthorizationRequest.Value.ToString("D"),
             ["Deadline"] = new BsonDateTime(request.Deadline.UtcDateTime),
             ["CreatedAt"] = new BsonDateTime(request.CreatedAt.UtcDateTime),
@@ -121,7 +123,7 @@ internal sealed class MongoConsentRequestStore(IMongoDatabase database) : IConse
             ["CodeClaimed"] = request.CodeClaimed,
             ["AuthorizationId"] = request.AuthorizationId is null ? BsonNull.Value : new BsonString(request.AuthorizationId)
         };
-        if (request.Selection is { } selection) document["Selection"] = new BsonDocument { ["Tenant"] = selection.Tenant, ["Scopes"] = selection.Scopes };
+        if (request.Selection is { } selection) document["Selection"] = new BsonDocument { ["Tenant"] = selection.Tenant.Value, ["Scopes"] = selection.Scopes.Value };
         if (request.PurgeAt is { } purgeAt) document["PurgeAt"] = new BsonDateTime(purgeAt.UtcDateTime);
         return document;
     }

@@ -13,15 +13,15 @@ namespace Cratis.Identity.ConsentFlow;
 internal sealed class ConsentProof(IDataProtectionProvider protection, TimeProvider time) : IConsentProof
 {
     /// <inheritdoc/>
-    public string Issue(ConsentRequest request) => Protector(request).Protect(Expiry(request));
+    public ConsentProofToken Issue(ConsentRequest request) => Protector(request).Protect(Expiry(request));
 
     /// <inheritdoc/>
-    public bool Validate(string? proof, ConsentRequest request)
+    public bool Validate(ConsentProofToken? proof, ConsentRequest request)
     {
-        if (string.IsNullOrEmpty(proof) || time.GetUtcNow() >= request.Deadline) return false;
+        if (string.IsNullOrEmpty(proof?.Value) || time.GetUtcNow() >= request.Deadline) return false;
         try
         {
-            return Protector(request).Unprotect(proof) == Expiry(request);
+            return Protector(request).Unprotect(proof.Value) == Expiry(request);
         }
         catch (CryptographicException)
         {
@@ -32,5 +32,5 @@ internal sealed class ConsentProof(IDataProtectionProvider protection, TimeProvi
     static string Expiry(ConsentRequest request) => request.Deadline.UtcTicks.ToString(CultureInfo.InvariantCulture);
 
     IDataProtector Protector(ConsentRequest request) => protection.CreateProtector(
-        "Cratis.Identity.ConsentProof.v1", request.Id.Value.ToString("D"), request.Binding.Account.Value, request.Binding.Session, request.Binding.Realm);
+        "Cratis.Identity.ConsentProof.v1", request.Id.Value.ToString("D"), request.Binding.Account.Value, request.Binding.Session.Value, request.Binding.Realm.Value);
 }

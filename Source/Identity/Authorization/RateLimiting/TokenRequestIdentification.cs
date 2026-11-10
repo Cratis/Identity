@@ -4,6 +4,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using Cratis.Identity.Clients;
 
 namespace Cratis.Identity.Authorization.RateLimiting;
 
@@ -26,7 +27,7 @@ internal static class TokenRequestIdentification
                 var form = await context.Request.ReadFormAsync(context.RequestAborted);
                 var client = basicClient ?? SafeValue(form["client_id"].Count == 1 ? form["client_id"].ToString() : null);
                 var grant = SafeValue(form["grant_type"].Count == 1 ? form["grant_type"].ToString() : null);
-                return new(client, grant, source);
+                return new(ClientId.From(client), grant, source);
             }
         }
         catch (Exception exception) when (exception is InvalidDataException or IOException or BadHttpRequestException or InvalidOperationException)
@@ -34,7 +35,7 @@ internal static class TokenRequestIdentification
             // Leave protocol errors to OpenIddict; the source budget still applies.
         }
 
-        return new(basicClient, null, source);
+        return new(ClientId.From(basicClient), null, source);
     }
 
     static string? BasicClient(string authorization)
@@ -69,5 +70,5 @@ internal static class TokenRequestIdentification
     /// <param name="ClientId">The claimed client, or null.</param>
     /// <param name="GrantType">The requested grant, or null.</param>
     /// <param name="Source">The normalized connection source.</param>
-    internal readonly record struct Identification(string? ClientId, string? GrantType, string Source);
+    internal readonly record struct Identification(ClientId? ClientId, string? GrantType, string Source);
 }
