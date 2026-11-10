@@ -35,8 +35,8 @@ public class OidcClientOptions
 
     /// <summary>
     /// Gets or sets the maximum scopes this client may be granted, intersected with the requested scopes.
-    /// When omitted, defaults to <c>openid profile</c>. An explicit list must not be empty, must include
-    /// <c>openid</c> and may also include <c>profile</c> and <c>offline_access</c>.
+    /// When omitted, defaults to <c language="text">openid profile</c>. An explicit list must not be empty, must include
+    /// <c language="text">openid</c> and may also include <c language="text">profile</c> and <c language="text">offline_access</c>.
     /// </summary>
     public IList<string>? Scopes { get; set; }
 

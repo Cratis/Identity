@@ -14,7 +14,7 @@ public class OidcOptions
     public bool IssuanceEnabled { get; set; }
 
     /// <summary>
-    /// Gets or sets the recorded consent decision: <c>ImplicitFencedPath</c> or <c>ActivationBarrier</c>.
+    /// Gets or sets the recorded consent decision: <c language="text">ImplicitFencedPath</c> or <c language="text">ActivationBarrier</c>.
     /// Issuance cannot be enabled without one of these decisions.
     /// </summary>
     public string ConsentDecision { get; set; } = string.Empty;
