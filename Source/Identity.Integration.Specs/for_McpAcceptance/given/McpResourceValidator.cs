@@ -82,8 +82,8 @@ public sealed class McpResourceValidator : IAsyncDisposable
         metadata.GetProperty("resource").GetString().ShouldEqual(product.Indicator);
         var issuer = metadata.GetProperty("authorization_servers").EnumerateArray().Single().GetString();
         issuer.ShouldEqual(_validation.ValidIssuer);
-        var discovery = await browser.Client.GetFromJsonAsync<JsonElement>($"{issuer}/.well-known/openid-configuration");
-        discovery.GetProperty("issuer").GetString().ShouldEqual(issuer);
+        var discovery = await browser.Client.GetFromJsonAsync<JsonElement>($"{issuer!.TrimEnd('/')}/.well-known/openid-configuration");
+        discovery.GetProperty("issuer").GetString()!.TrimEnd('/').ShouldEqual(issuer.TrimEnd('/'));
         var jwks = await browser.Client.GetStringAsync(discovery.GetProperty("jwks_uri").GetString());
         _validation.IssuerSigningKeys = new JsonWebKeySet(jwks).GetSigningKeys();
         return (discovery.GetProperty("authorization_endpoint").GetString()!, discovery.GetProperty("token_endpoint").GetString()!);
