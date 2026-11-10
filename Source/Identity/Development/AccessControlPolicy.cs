@@ -52,12 +52,15 @@ static class AccessControlPolicy
             return "has no access control list, so everyone can replace the key store";
         }
 
-        foreach (var ace in descriptor.DiscretionaryAcl!.OfType<CommonAce>())
+        foreach (var entry in descriptor.DiscretionaryAcl!)
         {
-            if (ace.AceType == AceType.AccessAllowed &&
-                !ace.AceFlags.HasFlag(AceFlags.InheritOnly) &&
-                (ace.AccessMask & ReplaceRights) != 0 &&
-                !IsTrusted(ace.SecurityIdentifier, user))
+            // Conditional/callback and object-specific ACEs cannot be evaluated here. Never silently omit them.
+            if (entry is not CommonAce ace || !IsSupported(ace))
+            {
+                return "has an unsupported access control entry, so replacement cannot be ruled out";
+            }
+
+            if (AllowsReplacement(ace) && !IsTrusted(ace.SecurityIdentifier, user))
             {
                 return $"lets {ace.SecurityIdentifier.Value} delete or take over what it contains";
             }
@@ -65,6 +68,14 @@ static class AccessControlPolicy
 
         return null;
     }
+
+    static bool IsSupported(CommonAce ace) =>
+        !ace.IsCallback && ace.AceQualifier is AceQualifier.AccessAllowed or AceQualifier.AccessDenied;
+
+    static bool AllowsReplacement(CommonAce ace) =>
+        ace.AceQualifier == AceQualifier.AccessAllowed &&
+        !ace.AceFlags.HasFlag(AceFlags.InheritOnly) &&
+        (ace.AccessMask & ReplaceRights) != 0;
 
     static bool IsTrusted(SecurityIdentifier sid, SecurityIdentifier user) =>
         sid.Equals(user) || sid.Equals(_system) || sid.Equals(_administrators) || sid.Equals(_creatorOwner) || sid.Equals(_trustedInstaller);

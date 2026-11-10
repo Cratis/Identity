@@ -94,8 +94,8 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
     public string Provision(string authority)
     {
         var directory = ResolveLocation(root, contentRoot, authority);
-        EnsureDirectory(directory);
         RequireSafeAncestors(directory);
+        EnsureDirectory(directory);
         var content = CheckExistingContent(directory);
         RemoveOrphanKeys(directory, content);
         EnsureMarker(directory);
@@ -191,6 +191,11 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
                 // CreateNew is O_EXCL: it never follows a link and fails when the name exists.
                 var options = new FileStreamOptions { Mode = FileMode.CreateNew, Access = FileAccess.Write, Share = FileShare.None, UnixCreateMode = OwnerFile };
                 using var stream = new FileStream(temporary, options);
+                if (OperatingSystem.IsMacOS())
+                {
+                    MacExtendedAccess.RequireNoGrants(stream.SafeFileHandle);
+                }
+
                 stream.Write(Encoding.UTF8.GetBytes(content));
                 stream.Flush(flushToDisk: true);
             }
@@ -276,6 +281,11 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
             throw new DevelopmentProfileRefused("the key directory is accessible to other users; remove it so it can be recreated with owner-only permissions.");
         }
 
+        if (OperatingSystem.IsMacOS())
+        {
+            MacExtendedAccess.RequireNoGrants(directory);
+        }
+
         RequireOwnedByCurrentUser(directory, "the key directory");
     }
 
@@ -293,7 +303,10 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
         {
             for (var ancestor = Path.GetDirectoryName(directory); ancestor is not null; ancestor = Path.GetDirectoryName(ancestor))
             {
-                WindowsOwnerOnlyAccess.RequireSafeAncestor(ancestor);
+                if (Directory.Exists(ancestor))
+                {
+                    WindowsOwnerOnlyAccess.RequireSafeAncestor(ancestor);
+                }
             }
 
             return;
@@ -301,17 +314,36 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
 
         for (var ancestor = Path.GetDirectoryName(directory); ancestor is not null; ancestor = Path.GetDirectoryName(ancestor))
         {
-            var mode = File.GetUnixFileMode(ancestor);
-            if ((mode.HasFlag(UnixFileMode.GroupWrite) || mode.HasFlag(UnixFileMode.OtherWrite)) && !mode.HasFlag(UnixFileMode.StickyBit))
+            if (Directory.Exists(ancestor))
             {
-                throw new DevelopmentProfileRefused($"the directory {ancestor} above the key directory is writable by other users, who could replace the key store.");
+                RequireSafeUnixAncestor(ancestor);
             }
+        }
+    }
 
-            var owner = OwnerOf(ancestor);
-            if (owner != _currentUid.Value && owner != 0)
-            {
-                throw new DevelopmentProfileRefused($"the directory {ancestor} above the key directory is owned by another user, who could replace the key store.");
-            }
+    static void RequireSafeUnixAncestor(string ancestor)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        if (OperatingSystem.IsMacOS())
+        {
+            MacExtendedAccess.RequireNoGrants(ancestor);
+        }
+
+        var mode = File.GetUnixFileMode(ancestor);
+        var writableByOthers = (mode & (UnixFileMode.GroupWrite | UnixFileMode.OtherWrite)) != UnixFileMode.None;
+        if (writableByOthers && !mode.HasFlag(UnixFileMode.StickyBit))
+        {
+            throw new DevelopmentProfileRefused($"the directory {ancestor} above the key directory is writable by other users, who could replace the key store.");
+        }
+
+        var owner = OwnerOf(ancestor);
+        if (owner != _currentUid.Value && owner != 0)
+        {
+            throw new DevelopmentProfileRefused($"the directory {ancestor} above the key directory is owned by another user, who could replace the key store.");
         }
     }
 
@@ -445,6 +477,11 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
                 if ((File.GetUnixFileMode(stream.SafeFileHandle) & ~OwnerFile) != UnixFileMode.None)
                 {
                     throw new DevelopmentProfileRefused($"the key file {Path.GetFileName(file)} is accessible to other users; remove the key directory so it can be recreated.");
+                }
+
+                if (OperatingSystem.IsMacOS())
+                {
+                    MacExtendedAccess.RequireNoGrants(stream.SafeFileHandle);
                 }
 
                 // .NET has no public owner-of-a-handle call; the owner is read by path straight after the mode check on the handle.
