@@ -3,6 +3,7 @@
 
 using Cratis.Identity.ConsentFlow.Pending;
 using Cratis.Identity.Realm;
+using Cratis.Identity.Resources;
 using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.ConsentFlow;
@@ -43,7 +44,7 @@ internal sealed class ConsentInteraction(IConsentRequestStore store, ConsentCall
         using var realm = IdentityRealmScope.Begin();
         var owner = caller.Resolve() ?? throw new ConsentDecisionRefused();
         var request = await store.Read(id, cancellationToken);
-        if (!IsPending(request, owner) || !proofs.Validate(proof, request!)) throw new ConsentDecisionRefused();
+        if (!IsPending(request, owner) || !proofs.Validate(ConsentProofToken.From(proof), request!)) throw new ConsentDecisionRefused();
         var eligible = await eligibility.Evaluate(request!, cancellationToken) ?? throw new ConsentDecisionRefused();
         var selection = approve ? Select(request!, eligible, tenant, scopes) : null;
         if (caller.Resolve() != owner || !IsPending(request, owner)) throw new ConsentDecisionRefused();
@@ -61,9 +62,9 @@ internal sealed class ConsentInteraction(IConsentRequestStore store, ConsentCall
     {
         if (tenant is null || !eligible.Tenants.Any(_ => _.Id == tenant) || scopes?.Any(string.IsNullOrWhiteSpace) != false) throw new ConsentDecisionRefused();
         var selected = scopes.ToHashSet(StringComparer.Ordinal);
-        var requested = request.Binding.Scopes.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var requested = request.Binding.Scopes.Scopes.Select(_ => _.Value);
         if (selected.Count != scopes.Length || !selected.SetEquals(requested)) throw new ConsentDecisionRefused();
-        return new(tenant, string.Join(' ', selected.Order(StringComparer.Ordinal)));
+        return new(tenant, ScopeSet.From(selected.Select(_ => new Scope(_))));
     }
 
     bool IsPending(ConsentRequest? request, ConsentCallerIdentity owner) => request is { State: ConsentRequestState.Pending } &&

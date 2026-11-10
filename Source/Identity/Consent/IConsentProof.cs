@@ -9,11 +9,11 @@ internal interface IConsentProof
     /// <summary>Issues a proof for this exact request and expiry.</summary>
     /// <param name="request">The pending request.</param>
     /// <returns>The protected proof.</returns>
-    string Issue(ConsentRequest request);
+    ConsentProofToken Issue(ConsentRequest request);
 
     /// <summary>Checks protection, request, account, session, realm and expiry.</summary>
     /// <param name="proof">The submitted proof.</param>
     /// <param name="request">The stored request.</param>
     /// <returns>Whether the proof is valid.</returns>
-    bool Validate(string? proof, ConsentRequest request);
+    bool Validate(ConsentProofToken? proof, ConsentRequest request);
 }

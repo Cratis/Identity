@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Sessions;
 using Cratis.Identity.Upstream;
 
 namespace Cratis.Identity.Accounts.Linking.Confirming.when_confirming_a_link;
@@ -25,7 +26,7 @@ public class and_proof_is_missing_or_stale : given.a_confirmation_decision
     async Task should_require_owner_session_binding(bool clearing, string? sessionId)
     {
         var proof = _ceremony.Authentication;
-        var unbound = new VerifiedAuthentication(proof.ConnectionId, proof.IdpIssuer, proof.Subject, proof.AuthTime, proof.OperationId) { SessionId = sessionId };
+        var unbound = new VerifiedAuthentication(proof.ConnectionId, proof.IdpIssuer, proof.Subject, proof.AuthTime, proof.OperationId) { SessionId = sessionId is null ? null : new SessionId(sessionId) };
         Observe(unbound);
         Refused(await Provide(clearing), "fresh_session_bound_upstream_proof_required");
         _order.ShouldBeEmpty();

@@ -38,8 +38,8 @@ public class when_querying_the_operational_store : Deciding.given.an_activation
     }
 
     [Fact] void should_bind_the_account() => _filter["Account"].AsString.ShouldEqual(binding.Account.Value);
-    [Fact] void should_bind_the_session() => _filter["Session"].AsString.ShouldEqual(binding.Session);
-    [Fact] void should_bind_the_realm() => _filter["Realm"].AsString.ShouldEqual(binding.Realm);
+    [Fact] void should_bind_the_session() => _filter["Session"].AsString.ShouldEqual(binding.Session.Value);
+    [Fact] void should_bind_the_realm() => _filter["Realm"].AsString.ShouldEqual(binding.Realm.Value);
     [Fact] void should_only_read_pending() => _filter["State"].AsString.ShouldEqual(nameof(ConsentRequestState.Pending));
     [Fact] void should_require_the_deadline_after_the_clock() => _filter["Deadline"]["$gt"].ToUniversalTime().ShouldEqual(clock.Now.UtcDateTime);
     [Fact] void should_require_the_deadline_after_database_execution_time() => _filter["$expr"]["$gt"].AsBsonArray.ShouldEqual(new BsonArray { "$Deadline", "$$NOW" });

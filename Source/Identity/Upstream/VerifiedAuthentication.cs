@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Contracts.Accounts;
+using Cratis.Identity.Sessions;
 
 namespace Cratis.Identity.Upstream;
 
@@ -39,7 +40,7 @@ internal sealed class VerifiedAuthentication
     public FactId OperationId { get; }
 
     /// <summary>Gets the existing-account session binding.</summary>
-    internal string? SessionId { get; init; }
+    internal SessionId? SessionId { get; init; }
 
     /// <inheritdoc/>
     public override string ToString() => "Verified upstream authentication [redacted]";

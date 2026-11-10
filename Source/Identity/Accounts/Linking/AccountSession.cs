@@ -4,13 +4,14 @@
 using System.Globalization;
 using System.Security.Claims;
 using Cratis.Identity.Contracts.Accounts;
+using Cratis.Identity.Sessions;
 
 namespace Cratis.Identity.Accounts.Linking;
 
 /// <summary>A validated, fresh existing-account session binding.</summary>
 /// <param name="Account">The canonical immutable account subject.</param>
 /// <param name="SessionId">The authenticated session reference.</param>
-internal record AccountSession(AccountSubject Account, string SessionId)
+internal record AccountSession(AccountSubject Account, SessionId SessionId)
 {
     /// <summary>Checks the trusted authenticated session before accepting a link ceremony.</summary>
     /// <param name="principal">The authenticated account principal.</param>

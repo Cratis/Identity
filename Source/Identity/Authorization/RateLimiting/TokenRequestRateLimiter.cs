@@ -4,6 +4,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Cratis.Identity.Authorization.TokenExchange;
+using Cratis.Identity.Clients;
 using Cratis.Identity.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -44,7 +45,7 @@ internal sealed partial class TokenRequestRateLimiter(TimeProvider time, IOption
     /// <param name="grantType">The grant type, if safely parsed.</param>
     /// <param name="source">The normalized connection source.</param>
     /// <returns>The admission decision and safe retry delay.</returns>
-    internal Admission Acquire(string? clientId, string? grantType, string source)
+    internal Admission Acquire(ClientId? clientId, string? grantType, string source)
     {
         var settings = options.Value.TokenRateLimit;
         if (!settings.Enabled) return new(true, 0);
@@ -59,7 +60,7 @@ internal sealed partial class TokenRequestRateLimiter(TimeProvider time, IOption
             if (retry == TimeSpan.Zero && clientId is not null)
             {
                 // A client_id is only a hint at this point. Never share its budget across sources.
-                var key = (source, clientId);
+                var key = (source, clientId.Value);
                 reason = Partition.Client;
                 retry = Spend(GetCounter(_clients, key, budget.ClientOverflow, settings.MaxTrackedKeys), settings.PerClientRequests, now, settings.Window);
                 if (retry == TimeSpan.Zero && string.Equals(grantType, TokenExchangeConstants.GrantType, StringComparison.Ordinal))
@@ -70,7 +71,7 @@ internal sealed partial class TokenRequestRateLimiter(TimeProvider time, IOption
             }
 
             if (retry == TimeSpan.Zero) return new(true, 0);
-            var trackedClient = clientId is not null && _clients.ContainsKey((source, clientId)) ? clientId : null;
+            var trackedClient = clientId is not null && _clients.ContainsKey((source, clientId.Value)) ? clientId.Value : null;
             LogRefusal(reason, trackedClient, now, settings.Window);
             return new(false, Math.Max(1, (int)Math.Ceiling(retry.TotalSeconds)));
         }

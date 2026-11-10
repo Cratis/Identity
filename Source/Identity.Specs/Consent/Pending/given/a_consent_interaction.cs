@@ -28,17 +28,17 @@ public class a_consent_interaction : Deciding.given.an_activation
         {
             User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, binding.Account.Value)], "spec"))
         };
-        sessions.SessionId.Returns(binding.Session);
-        available = new(new Grant(new ResourceServer(binding.Resource, "Resource <script>name</script>", [binding.Resource], [new("read", "Read <script>permissions</script>")]), ["openid", "read"]), [new(binding.Tenant, "Tenant <script>name</script>")]);
+        sessions.SessionId.Returns(binding.Session.Value);
+        available = new(new Grant(new ResourceServer(binding.Resource, "Resource <script>name</script>", [binding.Resource], [new("read", "Read <script>permissions</script>")]), ["openid", "read"]), [new(binding.Tenant.Value, "Tenant <script>name</script>")]);
         eligibility.Evaluate(Arg.Any<ConsentRequest>(), Arg.Any<CancellationToken>()).Returns(call => Task.FromResult<ConsentEligibility?>(available));
         proof = new ConsentProof(new EphemeralDataProtectionProvider(), clock);
-        interaction = new(store, new ConsentCaller(context, sessions, Options.Create(new IdentityOptions { Issuer = binding.Realm })), eligibility, proof, clock, Options.Create(options));
+        interaction = new(store, new ConsentCaller(context, sessions, Options.Create(new IdentityOptions { Issuer = binding.Realm.Value })), eligibility, proof, clock, Options.Create(options));
         token = proof.Issue(request);
         displayed = await interaction.Find(CancellationToken.None);
     }
 
     internal Task Approve(ConsentRequestId? id = null, string? tenant = null, string[]? scopes = null, string? submittedProof = null) =>
-        new ApproveConsent(id ?? request.Id, tenant ?? binding.Tenant, scopes ?? ["read", "openid"], submittedProof ?? token).Handle(interaction);
+        new ApproveConsent(id ?? request.Id, tenant ?? binding.Tenant.Value, scopes ?? ["read", "openid"], submittedProof ?? token).Handle(interaction);
 
     internal Task Deny(string? submittedProof = null) => new DenyConsent(request.Id, submittedProof ?? token).Handle(interaction);
 }
