@@ -16,7 +16,8 @@ namespace Cratis.Identity.Keys;
 /// <param name="options">The <see cref="SecretStoreOptions"/>.</param>
 /// <param name="timeProvider">The <see cref="TimeProvider"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
-internal sealed class SecretStoreKeys(SecretStoreOptions options, TimeProvider timeProvider, ILogger<SecretStoreKeys> logger) : IDisposable
+/// <param name="providesDataProtection">Whether the store also holds the Data Protection ring. The local-development profile keeps that ring in a Data Protection key directory instead.</param>
+internal sealed class SecretStoreKeys(SecretStoreOptions options, TimeProvider timeProvider, ILogger<SecretStoreKeys> logger, bool providesDataProtection = true) : IDisposable
 {
     static readonly TimeSpan _dataProtectionExpiryWarning = TimeSpan.FromDays(14);
     readonly Lock _lock = new();
@@ -146,6 +147,11 @@ internal sealed class SecretStoreKeys(SecretStoreOptions options, TimeProvider t
         var now = timeProvider.GetUtcNow();
 
         var active = ring.DataProtection.Where(_ => _.ActivationDate <= now && now < _.ExpirationDate).ToList();
+        if (!providesDataProtection)
+        {
+            return Snapshot(ring);
+        }
+
         if (active.Count == 0)
         {
             throw new InvalidKeyMaterial("data-protection.*.xml", "no key in the Data Protection ring is active now");
@@ -157,9 +163,11 @@ internal sealed class SecretStoreKeys(SecretStoreOptions options, TimeProvider t
             logger.DataProtectionKeyExpiring(defaultKey.ExpirationDate);
         }
 
-        return new KeySnapshot(
-            ring,
-            _eligibility.Current(KeyPurpose.Signing, ring.Signing),
-            _eligibility.Current(KeyPurpose.Encryption, ring.Encryption));
+        return Snapshot(ring);
     }
+
+    KeySnapshot Snapshot(KeyRing ring) => new(
+        ring,
+        _eligibility.Current(KeyPurpose.Signing, ring.Signing),
+        _eligibility.Current(KeyPurpose.Encryption, ring.Encryption));
 }

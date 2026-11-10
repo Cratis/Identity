@@ -45,7 +45,7 @@ public class when_a_person_in_two_tenants_exchanges_for_each_tenant(ExchangeIden
     [Fact] void should_issue_for_the_second_tenant() => _second.Status.ShouldEqual(HttpStatusCode.OK);
     [Fact] void should_bind_the_first_token_to_the_first_tenant() => _firstToken.GetClaim("tid").Value.ShouldEqual(IdentityHost.MemberTenant);
     [Fact] void should_bind_the_second_token_to_the_second_tenant() => _secondToken.GetClaim("tid").Value.ShouldEqual(IdentityHost.OtherMemberTenant);
-    [Fact] void should_address_the_registered_resource() => _firstToken.Audiences.ShouldContain("direct-mcp");
+    [Fact] void should_address_the_registered_resource() => _firstToken.Audiences.ShouldContain(IdentityHost.DirectMcpAudience);
     [Fact] void should_name_the_exchange_client() => _firstToken.GetClaim("azp").Value.ShouldEqual(ExternalIssuer.ClientId);
     [Fact] void should_name_the_external_issuer() => _firstToken.GetClaim("idp").Value.ShouldEqual(host.External.Issuer);
     [Fact] void should_not_issue_a_refresh_token() => _first.Body.TryGetProperty("refresh_token", out _).ShouldBeFalse();

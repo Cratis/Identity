@@ -14,7 +14,8 @@ internal static class KeysServiceCollectionExtensions
     /// <summary>Adds the secret-store-backed key ring when configured.</summary>
     /// <param name="services">The services.</param>
     /// <param name="startupOptions">The startup options.</param>
-    internal static void AddSecretStoreKeys(this IServiceCollection services, IdentityOptions startupOptions)
+    /// <param name="developmentDataProtectionPath">The Data Protection key directory of the local-development profile, or <see langword="null"/> for the deployed ring in the secret store.</param>
+    internal static void AddSecretStoreKeys(this IServiceCollection services, IdentityOptions startupOptions, string? developmentDataProtectionPath = null)
     {
         var dataProtection = services.AddDataProtection().SetApplicationName("Cratis.Identity");
         if (!startupOptions.SecretStore.IsConfigured)
@@ -23,20 +24,39 @@ internal static class KeysServiceCollectionExtensions
             return;
         }
 
-        // The secret store is the custody of the ring, so keys are neither generated nor wrapped by Identity.
-        dataProtection.DisableAutomaticKeyGeneration();
+        var deployed = developmentDataProtectionPath is null;
+        if (deployed)
+        {
+            // The secret store is the custody of the ring, so keys are neither generated nor wrapped by Identity.
+            dataProtection.DisableAutomaticKeyGeneration();
+        }
+        else
+        {
+            // The local-development profile lets ASP.NET Core generate its own ring, next to the development keys.
+            dataProtection.PersistKeysToFileSystem(new DirectoryInfo(developmentDataProtectionPath!));
+            if (OperatingSystem.IsWindows())
+            {
+                dataProtection.ProtectKeysWithDpapi();
+            }
+        }
+
         services.AddSingleton(sp =>
         {
             var keys = new SecretStoreKeys(
                 sp.GetRequiredService<IOptions<IdentityOptions>>().Value.SecretStore,
                 sp.GetRequiredService<TimeProvider>(),
-                sp.GetRequiredService<ILogger<SecretStoreKeys>>());
+                sp.GetRequiredService<ILogger<SecretStoreKeys>>(),
+                deployed);
 
             // The first read validates the store, so an invalid one stops the host when the service is first resolved.
             _ = keys.Current;
             return keys;
         });
-        services.AddSecretStoreKeyRing();
+        if (deployed)
+        {
+            services.AddSecretStoreKeyRing();
+        }
+
         services.AddHostedService<KeyRingReloading>();
     }
 
