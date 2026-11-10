@@ -10,5 +10,5 @@ namespace Cratis.Identity.Contracts.Resources.Events;
 /// <param name="ScopeName">The permanently retired scope.</param>
 /// <param name="RetiredAt">The server retirement instant.</param>
 /// <param name="FactId">The retry-stable fact identity, Internal only.</param>
-[EventType("3a28650d-61a9-4d9f-bb06-4fdebb205803", generation: 1)]
+[EventType]
 public record ResourceScopeRetirementRecorded(string ScopeName, DateTimeOffset RetiredAt, FactId FactId);

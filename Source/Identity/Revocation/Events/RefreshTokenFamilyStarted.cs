@@ -12,5 +12,5 @@ namespace Cratis.Identity.Revocation.Events;
 /// <param name="StartedAt">The original admission time.</param>
 /// <param name="AbsoluteExpiresAt">The original expiry, never sliding.</param>
 /// <param name="FactId">The retry-stable fact.</param>
-[EventType("d9a448be-ccf1-4ab5-b43c-f17dad0ba6c3", generation: 1)]
+[EventType]
 internal sealed record RefreshTokenFamilyStarted(GrantId GrantId, AccountSubject AccountSubject, DateTimeOffset StartedAt, DateTimeOffset AbsoluteExpiresAt, FactId FactId);

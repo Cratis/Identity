@@ -67,7 +67,7 @@ public class when_discovering_event_artifacts : Specification
     public void should_not_treat_an_unregistered_concept_as_safe() => ContentRules.Check(ReflectionShapeBuilder.Build(typeof(UnreviewedDigest)), SafeConceptRegistry.Entries)
         .ShouldContain(new Violation("KeyHash", "unapproved_safe_concept"));
 
-    [EventType("7d7ed4c6-eb9d-43ad-a2a8-46a99f1d2c5c")]
+    [EventType]
     internal sealed record InternalArtifact(string AccessToken);
     [EventTypeGenerationFor<InternalArtifact>(2)]
     internal sealed record PreviousArtifact(string Password);

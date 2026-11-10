@@ -10,6 +10,8 @@ Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
 ```
 
+> Partially superseded by the [v1.2 amendment](identity-events-v1.2-amendment.md): event type ids are Chronicle's default names (§2.3, the §8 id column, the §4.1 source-fact ids and §9 point 1). The ids below are the legacy record.
+
 ## 1. Scope and authority
 
 Keywords follow [the specification conventions](README.md). The [Terms of identity-contract-v1](identity-contract-v1.md#terms) apply **verbatim**; this document does not redefine them. Its identifier, linking, quarantine and tombstone rules remain prerequisites. This specification defines the initial event contract, not deployed behavior. einari owns the event rules; the choices in §9 were decided at the Identity #14 sign-off, as recorded there.

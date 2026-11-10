@@ -13,9 +13,9 @@ namespace Cratis.Identity.for_ClientAndResourceEvents;
 public class when_inspecting_resource_source_facts : Specification
 {
     [Theory]
-    [InlineData(typeof(ResourceRegistrationRecorded), "9737db97-da6b-484e-afe6-760188549102", "Audience,DisplayName,FactId,ResourceIndicator,ScopePrefix")]
-    [InlineData(typeof(ResourceScopeRegistrationRecorded), "c1635433-c34b-4b8f-b551-f20fd541fbde", "Description,FactId,ScopeName")]
-    [InlineData(typeof(ResourceScopeRetirementRecorded), "3a28650d-61a9-4d9f-bb06-4fdebb205803", "FactId,RetiredAt,ScopeName")]
+    [InlineData(typeof(ResourceRegistrationRecorded), "ResourceRegistrationRecorded", "Audience,DisplayName,FactId,ResourceIndicator,ScopePrefix")]
+    [InlineData(typeof(ResourceScopeRegistrationRecorded), "ResourceScopeRegistrationRecorded", "Description,FactId,ScopeName")]
+    [InlineData(typeof(ResourceScopeRetirementRecorded), "ResourceScopeRetirementRecorded", "FactId,RetiredAt,ScopeName")]
     public void should_pin_the_additive_internal_contracts(Type type, string id, string fields)
     {
         var shape = ReflectionShapeBuilder.Build(type);

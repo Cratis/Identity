@@ -7,5 +7,5 @@ namespace Cratis.Identity.Contracts.Clients.Events;
 
 /// <summary>Internal exact redirect allowlists changed; never includes an authorization request URI.</summary>
 /// <param name="RedirectUris">The exact allowed redirect URIs.</param>
-[EventType("1dfa8ff9-2538-44c2-8628-00dc084fcabe", generation: 1)]
+[EventType]
 public record ClientRedirectUrisChanged(IEnumerable<string> RedirectUris);

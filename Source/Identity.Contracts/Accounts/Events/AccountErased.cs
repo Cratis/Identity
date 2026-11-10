@@ -9,5 +9,5 @@ namespace Cratis.Identity.Contracts.Accounts.Events;
 /// <param name="ErasureId">The request reference.</param>
 /// <param name="CompletedAt">The completion time.</param>
 /// <param name="BoundaryVersion">The approved completion boundary version.</param>
-[EventType("a87a0deb-fa35-4ae3-bb91-1b1db8f1b5fe", generation: 1), Public]
+[EventType, Public]
 public record AccountErased(ErasureId ErasureId, DateTimeOffset CompletedAt, BoundaryVersion BoundaryVersion);

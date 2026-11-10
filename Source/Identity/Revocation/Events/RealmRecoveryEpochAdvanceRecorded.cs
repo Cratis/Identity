@@ -12,5 +12,5 @@ namespace Cratis.Identity.Revocation.Events;
 /// <param name="FenceId">The stable recovery fence.</param>
 /// <param name="FenceSequence">The independently allocated sequence.</param>
 /// <param name="FactId">The retry-stable fact identity.</param>
-[EventType("bf2cbb34-f181-4931-be63-52d68a143be4", generation: 1)]
+[EventType]
 internal sealed record RealmRecoveryEpochAdvanceRecorded(RestoreEpoch RestoreEpoch, ReasonId ReasonId, FenceId FenceId, FenceSequence FenceSequence, FactId FactId);

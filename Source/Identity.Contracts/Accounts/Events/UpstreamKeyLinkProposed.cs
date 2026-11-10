@@ -10,5 +10,5 @@ namespace Cratis.Identity.Contracts.Accounts.Events;
 /// <param name="ConnectionId">The connection.</param>
 /// <param name="IdpIssuer">The exact upstream authority.</param>
 /// <param name="IdpSub">The protected raw subject.</param>
-[EventType("b49850a5-1179-489b-bd37-96a4bb25ff69", generation: 1)]
+[EventType]
 public record UpstreamKeyLinkProposed(LinkProposalId LinkProposalId, ConnectionId ConnectionId, UpstreamIssuer IdpIssuer, UpstreamSubject IdpSub);

@@ -11,4 +11,6 @@ namespace Cratis.Identity.Contracts.Check;
 /// <param name="Subject">The stream subject alias.</param>
 /// <param name="Fields">The exact field list with protection marks.</param>
 /// <param name="Assembly">The production assembly and namespace root.</param>
-internal sealed record CatalogueRow(string Name, string? TypeId, string Area, string Visibility, string Subject, string Fields, string Assembly = "Cratis.Identity.Contracts");
+/// <param name="RetainedExplicitId">Whether the event deliberately keeps an explicit attribute id.</param>
+/// <param name="Reason">The documented reason for a retained explicit id.</param>
+internal sealed record CatalogueRow(string Name, string? TypeId, string Area, string Visibility, string Subject, string Fields, string Assembly = "Cratis.Identity.Contracts", bool RetainedExplicitId = false, string? Reason = null);

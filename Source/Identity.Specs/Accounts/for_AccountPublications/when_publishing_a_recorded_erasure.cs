@@ -42,7 +42,7 @@ public class when_publishing_a_recorded_erasure : Specification
 
     [Fact] void should_publish_the_public_contract_once() => _published.Length.ShouldEqual(1);
     [Fact] void should_carry_the_source_fields() => ((AccountErased)_published[0]).ShouldEqual(new AccountErased(_erasure, DateTimeOffset.UnixEpoch, new BoundaryVersion(7)));
-    [Fact] void should_use_fact_id_and_contract_type_id() => _identities[0].ShouldEqual($"event-identity:{_fact.Value:D}:a87a0deb-fa35-4ae3-bb91-1b1db8f1b5fe");
+    [Fact] void should_use_fact_id_and_contract_type_id() => _identities[0].ShouldEqual($"event-identity:{_fact.Value:D}:AccountErased");
 
     void Destroy()
     {
