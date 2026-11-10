@@ -34,10 +34,10 @@ Leave the REST audience of each product unchanged. Do not set `direct-api` on th
 
 1. Start Identity with the local development launch profile.
 2. Start Direct and Studio.
-3. Add each MCP endpoint to your client, using the client id from the table that matches it: `local-claude`, `local-pi` or `local-vscode`.
+3. Add each MCP endpoint to your client, using the client id registered for your client in [Clients](local-development.md#clients): `local-claude`, `local-pi` or `local-vscode`.
 4. When the client opens the browser, sign in with GitHub and approve the consent screen for the product's scopes.
 
-The client asks for the product's resource indicator, receives an access token for that product only, and sends it to the MCP endpoint. To use the second product, repeat the consent for it. The existing Identity session means no second GitHub sign-in is needed.
+The client asks for the product's resource indicator, receives an access token for that product only, and sends it to the MCP endpoint. To use the second product, the client repeats the flow for it and you approve consent for that product's scopes.
 
 ## Check it works
 
