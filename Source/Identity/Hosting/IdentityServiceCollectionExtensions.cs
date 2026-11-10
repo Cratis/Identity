@@ -161,6 +161,9 @@ internal static class IdentityServiceCollectionExtensions
         services.AddScoped<IAccountSignIn>(provider => provider.GetRequiredService<EventSourcedAccountAdapter>());
         services.AddScoped<VerifiedUpstreamSignIn>();
         services.AddScoped<IVerifiedUpstreamSignIn>(provider => provider.GetRequiredService<VerifiedUpstreamSignIn>());
+        services.AddScoped<LinkCeremony>();
+        services.AddScoped<ILinkCeremony>(provider => provider.GetRequiredService<LinkCeremony>());
+        services.AddScoped<AccountLinking>();
         services.AddScoped<UpstreamKeyLinking>();
         services.AddLookupRevisionGuard();
         return services;

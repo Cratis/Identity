@@ -172,6 +172,6 @@ public class an_account_store : Specification
         _lookups = new(reader);
         var store = new AccountStore(_events, reader, _clock);
         _store = store;
-        _linking = new(new(store, _lookups, _digester, Options.Create(_options), _clock));
+        _linking = new(new(store, _lookups, _digester, Options.Create(_options), _clock), _events, reader, _digester, Options.Create(_options), _clock);
     }
 }

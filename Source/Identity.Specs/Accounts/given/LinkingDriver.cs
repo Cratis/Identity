@@ -2,47 +2,91 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Security.Claims;
+using Cratis.Arc.Validation;
+using Cratis.Chronicle;
+using Cratis.Chronicle.EventSequences;
+using Cratis.Chronicle.ReadModels;
 using Cratis.Identity.Accounts.Linking;
+using Cratis.Identity.Accounts.Linking.Proposing;
+using Cratis.Identity.Accounts.Linking.Rejecting;
+using Cratis.Identity.Accounts.Linking.Unlinking;
+using Cratis.Identity.Accounts.Lookup;
+using Cratis.Identity.Configuration;
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Upstream;
+using Cratis.Monads;
+using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.Accounts.given;
 
-/// <summary>Drives linking ceremonies through the current implementation without coupling specs to it.</summary>
-/// <param name="linking">The current linking implementation.</param>
-internal class LinkingDriver(UpstreamKeyLinking linking)
+/// <summary>
+/// Drives the three native commands against guarded store state. Confirm and Clear stay on the old service until D3.
+/// </summary>
+internal class LinkingDriver(UpstreamKeyLinking linking, IEventStore eventStore, IReadModels readModels, UpstreamKeyDigester digester, IOptions<IdentityOptions> options, TimeProvider time)
 {
-    /// <summary>Proposes a link with explicit session-bound proof.</summary>
-    /// <param name="session">The owning account session.</param>
-    /// <param name="authentication">The verified upstream proof.</param>
-    /// <param name="intent">The ceremony intent and connection policy.</param>
-    /// <returns>The proposal reference.</returns>
-    public Task<LinkProposalId> Propose(ClaimsPrincipal session, VerifiedAuthentication authentication, LinkIntent intent) => linking.Propose(session, authentication, intent);
+    readonly AccountStore _store = new(eventStore, readModels, time);
 
-    /// <summary>Confirms a proposal with fresh proof.</summary>
-    /// <param name="session">The owning account session.</param>
-    /// <param name="proposalId">The proposal reference.</param>
-    /// <param name="authentication">The verified upstream proof.</param>
-    /// <returns>The confirmed link reference.</returns>
+    public async Task<LinkProposalId> Propose(ClaimsPrincipal session, VerifiedAuthentication authentication, LinkIntent intent)
+    {
+        var command = new ProposeLink();
+        var read = new GuardedCommandRead(eventStore);
+        var decision = Require(await command.Provide(Ceremony(session, authentication, intent), read.Decisions, readModels, new UpstreamLookups(readModels), digester, options, time));
+        var (events, proposalId) = Require(command.Handle(decision));
+        await Append(decision.Account, new(read.Guard, decision.State), events);
+        return proposalId;
+    }
+
     public Task<LinkId> Confirm(ClaimsPrincipal session, LinkProposalId proposalId, VerifiedAuthentication authentication) => linking.Confirm(session, proposalId, authentication);
-
-    /// <summary>Clears a quarantined proposal as an authorized resolver.</summary>
-    /// <param name="resolver">The target owner's resolver session.</param>
-    /// <param name="account">The target account.</param>
-    /// <param name="proposalId">The proposal reference.</param>
-    /// <param name="authentication">The verified upstream proof.</param>
-    /// <returns>The completion.</returns>
     public Task Clear(ClaimsPrincipal resolver, AccountSubject account, LinkProposalId proposalId, VerifiedAuthentication authentication) => linking.Clear(resolver, account, proposalId, authentication);
 
-    /// <summary>Rejects a proposal without granting a link.</summary>
-    /// <param name="session">The owning account session.</param>
-    /// <param name="proposalId">The proposal reference.</param>
-    /// <returns>The completion.</returns>
-    public Task Reject(ClaimsPrincipal session, LinkProposalId proposalId) => linking.Reject(session, proposalId);
+    public async Task Reject(ClaimsPrincipal session, LinkProposalId proposalId)
+    {
+        var command = new RejectLink(proposalId);
+        var read = new GuardedCommandRead(eventStore);
+        var decision = Require(await command.Provide(Ceremony(session), read.Decisions, readModels, time));
+        await Append(decision.Account, new(read.Guard, decision.State), Require(command.Handle(decision)));
+    }
 
-    /// <summary>Unlinks a key without releasing its reservation.</summary>
-    /// <param name="session">The owning account session.</param>
-    /// <param name="linkId">The confirmed link reference.</param>
-    /// <returns>The completion.</returns>
-    public Task Unlink(ClaimsPrincipal session, LinkId linkId) => linking.Unlink(session, linkId);
+    public async Task Unlink(ClaimsPrincipal session, LinkId linkId)
+    {
+        var command = new UnlinkUpstreamKey(linkId);
+        var read = new GuardedCommandRead(eventStore);
+        var decision = Require(await command.Provide(Ceremony(session), read.Decisions, readModels, time));
+        await Append(decision.Account, new(read.Guard, decision.State), Require(command.Handle(decision)));
+    }
+
+    static LinkCeremony Ceremony(ClaimsPrincipal session, VerifiedAuthentication? authentication = null, LinkIntent? intent = null)
+    {
+        var ceremony = new LinkCeremony();
+        ceremony.Set(session, authentication, intent ?? new(false), CancellationToken.None);
+        return ceremony;
+    }
+
+    static T Require<T>(Result<T, ValidationResult> result)
+    {
+        if (result.TryGetError(out var refusal))
+        {
+            throw new AccountOperationRefused(refusal.Message);
+        }
+
+        return result.AsT0;
+    }
+
+    Task Append(AccountSubject account, AccountStore.GuardedAccountRead read, IEnumerable<EventForEventSourceId> events) =>
+        _store.Append(account, read, events.Select(item => item.Event));
+
+    sealed class GuardedCommandRead
+    {
+        public GuardedCommandRead(IEventStore eventStore)
+        {
+            Decisions.Get<AccountGuard>(Arg.Any<ReadModelKey>()).Returns(async call =>
+            {
+                Guard = await eventStore.GetDecisionReads().GetDetached<AccountGuard>(call.Arg<ReadModelKey>());
+                return Guard;
+            });
+        }
+
+        public IDecisionReads Decisions { get; } = Substitute.For<IDecisionReads>();
+        public DecisionRead<AccountGuard> Guard { get; private set; } = null!;
+    }
 }
