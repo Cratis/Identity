@@ -4,6 +4,7 @@
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Text.Json;
+using Cratis.Identity.Clients;
 using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 
@@ -11,7 +12,8 @@ namespace Cratis.Identity.Protocol.Stores;
 
 /// <summary>Serves application reads without persisting configuration to MongoDB.</summary>
 /// <param name="catalog">The application read model source.</param>
-internal sealed class ConfigurationApplicationStore(IProtocolCatalog catalog) : IOpenIddictApplicationStore<ClientApplication>
+/// <param name="metadata">The optional bounded metadata resolver.</param>
+internal sealed class ConfigurationApplicationStore(IProtocolCatalog catalog, IClientIdMetadataDocuments? metadata = null) : IOpenIddictApplicationStore<ClientApplication>
 {
     /// <inheritdoc/>
     public ValueTask<long> CountAsync(CancellationToken cancellationToken) => StoreQueries.Read((long)catalog.Applications.Count, cancellationToken);
@@ -20,10 +22,27 @@ internal sealed class ConfigurationApplicationStore(IProtocolCatalog catalog) : 
     public ValueTask<long> CountAsync<TResult>(Func<IQueryable<ClientApplication>, IQueryable<TResult>> query, CancellationToken cancellationToken) => StoreQueries.Read(query(catalog.Applications.AsQueryable()).LongCount(), cancellationToken);
 
     /// <inheritdoc/>
-    public ValueTask<ClientApplication?> FindByIdAsync(string identifier, CancellationToken cancellationToken) => StoreQueries.Read(catalog.Applications.FirstOrDefault(_ => _.Id == identifier), cancellationToken);
+    public async ValueTask<ClientApplication?> FindByIdAsync(string identifier, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var configured = catalog.Applications.FirstOrDefault(_ => _.Id == identifier);
+        if (configured is not null) return configured;
+        var clientId = metadata?.ClientIdFor(identifier);
+        return clientId is null ? null : await FindByClientIdAsync(clientId, cancellationToken);
+    }
 
     /// <inheritdoc/>
-    public ValueTask<ClientApplication?> FindByClientIdAsync(string identifier, CancellationToken cancellationToken) => StoreQueries.Read(catalog.Applications.FirstOrDefault(_ => _.ClientId == identifier), cancellationToken);
+    public async ValueTask<ClientApplication?> FindByClientIdAsync(string identifier, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var configured = catalog.Applications.FirstOrDefault(_ => _.ClientId == identifier);
+        if (configured is not null || metadata is null) return configured;
+        var result = await metadata.Resolve(new ClientId(identifier), cancellationToken);
+        if (result.Descriptor is null) return null;
+        var application = new ClientApplication(result.Descriptor);
+        if (catalog.Applications.Any(_ => _.Id == application.Id && _.ClientId != identifier)) throw new InvalidOperationException("Metadata application identifier collision.");
+        return application;
+    }
 
     /// <inheritdoc/>
     public IAsyncEnumerable<ClientApplication> FindByPostLogoutRedirectUriAsync(string uri, CancellationToken cancellationToken) => StoreQueries.Enumerate(catalog.Applications.Where(_ => _.Descriptor.PostLogoutRedirectUris.Any(value => value.OriginalString == uri)), cancellationToken);

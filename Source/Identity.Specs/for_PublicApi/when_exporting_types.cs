@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Clients.MetadataDocuments;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.Hosting;
 using Cratis.Identity.Upstream;
@@ -29,6 +30,8 @@ public class when_exporting_types : Specification
             typeof(GitHubOptions),
             typeof(IdentityEndpointOptions),
             typeof(IdentityOptions),
+            typeof(IdentityOptionsClients),
+            typeof(ClientIdMetadataOptions),
             typeof(IntrospectionClientOptions),
             typeof(MongoDBOptions),
             typeof(ResourceServerOptions),

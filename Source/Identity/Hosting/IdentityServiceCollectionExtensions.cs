@@ -6,6 +6,7 @@ using Cratis.Identity.Accounts;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Authorization.TokenExchange;
 using Cratis.Identity.Clients;
+using Cratis.Identity.Clients.MetadataDocuments;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.ConsentFlow;
 using Cratis.Identity.Development;
@@ -103,6 +104,7 @@ internal static class IdentityServiceCollectionExtensions
         services.AddResources();
         services.AddTenants();
         services.AddClients();
+        services.AddClientIdMetadataDocuments(startupOptions.Clients.MetadataDocuments.Enabled);
         services.AddAuthorizationEndpoints();
         services.AddDeviceGrant(startupOptions.DeviceGrant.Enabled);
         services.AddRevocation(configuration);
@@ -128,7 +130,7 @@ internal static class IdentityServiceCollectionExtensions
         }
 
         services.AddOpenIddict()
-            .AddCore(options => options.UseConfigurationStores()
+            .AddCore(options => options.UseConfigurationStores(startupOptions.Clients.MetadataDocuments.Enabled)
                 .SetDefaultAuthorizationEntity<OpenIddictMongoDbAuthorization>()
                 .SetDefaultTokenEntity<OpenIddictMongoDbToken>()
                 .ReplaceAuthorizationStore<OpenIddictMongoDbAuthorization, FencedAuthorizationStore>()
@@ -170,8 +172,12 @@ internal static class IdentityServiceCollectionExtensions
 
     static void ConfigureProtocol(OpenIddictServerBuilder server, string routePrefix, IdentityOptions options)
     {
-        server
-            .SetAuthorizationEndpointUris($"{routePrefix}/connect/authorize".TrimStart('/'))
+        if (options.Clients.MetadataDocuments.Enabled)
+        {
+            server.AddEventHandler<OpenIddictServerEvents.HandleConfigurationRequestContext>(builder => builder.UseSingletonHandler<AdvertiseClientIdMetadataDocuments>());
+        }
+
+        server.SetAuthorizationEndpointUris($"{routePrefix}/connect/authorize".TrimStart('/'))
             .SetTokenEndpointUris($"{routePrefix}/connect/token".TrimStart('/'))
             .SetRevocationEndpointUris($"{routePrefix}/connect/revocation".TrimStart('/'))
             .SetIntrospectionEndpointUris($"{routePrefix}/connect/introspect".TrimStart('/'))
