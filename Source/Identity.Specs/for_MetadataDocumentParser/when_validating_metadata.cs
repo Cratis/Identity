@@ -58,6 +58,33 @@ public class when_validating_metadata : Specification
     [InlineData("http://127.0.0.1:49152/callback")]
     public void should_refuse_unsafe_redirects(string redirect) => Parse("{\"client_id\":\"" + ClientId + "\",\"redirect_uris\":[\"" + redirect + "\"]}").Descriptor.ShouldBeNull();
 
+    [Theory]
+    [InlineData("\\ud800")]
+    [InlineData("\\udc00")]
+    [InlineData("\\ud800x")]
+    public void should_refuse_invalid_unicode_identity(string value) => Parse("{\"client_id\":\"" + value + "\",\"redirect_uris\":[]}").Refusal.ShouldEqual(MetadataRefusal.Json);
+
+    [Theory]
+    [InlineData("\"client_name\":\"\\ud800\"")]
+    [InlineData("\"client_name\":\"\\udc00\"")]
+    [InlineData("\"client_name\":\"\\ud800x\"")]
+    [InlineData("\"\\ud800\":true")]
+    [InlineData("\"\\udc00\":true")]
+    [InlineData("\"\\ud800x\":true")]
+    public void should_refuse_invalid_unicode_members(string member) => Parse("{" + Valid + "," + member + "}").Refusal.ShouldEqual(MetadataRefusal.Json);
+
+    [Theory]
+    [InlineData("\\ud800")]
+    [InlineData("\\udc00")]
+    [InlineData("\\ud800x")]
+    public void should_refuse_invalid_unicode_redirects(string value) => Parse("{\"client_id\":\"" + ClientId + "\",\"redirect_uris\":[\"https://client.example/" + value + "\"]}").Refusal.ShouldEqual(MetadataRefusal.Json);
+
+    [Theory]
+    [InlineData(new byte[] { 0xff })]
+    [InlineData(new byte[] { 0xc3, 0x28 })]
+    [InlineData(new byte[] { 0xed, 0xa0, 0x80 })]
+    public void should_refuse_malformed_utf8(byte[] bytes) => new MetadataDocumentParser(new IdentityOptionsClients()).Parse(ClientId, bytes).Refusal.ShouldEqual(MetadataRefusal.Json);
+
     [Fact] void should_refuse_duplicate_keys() => Parse("{" + Valid + ",\"client_id\":\"" + ClientId + "\"}").Descriptor.ShouldBeNull();
     [Fact] void should_refuse_duplicate_nested_keys() => Parse("{" + Valid + ",\"extension\":{\"x\":1,\"x\":2}}").Descriptor.ShouldBeNull();
     [Fact] void should_refuse_deep_json() => Parse("{" + Valid + ",\"x\":" + new string('[', 9) + "0" + new string(']', 9) + "}").Descriptor.ShouldBeNull();

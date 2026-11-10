@@ -30,12 +30,10 @@ internal sealed class MetadataDocumentParser(ClientIdMetadataOptions options)
             var refusal = MetadataFields.Validate(root, clientId);
             return refusal == MetadataRefusal.None ? Build(root, clientId) : MetadataDocumentResult.Refused(refusal);
         }
-        catch (JsonException)
+        catch (Exception exception) when (exception is JsonException or DecoderFallbackException or InvalidOperationException)
         {
-            return MetadataDocumentResult.Refused(MetadataRefusal.Json);
-        }
-        catch (DecoderFallbackException)
-        {
+            // JsonDocument defers escaped UTF-16 validation until string/property decoding,
+            // where an unpaired surrogate raises InvalidOperationException, not JsonException.
             return MetadataDocumentResult.Refused(MetadataRefusal.Json);
         }
     }
