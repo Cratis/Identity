@@ -55,7 +55,7 @@ The profile creates its keys on first run in a per-user directory outside the re
 
 The location is .NET's `LocalApplicationData` folder, which .NET resolves to `~/Library/Application Support` on macOS (it ignores `XDG_DATA_HOME` there).
 
-The key store creates **only the final `<issuer-authority>` directory**. Its entire parent chain must already exist; a missing ancestor is refused with a message asking you to create the parent. The normal host profile ensures the per-user app-data directory and its `cratis/identity-dev` parent during host bootstrap, before handing control to the key store. That bootstrap creates application-data folders, not key material or a store leaf. The store then independently validates every ancestor; bootstrap never exempts a newly created ancestor from the ownership and access checks. A caller provisioning a store directly must prepare its parent first.
+The key store creates **only the final `<issuer-authority>` directory**. Its entire parent chain must already exist; a missing ancestor is refused with a message asking you to create the parent. The normal host profile creates only the two folders `cratis` and `cratis/identity-dev` directly under the per-user application data folder during host bootstrap, before handing control to the key store; the application data folder itself and everything above it must already exist, otherwise startup is refused naming the folder. That bootstrap creates no key material or store leaf. The store then independently validates every ancestor; bootstrap never exempts a newly created ancestor from the ownership and access checks. A caller provisioning a store directly must prepare its parent first.
 
 ### Local key-store threat model
 

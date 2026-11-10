@@ -76,10 +76,10 @@ internal static class DevelopmentProfile
     }
 
     /// <summary>
-    /// Creates the application-data parent folders before the key store validates its ancestor chain.
+    /// Creates only the two profile folders (cratis and cratis/identity-dev) directly under an existing per-user application data root, before the key store validates its ancestor chain.
     /// </summary>
-    /// <param name="dataRoot">The per-user application data root.</param>
-    /// <exception cref="DevelopmentProfileRefused">The application data root is unavailable.</exception>
+    /// <param name="dataRoot">The per-user application data root, which must already exist; it and its ancestors are never created here.</param>
+    /// <exception cref="DevelopmentProfileRefused">The application data root is unavailable or does not exist.</exception>
     internal static void EnsureParent(string dataRoot)
     {
         if (string.IsNullOrWhiteSpace(dataRoot))
@@ -87,21 +87,32 @@ internal static class DevelopmentProfile
             throw new DevelopmentProfileRefused("the per-user application data folder is not available on this machine.");
         }
 
-        // Host bootstrap creates only application-data folders, never a key-store leaf or key material.
-        // The store subsequently validates every ancestor and pins its leaf before touching any secrets.
-        var parent = Path.Combine(dataRoot, "cratis", "identity-dev");
-        if (Directory.Exists(parent))
+        // The bootstrap is confined to the two profile folders below an existing data root. Anything above them
+        // (the data root and its ancestors) is never auto-created: the user prepares it and the store validates it.
+        if (!Directory.Exists(dataRoot))
+        {
+            throw new DevelopmentProfileRefused($"the per-user application data folder '{dataRoot}' does not exist; create the parent directory yourself.");
+        }
+
+        var vendor = Path.Combine(dataRoot, "cratis");
+        CreateOwnerOnly(vendor);
+        CreateOwnerOnly(Path.Combine(vendor, "identity-dev"));
+    }
+
+    static void CreateOwnerOnly(string directory)
+    {
+        if (Directory.Exists(directory))
         {
             return;
         }
 
         if (OperatingSystem.IsWindows())
         {
-            WindowsOwnerOnlyAccess.CreateDirectory(parent);
+            WindowsOwnerOnlyAccess.CreateDirectory(directory);
         }
         else
         {
-            Directory.CreateDirectory(parent, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         }
     }
 

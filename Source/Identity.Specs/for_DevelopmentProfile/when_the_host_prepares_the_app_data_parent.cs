@@ -9,7 +9,7 @@ public class when_the_host_prepares_the_app_data_parent : given.a_development_pr
 {
     bool _leafExistedAfterBootstrap;
 
-    void Establish() => Directory.Delete(_root, recursive: true);
+    void Establish() => Directory.Delete(Path.Combine(_root, "cratis"), recursive: true);
 
     void Because()
     {

@@ -71,11 +71,11 @@ public class a_development_profile : Specification
 
     protected IdentityOptions Startup() => _startupOptions = new ConfigurationBuilder().AddInMemoryCollection(_settings).Build().GetSection("Identity").Get<IdentityOptions>() ?? new();
 
-    protected void Apply(TimeProvider? time = null) => _exception = Catch.Exception(() =>
+    protected void Apply(TimeProvider? time = null, Action? prepareParent = null) => _exception = Catch.Exception(() =>
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(_settings).Build();
         Startup();
-        var applied = DevelopmentProfile.Apply(configuration, _environment, _startupOptions, new DevelopmentKeyStore(_root, _contentRoot, time ?? TimeProvider.System));
+        var applied = DevelopmentProfile.Apply(configuration, _environment, _startupOptions, new DevelopmentKeyStore(_root, _contentRoot, time ?? TimeProvider.System), prepareParent);
         applied?.Register(_services);
         _dataProtectionPath = applied?.DataProtectionPath;
         _custody = applied?.Root;
