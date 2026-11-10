@@ -4,6 +4,8 @@
 using System.Security.Claims;
 using Cratis.Arc.Commands;
 using Cratis.Arc.Validation;
+using Cratis.Identity.Accounts.Linking.Clearing;
+using Cratis.Identity.Accounts.Linking.Confirming;
 using Cratis.Identity.Accounts.Linking.Proposing;
 using Cratis.Identity.Accounts.Linking.Rejecting;
 using Cratis.Identity.Accounts.Linking.Unlinking;
@@ -30,7 +32,7 @@ internal sealed class AccountLinking(IProtocolCommands commands)
     /// <exception cref="AccountOperationRefused">The ceremony or command pipeline refuses the proposal.</exception>
     public async Task<LinkProposalId> Propose(ClaimsPrincipal session, VerifiedAuthentication authentication, LinkIntent intent, CancellationToken cancellationToken = default)
     {
-        var result = await Execute(new ProposeLink(), session, authentication, intent, cancellationToken);
+        var result = await Execute(new ProposeLink(), new(session, authentication, intent), cancellationToken);
         if (result is not CommandResult<LinkProposalId> { Response: { } proposal })
         {
             throw new AccountOperationRefused("temporarily_unavailable");
@@ -38,6 +40,27 @@ internal sealed class AccountLinking(IProtocolCommands commands)
 
         return proposal;
     }
+
+    /// <summary>Confirms the owner's pending proposal through the guarded command pipeline.</summary>
+    /// <param name="session">The owning account principal.</param>
+    /// <param name="proposalId">The pending proposal.</param>
+    /// <param name="authentication">The fresh owner-session-bound upstream proof.</param>
+    /// <param name="cancellationToken">The originating request's cancellation.</param>
+    /// <returns>The committed link identifier.</returns>
+    /// <exception cref="AccountOperationRefused">The proof, proposal or pipeline refuses confirmation.</exception>
+    public async Task<LinkId> Confirm(ClaimsPrincipal session, LinkProposalId proposalId, VerifiedAuthentication authentication, CancellationToken cancellationToken = default) =>
+        Confirmed(await Execute(new ConfirmLink(proposalId), new(session, authentication, new(false)), cancellationToken));
+
+    /// <summary>Clears a proposal only through the resolver and owner-bound command pipeline.</summary>
+    /// <param name="resolver">The authorized resolver's owning account principal.</param>
+    /// <param name="account">The target owner.</param>
+    /// <param name="proposalId">The quarantined proposal.</param>
+    /// <param name="authentication">The fresh owner-session-bound upstream proof.</param>
+    /// <param name="cancellationToken">The originating request's cancellation.</param>
+    /// <returns>The command completion.</returns>
+    /// <exception cref="AccountOperationRefused">The resolver, owner proof, proposal or pipeline refuses clearance.</exception>
+    public async Task Clear(ClaimsPrincipal resolver, AccountSubject account, LinkProposalId proposalId, VerifiedAuthentication authentication, CancellationToken cancellationToken = default) =>
+        _ = Confirmed(await Execute(new ClearLinkQuarantine(account, proposalId), new(resolver, authentication, new(false)), cancellationToken));
 
     /// <summary>
     /// Terminally rejects an account owner's proposal through the command pipeline.
@@ -48,7 +71,7 @@ internal sealed class AccountLinking(IProtocolCommands commands)
     /// <returns>The command completion.</returns>
     /// <exception cref="AccountOperationRefused">The session, account, proposal, or pipeline refuses rejection.</exception>
     public async Task Reject(ClaimsPrincipal session, LinkProposalId proposalId, CancellationToken cancellationToken = default) =>
-        _ = await Execute(new RejectLink(proposalId), session, null, new(false), cancellationToken);
+        _ = await Execute(new RejectLink(proposalId), new(session, null, new(false)), cancellationToken);
 
     /// <summary>
     /// Removes a confirmed key while preserving its permanent reservation.
@@ -59,7 +82,17 @@ internal sealed class AccountLinking(IProtocolCommands commands)
     /// <returns>The command completion.</returns>
     /// <exception cref="AccountOperationRefused">The session, account, key, or pipeline refuses removal.</exception>
     public async Task Unlink(ClaimsPrincipal session, LinkId linkId, CancellationToken cancellationToken = default) =>
-        _ = await Execute(new UnlinkUpstreamKey(linkId), session, null, new(false), cancellationToken);
+        _ = await Execute(new UnlinkUpstreamKey(linkId), new(session, null, new(false)), cancellationToken);
+
+    static LinkId Confirmed(CommandResult result)
+    {
+        if (result is not CommandResult<LinkConfirmationOutcome> { Response: { } outcome })
+        {
+            throw new AccountOperationRefused("temporarily_unavailable");
+        }
+
+        return outcome.LinkId ?? throw new AccountOperationRefused("upstream_key_already_reserved");
+    }
 
     static bool Retryable(CommandResult result) => result.ValidationResults.Any(validation =>
         validation.Reason == ValidationResultReason.ConcurrencyViolation ||
@@ -86,15 +119,15 @@ internal sealed class AccountLinking(IProtocolCommands commands)
         return result.ValidationResults.FirstOrDefault()?.Message ?? "temporarily_unavailable";
     }
 
-    async Task<CommandResult> Execute(object command, ClaimsPrincipal session, VerifiedAuthentication? authentication, LinkIntent intent, CancellationToken cancellationToken)
+    async Task<CommandResult> Execute(object command, Observations observations, CancellationToken cancellationToken)
     {
         try
         {
-            var result = await Attempt(command, session, authentication, intent, cancellationToken);
+            var result = await Attempt(command, observations, cancellationToken);
             if (Retryable(result))
             {
                 await commands.BeforeRetry(cancellationToken);
-                result = await Attempt(command, session, authentication, intent, cancellationToken);
+                result = await Attempt(command, observations, cancellationToken);
             }
 
             if (!result.IsSuccess)
@@ -111,12 +144,14 @@ internal sealed class AccountLinking(IProtocolCommands commands)
         }
     }
 
-    async Task<CommandResult> Attempt(object command, ClaimsPrincipal session, VerifiedAuthentication? authentication, LinkIntent intent, CancellationToken cancellationToken)
+    async Task<CommandResult> Attempt(object command, Observations observations, CancellationToken cancellationToken)
     {
-        var result = await commands.Execute(command, services => services.GetRequiredService<LinkCeremony>().Set(session, authentication, intent, cancellationToken), cancellationToken);
+        var result = await commands.Execute(command, services => services.GetRequiredService<LinkCeremony>().Set(observations.Session, observations.Authentication, observations.Intent, cancellationToken), cancellationToken);
 
         // Arc captures cancellation as a failure; a gone caller must never become a refusal.
         cancellationToken.ThrowIfCancellationRequested();
         return result;
     }
+
+    sealed record Observations(ClaimsPrincipal Session, VerifiedAuthentication? Authentication, LinkIntent Intent);
 }
