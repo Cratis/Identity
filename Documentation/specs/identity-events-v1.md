@@ -99,9 +99,9 @@ Source facts are named `<Public contract subject><noun>Recorded` and listed here
 | RefreshTokenFamilyRevoked | RefreshTokenFamilyRevocationRecorded | assigned at implementation |
 | SigningKeyActivated | SigningKeyActivationRecorded | assigned at implementation |
 | SigningKeyRetired | SigningKeyRetirementRecorded | assigned at implementation |
-| ResourceRegistered | ResourceRegistrationRecorded | assigned at implementation |
-| ResourceScopeRegistered | ResourceScopeRegistrationRecorded | assigned at implementation |
-| ResourceScopeRetired | ResourceScopeRetirementRecorded | assigned at implementation |
+| ResourceRegistered | ResourceRegistrationRecorded | 9737db97-da6b-484e-afe6-760188549102 |
+| ResourceScopeRegistered | ResourceScopeRegistrationRecorded | c1635433-c34b-4b8f-b551-f20fd541fbde |
+| ResourceScopeRetired | ResourceScopeRetirementRecorded | 3a28650d-61a9-4d9f-bb06-4fdebb205803 |
 | OrganisationRegistered | OrganisationRegistrationRecorded | assigned at implementation |
 | OrganisationPolicyChanged | OrganisationPolicyChangeRecorded | assigned at implementation |
 | OrganisationDomainVerified | OrganisationDomainVerificationRecorded | assigned at implementation |
@@ -111,6 +111,8 @@ Source facts are named `<Public contract subject><noun>Recorded` and listed here
 | ConnectionAssuranceMappingChanged | ConnectionAssuranceMappingChangeRecorded | assigned at implementation |
 | RealmPolicyEpochAdvanced | RealmPolicyEpochAdvanceRecorded | assigned at implementation |
 | RealmRecoveryEpochAdvanced | RealmRecoveryEpochAdvanceRecorded | assigned at implementation |
+
+Resource source facts retain the corresponding Public fields plus `FactId`. Under amendment v1.1 decision 4, `ResourceRegistrationRecorded` additionally carries the Internal-only `ResourceDisplayName DisplayName`, and `ResourceScopeRegistrationRecorded` additionally carries the Internal-only `ResourceScopeDescription Description`. Neither label is copied to the Public contracts. All three source facts use the resource's `ResourceId` event source.
 
 ## 5. PII and erasure
 

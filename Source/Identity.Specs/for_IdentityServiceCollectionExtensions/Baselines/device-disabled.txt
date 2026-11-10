@@ -65,6 +65,7 @@ descriptor|Cratis.Identity.Protocol.IProtocolCommands|Singleton|Cratis.Identity.
 descriptor|Cratis.Identity.Protocol.ReadModelCatchUp|Scoped|Cratis.Identity.Protocol.ReadModelCatchUp
 descriptor|Cratis.Identity.Protocol.Stores.IProtocolCatalog|Singleton|Cratis.Identity.Protocol.Stores.ConfigurationProtocolCatalog
 descriptor|Cratis.Identity.Resources.IResourceCatalog|Singleton|Cratis.Identity.Resources.ResourceCatalog
+descriptor|Cratis.Identity.Resources.ResourceRegistrationReads|Scoped|Cratis.Identity.Resources.ResourceRegistrationReads
 descriptor|Cratis.Identity.Revocation.ConfirmFenceLog|Scoped|Cratis.Identity.Revocation.ConfirmFenceLog
 descriptor|Cratis.Identity.Revocation.DispatchRevocationOutbox|Scoped|Cratis.Identity.Revocation.DispatchRevocationOutbox
 descriptor|Cratis.Identity.Revocation.FenceLogOptions|Singleton|instance

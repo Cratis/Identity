@@ -67,13 +67,19 @@ internal static class ContentRules
 
     static IEnumerable<Violation> PrivacyViolations(EventShape shape, MemberShape member, string path, IReadOnlyDictionary<string, SafeConceptEntry> registry)
     {
-        var names = new[] { Normalize(member.ClrName), Normalize(member.WireName), Normalize(member.Concept?.Split('.', '+')[^1] ?? string.Empty) };
+        var names = MemberNames(member);
         var registered = RegisteredEntry(member, registry);
         var personal = !InternalBusinessLabel(shape, member, registered) && PersonalMember(names, registered);
         if (personal && !member.Pii) yield return new(path, "missing_pii");
-        if ((personal || member.Pii) && !shape.ComplianceSubject) yield return new(path, "unresolved_compliance_subject");
+        if (NeedsComplianceSubject(shape, member, personal)) yield return new(path, "unresolved_compliance_subject");
         if (shape.Visibility == "Public" && names.Any(_upstreamNames.Contains)) yield return new(path, "public_upstream_identifier");
     }
+
+    static string[] MemberNames(MemberShape member) =>
+        [Normalize(member.ClrName), Normalize(member.WireName), Normalize(member.Concept?.Split('.', '+')[^1] ?? string.Empty)];
+
+    static bool NeedsComplianceSubject(EventShape shape, MemberShape member, bool personal) =>
+        (personal || member.Pii) && !shape.ComplianceSubject;
 
     static bool InternalBusinessLabel(EventShape shape, MemberShape member, SafeConceptEntry? entry) =>
         shape.Visibility == "Internal" && entry?.Kind == "business-label" && ValidEntry(member, entry);
@@ -112,7 +118,7 @@ internal static class ContentRules
         member.UnderlyingType == entry.UnderlyingType && !string.IsNullOrWhiteSpace(entry.ProducerSpec) && !string.IsNullOrWhiteSpace(entry.Justification);
 
     static bool ValidBusinessLabel(MemberShape member, SafeConceptEntry entry) =>
-        member.Concept == "Cratis.Identity.Contracts.Clients.ClientDisplayName" && Normalize(member.ClrName) == "displayname" &&
+        (member.Concept == "Cratis.Identity.Contracts.Clients.ClientDisplayName" || member.Concept == "Cratis.Identity.Contracts.Resources.ResourceDisplayName") && Normalize(member.ClrName) == "displayname" &&
         Normalize(member.WireName) == "displayname" && entry.UnderlyingType == "string";
 
     static bool ValidThumbprint(SafeConceptEntry entry) => entry.UnderlyingType == "string" && entry.Algorithm == "SHA-256" &&
