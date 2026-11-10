@@ -1,0 +1,20 @@
+{
+  "name": "scope-catalog-and-policy",
+  "description": "Grouped scope, audience, consent and live-role ceiling cases.",
+  "given": {
+  "fixtureDefaults": {"person": "person-fixture", "tenant": "tenant-fixture", "environment": "test", "productRole": "reader"},
+  "vectors": [
+    {"given": {"audience": "direct-mcp", "scopes": ["direct:read"]}, "when": {"receiver": "https://direct.example.test/mcp", "operation": "read", "otherPolicyChecksPass": true}, "then": {"authorized": true}},
+    {"given": {"audience": "direct-mcp", "scopes": ["direct:write"], "productRole": "reader"}, "when": {"receiver": "https://direct.example.test/mcp", "operation": "write"}, "then": {"authorized": false, "reason": "product-role-denies"}},
+    {"given": {"audience": "studio-api", "scopes": ["studio:read"]}, "when": {"receiver": "https://direct.example.test/mcp"}, "then": {"authorized": false, "reason": "audience-mismatch"}},
+    {"given": {"audience": "direct-mcp", "scopes": ["studio:read"]}, "when": {"receiver": "https://direct.example.test/mcp"}, "then": {"authorized": false, "reason": "scope-catalog-mismatch"}},
+    {"given": {"audience": "stage-atlas-api", "scopes": ["stage-atlas:read"]}, "when": {"receiver": "https://other-app.example.test/mcp"}, "then": {"authorized": false, "reason": "audience-mismatch"}},
+    {"given": {"requestedScopes": ["direct:*"]}, "when": {"operation": "validate-scopes"}, "then": {"accepted": false, "reason": "unknown-scope"}},
+    {"given": {"requestedScopes": ["direct:admin"]}, "when": {"operation": "validate-scopes"}, "then": {"accepted": false, "reason": "unknown-scope"}},
+    {"given": {"consentedBundle": "reader-v1", "grantScopes": ["direct:read"]}, "when": {"publishBundle": "editor-v1", "publishedScopes": ["direct:read", "direct:write"]}, "then": {"grantScopes": ["direct:read"], "silentlyWidened": false}},
+    {"given": {"sourceScopes": ["direct:read"], "explicitMapping": false}, "when": {"exchangeDestination": "https://studio.example.test/mcp", "requestedScopes": ["studio:write"]}, "then": {"accepted": false, "reason": "no-reviewed-mapping"}}
+  ]
+  },
+  "when": {"action": "evaluate-scope-catalog-and-policy-cases"},
+  "then": {"allCaseAssertionsRequired": true}
+}

@@ -8,6 +8,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
+import { loadArtifact } from './package-authorization-vectors.mjs';
 
 const directory = 'Source/Identity.Specs/Vectors/arc-mcp-authorization-v1';
 const spec = 'arc-mcp-authorization';
@@ -44,7 +45,7 @@ async function unchanged(root, commit, path, anchor) {
 
 function sectionVersion(heading, section, path) {
     if (path === changelog) return heading;
-    if (heading !== 'Vector artifact') return undefined;
+    if (heading !== 'Vector artifact' && heading !== 'Vector artifact 2.1.0') return undefined;
     const versions = [...section.matchAll(/^Vector artifact version: ([^\r\n]+)\r?$/gm)];
     assert.equal(versions.length, 1, `Expected one vector artifact version in ${path}`);
     assert.match(versions[0][1], new RegExp(`^${semver}$`), `Invalid vector artifact version in ${path}`);
@@ -126,13 +127,41 @@ export async function checkBaselineImmutability(root, baseRef) {
     assert(names.every(name => baselineName.test(name)), 'Invalid baseline filename');
     assert(names.includes(`v${manifest.version}.json`), 'Missing current baseline');
     const tags = git(root, 'for-each-ref', '--format=%(refname:strip=2)', `refs/tags/vectors/${spec}/v*`).toString().trim().split('\n').filter(Boolean);
-    for (const tag of tags) await checkTag(root, tag, manifest);
+    for (const tag of tags.filter(tag => tag !== `vectors/${spec}/v2.1.0`)) await checkTag(root, tag, manifest);
     for (const name of names) {
         const tag = `vectors/${spec}/${name.slice(0, -5)}`;
         if (!tags.includes(tag)) console.log(`Baseline ${name} is unreleased (no ${tag} tag).`);
     }
     if (baseRef) await checkBase(root, baseRef, manifest);
+    await checkOverlay(root, baseRef, tags);
     console.log(`Checked ${names.length} vector baselines and ${tags.length} release tags.`);
+}
+
+async function frozenTree(root, commit, path, anchor) {
+    const changed = git(root, 'diff', '--name-only', commit, '--', path).toString().trim();
+    assert.equal(changed, '', `${path} changed relative to ${anchor}. ${remedy}`);
+}
+
+async function checkOverlay(root, baseRef, tags) {
+    const overlay = 'Source/Identity.Specs/Vectors/v2.1.0';
+    const present = (await readdir(join(root, 'Source/Identity.Specs/Vectors'))).includes('v2.1.0');
+    const tag = `vectors/${spec}/v2.1.0`;
+    assert(present || !tags.includes(tag), 'Released overlay is missing');
+    if (!present) return;
+    const { manifest } = await loadArtifact(join(root, overlay), join(root, directory));
+    assert.equal(manifest.version, '2.1.0', 'Overlay version mismatch');
+    const sections = versionSections(await readFile(join(root, contract), 'utf8'), contract);
+    assert(sections.has(manifest.version), 'Missing overlay contract section');
+    const inheritedTag = `vectors/${spec}/v${manifest.inherits.version}`;
+    const anchors = [baseRef ?? 'HEAD', ...tags.filter(value => value === tag || value === inheritedTag)];
+    for (const anchor of anchors) {
+        const commit = revision(root, anchor.startsWith('vectors/') ? `refs/tags/${anchor}` : anchor);
+        for (const name of ['arc-mcp-authorization-v1', 'arc-scope-catalog-v1', 'identity-access-token-v1', 'v2.1.0']) {
+            const path = `Source/Identity.Specs/Vectors/${name}`;
+            if (filesAt(root, commit, path).length > 0) await frozenTree(root, commit, path, anchor);
+        }
+    }
+    console.log(`Checked immutable overlay ${manifest.version} and inherited 2.0.0 fixtures.`);
 }
 
 async function main() {

@@ -77,8 +77,8 @@ public class when_enforcing_resource_and_pkce : given.an_authorization_server
     [Fact] void should_leave_disabled_device_grant_validation_unchanged_without_resource() => Rejected("device", Errors.UnsupportedGrantType);
     [Fact] void should_leave_disabled_token_exchange_validation_unchanged_without_resource() => Rejected("exchange", Errors.UnsupportedGrantType);
     [Fact] void should_advertise_only_s256() => _advertisedChallengeMethods.ShouldContainOnly(CodeChallengeMethods.Sha256);
-    [Fact] void should_issue_exactly_the_catalog_audience_not_the_resource_url() => _token.Audiences.ShouldContainOnly("direct-api");
-    [Fact] void should_preserve_the_catalog_audience_when_resource_is_inferred() => _inferredToken.Audiences.ShouldContainOnly("direct-api");
+    [Fact] void should_issue_exactly_the_catalog_audience_not_the_resource_url() => _token.Audiences.ShouldContainOnly(Audience);
+    [Fact] void should_preserve_the_catalog_audience_when_resource_is_inferred() => _inferredToken.Audiences.ShouldContainOnly(Audience);
     [Fact] void should_issue_an_access_token_not_an_id_token() => _token.Typ.ShouldEqual("at+jwt");
 
     void AcceptedVector(string id)

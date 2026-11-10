@@ -263,6 +263,35 @@ their own conformance specs by case ID. A missing, duplicate, or unexecuted case
 fail their gate. Consumer CI wiring and local overrides are separate deliverables;
 this package does not assert consumer conformance.
 
+## Vector artifact 2.1.0
+
+Vector artifact version: 2.1.0
+
+The MCP audience is `direct-mcp`; `direct-api` remains a REST audience. Version 2.0.0
+and all its files and baselines remain unchanged and continue to verify.
+`Source/Identity.Specs/Vectors/v2.1.0/` is an overlay containing only
+`arc-mcp-authorization-v1/profiles-and-discovery.json` and
+`arc-scope-catalog-v1/catalog-and-policy.json`, with 57 cases. All other fixtures,
+including the signed `identity-access-token-v1` REST JWT examples, are inherited
+unchanged from 2.0.0. Apply these two files over the corresponding 2.0.0 paths.
+
+The overlay uses manifest schema 2: `inherits` pins the 2.0.0 manifest by version
+and SHA-256, `files` pins each replacement's complete bytes, and `caseIds` lists
+ordered case IDs per file. Its baseline pins the complete manifest bytes; this
+locks the inheritance, case bindings, file hashes, and case count together.
+Schema 1 and its historical case hashes remain supported without modification.
+
+The packaging command above verifies and packages both versions into separate
+archives and checksum sidecars. The 2.1.0 archive contains the overlay manifest,
+changelog, baseline, and two replacement files at their relative paths, not copies
+of inherited JWT fixtures. Consumers must also retain the pinned 2.0.0 fixtures.
+When invoked for a release tag, packaging selects that tag's version and refuses
+an unknown version. The new trust-anchor tag is
+`vectors/arc-mcp-authorization/v2.1.0`; creating it remains a release-owner action.
+The immutability check protects both trees and inherited fixtures against the base
+revision and existing release tags. Unit specs exercise authorization and token
+issuance using both versions, including the new MCP audience.
+
 ## Decisions recorded at sign-off
 
 Decided in Identity #14 (2026-11-05) with the recommended answers from the sign-off package:

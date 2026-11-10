@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import { test } from 'node:test';
 import { gunzipSync } from 'node:zlib';
-import { createArchive, validateBaseline, validateBaselineHistory, validateCases } from './package-authorization-vectors.mjs';
+import { caseBindings, createArchive, loadArtifact, overlayDirectory, validateBaseline, validateBaselineHistory, validateCases, validateInheritance, vectorDirectory } from './package-authorization-vectors.mjs';
 
 const directory = new URL('../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/', import.meta.url);
 const manifest = JSON.parse(await readFile(new URL('manifest.json', directory)));
@@ -14,6 +14,58 @@ const baseline = JSON.parse(await readFile(new URL(`baselines/v${manifest.versio
 const changelog = await readFile(new URL('CHANGELOG.md', directory), 'utf8');
 const baselineNames = await readdir(new URL('baselines/', directory));
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+const overlayBytes = await readFile(new URL('../Source/Identity.Specs/Vectors/v2.1.0/manifest.json', import.meta.url));
+const overlay = JSON.parse(overlayBytes);
+const overlayBaseline = JSON.parse(await readFile(new URL('../Source/Identity.Specs/Vectors/v2.1.0/baselines/v2.1.0.json', import.meta.url)));
+
+test('both immutable 2.0.0 and overlay 2.1.0 artifacts verify and package deterministically', async () => {
+    for (const source of [vectorDirectory, overlayDirectory]) {
+        const first = await loadArtifact(source);
+        const second = await loadArtifact(source);
+        assert.deepEqual(createArchive(first.entries), createArchive(second.entries));
+        assert.equal(first.manifest.version, source === vectorDirectory ? '2.0.0' : '2.1.0');
+    }
+});
+
+test('overlay contains only two replacement files and inherits the original manifest', async () => {
+    const { entries } = await loadArtifact(overlayDirectory);
+    const files = entries.filter(([name]) => overlay.files.some(file => file.path === name));
+    assert.equal(files.length, 2);
+    assert.equal(caseBindings(overlay, files).length, 57);
+    assert(!entries.some(([name]) => name.includes('identity-access-token')));
+    validateInheritance(overlay, await readFile(new URL('manifest.json', directory)));
+});
+
+test('overlay baseline pins the complete manifest bytes', () => {
+    validateBaseline(overlay, overlayBaseline, overlayBytes);
+    assert.throws(() => validateBaseline(overlay, overlayBaseline, Buffer.concat([overlayBytes, Buffer.from(' ')])), /Released manifest changed/);
+});
+
+test('overlay rejects an altered or mismatched inherited manifest', () => {
+    const inherited = JSON.stringify({ ...manifest, caseCount: 1 });
+    assert.throws(() => validateInheritance(overlay, inherited), /Inherited manifest changed/);
+    assert.throws(() => validateInheritance(overlay, JSON.stringify({ ...manifest, version: '9.0.0' })), /Inherited version mismatch/);
+});
+
+test('overlay rejects incomplete, duplicate or unknown case ids', async () => {
+    const { entries } = await loadArtifact(overlayDirectory);
+    const files = entries.filter(([name]) => overlay.files.some(file => file.path === name));
+    const file = overlay.files[0].path;
+    const incomplete = structuredClone(overlay);
+    incomplete.caseIds[file].pop();
+    assert.throws(() => validateCases(incomplete, files), /Incomplete case coverage/);
+    const duplicate = structuredClone(overlay);
+    duplicate.caseIds[file][1] = duplicate.caseIds[file][0];
+    assert.throws(() => validateCases(duplicate, files), /Duplicate case ids/);
+    const unknown = structuredClone(overlay);
+    unknown.caseIds['unknown.json'] = [];
+    assert.throws(() => validateCases(unknown, files), /Unknown case file/);
+});
+
+test('overlay history starts at its own version without duplicating inherited baselines', () => {
+    validateBaselineHistory(overlay, ['v2.1.0.json'], '# Changelog\n\n## 2.1.0\n');
+    assert.throws(() => validateBaselineHistory(overlay, [], '# Changelog\n\n## 2.1.0\n'), /Missing current baseline/);
+});
 
 test('archive bytes do not depend on input order or wall clock', () => {
     const entries = [['z.json', Buffer.from('{}')], ['a.json', Buffer.from('[]')]];
