@@ -29,6 +29,8 @@ For OAuth, authenticated, authorized Identity introspection is the sole authorit
 | Machine principal or workload | `credentialId` in the credential record selected by the allowlisted workload/service verifier and trusted installation mapping. | `credentialKind=machine-principal` or `workload`; no person or human assurance is fabricated. A common authority API/id format remains outstanding. |
 | Browser or on-behalf session | `credentialId` from the verified server-side session/credential record. | `credentialKind=browser-session` or `on-behalf-session`; the session authority's mapping remains subject to review. |
 
+Once accepted, this Draft closes the OAuth-kind enum serialization that [verified caller v1](arc-verified-caller-v1.md) leaves open: the wire value is the exact string in section 3.
+
 The forwarded v2 field is `x-cratis-credential-id`; signing it does not create authority for its value. A delegation or per-work `grantId` is a separate checked reference, not an alias for `credentialId`. The OAuth credential UUID's use of the grant event-source mapping MUST NOT make `x-cratis-grant-id`, token `jti`, or a root/parent grant reference interchangeable with it. Child/parent/root grant bounds still require their authoritative records.
 
 **Current implementation.** `CredentialId.For` uses the consent/revocation outbox's existing mapping from the validated operational authorization id to the grant UUID. `IntrospectionCredentialClaims` emits the OAuth pair only for an access token with that authorization. Refresh preserves it. Tokens without an authorization, including the current token-exchange path, receive neither the pair nor `cid`. No fallback id is synthesized. Extending stable credential identity to other grant-lineage operations is a gap, not a claim that current token exchange or delegated issuance supplies this record. The [v1.1 amendment](identity-contracts-v1.1-amendment.md) remains Draft and records the current absence of delegated `act` issuance.
@@ -81,7 +83,7 @@ A synthetic active, unbound response excerpt illustrates the members defined her
 
 Invalid, expired or revoked tokens MUST return exactly `{ "active": false }`, with no credential metadata, confirmation or epoch. Introspection client authentication/authorization errors and recovery failures MUST NOT disclose credential metadata and MUST NOT be treated as an active record. They need not be represented as successful inactive responses.
 
-An active legacy token without an operational authorization can lack `credential_id` and `credential_kind` in today's implementation. It MUST NOT produce an OAuth envelope under this Draft. Likewise, a missing required `tid`, audience, scope or epoch MUST NOT be repaired from a request or cached caller. Any legacy acceptance outside envelope routes is a separate policy, not a fallback defined here.
+An active legacy token without an operational authorization can lack `credential_id` and `credential_kind` in today's implementation. It MUST NOT produce an OAuth envelope under this Draft. Likewise, a missing required `tid`, audience, scope or epoch MUST NOT be repaired from a request or cached caller. There is no grace window on envelope/MCP routes for tokens without a credential id. Any legacy acceptance outside envelope routes is a separate policy, not a fallback defined here.
 
 **Current implementation.** `IntrospectionCredentialClaims` adds `credential_id`, `credential_kind`, token `tid`, scopes and `cache_epoch` after OpenIddict validation and checks the independently observed recovery epoch before and after attachment. Built-in metadata supplies audience and other token metadata. A well-formed token `cnf` passes through OpenIddict; malformed confirmation fails before the credential metadata handler. Identity does not currently issue DPoP-bound tokens. The active-shape requirements above do not imply that this handler itself enforces every required field or compares advisory `cid`; consumer enforcement remains a gap to verify in the adapters. See [resource token validation](../security/resource-token-validation.md).
 
@@ -113,6 +115,8 @@ For MCP, the no-token-passthrough requirement in section 9 also applies. The cur
 ## 7. Revocation freshness and failure behavior
 
 AuthProxy MUST use a positive introspection cache of at most **30 seconds**, configurable downward, and MUST NOT cache negative results. Reuse MUST stop at token expiry or an earlier required authority deadline; a cache hit MUST NOT restart the 30-second window. Cache time is the revocation window, not extra clock skew or an extension of token lifetime.
+
+The positive-cache key MUST be a digest of the exact presented access token plus the expected audience/resource; it MUST NOT be keyed by `credentialId`, `jti` or subject. This follows [verified caller v1](arc-verified-caller-v1.md), which requires cache keys to bind the token and expected audience.
 
 Cached metadata MUST remain bound to the same verified credential and trusted issuer, resource/audience, tenant and validation context. A request MUST NOT select an unrelated cached caller. DPoP proof acceptance is request-specific and MUST NOT be reused from an introspection-cache hit.
 
@@ -165,6 +169,7 @@ These cases describe required outcomes, not an implemented or passing conformanc
 | Signed non-`pat` envelope with PAT, or `pat` envelope with revoked PAT | Refuse; signature does not replace local verification. |
 | Envelope/bearer hash mismatch, signed account/id/kind/binding mismatch or changed covered metadata | Refuse; no caller and no alternate verifier. |
 | Multiple independent credentials, repeated Authorization or query credential | Refuse before dispatch. |
+| Two tokens for the same credential, subject or `jti`, or one token presented for two audiences/resources | Separate cache entries; the key is the token digest plus expected audience/resource, never `credentialId`, `jti` or subject. |
 | Positive cache reaches 30 seconds, token expiry, or earlier authority deadline | Require fresh verification; never extend or serve stale positive state. |
 | Recovery epoch changes, is older/missing, or independent current state is unavailable | Invalidate affected cache; refuse unless current required evidence is established. |
 | Introspection or required shared proof/recovery state unavailable | Fail closed, with no local/alternate fallback. |
@@ -172,7 +177,7 @@ These cases describe required outcomes, not an implemented or passing conformanc
 | Deployed configuration receives a local-issuer token | Refuse despite locally valid signing/introspection. |
 | MCP route can operate only by passing the incoming token upstream/downstream | Refuse; do not enable passthrough as an adapter fallback. |
 
-## 11. Outstanding decisions
+## 11. Open questions (outstanding decisions)
 
 Review by woksin and the Identity/AuthProxy owners (including L101) is required. None of the following is sign-off:
 
