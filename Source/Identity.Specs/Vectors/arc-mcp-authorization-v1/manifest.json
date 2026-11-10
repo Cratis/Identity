@@ -3,11 +3,11 @@
   "schema": 1,
   "spec": "arc-mcp-authorization",
   "contractVersion": 1,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "revision": { "mcpAuthorization": "2026-07-28" },
   "caseCount": 48,
   "files": [
-    { "path": "profiles-and-discovery.json", "sha256": "77f118f6f86c85f0e6d89dc87960ddbbfc802b72e69e775dbc3c529b3044e826" }
+    { "path": "profiles-and-discovery.json", "sha256": "66d49418691ce5486f613d50de84e6429247fd3acac0295f49e6a7c93c52e08b" }
   ],
   "cases": [
     { "id": "pat-only-missing-credential", "file": "profiles-and-discovery.json", "index": 0, "sha256": "3dcee204c53c97d392113585f79f4e765f39aca2e149f6ef5d386979968e9ef6" },
@@ -25,8 +25,8 @@
     { "id": "combined-invalid-pat-no-fallback", "file": "profiles-and-discovery.json", "index": 12, "sha256": "4fe501177467e4c4b8f964cad6a9d7d7fa87879e38799c72761a9d6fda445da3" },
     { "id": "oauth-only-audience-mismatch", "file": "profiles-and-discovery.json", "index": 13, "sha256": "b7b37c5e0343758d0bb6f68e3985cab3c7c0bbd2323ef0f3e258ec044ebec82c" },
     { "id": "combined-audience-mismatch-no-fallback", "file": "profiles-and-discovery.json", "index": 14, "sha256": "4349025bf8971aaa89f9f5e7fbcbc6f0d0156e6f89883332b001e344eac36b96" },
-    { "id": "authorization-resource-required", "file": "profiles-and-discovery.json", "index": 15, "sha256": "ab35e456c85f4e2e34a9cdec6b39119bac9cb4dd07fc404acd4d0bdad7d7f496" },
-    { "id": "token-resource-required", "file": "profiles-and-discovery.json", "index": 16, "sha256": "c88309c49a52f22d73a9b7263e719bb2b653e89b048d3be023d7bcb24727e466" },
+    { "id": "authorization-resource-inferred", "file": "profiles-and-discovery.json", "index": 15, "sha256": "3b6617e778ba3c110753171f3147a652423a50d0d95ce0c46038a166b3b24d3c" },
+    { "id": "token-resource-inherited", "file": "profiles-and-discovery.json", "index": 16, "sha256": "1090f500b6039e2bf1ff93edc62c8b8103bffcdf8e321c9e9abeb18a387e992a" },
     { "id": "token-resource-must-match", "file": "profiles-and-discovery.json", "index": 17, "sha256": "6e00915cd3792db0656a7459db05e4a39ab68d418b5f91828007a453f719d940" },
     { "id": "oauth-only-scope-step-up", "file": "profiles-and-discovery.json", "index": 18, "sha256": "5188d05b7b875973ea8c852a47ea3497fc9c2fe65a0e0c6b940881900eac05d1" },
     { "id": "combined-scope-step-up", "file": "profiles-and-discovery.json", "index": 19, "sha256": "3368fd370ac40ca131e1d90213574984903bf78093a0fbe8887143d258c0a2db" },

@@ -19,7 +19,6 @@ using Cratis.Identity.Storage;
 using Cratis.Identity.Tenants;
 using Cratis.Identity.Upstream;
 using Microsoft.Extensions.Options;
-using OpenIddict.Abstractions;
 using OpenIddict.MongoDb.Models;
 using OpenIddict.Server;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -129,6 +128,7 @@ internal static class IdentityServiceCollectionExtensions
             .AddServer(options =>
             {
                 ConfigureProtocol(options, endpoints.RoutePrefix, startupOptions);
+                options.AddExplicitResourceValidation();
 
                 if (startupOptions.DeviceGrant.Enabled)
                 {
@@ -175,8 +175,6 @@ internal static class IdentityServiceCollectionExtensions
             .SetRefreshTokenReuseLeeway(null)
             .DisableAccessTokenEncryption();
 
-        RequireExplicitCodeResource(server);
-
         if (options.DeviceGrant.Enabled)
         {
             server.AllowDeviceAuthorizationFlow()
@@ -188,32 +186,6 @@ internal static class IdentityServiceCollectionExtensions
                     return ValueTask.CompletedTask;
                 }));
         }
-    }
-
-    static void RequireExplicitCodeResource(OpenIddictServerBuilder server)
-    {
-        server.AddEventHandler<OpenIddictServerEvents.ValidateAuthorizationRequestContext>(builder => builder
-            .SetOrder(int.MinValue + 100)
-            .UseInlineHandler(context =>
-            {
-                if (context.Request.GetResources().Length == 0)
-                {
-                    context.Reject(error: Errors.InvalidTarget, description: "A resource indicator is required.");
-                }
-
-                return ValueTask.CompletedTask;
-            }))
-            .AddEventHandler<OpenIddictServerEvents.ValidateTokenRequestContext>(builder => builder
-            .SetOrder(int.MinValue + 100)
-            .UseInlineHandler(context =>
-            {
-                if (context.Request.IsAuthorizationCodeGrantType() && context.Request.GetResources().Length == 0)
-                {
-                    context.Reject(error: Errors.InvalidTarget, description: "A resource indicator is required.");
-                }
-
-                return ValueTask.CompletedTask;
-            }));
     }
 
     static void ConfigureServer(OpenIddictServerOptions server, IOptions<IdentityOptions> identity, IResourceCatalog resources)

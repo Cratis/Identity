@@ -48,7 +48,7 @@ PAT-only is a static-header/minimal profile, not an assertion of OAuth interoper
 
 OAuth-capable MCP servers MUST implement RFC 9728 protected-resource metadata, and OAuth MCP clients MUST use it for discovery. The 401 challenge MUST include `resource_metadata` with the protected-resource metadata URL. That document MUST use the registered resource indicator in `resource`, the configured issuer in `authorization_servers`, and the [catalog](arc-scope-catalog-v1.md) scope names in `scopes_supported`. Resource metadata MUST NOT be confused with authorization-server metadata. Clients MUST verify that the protected-resource metadata `resource` equals the requested resource URL and MUST refuse a mismatch (RFC 9728 §3.3).
 
-The client MUST send RFC 8707 `resource` with the intended resource indicator on both authorization and token requests. The authorization server MUST refuse unregistered resource indicators and MUST use the scope catalog's one-to-one mapping from the RFC 8707 resource indicator URL to its audience slug when binding the resulting access token. For example, `resource=https://direct.example.test/mcp` maps to `aud=direct-api`. Each audience slug MUST map back to exactly one resource indicator URL; `aud` MUST NOT be a URL. The resource verifier MUST validate issuer, the single catalog audience string (for example `direct-api`, not the resource URL), signature, expiry, `typ=at+jwt`, required access-token claims, applicable `tid` tenant binding, and sender binding where required, as defined in identity-contract-v1. It MUST NOT accept an ID token as an access token or forward an access token to a different resource.
+The client SHOULD send RFC 8707 `resource` with the intended resource indicator on both authorization and token requests. When it is absent at authorization, the authorization server MUST infer the resource only when the requested scopes identify exactly one catalog resource; empty or ambiguous inference MUST return `invalid_target`. When it is absent at code redemption, the grant MUST retain its original catalog audience. An explicitly empty indicator, an unknown indicator, or indicators for multiple distinct resources MUST return the appropriate OAuth error rather than falling back to inference. The authorization server MUST refuse unregistered resource indicators and MUST use the scope catalog's one-to-one mapping from the RFC 8707 resource indicator URL to its audience slug when binding the resulting access token. For example, `resource=https://direct.example.test/mcp` maps to `aud=direct-api`. Each audience slug MUST map back to exactly one resource indicator URL; `aud` MUST NOT be a URL. The resource verifier MUST validate issuer, the single catalog audience string (for example `direct-api`, not the resource URL), signature, expiry, `typ=at+jwt`, required access-token claims, applicable `tid` tenant binding, and sender binding where required, as defined in identity-contract-v1. It MUST NOT accept an ID token as an access token or forward an access token to a different resource.
 
 The authorization server MUST require PKCE S256 and MUST reject `plain` and missing PKCE. Clients MUST use S256 and MUST refuse authorization when PKCE metadata is missing. Redirect URIs MUST match exactly. The only native loopback exception follows RFC 8252 for IP literals and variable ports, not `localhost` or wildcard hosts. Resource servers MUST NOT compensate for invalid tokens by falling back to forwarded browser identity. Successful credential verification MUST produce the same [caller contract](arc-verified-caller-v1.md) before product authorization.
 
@@ -124,7 +124,11 @@ The corresponding synthetic authorization request contains `resource=https%3A%2F
 | Combined, bad-checksum PAT | 401 JSON; no OAuth fallback. |
 | Combined, `DPoP` Authorization scheme with a `direct_pat_v1_` value | 401 JSON in PAT branch; no OAuth verification or introspection. |
 | OAuth token for Studio presented to Direct | 401 JSON for wrong audience. |
-| Resource parameter missing or different at either OAuth request | No usable Direct access token; request refused under this contract. |
+| Resource parameter absent at authorization, scopes identify exactly one resource | Accepted with the inferred catalog audience, unchanged from an explicit grant. |
+| Resource parameter absent at authorization, scopes identify no resource or multiple resources | `invalid_target`; no grant. |
+| Resource parameter absent at code redemption | Retain the grant's original audience. |
+| Explicit resource is empty, unknown, or identifies multiple distinct resources | `invalid_target`; no grant or token for a different resource. |
+| Explicit resource differs from the original grant at code redemption | `invalid_target`; no usable token for the different resource. |
 | OAuth-only, valid `direct:read` token, allowed role, operation also requires `direct:write` | 403 JSON with the insufficient-scope challenge below; client requests union `direct:read direct:write`, subject to retry limit. |
 | Combined, OAuth branch, same missing write scope | Same 403 and challenge; no PAT fallback; bounded union-scope step-up. |
 | PKCE metadata absent | Client refuses authorization. |
@@ -163,6 +167,23 @@ Content-Type: application/json
 For example, a fixture retry limit of 2 allows no third step-up attempt. This value is a test setting, not a locked production default. A PAT request in the combined profile remains an application PAT flow and MUST NOT be sent through OAuth step-up automatically.
 
 Machine-readable group: [profiles and discovery](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/profiles-and-discovery.json), repository path `Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/profiles-and-discovery.json`. Successful fixture requests assert handler admission, not a particular MCP method's response payload. The group has `name`, `description`, `given`, `when.action`, and `then`; `given.vectors` contains individual cases. These data vectors do not demonstrate runtime conformance. Outcomes and reasons are vector vocabulary, not public error messages.
+
+## Vector artifact
+
+Vector artifact version: 2.0.0
+
+This artifact replaces `authorization-resource-required` and `token-resource-required`
+with `authorization-resource-inferred` and `token-resource-inherited`. Their cases now
+accept omitted resource parameters only with unambiguous authorization scope inference
+or the original code grant's audience. The single catalog audience is unchanged.
+Explicit empty, unknown, and conflicting resource indicators remain invalid.
+
+The manifest selects the new [2.0.0 baseline](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/baselines/v2.0.0.json).
+The 1.0.0 baseline and its versioned documentation below remain byte-identical; case
+IDs are not reassigned to different meanings. Artifact version 2.0.0 is independent
+of contract version 1 and does not publish a tag or claim connector conformance.
+Run the same immutability check and packaging commands below; the selected manifest
+produces `arc-mcp-authorization-v1-vectors-2.0.0.tar.gz` and its sidecar.
 
 ## Vector artifact
 

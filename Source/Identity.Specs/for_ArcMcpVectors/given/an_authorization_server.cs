@@ -102,24 +102,26 @@ public class an_authorization_server : for_TokenRateLimitMiddleware.given.an_ide
         RequestUri = new Uri(endpoint == OpenIddictServerEndpointType.Authorization ? "https://localhost/connect/authorize" : "https://localhost/connect/token")
     };
 
-    protected async Task<bool> Authorize(string? resource, string? method, bool pkce)
+    private protected async Task<NotGrantable?> Authorize(OpenIddictParameter resource, string? method, bool pkce, string scope = "direct:read")
     {
         var request = new OpenIddictRequest
         {
             ClientId = "cratis-cli",
             RedirectUri = "http://127.0.0.1/callback",
             ResponseType = ResponseTypes.Code,
-            Scope = "direct:read",
+            Scope = scope,
             CodeChallenge = pkce ? _challenge : null,
             CodeChallengeMethod = pkce ? method : null
         };
-        request[Parameters.Resource] = resource;
+        if (resource != default) request.AddParameter(Parameters.Resource, resource);
         var context = new ValidateAuthorizationRequestContext(Transaction(request, OpenIddictServerEndpointType.Authorization));
         await Provider.GetRequiredService<IOpenIddictServerDispatcher>().DispatchAsync(context);
-        return !context.IsRejected && Policy.Evaluate(new GrantRequest(request.GetScopes(), request.GetResources())) is Grantable;
+        return context.IsRejected
+            ? new NotGrantable(context.Error, context.ErrorDescription)
+            : Policy.Evaluate(new GrantRequest(request.GetScopes(), request.GetResources())) as NotGrantable;
     }
 
-    protected async Task<bool> Redeem(string authorizedResource, string? requestedResource, string? verifier = Verifier)
+    private protected async Task<NotGrantable?> Redeem(string authorizedResource, OpenIddictParameter requestedResource, string? verifier = Verifier)
     {
         var grant = (Grantable)Policy.Evaluate(new GrantRequest(["direct:read"], [authorizedResource]));
         var principal = new ClaimsPrincipal(new ClaimsIdentity("spec"));
@@ -128,7 +130,7 @@ public class an_authorization_server : for_TokenRateLimitMiddleware.given.an_ide
         principal.SetClaim(Claims.Private.CodeChallenge, _challenge);
         principal.SetClaim(Claims.Private.CodeChallengeMethod, CodeChallengeMethods.Sha256);
         var request = new OpenIddictRequest { GrantType = GrantTypes.AuthorizationCode, ClientId = "cratis-cli", Code = "synthetic-code", CodeVerifier = verifier };
-        request[Parameters.Resource] = requestedResource;
+        if (requestedResource != default) request.AddParameter(Parameters.Resource, requestedResource);
         var transaction = Transaction(request, OpenIddictServerEndpointType.Token);
 
         // Supply code authentication at its actual dispatch boundary: OpenIddict creates a fresh authentication context.
@@ -136,7 +138,17 @@ public class an_authorization_server : for_TokenRateLimitMiddleware.given.an_ide
         transaction.SetProperty(nameof(ProcessAuthenticationContext.AuthorizationCodePrincipal), principal);
         var context = new ValidateTokenRequestContext(transaction);
         await Provider.GetRequiredService<IOpenIddictServerDispatcher>().DispatchAsync(context);
-        return !context.IsRejected && Policy.EvaluateTokenRequest(request.GetResources(), principal.GetResources()) is null;
+        return context.IsRejected
+            ? new NotGrantable(context.Error, context.ErrorDescription)
+            : Policy.EvaluateTokenRequest(request.GetResources(), principal.GetResources());
+    }
+
+    private protected async Task<NotGrantable?> ValidateOtherGrant(string grantType)
+    {
+        var request = new OpenIddictRequest { GrantType = grantType, ClientId = "cratis-cli" };
+        var context = new ValidateTokenRequestContext(Transaction(request, OpenIddictServerEndpointType.Token));
+        await Provider.GetRequiredService<IOpenIddictServerDispatcher>().DispatchAsync(context);
+        return context.IsRejected ? new NotGrantable(context.Error, context.ErrorDescription) : null;
     }
 
     void Destroy()
