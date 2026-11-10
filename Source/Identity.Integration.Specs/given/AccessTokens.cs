@@ -18,7 +18,7 @@ public static class AccessTokens
     /// <param name="accessToken">The access token.</param>
     /// <param name="audience">The expected audience.</param>
     /// <returns>The <see cref="TokenValidationResult"/>.</returns>
-    public static async Task<TokenValidationResult> Validate(Browser browser, string accessToken, string audience = "direct-api")
+    public static async Task<TokenValidationResult> Validate(Browser browser, string accessToken, string audience = "direct-mcp")
     {
         var jwks = new JsonWebKeySet(await browser.Client.GetStringAsync("/.well-known/jwks"));
         return await new JsonWebTokenHandler().ValidateTokenAsync(accessToken, new TokenValidationParameters

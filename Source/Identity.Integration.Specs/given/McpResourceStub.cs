@@ -54,7 +54,7 @@ public sealed class McpResourceStub : IAsyncDisposable
     public void Trust(string issuer, IEnumerable<SecurityKey> keys) => _validation = new TokenValidationParameters
     {
         ValidIssuer = issuer,
-        ValidAudience = "direct-api",
+        ValidAudience = "direct-mcp",
         IssuerSigningKeys = keys,
         ValidTypes = ["at+jwt"]
     };
