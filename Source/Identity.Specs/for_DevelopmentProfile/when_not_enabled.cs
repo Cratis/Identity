@@ -13,7 +13,7 @@ public class when_not_enabled : given.a_development_profile
 
     [Fact] void should_not_fail() => _exception.ShouldBeNull();
     [Fact] void should_not_apply_the_profile() => _dataProtectionPath.ShouldBeNull();
-    [Fact] void should_create_no_keys() => Directory.EnumerateFileSystemEntries(Path.Combine(_root, "cratis", "identity-dev")).ShouldBeEmpty();
+    [Fact] void should_create_no_keys() => Directory.EnumerateFileSystemEntries(_root).ShouldBeEmpty();
     [Fact] void should_leave_the_resources() => _startupOptions.Resources.ShouldBeEmpty();
     [Fact] void should_register_nothing() => _services.Any(_ => _.ServiceType == typeof(DevelopmentOptions)).ShouldBeFalse();
 }

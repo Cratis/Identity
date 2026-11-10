@@ -12,5 +12,5 @@ public class when_the_issuer_is_not_loopback : given.a_development_profile
     void Because() => Apply();
 
     [Fact] void should_refuse_it() => _exception.ShouldBeOfExactType<DevelopmentProfileRefused>();
-    [Fact] void should_create_no_keys() => Directory.EnumerateFileSystemEntries(Path.Combine(_root, "cratis", "identity-dev")).ShouldBeEmpty();
+    [Fact] void should_create_no_keys() => Directory.EnumerateFileSystemEntries(_root).ShouldBeEmpty();
 }

@@ -33,7 +33,6 @@ public class a_development_profile : Specification
         _contentRoot = Path.Combine(parent, "content");
         Directory.CreateDirectory(_root);
         Directory.CreateDirectory(_contentRoot);
-        DevelopmentProfile.EnsureParent(_root);
         _custodies = [];
         _storeDirectory = Path.Combine(_root, "cratis", "identity-dev", StoreName);
         _environment = new HostingEnvironment { EnvironmentName = "Development", ContentRootPath = _contentRoot };
@@ -71,11 +70,11 @@ public class a_development_profile : Specification
 
     protected IdentityOptions Startup() => _startupOptions = new ConfigurationBuilder().AddInMemoryCollection(_settings).Build().GetSection("Identity").Get<IdentityOptions>() ?? new();
 
-    protected void Apply(TimeProvider? time = null, Action? prepareParent = null) => _exception = Catch.Exception(() =>
+    protected void Apply(TimeProvider? time = null) => _exception = Catch.Exception(() =>
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(_settings).Build();
         Startup();
-        var applied = DevelopmentProfile.Apply(configuration, _environment, _startupOptions, new DevelopmentKeyStore(_root, _contentRoot, time ?? TimeProvider.System), prepareParent);
+        var applied = DevelopmentProfile.Apply(configuration, _environment, _startupOptions, new DevelopmentKeyStore(_root, _contentRoot, time ?? TimeProvider.System));
         applied?.Register(_services);
         _dataProtectionPath = applied?.DataProtectionPath;
         _custody = applied?.Root;

@@ -14,9 +14,6 @@ public class when_an_ancestor_is_owned_by_another_user : given.a_development_pro
     {
         if (IsPosix)
         {
-            var intermediate = Path.Combine(_root, "cratis");
-            Directory.Exists(intermediate).ShouldBeTrue();
-
             // Model a stationary foreign UID without requiring privileged chown in the runner.
             var store = new DevelopmentKeyStore(
                 _root,

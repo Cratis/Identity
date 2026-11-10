@@ -40,7 +40,7 @@ internal static class DevelopmentProfile
     /// <exception cref="DevelopmentProfileOnlyInDevelopment">Thrown when the profile is enabled outside Development.</exception>
     /// <exception cref="DevelopmentProfileRefused">Thrown when the configuration or the key store is not safe.</exception>
     public static AppliedDevelopmentProfile? Apply(IConfiguration configuration, IHostEnvironment environment, IdentityOptions startupOptions) =>
-        Apply(configuration, environment, startupOptions, new DevelopmentKeyStore(DevelopmentKeyStore.DefaultRoot, environment.ContentRootPath, TimeProvider.System), () => EnsureParent(DevelopmentKeyStore.DefaultRoot));
+        Apply(configuration, environment, startupOptions, new DevelopmentKeyStore(DevelopmentKeyStore.DefaultRoot, environment.ContentRootPath, TimeProvider.System));
 
     /// <summary>
     /// Applies the profile when it is enabled, with an explicit key store.
@@ -49,11 +49,10 @@ internal static class DevelopmentProfile
     /// <param name="environment">The <see cref="IHostEnvironment"/>.</param>
     /// <param name="startupOptions">The startup <see cref="IdentityOptions"/>, changed in place when the profile is active.</param>
     /// <param name="store">The <see cref="DevelopmentKeyStore"/>.</param>
-    /// <param name="prepareParent">Optional host bootstrap of the per-user app-data parent, outside key custody.</param>
     /// <returns>The applied profile when it is active; otherwise <see langword="null"/>.</returns>
     /// <exception cref="DevelopmentProfileOnlyInDevelopment">Thrown when the profile is enabled outside Development.</exception>
     /// <exception cref="DevelopmentProfileRefused">Thrown when the configuration or the key store is not safe.</exception>
-    internal static AppliedDevelopmentProfile? Apply(IConfiguration configuration, IHostEnvironment environment, IdentityOptions startupOptions, DevelopmentKeyStore store, Action? prepareParent = null)
+    internal static AppliedDevelopmentProfile? Apply(IConfiguration configuration, IHostEnvironment environment, IdentityOptions startupOptions, DevelopmentKeyStore store)
     {
         var development = configuration.GetSection($"{IdentityOptions.SectionName}:{DevelopmentOptions.SectionName}").Get<DevelopmentOptions>();
         if (development?.Enabled != true)
@@ -68,52 +67,10 @@ internal static class DevelopmentProfile
 
         var issuer = Validate(configuration, startupOptions, development);
         store.ValidateLocation(Authority(issuer));
-        prepareParent?.Invoke();
         startupOptions.SecretStore.Path = store.Provision(Authority(issuer));
         startupOptions.Resources = [.. development.Resources];
 
         return new AppliedDevelopmentProfile(development, store.Custody);
-    }
-
-    /// <summary>
-    /// Creates only the two profile folders (cratis and cratis/identity-dev) directly under an existing per-user application data root, before the key store validates its ancestor chain.
-    /// </summary>
-    /// <param name="dataRoot">The per-user application data root, which must already exist; it and its ancestors are never created here.</param>
-    /// <exception cref="DevelopmentProfileRefused">The application data root is unavailable or does not exist.</exception>
-    internal static void EnsureParent(string dataRoot)
-    {
-        if (string.IsNullOrWhiteSpace(dataRoot))
-        {
-            throw new DevelopmentProfileRefused("the per-user application data folder is not available on this machine.");
-        }
-
-        // The bootstrap is confined to the two profile folders below an existing data root. Anything above them
-        // (the data root and its ancestors) is never auto-created: the user prepares it and the store validates it.
-        if (!Directory.Exists(dataRoot))
-        {
-            throw new DevelopmentProfileRefused($"the per-user application data folder '{dataRoot}' does not exist; create the parent directory yourself.");
-        }
-
-        var vendor = Path.Combine(dataRoot, "cratis");
-        CreateOwnerOnly(vendor);
-        CreateOwnerOnly(Path.Combine(vendor, "identity-dev"));
-    }
-
-    static void CreateOwnerOnly(string directory)
-    {
-        if (Directory.Exists(directory))
-        {
-            return;
-        }
-
-        if (OperatingSystem.IsWindows())
-        {
-            WindowsOwnerOnlyAccess.CreateDirectory(directory);
-        }
-        else
-        {
-            Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        }
     }
 
     static string Authority(Uri issuer) => new([.. issuer.Authority.ToLowerInvariant().Select(_ => char.IsAsciiLetterOrDigit(_) ? _ : '-')]);
