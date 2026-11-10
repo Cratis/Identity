@@ -14,6 +14,7 @@ namespace Cratis.Identity.Revocation;
 /// <param name="session">The host incarnation and active declaration.</param>
 /// <param name="options">Operator continuity evidence.</param>
 /// <param name="timeProvider">The abandonment clock.</param>
+/// <param name="logger">Recovery failure diagnostics.</param>
 internal sealed class ReconcileRecovery(
     IRecoveryLog log,
     IRecoveryStore operational,
@@ -24,7 +25,8 @@ internal sealed class ReconcileRecovery(
     RecoveryGate gate,
     RecoverySession session,
     FenceLogOptions options,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    ILogger<ReconcileRecovery>? logger = null)
 {
     /// <summary>Reconciles both progress bounds and every retained permanent denial.</summary>
     /// <param name="cancellationToken">Cancellation.</param>
@@ -35,10 +37,14 @@ internal sealed class ReconcileRecovery(
         {
             await Reconcile(cancellationToken);
         }
-        catch (Exception)
+        catch (Exception exception)
         {
             gate.Close();
             session.Reconciled = false;
+            if (logger is not null)
+            {
+                RecoveryFailureDiagnostics.Warn(logger, exception);
+            }
             throw;
         }
     }

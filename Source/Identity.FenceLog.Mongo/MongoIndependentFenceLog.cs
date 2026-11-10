@@ -145,39 +145,47 @@ public sealed class MongoIndependentFenceLog(Func<IMongoDatabase> database, Time
     /// <inheritdoc/>
     public async Task<long> Watermark(CancellationToken cancellationToken)
     {
-        var entries = await _entries.Find(new BsonDocument()).Sort(new BsonDocument("sequence", 1)).ToListAsync(cancellationToken);
-        var prefix = 0L;
-        var expected = 0L;
-        foreach (var entry in entries)
+        // Reserve commits the entry and counter together; read both from the same snapshot.
+        using var session = await database().Client.StartSessionAsync(cancellationToken: cancellationToken);
+        return await session.WithTransactionAsync(
+            async (transaction, token) =>
         {
-            expected++;
-            if (entry["sequence"].AsInt64 != expected)
+            var entries = await _entries.Find(transaction, new BsonDocument()).Sort(new BsonDocument("sequence", 1)).ToListAsync(token);
+            var prefix = 0L;
+            var expected = 0L;
+            foreach (var entry in entries)
+            {
+                expected++;
+                if (entry["sequence"].AsInt64 != expected)
+                {
+                    throw new RevocationPending();
+                }
+
+                if (State(entry) == ReservationState.Filled)
+                {
+                    _ = Record(entry);
+                }
+
+                if (State(entry) == ReservationState.Epoch)
+                {
+                    _ = EpochIntent(entry);
+                }
+
+                if (prefix == expected - 1 && State(entry) is ReservationState.Filled or ReservationState.Voided or ReservationState.Epoch)
+                {
+                    prefix++;
+                }
+            }
+
+            if (expected != (await Metadata(token, transaction))["allocated"].AsInt64)
             {
                 throw new RevocationPending();
             }
 
-            if (State(entry) == ReservationState.Filled)
-            {
-                _ = Record(entry);
-            }
-
-            if (State(entry) == ReservationState.Epoch)
-            {
-                _ = EpochIntent(entry);
-            }
-
-            if (prefix == expected - 1 && State(entry) is ReservationState.Filled or ReservationState.Voided or ReservationState.Epoch)
-            {
-                prefix++;
-            }
-        }
-
-        if (expected != await AllocatedThrough(cancellationToken))
-        {
-            throw new RevocationPending();
-        }
-
-        return prefix;
+            return prefix;
+        },
+            Options(),
+            cancellationToken);
     }
 
     /// <inheritdoc/>
@@ -343,11 +351,14 @@ public sealed class MongoIndependentFenceLog(Func<IMongoDatabase> database, Time
 
     /// <summary>Reads and validates existing independent custody metadata.</summary>
     /// <param name="cancellationToken">Cancellation.</param>
+    /// <param name="session">An optional consistent read transaction.</param>
     /// <returns>The existing metadata; never an initialized replacement.</returns>
     /// <exception cref="RevocationPending">Custody is missing or inconsistent.</exception>
-    internal async Task<BsonDocument> Metadata(CancellationToken cancellationToken)
+    internal async Task<BsonDocument> Metadata(CancellationToken cancellationToken, IClientSessionHandle? session = null)
     {
-        var metadata = await _metadata.Find(new BsonDocument("_id", "metadata")).FirstOrDefaultAsync(cancellationToken) ?? throw new RevocationPending();
+        var filter = new BsonDocument("_id", "metadata");
+        var query = session is null ? _metadata.Find(filter) : _metadata.Find(session, filter);
+        var metadata = await query.FirstOrDefaultAsync(cancellationToken) ?? throw new RevocationPending();
         var allocated = metadata["allocated"].AsInt64;
         RequireBound(metadata.GetValue("appliedThrough", 0L).AsInt64, allocated);
         RequireBound(metadata.GetValue("publishedThrough", 0L).AsInt64, allocated);
