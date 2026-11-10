@@ -14,9 +14,9 @@ namespace Cratis.Identity.Integration.given;
 internal sealed class ObservedProtocolCommands(ProtocolCommands inner, NativeSignInInterleaving interleaving) : IProtocolCommands
 {
     /// <inheritdoc/>
-    public async Task<CommandResult> Execute(object command, Action<IServiceProvider>? prepare = null)
+    public async Task<CommandResult> Execute(object command, Action<IServiceProvider>? prepare, CancellationToken cancellationToken)
     {
-        var result = await inner.Execute(command, prepare);
+        var result = await inner.Execute(command, prepare, cancellationToken);
         interleaving.Completed(command, result);
         if (result.HasExceptions)
         {
@@ -27,9 +27,9 @@ internal sealed class ObservedProtocolCommands(ProtocolCommands inner, NativeSig
     }
 
     /// <inheritdoc/>
-    public Task BeforeRetry()
+    public Task BeforeRetry(CancellationToken cancellationToken)
     {
         interleaving.Retrying();
-        return inner.BeforeRetry();
+        return inner.BeforeRetry(cancellationToken);
     }
 }

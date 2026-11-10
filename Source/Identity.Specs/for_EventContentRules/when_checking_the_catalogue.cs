@@ -13,7 +13,7 @@ public class when_checking_the_catalogue : Specification
     {
         var rows = TableRows("| AccountRegistered | fd1cb0b5-17c1-4f34-b625-c318dc928d97 |", "| RefreshTokenReuseDetected | bedbc6d5-2870-4cf7-aa5e-79e7a2bf3cb6 |");
         rows.Length.ShouldEqual(CatalogueChecker.Events.Count);
-        var parsed = rows.Select(cells => new CatalogueRow(cells[0], Identity(cells[1]), cells[2], cells[3], cells[4], cells[5], cells[7].Contains("`Cratis.Identity.Revocation.Events`", StringComparison.Ordinal) ? "Cratis.Identity" : "Cratis.Identity.Contracts")).ToArray();
+        var parsed = rows.Select(cells => new CatalogueRow(cells[0], DefaultIdOf(cells[0], cells[1]), cells[2], cells[3], cells[4], cells[5], cells[7].Contains("`Cratis.Identity.Revocation.Events`", StringComparison.Ordinal) ? "Cratis.Identity" : "Cratis.Identity.Contracts")).ToArray();
         parsed.ShouldEqual(CatalogueChecker.Events.ToArray());
     }
 
@@ -21,8 +21,16 @@ public class when_checking_the_catalogue : Specification
     public void should_mirror_every_source_fact()
     {
         var rows = TableRows("| AccountRegistered | AccountRegistrationRecorded |", "| RealmRecoveryEpochAdvanced | RealmRecoveryEpochAdvanceRecorded |");
-        rows.Select(cells => new SourceFactRow(cells[0], cells[1], Identity(cells[2]))).ToArray().ShouldEqual(CatalogueChecker.SourceFacts.ToArray());
+        rows.Select(cells => new SourceFactRow(cells[0], cells[1], DefaultIdOf(cells[1], cells[2]))).ToArray().ShouldEqual(CatalogueChecker.SourceFacts.ToArray());
     }
+
+    [Fact]
+    public void should_keep_the_legacy_table_complete_for_every_allocated_event() =>
+        CatalogueChecker.Rows.Where(row => row.TypeId is not null).Select(row => row.Name).Order(StringComparer.Ordinal).ShouldEqual(LegacyIds().Keys.Order(StringComparer.Ordinal).ToArray());
+
+    [Fact]
+    public void should_use_the_event_name_as_the_default_id_of_every_allocated_event() =>
+        CatalogueChecker.Rows.Where(row => row.TypeId is not null).All(row => row.TypeId == row.Name).ShouldBeTrue();
 
     [Fact]
     public void should_reject_an_unallocated_placeholder()
@@ -78,11 +86,26 @@ public class when_checking_the_catalogue : Specification
 
     static EventShape Shape() => ReflectionShapeBuilder.Build(typeof(AccountRegistered));
     static IReadOnlyList<Violation> Check(EventShape shape) => CatalogueChecker.Check(shape, CatalogueChecker.Rows.Single(row => row.Name == "AccountRegistered"));
-    static string? Identity(string value) => value == "assigned at implementation" ? null : value;
 
-    static string[][] TableRows(string first, string last)
+    /// <summary>The v1 table keeps its legacy ids; the amendment's legacy table is the record they must match, and the catalogue id is the name.</summary>
+    /// <param name="name">The event name.</param>
+    /// <param name="v1Id">The v1 table id cell.</param>
+    /// <returns>The default id, or null for a placeholder.</returns>
+    static string? DefaultIdOf(string name, string v1Id)
     {
-        var lines = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "identity-events-v1.md"));
+        if (v1Id == "assigned at implementation") return null;
+        LegacyIds()[name].ShouldEqual(v1Id);
+        return name;
+    }
+
+    static Dictionary<string, string> LegacyIds() => TableRows("identity-events-v1.2-amendment.md", "| AccountDisabled | ", "| RefreshTokenReuseDetected | ")
+        .ToDictionary(cells => cells[0], cells => cells[1], StringComparer.Ordinal);
+
+    static string[][] TableRows(string first, string last) => TableRows("identity-events-v1.md", first, last);
+
+    static string[][] TableRows(string file, string first, string last)
+    {
+        var lines = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, file));
         var start = Array.FindIndex(lines, line => line.StartsWith(first, StringComparison.Ordinal));
         var end = Array.FindIndex(lines, start, line => line.StartsWith(last, StringComparison.Ordinal));
         (start >= 0 && end >= start).ShouldBeTrue();

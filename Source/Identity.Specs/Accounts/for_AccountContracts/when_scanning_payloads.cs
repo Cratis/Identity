@@ -16,14 +16,16 @@ public class when_scanning_payloads : Specification
     Type[] _events;
     string[] _violations;
 
-    void Establish() => _events = typeof(AccountRegistered).Assembly.GetTypes().Where(type => type.IsDefined(typeof(EventTypeAttribute))).ToArray();
+    void Establish() => _events = typeof(AccountRegistered).Assembly.GetTypes()
+        .Where(type => type.Namespace == typeof(AccountRegistered).Namespace && type.IsDefined(typeof(EventTypeAttribute))).ToArray();
     void Because() => _violations = _events.SelectMany(given.AccountPayloadScanner.Violations).ToArray();
 
     [Fact] void should_have_no_raw_personal_or_secret_strings() => _violations.ShouldBeEmpty();
     [Fact] void should_reject_a_raw_sensitive_fixture() => given.AccountPayloadScanner.Violations(typeof(UnsafePayload)).Count().ShouldEqual(5);
     [Fact] void should_preserve_the_raw_string_guard_for_innocuous_names() => given.AccountPayloadScanner.Violations(typeof(RawText)).ShouldContain("RawText.Description");
     [Fact] void should_preserve_the_missing_compliance_details_guard() => given.AccountPayloadScanner.Violations(typeof(MissingDetails)).ShouldContain("MissingDetails.Description");
-    [Fact] void should_have_distinct_explicit_ids() => _events.Select(type => type.GetCustomAttribute<EventTypeAttribute>().Id.Value).Distinct().Count().ShouldEqual(_events.Length);
+    [Fact] void should_have_distinct_default_ids() => _events.Select(type => type.Name).Distinct().Count().ShouldEqual(_events.Length);
+    [Fact] void should_not_declare_explicit_ids() => _events.All(type => type.GetCustomAttribute<EventTypeAttribute>().Id.Value.Length == 0).ShouldBeTrue();
     [Fact] void should_use_generation_one() => _events.All(type => type.GetCustomAttribute<EventTypeAttribute>().Generation.Value == 1).ShouldBeTrue();
     [Fact] void should_mark_every_personal_concept() => new[] { typeof(Email), typeof(PersonalName), typeof(Login), typeof(UpstreamSubject), typeof(UpstreamLookupDigest) }.All(type => type.IsDefined(typeof(PIIAttribute)) && type.IsDefined(typeof(ComplianceDetailsAttribute))).ShouldBeTrue();
     [Fact] void should_keep_the_raw_subject_companion_internal() => typeof(UpstreamKeySubjectRecorded).IsDefined(typeof(PublicAttribute)).ShouldBeFalse();

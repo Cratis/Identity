@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- AssemblyName must match PackageId: type discovery resolves a referenced project by the library name in deps.json. -->
+    <AssemblyName>Cratis.Identity.FenceLog</AssemblyName>
+    <RootNamespace>Cratis.Identity.Revocation</RootNamespace>
+    <PackageId>Cratis.Identity.FenceLog</PackageId>
+    <Description>The contract of the independent fence log of Cratis Identity: records, ports and options, with no storage dependency.</Description>
+    <PackageTags>cratis;identity;oauth;revocation;fence-log</PackageTags>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Identity.Contracts/Identity.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cratis.Identity" />
+    <InternalsVisibleTo Include="Cratis.Identity.Specs" />
+    <InternalsVisibleTo Include="Cratis.Identity.Integration.Specs" />
+  </ItemGroup>
+
+</Project>

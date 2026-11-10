@@ -10,5 +10,5 @@ namespace Cratis.Identity.Contracts.Accounts.Events;
 /// <param name="AccountEpoch">The new epoch.</param>
 /// <param name="FenceId">The fence reference.</param>
 /// <param name="FenceSequence">The durable fence sequence.</param>
-[EventType("8e1e68fd-e4fb-456a-9af4-f95185be950b", generation: 1), Public]
+[EventType, Public]
 public record AccountDisabled(ReasonId ReasonId, AccountEpoch AccountEpoch, FenceId FenceId, FenceSequence FenceSequence);

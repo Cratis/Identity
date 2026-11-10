@@ -3,7 +3,7 @@
 
 namespace Cratis.Identity.Integration.for_Revocation;
 
-[Collection(IdentityCollection.Name)]
+[Collection(ChronicleOutageCollection.Name)]
 public class when_chronicle_is_unavailable(IdentityHost host) : IAsyncLifetime
 {
     HttpStatusCode _revocation;

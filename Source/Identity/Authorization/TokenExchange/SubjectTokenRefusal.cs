@@ -56,5 +56,10 @@ internal enum SubjectTokenRefusal
     /// <summary>
     /// The replay guard is full, so the token cannot be recorded; nothing is issued, and the caller may retry.
     /// </summary>
-    ReplayGuardFull = 9
+    ReplayGuardFull = 9,
+
+    /// <summary>
+    /// The replay store is unavailable; nothing is issued, and the caller may retry.
+    /// </summary>
+    ReplayGuardUnavailable = 10
 }

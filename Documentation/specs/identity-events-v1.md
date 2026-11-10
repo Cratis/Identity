@@ -10,6 +10,8 @@ Sign-off issue: https://github.com/Cratis/Identity/issues/14
 Supersedes: None
 ```
 
+> Partially superseded by the [v1.2 amendment](identity-events-v1.2-amendment.md): event type ids are Chronicle's default names (§2.3, the §8 id column, the §4.1 source-fact ids and §9 point 1). The ids below are the legacy record.
+
 ## 1. Scope and authority
 
 Keywords follow [the specification conventions](README.md). The [Terms of identity-contract-v1](identity-contract-v1.md#terms) apply **verbatim**; this document does not redefine them. Its identifier, linking, quarantine and tombstone rules remain prerequisites. This specification defines the initial event contract, not deployed behavior. einari owns the event rules; the choices in §9 were decided at the Identity #14 sign-off, as recorded there.
@@ -99,9 +101,9 @@ Source facts are named `<Public contract subject><noun>Recorded` and listed here
 | RefreshTokenFamilyRevoked | RefreshTokenFamilyRevocationRecorded | assigned at implementation |
 | SigningKeyActivated | SigningKeyActivationRecorded | assigned at implementation |
 | SigningKeyRetired | SigningKeyRetirementRecorded | assigned at implementation |
-| ResourceRegistered | ResourceRegistrationRecorded | assigned at implementation |
-| ResourceScopeRegistered | ResourceScopeRegistrationRecorded | assigned at implementation |
-| ResourceScopeRetired | ResourceScopeRetirementRecorded | assigned at implementation |
+| ResourceRegistered | ResourceRegistrationRecorded | 9737db97-da6b-484e-afe6-760188549102 |
+| ResourceScopeRegistered | ResourceScopeRegistrationRecorded | c1635433-c34b-4b8f-b551-f20fd541fbde |
+| ResourceScopeRetired | ResourceScopeRetirementRecorded | 3a28650d-61a9-4d9f-bb06-4fdebb205803 |
 | OrganisationRegistered | OrganisationRegistrationRecorded | assigned at implementation |
 | OrganisationPolicyChanged | OrganisationPolicyChangeRecorded | assigned at implementation |
 | OrganisationDomainVerified | OrganisationDomainVerificationRecorded | assigned at implementation |
@@ -111,6 +113,8 @@ Source facts are named `<Public contract subject><noun>Recorded` and listed here
 | ConnectionAssuranceMappingChanged | ConnectionAssuranceMappingChangeRecorded | assigned at implementation |
 | RealmPolicyEpochAdvanced | RealmPolicyEpochAdvanceRecorded | assigned at implementation |
 | RealmRecoveryEpochAdvanced | RealmRecoveryEpochAdvanceRecorded | assigned at implementation |
+
+Resource source facts retain the corresponding Public fields plus `FactId`. Under amendment v1.1 decision 4, `ResourceRegistrationRecorded` additionally carries the Internal-only `ResourceDisplayName DisplayName`, and `ResourceScopeRegistrationRecorded` additionally carries the Internal-only `ResourceScopeDescription Description`. Neither label is copied to the Public contracts. All three source facts use the resource's `ResourceId` event source.
 
 ## 5. PII and erasure
 
@@ -204,16 +208,16 @@ All names, fields, writer assignments and Public/Internal choices are decided in
 | RefreshTokenFamilyStarted | assigned at implementation | Authorization | Internal | Family | GrantId, AccountSubject, StartedAt, AbsoluteExpiresAt | Identity | Family lifecycle only; no initial/rotated token or handle. |
 | RefreshTokenFamilyRevoked | assigned at implementation | Authorization | Public | Family | GrantId, ReasonId, FenceId, FenceSequence | Identity | align with identity-revocation-v1; durable fence first. |
 | RefreshTokenReuseDetected | assigned at implementation | Authorization | Internal | Family | GrantId, DetectionId, DetectedAt | Identity | Meaningful compromise fact, no submitted token; align with identity-revocation-v1. |
-| ClientRegistered | assigned at implementation | Clients | Internal | Client | ClientId, RegistrationKind, RegisteredAt | Identity | Pre-registered/CIMD/DCR only as permitted by policy; ClientId is validated, non-redeemable. |
+| ClientRegistered | 0e4bb9ea-86c7-4000-bbfd-308a2dbf4989 | Clients | Internal | Client | ClientId, RegistrationKind, RegisteredAt, ClientType, ApplicationType, DisplayName, RequirePkce, ConsentType, Endpoints, GrantTypes, ResponseTypes, ResourceIndicators, Scopes | Identity | Pre-registered/CIMD/DCR only as permitted by policy; ClientId is validated, non-redeemable. |
 | ClientMetadataObserved | assigned at implementation | Clients | Internal | Client | MetadataHash, RedirectUris, ObservedAt | Identity | New accepted metadata revision only, not each fetch/cache hit; URLs MUST exclude secrets/PII. |
-| ClientRedirectUrisChanged | assigned at implementation | Clients | Internal | Client | RedirectUris | Identity | Accepted redirect set; no signed/redeemable URLs. |
-| ClientSecretRotated | assigned at implementation | Clients | Internal | Client | ClientSecretId, ClientSecretHash, ActivatedAt, PreviousValidUntil | Identity | High-entropy keyed hash, no secret; initial secret uses this fact too. |
-| ClientRetired | assigned at implementation | Clients | Internal | Client | ReasonId, RetiredAt | Identity | New fact replaces store deletion; associated grants need revocation. |
+| ClientRedirectUrisChanged | 1dfa8ff9-2538-44c2-8628-00dc084fcabe | Clients | Internal | Client | RedirectUris | Identity | Accepted redirect set; no signed/redeemable URLs. |
+| ClientSecretRotated | 4a913d36-056b-4e71-81ca-c90b207393b3 | Clients | Internal | Client | ClientSecretId, ClientSecretHash, ActivatedAt, PreviousValidUntil | Identity | High-entropy keyed hash, no secret; initial secret uses this fact too. PreviousValidUntil is non-nullable; equal to ActivatedAt means no overlap. |
+| ClientRetired | 8fa4f300-a66f-442d-ad15-37dc3bdd692f | Clients | Internal | Client | ReasonId, RetiredAt | Identity | New fact replaces store deletion; associated grants need revocation. |
 | SigningKeyActivated | assigned at implementation | Signing | Public | Signing key | KeyThumbprint, Algorithm, ActiveFrom | Identity | KMS/secret-store custody; no public/private key container or certificate. |
 | SigningKeyRetired | assigned at implementation | Signing | Public | Signing key | KeyThumbprint, RetiredAt | Identity | Overlap/verification policy is not key disclosure. |
-| ResourceRegistered | assigned at implementation | Resources | Public | Resource | ResourceIndicator, Audience, ScopePrefix | Identity | Validated contract v1 catalog values. |
-| ResourceScopeRegistered | assigned at implementation | Resources | Public | Resource | ScopeName | Identity | One accepted scope fact. |
-| ResourceScopeRetired | assigned at implementation | Resources | Public | Resource | ScopeName, RetiredAt | Identity | No implicit widening/remapping of old grants. |
+| ResourceRegistered | e57de89b-215d-43ab-a235-83a5e517934a | Resources | Public | Resource | ResourceIndicator, Audience, ScopePrefix | Identity | Validated contract v1 catalog values. Amendment v1.1 decision 4 overrides its §3 table: display names/descriptions remain Internal only. |
+| ResourceScopeRegistered | 24b65e88-8dbb-4e02-8f37-9d591eb29d20 | Resources | Public | Resource | ScopeName | Identity | One accepted scope fact. |
+| ResourceScopeRetired | 6a6869c9-423b-4746-8aa5-93b989b6895f | Resources | Public | Resource | ScopeName, RetiredAt | Identity | No implicit widening/remapping of old grants. |
 | OrganisationRegistered | assigned at implementation | Access | Public | Organisation | RegisteredAt | Access | per D5 (Identity #23). |
 | OrganisationPolicyChanged | assigned at implementation | Access | Public | Organisation | PolicyEpoch, SsoRequired, MinimumAcr, PatAllowed, EffectiveAt | Access | per D5 (Identity #23); real change only; D20 epoch-before-policy applies. |
 | OrganisationDomainVerified | assigned at implementation | Access | Public | Organisation | Domain, VerificationId, VerifiedAt | Access | per D5 (Identity #23); no DNS challenge code/value. |

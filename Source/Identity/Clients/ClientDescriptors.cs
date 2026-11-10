@@ -26,7 +26,7 @@ internal class ClientDescriptors(IResourceCatalog resources, IOptions<IdentityOp
     /// Gets the descriptors of all clients.
     /// </summary>
     /// <returns>The <see cref="OpenIddictApplicationDescriptor"/> instances.</returns>
-    public IEnumerable<OpenIddictApplicationDescriptor> All() =>
+    public virtual IEnumerable<OpenIddictApplicationDescriptor> All() =>
         [CratisCliDescriptor(), .. options.Value.IntrospectionClients.Select(IntrospectionClient), .. options.Value.TokenExchange.Clients.Select(ExchangeClient)];
 
     /// <summary>
@@ -65,6 +65,12 @@ internal class ClientDescriptors(IResourceCatalog resources, IOptions<IdentityOp
                 Requirements.Features.ProofKeyForCodeExchange
             }
         };
+
+        if (options.Value.DeviceGrant.Enabled)
+        {
+            descriptor.Permissions.Add(Permissions.Endpoints.DeviceAuthorization);
+            descriptor.Permissions.Add(Permissions.GrantTypes.DeviceCode);
+        }
 
         foreach (var scope in resources.All.SelectMany(_ => _.Scopes))
         {

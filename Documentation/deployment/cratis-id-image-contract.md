@@ -66,6 +66,8 @@ Configuration arrays are addressed by index, and environment variables merge int
 
 `Identity__IntrospectionClients__<N>__ClientId` and `__ClientSecret` are both required for each entry, and client ids must be unique; the shipped list is empty. Use contiguous indexes starting at `0`. Validation enforces only that the secret is present; use a high-entropy value of at least 32 characters, as for callbacks.
 
+Authenticated, authorized introspection of active OAuth grants now includes `credential_kind` (`oauth-grant`), the non-secret grant event-source UUID `credential_id`, token-derived `tid`/`aud`/`scope`, and the current recovery `cache_epoch`. Code-redemption/refresh JWTs carry the same UUID as advisory access-token-only `cid`. Missing authorization means no grant credential pair or `cid`; invalid/expired/revoked tokens return only `active: false`, and failed authentication or unproven recovery exposes no ids. Consumers invalidate cached results on epoch changes; these fields do not supply product user/tenant keys, roles, or permissions. Product-owned resolution remains required. **Second step, pass-through only:** well-formed token `cnf` is preserved by OpenIddict, not invented or proof-validated here; bearer tokens have none until DPoP issuance lands. Malformed `cnf` errors before credential ids are attached. See [Resource token validation](../security/resource-token-validation.md).
+
 ### Secrets as configuration
 
 No key-per-file configuration provider is registered. Secrets reach settings through environment variables (for example Kubernetes `secretKeyRef`) or the platform's configuration; the read-only file mount holds only the key store (`Identity:SecretStore:Path`: realm keys and the Data Protection ring). Secret-bearing settings are `Identity__MongoDB__ConnectionString`, `Identity__FenceLog__ConnectionString`, `Cratis__Chronicle__ConnectionString`, `Identity__Accounts__LookupKey`, `Identity__GitHub__ClientSecret`, `Identity__Resources__<N>__TenantsCallback__Secret` and `Identity__IntrospectionClients__<N>__ClientSecret`. Environment values are visible to the process environment and crash dumps; never log them.
@@ -85,6 +87,29 @@ These are not changed by this document and belong to L0:
 - **Key-based collections (M7):** not added. Index addressing is the configuration model; a keyed form would change the public options shape and validation. Recommended cheap mitigation: a specification pinning the shipped resource order.
 - **Key-per-file source (M11):** not added. It adds a package and lets a mount override any setting. Recommended: keep `secretKeyRef`; if wanted, a separate change that loads it only from a directory named by one variable, with precedence and trailing-newline specifications.
 - **Passphrase lookup key (M14):** not added. Recommended: keep base64 only and have the Infrastructure automation encode; a passphrase form would freeze key-derivation parameters into every stored value. A cheap follow-up is naming the setting and shape in diagnostics.
+
+## Token endpoint rate limits
+
+`Identity:TokenRateLimit` bounds `/connect/token` admission before realm processing and client authentication. Matching follows OpenIddict 7.8.0's URI canonicalization, including `PathBase`, case-insensitive paths, dot segments and a trailing slash; ambiguous URIs are limited rather than bypassed. Environment variables use `Identity__TokenRateLimit__<setting>`.
+
+| Setting | Default | Accepted value |
+| --- | --- | --- |
+| `Enabled` | `true` | Set `false` to bypass all admission counters. |
+| `Window` | `00:01:00` | Positive duration, at most one hour. |
+| `PerSourceRequests` | `300` | Positive integer; IPv4 address or IPv6 /64 budget. |
+| `PerClientRequests` | `120` | Positive integer; claimed client id budget within a source, across grants. |
+| `PerClientExchangeRequests` | `30` | Positive integer; additional claimed-client token-exchange budget within a source. |
+| `MaxTrackedKeys` | `10000` | Integer from 100 through 1,000,000; separate capacity for each key kind. |
+
+Validation is skipped when disabled. Counters are local to each process, reset on restart and are not shared by replicas. The source budget is authoritative: it is charged first, and a source refusal neither allocates nor charges client/exchange counters. Client refusals do not charge exchange counters. All admission decisions and charges occur under one lock. A claimed client id is unauthenticated, so client/exchange budgets are scoped to the normalized source, never shared across sources. Forging a victim's id cannot consume its budget at another source; rotating ids never bypasses the source budget. Clients sharing egress still share that source budget by design.
+
+Source, client and exchange tables each retain at most `MaxTrackedKeys` entries; client/exchange keys include the source. At capacity, live keys are retained, never evicted. New client/exchange keys share fallback counters owned by their retained source, so filling one table cannot exhaust another kind's capacity or another source's fallback. A full source table uses one shared source overflow budget for untracked sources (with shared client/exchange fallbacks): distributed source exhaustion can therefore reduce availability for new sources, but cannot evict established sources or turn new sources into an unlimited bypass. Each retained source owns two fixed fallback counters, plus three process-wide overflow counters: at most five times `MaxTrackedKeys` plus three counters in total. Expired entries are reclaimed, retaining source fallback state until its latest window expires. Missing, malformed or oversized client ids still consume the source budget. GET requests consume only the source budget. IPv4-mapped IPv6 is normalized to IPv4; native IPv6 is grouped by /64.
+
+Only `Connection.RemoteIpAddress` is used. The limiter never reads forwarding headers: configure forwarded-headers middleware **before** `MapCratisIdentity` with the explicit trusted proxies/networks above. Untrusted headers do not select a source partition.
+
+A refusal returns HTTP 429 and OAuth `temporarily_unavailable` with the generic description "Too many requests. Try again later." Responses are not cacheable and `Retry-After` is the remaining window of the first refusing budget, rounded up to integer seconds (minimum one). Refused traffic does not extend a window; retrying may encounter another exhausted budget. Clients should wait at least that long. Warning logs are throttled to one per reason per window; the next warning reports the previous window's suppressed refusals. Client references are truncated hashes of tracked ids, otherwise `unknown`; tokens, secrets and raw claimed ids are not logged.
+
+Tune budgets for shared egress and client traffic; keep edge-level rate limits. This in-memory admission control is not a distributed DoS defense and adds no database, Chronicle or Redis storage.
 
 ## Secret mount and state ownership
 
@@ -135,6 +160,8 @@ Client and scope materialization reads configuration at each startup. The config
 | --- | --- | --- |
 | `/healthz` | Process liveness, independent of recovery readiness. | Liveness; do not restart a live process merely because reconciliation is incomplete. |
 | `/readyz` | Only the registered `identity-restriction-recovery` health check: HTTP 503 while the recovery barrier is closed or no matching check is registered, HTTP 200 after recovery is proven. | Readiness; do not route issuance traffic while unhealthy. |
+
+The Cratis ID host explicitly maps `/healthz` and `/readyz`; `MapCratisIdentity()` owns neither probe nor a root banner. The host calls `UseCratisIdentity()` for routing, realm scope, security headers and authentication, and opts in to the antiforgery-protected `/logout` form with `MapSignOut = true`. A configured `Identity:Endpoints:RoutePrefix` moves protocol and sign-out routes, not these probes, discovery/JWKS or `/signin-github`.
 
 Readiness is a protocol barrier, not a claim that production approval or D13 evidence exists. A healthy process can still deny individual operations. Offline access tokens remain bounded by their lifetime and verifier policy; closing readiness does not instantly revoke already issued JWTs.
 

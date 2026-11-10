@@ -41,8 +41,8 @@ public class conflicting_guarded_decisions : an_account_adapter
             (account ? _accountReached : _lookupReached)[_fence].SetResult();
             return (account ? _accountPositions : _lookupPositions)[_fence].Task;
         });
-        _commands.Execute(Arg.Any<object>(), Arg.Any<Action<IServiceProvider>>()).Returns(call => ConflictAfterDecision(call.ArgAt<SignInWithUpstreamKey>(0)));
-        _commands.BeforeRetry().Returns(async _ =>
+        _commands.Execute(Arg.Any<object>(), Arg.Any<Action<IServiceProvider>>(), Arg.Any<CancellationToken>()).Returns(call => ConflictAfterDecision(call.ArgAt<SignInWithUpstreamKey>(0)));
+        _commands.BeforeRetry(Arg.Any<CancellationToken>()).Returns(async _ =>
         {
             _fence = 1;
             await _catchUp.BeforeRetry(CancellationToken.None);

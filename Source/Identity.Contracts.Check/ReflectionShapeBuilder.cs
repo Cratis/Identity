@@ -23,16 +23,27 @@ internal static class ReflectionShapeBuilder
     {
         var current = type.GetCustomAttribute<EventTypeAttribute>();
         var previous = type.GetCustomAttribute<EventTypeGenerationForAttribute>();
-        var id = current?.Id.Value ?? previous?.EventTypeClrType.GetCustomAttribute<EventTypeAttribute>()?.Id.Value ?? string.Empty;
         var generation = current?.Generation.Value ?? previous?.Generation.Value ?? 0;
         return new(
             type.Name,
-            id,
+            ResolveTypeId(type),
             generation,
             current is not null ? "EventType" : previous is not null ? "EventTypeGenerationFor" : "Unmarked",
             type.IsDefined(typeof(PublicAttribute)) || type.GetEventStoreName() is not null ? "Public" : "Internal",
             complianceSubject,
-            Members(type, new HashSet<Type>()).ToArray());
+            Members(type, new HashSet<Type>()).ToArray(),
+            ExplicitTypeId(type).Length > 0);
+    }
+
+    /// <summary>Resolves the event type id the way Chronicle does: the attribute id when given, otherwise the short CLR type name.</summary>
+    /// <param name="type">The event artifact; a prior generation resolves the id of the type it refers to.</param>
+    /// <returns>The resolved event type id, or empty for a type that is not an event artifact.</returns>
+    internal static string ResolveTypeId(Type type)
+    {
+        var explicitId = ExplicitTypeId(type);
+        if (explicitId.Length > 0) return explicitId;
+        if (type.IsDefined(typeof(EventTypeAttribute), false)) return type.Name;
+        return type.GetCustomAttribute<EventTypeGenerationForAttribute>()?.EventTypeClrType.Name ?? string.Empty;
     }
 
     /// <summary>Discovers current, prior, and explicitly registered event artifacts.</summary>
@@ -54,6 +65,9 @@ internal static class ReflectionShapeBuilder
     /// <returns>The registry type identity.</returns>
     internal static string PrimitiveName(Type type) => type == typeof(string) ? "string" : type == typeof(Guid) ? "Guid" :
         type == typeof(int) || type == typeof(long) || type == typeof(uint) || type == typeof(ulong) ? "integer" : type.FullName ?? type.Name;
+
+    static string ExplicitTypeId(Type type) => type.GetCustomAttribute<EventTypeAttribute>()?.Id.Value ??
+        type.GetCustomAttribute<EventTypeGenerationForAttribute>()?.EventTypeClrType.GetCustomAttribute<EventTypeAttribute>()?.Id.Value ?? string.Empty;
 
     static MemberShape[] Members(Type type, HashSet<Type> ancestors)
     {

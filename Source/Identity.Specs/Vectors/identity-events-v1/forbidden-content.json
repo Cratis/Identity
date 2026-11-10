@@ -1,6 +1,6 @@
 {
   "name": "forbidden-content-rule",
-  "description": "Data-only event-shape vectors for identity-events-v1 section 6; not implemented reflection tests.",
+  "description": "Event-shape vectors executed by the identity-events-v1 content checker, including the D2 no-secret contract.",
   "context": {
     "assembly": "Cratis.Identity.Contracts",
     "namespace": "Cratis.Identity.Contracts.Authorization",
@@ -11,6 +11,54 @@
     "complianceSubject": "account-stream-subject"
   },
   "cases": [
+    {
+      "name": "resource-source-fact-cannot-carry-a-raw-display-name",
+      "given": { "event": { "name": "ResourceRegistrationRecorded", "properties": [{ "name": "DisplayName", "type": "System.String" }] } },
+      "when": { "action": "check_event_contract" },
+      "then": { "outcome": "fail", "violations": [{ "path": "DisplayName", "reason": "missing_pii" }] }
+    },
+    {
+      "name": "resource-scope-source-fact-cannot-carry-a-secret",
+      "given": { "event": { "name": "ResourceScopeRegistrationRecorded", "properties": [{ "name": "ClientSecret", "type": "System.String" }] } },
+      "when": { "action": "check_event_contract" },
+      "then": { "outcome": "fail", "violations": [{ "path": "ClientSecret", "reason": "forbidden_member_name" }] }
+    },
+    {
+      "name": "resource-retirement-source-fact-cannot-carry-open-content",
+      "given": { "event": { "name": "ResourceScopeRetirementRecorded", "properties": [{ "name": "Details", "type": "System.Object" }] } },
+      "when": { "action": "check_event_contract" },
+      "then": { "outcome": "fail", "violations": [{ "path": "Details", "reason": "open_payload_shape" }] }
+    },
+    {
+      "name": "client-secret-hash-cannot-be-a-raw-string",
+      "given": { "event": { "name": "ClientSecretRotated", "properties": [{ "name": "ClientSecretHash", "type": "System.String" }] } },
+      "when": { "action": "check_event_contract" },
+      "then": { "outcome": "fail", "violations": [{ "path": "ClientSecretHash", "reason": "unapproved_safe_concept" }] }
+    },
+    {
+      "name": "client-secret-hash-cannot-be-reversible-bytes",
+      "given": { "event": { "name": "ClientSecretRotated", "properties": [{ "name": "ClientSecretHash", "type": "System.Byte[]" }] } },
+      "when": { "action": "check_event_contract" },
+      "then": { "outcome": "fail", "violations": [{ "path": "ClientSecretHash", "reason": "forbidden_payload_type" }] }
+    },
+    {
+      "name": "client-secret-keyed-digest-is-the-only-approved-hash-shape",
+      "given": {
+        "event": { "name": "ClientSecretRotated", "properties": [{ "name": "ClientSecretHash", "type": "SecretDigest" }] },
+        "registry": { "SecretDigest": { "underlyingType": "System.String", "kind": "secret-hash", "algorithm": "HMAC-SHA-256", "keyed": true, "redeemable": false, "purpose": "cratis.identity.client-secret.v1", "hashKeyRevision": "v<revision>.<base64url>", "producerSpec": "D3 keyed producer required before append", "justification": "Reviewed keyed digest only, not reversible credential material." } }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": { "outcome": "pass", "violations": [] }
+    },
+    {
+      "name": "client-secret-reversible-envelope-is-not-an-approved-digest",
+      "given": {
+        "event": { "name": "ClientSecretRotated", "properties": [{ "name": "ClientSecretHash", "type": "SecretDigest" }] },
+        "registry": { "SecretDigest": { "underlyingType": "System.String", "kind": "secret-hash", "algorithm": "AES-GCM", "keyed": true, "purpose": "client-secret", "hashKeyRevision": "1", "producerSpec": "reversible-negative-case", "justification": "Negative fixture: encryption is reversible." } }
+      },
+      "when": { "action": "check_event_contract" },
+      "then": { "outcome": "fail", "violations": [{ "path": "ClientSecretHash", "reason": "unapproved_safe_concept" }] }
+    },
     {
       "name": "token-field-is-forbidden",
       "given": {

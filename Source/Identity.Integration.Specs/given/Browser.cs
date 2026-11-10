@@ -111,10 +111,16 @@ public partial class Browser(HttpClient client)
     /// <param name="challenge">The PKCE challenge.</param>
     /// <param name="resources">The resource indicators.</param>
     /// <returns>The authorization code.</returns>
+    /// <exception cref="InvalidOperationException">The consent step did not redirect.</exception>
     public async Task<string> LoginForCode(string challenge, IEnumerable<string>? resources = null)
     {
         using var page = await Authorize(CliAuthorization(challenge, resources));
         using var redirect = await Consent(await page.Content.ReadAsStringAsync());
+        if (redirect.Headers.Location is null)
+        {
+            throw new InvalidOperationException($"The consent step did not redirect: {(int)redirect.StatusCode} {await redirect.Content.ReadAsStringAsync()}");
+        }
+
         return QueryHelpers.ParseQuery(redirect.Headers.Location.Query)["code"].ToString();
     }
 

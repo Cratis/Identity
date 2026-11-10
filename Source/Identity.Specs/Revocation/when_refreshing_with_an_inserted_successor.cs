@@ -39,6 +39,7 @@ public class when_refreshing_with_an_inserted_successor : given.a_token_store
                 return Task.CompletedTask;
             });
         _tokens = Substitute.For<IOpenIddictTokenManager>();
+        _tokens.GetPropertiesAsync(Arg.Any<object>(), Arg.Any<CancellationToken>()).Returns(_ => []);
         _tokens.FindByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(call => new ValueTask<object?>(_entries.SingleOrDefault(entry => entry.Id.ToString() == call.Arg<string>())));
         _tokens.GetExpirationDateAsync(Arg.Any<object>(), Arg.Any<CancellationToken>())

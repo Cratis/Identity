@@ -1,7 +1,9 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Configuration;
 using Cratis.Identity.ConsentFlow.Operational;
+using Cratis.Identity.Operational;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -15,7 +17,8 @@ namespace Cratis.Identity.Storage;
 /// </summary>
 /// <param name="database">The <see cref="IMongoDatabase"/>.</param>
 /// <param name="openIddict">The <see cref="OpenIddictMongoDbOptions"/>.</param>
-internal class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddictMongoDbOptions> openIddict)
+/// <param name="identity">The opt-in device configuration.</param>
+internal class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddictMongoDbOptions> openIddict, IOptions<IdentityOptions> identity)
 {
     /// <summary>
     /// Ensures all indexes exist.
@@ -27,6 +30,7 @@ internal class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddic
         var options = openIddict.CurrentValue;
         await MongoConsentRequestStore.EnsureIndexes(database, cancellationToken);
         await EnsureGrantFences(cancellationToken);
+        await EnsureSubjectTokenReplays(cancellationToken);
 
         await database.GetCollection<OpenIddictMongoDbAuthorization>(options.AuthorizationsCollectionName).Indexes.CreateOneAsync(
             new CreateIndexModel<OpenIddictMongoDbAuthorization>(
@@ -62,7 +66,25 @@ internal class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddic
                     new CreateIndexOptions { ExpireAfter = TimeSpan.Zero })
             ],
             cancellationToken);
+        if (identity.Value.DPoP.Enabled)
+        {
+            await database.GetCollection<BsonDocument>(DPoP.Operational.MongoDPoPReplayStore.CollectionName).Indexes.CreateOneAsync(
+                new CreateIndexModel<BsonDocument>(Builders<BsonDocument>.IndexKeys.Ascending("ExpiresAt"), new CreateIndexOptions { Name = "dpop_proof_expiry", ExpireAfter = TimeSpan.Zero }), cancellationToken: cancellationToken);
+        }
+
+        if (identity.Value.DeviceGrant.Enabled)
+        {
+            await database.GetCollection<Device.DeviceGrantState>("device_grant_state").Indexes.CreateOneAsync(
+                new CreateIndexModel<Device.DeviceGrantState>(Builders<Device.DeviceGrantState>.IndexKeys.Ascending(_ => _.ExpiresAt), new CreateIndexOptions { ExpireAfter = TimeSpan.Zero }), cancellationToken: cancellationToken);
+        }
     }
+
+    async Task EnsureSubjectTokenReplays(CancellationToken cancellationToken) =>
+        await database.GetCollection<BsonDocument>(MongoSubjectTokenReplayGuard.CollectionName).Indexes.CreateOneAsync(
+            new CreateIndexModel<BsonDocument>(
+                Builders<BsonDocument>.IndexKeys.Ascending("Until"),
+                new CreateIndexOptions { Name = "subject_token_replay_expiry", ExpireAfter = TimeSpan.Zero }),
+            cancellationToken: cancellationToken);
 
     async Task EnsureGrantFences(CancellationToken cancellationToken)
     {

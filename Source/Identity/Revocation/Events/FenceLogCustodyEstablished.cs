@@ -7,5 +7,5 @@ namespace Cratis.Identity.Revocation.Events;
 
 /// <summary>Fixed-key custody binding; a different log instance conflicts instead of silently replacing history.</summary>
 /// <param name="InstanceId">Externally recorded independent log identity.</param>
-[EventType("b90e65de-fd11-43c9-b032-e6f73d5ca089", generation: 1)]
+[EventType]
 internal sealed record FenceLogCustodyEstablished(string InstanceId);

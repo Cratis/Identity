@@ -104,6 +104,9 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         registration.Artifacts.ShouldNotBeEmpty();
         await store.Reactors.WaitTillSubscribed<AccountPublications>(TimeSpan.FromSeconds(30));
 
+        // The gate starts closed and issuance is refused until restriction recovery finishes; no spec may start before that.
+        await WaitForRecovery(Services);
+
         // AccountLinkStateReducer is [Passive] (folded on demand), so it never subscribes; waiting for it would always time out.
     }
 
@@ -206,6 +209,14 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     /// <inheritdoc/>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseSetting("Identity:Device:Enabled", "true");
+
+        // This shared fixture runs many independent device scenarios against the same account and peer.
+        builder.UseSetting("Identity:Device:AttemptsPerAccount", "100");
+        builder.UseSetting("Identity:Device:AttemptsPerCode", "10");
+        builder.UseSetting("Identity:Device:AttemptsPerIp", "300");
+        builder.UseSetting("Identity:Device:IssuancesPerIp", "100");
+
         // AddCratisIdentity reads the secret store from builder.Configuration while the services are registered, which is before
         // ConfigureAppConfiguration applies. Host settings are visible then, so every setting is also given as one.
         foreach (var (key, value) in Settings().Where(_ => _.Value is not null))
@@ -223,6 +234,8 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
             {
                 services.Replace(ServiceDescriptor.Singleton<IEventStoreNamespaceResolver>(provider =>
                     new IdentityRealmNamespaceResolver(new SuppliedTenantNamespace(provider.GetRequiredService<ITenantIdAccessor>()))));
+                services.AddSingleton<IStartupFilter, DeviceTestClientIp>();
+                services.Replace(ServiceDescriptor.Singleton<Clients.ClientDescriptors, SpecClientDescriptors>());
                 services.AddSingleton(NativeCommands);
                 services.AddSingleton<NativeSignInInterleaving>();
                 services.AddSingleton<ProtocolCommands>();
@@ -261,6 +274,9 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         ["Identity:FenceLog:Database"] = _fenceDatabase,
         ["Identity:FenceLog:InstanceId"] = _fenceInstance,
         ["Identity:FenceLog:MinimumSequence"] = "0",
+
+        // Ordinary specs redeem many codes from one source; the limiter specs enable it explicitly.
+        ["Identity:TokenRateLimit:Enabled"] = "false",
         ["Identity:GitHub:ClientId"] = "unused-in-specs",
         ["Identity:GitHub:ClientSecret"] = "unused-in-specs"
     };

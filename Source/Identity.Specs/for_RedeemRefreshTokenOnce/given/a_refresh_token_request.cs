@@ -42,6 +42,7 @@ public class a_refresh_token_request : Specification
         _authorization = new object();
 
         _tokens.FindByIdAsync(TokenId, Arg.Any<CancellationToken>()).Returns(_token);
+        _tokens.GetPropertiesAsync(_token, Arg.Any<CancellationToken>()).Returns([]);
         _tokens.GetExpirationDateAsync(_token, Arg.Any<CancellationToken>()).Returns(KeyMaterial.Now.AddDays(1));
         _authorizations.FindByIdAsync(AuthorizationId, Arg.Any<CancellationToken>()).Returns(_authorization);
         _authorizations.HasStatusAsync(_authorization, Statuses.Revoked, Arg.Any<CancellationToken>()).Returns(false);

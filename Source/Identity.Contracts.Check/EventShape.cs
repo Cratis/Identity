@@ -11,6 +11,7 @@ namespace Cratis.Identity.Contracts.Check;
 /// <param name="Visibility">The effective publication status.</param>
 /// <param name="ComplianceSubject">Whether an account compliance subject is resolved.</param>
 /// <param name="Members">The declared members.</param>
+/// <param name="ExplicitId">Whether the event declares an explicit attribute id instead of the default name.</param>
 internal sealed record EventShape(
     string Name,
     string TypeId,
@@ -18,4 +19,5 @@ internal sealed record EventShape(
     string Marker,
     string Visibility,
     bool ComplianceSubject,
-    IReadOnlyList<MemberShape> Members);
+    IReadOnlyList<MemberShape> Members,
+    bool ExplicitId = false);

@@ -50,6 +50,13 @@ public class IdentityOptions
     /// </summary>
     public TokenOptions Tokens { get; set; } = new();
 
+    /// <summary>Gets or sets device authorization limits.</summary>
+    [ConfigurationKeyName("Device")]
+    public DeviceGrantOptions DeviceGrant { get; set; } = new();
+
+    /// <summary>Gets or sets token-endpoint DPoP sender binding.</summary>
+    public DPoPOptions DPoP { get; set; } = new();
+
     /// <summary>
     /// Gets or sets the lifetime of the Identity site session cookie.
     /// </summary>
@@ -69,4 +76,9 @@ public class IdentityOptions
     /// Gets or sets the RFC 8693 token-exchange configuration. Empty by default, which leaves the grant disabled.
     /// </summary>
     public TokenExchangeOptions TokenExchange { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the per-process token endpoint admission limits.
+    /// </summary>
+    public TokenRateLimitOptions TokenRateLimit { get; set; } = new();
 }

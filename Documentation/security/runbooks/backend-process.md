@@ -32,6 +32,8 @@ Notify the product owner, accountable issuer/security owner, AuthProxy/Arc maint
 
 Prove old app credentials cannot access Chronicle/workload endpoints, old sessions/grants/PATs deny, and new credentials have only intended app entitlements. Test sibling store/audience denial, clean verifier configuration, no unsigned fallback, fresh login and live product membership/policy under the [verified-caller contract](../../specs/arc-verified-caller-v1.md). Verify queued work, restored fences/epochs and data integrity before enabling traffic/jobs.
 
+See also: [Outage behavior](../outage-behavior.md) for what keeps working while a store is down.
+
 ## Rehearsal
 
 **rehearsal issue needed** for app isolation, credential replacement, data review and clean redeployment. [Cratis/Infrastructure #294](https://github.com/Cratis/Infrastructure/issues/294) applies only to a resident v1 edge key's rotation sub-drill, not full backend recovery.

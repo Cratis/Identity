@@ -42,6 +42,37 @@ The PRM proof starts with an unauthenticated request to a minimal Kestrel resour
 
 For runnable assertions, `Conformance.Expect` runs unlisted assertions normally. A listed assertion that throws produces a dynamic skip with its reason/issue. A listed assertion that succeeds fails the run, requiring removal from the gap list: stale expected failures cannot remain green. Never add blanket `[Fact(Skip=...)]`. Catalogue meta-specs discover declared instance facts (public and private, including Theory and other derived Fact attributes), require a non-empty tagged fact set and a mapping for every catalogue entry, check known and unique IDs, tagged classes with facts, reasons/issues, absence of static skips, and prohibit MUST-level expected failures. Base classes are contexts; proof facts must be declared on their tagged spec. Focused regression meta-specs reject missing mappings, unknown mapped requirements and empty discovery. Security MUST failures (PKCE, redirect, audience, replay revocation and introspection authentication) fail normally; they are not gap-list candidates.
 
+## Device authorization profile
+
+Device authorization is opt-in through `Identity:Device:Enabled`; the integration fixture explicitly enables it. The shared fixture uses higher bounded account and IP limits so independent scenarios can share one account and peer. Unit specs cover default bounds, shared limit exhaustion, failure-closed admission and logical expiry. Deliberate Chronicle outages use a separate host so their recovery state cannot affect ordinary protocol scenarios.
+
+Device authorization errors return uncacheable OAuth JSON, including when admission is unavailable or a requested resource is invalid. `for_DeviceAuthorizationError/when_returning_a_protocol_error` verifies the response envelope without an external host.
+
+| Id | Source | Obligation | Executable proof |
+| --- | --- | --- | --- |
+| `DEVICE-LIFECYCLE` | RFC 8628 §3.2, §3.5 | Bounded codes, manual verification URI and explicit approval before token issuance. | `for_DeviceGrant/when_a_user_approves_a_device` |
+| `DEVICE-POLLING` | RFC 8628 §3.5 | Pending requests issue no tokens; early polling increases the interval. | `for_DeviceGrant/when_a_device_polls_before_approval` |
+| `DEVICE-DENIAL` | RFC 8628 §3.5 | User denial refuses token issuance. | `for_DeviceGrant/when_a_user_denies_a_device` |
+| `DEVICE-SINGLE-USE` | RFC 8628 §3.5 | A redeemed device code cannot be exchanged again. | `for_DeviceGrant/when_a_redeemed_device_code_is_reused` |
+| `DEVICE-BINDING` | RFC 8628 §3.5 | Only the initiating client can redeem a device code. | `for_DeviceGrant/when_another_client_redeems_a_device_code` |
+
+Rate keys use purpose-separated SHA-256. Guess and issuance counters use atomic MongoDB increment/upsert; polling retains compare-and-swap to preserve the cumulative five-second slowdown and deadline together. TTL cleanup is not expiry enforcement. Verification also checks antiforgery, session-bound confirmation, live account and tenant membership, independent recovery epochs and grant fences. Durable consent events are outside this profile.
+
+## Opt-in issuer-side DPoP
+
+DPoP is disabled by default. AuthProxy remains Bearer-only; resource-server proofs (`ath`), edge forwarding, organization policy, token exchange and `client_credentials` are deferred. No certification claim is made. The new integration scenarios below were added for CI and were **not run locally**.
+
+| Requirement | Reference | Behavior | Proof |
+| --- | --- | --- | --- |
+| `DPOP-BOUND-ISSUANCE` | RFC 9449 §5 and §6 | Code and approved device issuance emit object-valued `cnf.jkt` and `token_type=DPoP`. | `for_DPoP/when_using_sender_bound_grants` |
+| `DPOP-REFRESH-BINDING` | RFC 9449 §5 | Preserve operational family binding; refuse missing/wrong keys without consumption; refuse attaching a key to an unbound family. | `for_DPoP/when_using_sender_bound_grants` |
+| `DPOP-AS-NONCE` | RFC 9449 §8 | Stateless nonce challenges do not consume the code. | `for_DPoP/when_using_sender_bound_grants` |
+| `DPOP-PROOF-REPLAY` | RFC 9449 §4.3 | Shared reservations reject replay across replicas, concurrent requests and logical expiry before TTL cleanup. | `for_DPoP/when_using_sender_bound_grants`, `for_DPoP/when_reserving_across_replicas` |
+| `DPOP-PROOF-VALIDATION` | RFC 9449 §4.3 | Validate against the exact configured public endpoint. | `for_DPoP/when_using_sender_bound_grants`; focused unit specs also check bounded ES256 parsing and signatures. |
+| `DPOP-METADATA` | RFC 9449 §5.1 | Advertise ES256 only when enabled. | `for_DPoP/when_using_sender_bound_grants` |
+
+The AS nonce uses the issuer's existing shared Data Protection ring and purpose `Cratis.Identity.Dpop.Nonce.v1`, replacing the draft profile's standalone HMAC secret/encoding. The secret-store loader and contracts are unchanged. The older fixed nonce-encoding fixture describes the draft HMAC format, not Data Protection ciphertext. Focused unit specs cover nonce origin/key/time binding, shared-store failure, immutable family properties and access-only confirmation. Retained ring keys remain usable across rotation; all replicas must share the ring and application discriminator.
+
 ## Running and upgrading
 
 Local gate (never run the integration executable locally):
@@ -73,4 +104,8 @@ Before accepting an upgrade:
 4. Update the two central OpenIddict pins together in the actual dependency PR (normally the grouped Dependabot PR). Run the local gate; require green Build and specs CI, including ordinary integration and conformance. The candidate probe alone does not replace that complete gate.
 5. Update this catalogue if supported behavior intentionally changes. Name its normative reference, proof and any explicitly owned non-MUST gap in review.
 
-Scope deliberately excludes OIDC provider behavior, device flow, logout protocols, DPoP, JAR/PAR, upstream login changes and production key management. Changes to those profiles need their own reviewed requirements.
+Scope deliberately excludes OIDC provider behavior, logout protocols, resource-server DPoP, JAR/PAR, upstream login changes and production key management. Changes to those profiles need their own reviewed requirements.
+
+## Client compatibility
+
+How each MCP client registers, discovers and redirects is recorded in the [MCP client compatibility matrix](design/mcp-client-compatibility-matrix.md). It is documented behavior, not a tested claim.

@@ -43,7 +43,7 @@ internal class FakeUpstream(
         var user = Request.Headers[UserHeader].ToString().Split(':');
         var observation = new GitHubUser(long.Parse(user[0], CultureInfo.InvariantCulture), user[1], user[1]);
         var authentication = new GitHubConnection(GitHubConnection.FixedConnectionId, timeProvider).From(observation, FactId.New());
-        var account = await accounts.SignIn(authentication, new(null, observation.Name, observation.Login));
+        var account = await accounts.SignIn(authentication, new(null, observation.Name, observation.Login), CancellationToken.None);
         await Context.SignInAsync(IdentitySchemes.Session, SessionPrincipal.For(account, Scheme, authentication.AuthTime), new AuthenticationProperties());
         Response.Redirect(properties.RedirectUri);
     }

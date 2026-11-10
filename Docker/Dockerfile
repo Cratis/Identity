@@ -14,12 +14,16 @@ ARG HOST=Identity.Host
 COPY global.json Directory.Build.props Directory.Packages.props .editorconfig .globalconfig ./
 COPY Source/Identity/Identity.csproj Source/Identity/
 COPY Source/Identity.Contracts/Identity.Contracts.csproj Source/Identity.Contracts/
+COPY Source/Identity.FenceLog/Identity.FenceLog.csproj Source/Identity.FenceLog/
+COPY Source/Identity.FenceLog.Mongo/Identity.FenceLog.Mongo.csproj Source/Identity.FenceLog.Mongo/
 COPY Source/Identity.Host/Identity.Host.csproj Source/Identity.Host/
 COPY Source/Identity.CratisId/Identity.CratisId.csproj Source/Identity.CratisId/
 RUN dotnet restore Source/${HOST}/${HOST}.csproj
 
 COPY Source/Identity/ Source/Identity/
 COPY Source/Identity.Contracts/ Source/Identity.Contracts/
+COPY Source/Identity.FenceLog/ Source/Identity.FenceLog/
+COPY Source/Identity.FenceLog.Mongo/ Source/Identity.FenceLog.Mongo/
 COPY Source/Identity.Host/ Source/Identity.Host/
 COPY Source/Identity.CratisId/ Source/Identity.CratisId/
 RUN dotnet publish Source/${HOST}/${HOST}.csproj -c Release -f net11.0 -o /app --no-restore -p:CratisProxiesOutputPath=

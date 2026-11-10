@@ -45,7 +45,7 @@ public class when_a_command_succeeds_without_own_appends_while_another_command_a
             return Task.FromResult(new CommandResult { CorrelationId = Execution.CorrelationId.New() });
         });
         var boundary = new ProtocolCommands(_services.GetRequiredService<IServiceScopeFactory>(), pipeline);
-        _error = await Catch.Exception(() => boundary.Execute(new object()));
+        _error = await Catch.Exception(() => boundary.Execute(new object(), null, CancellationToken.None));
     }
 
     void Destroy()

@@ -44,7 +44,7 @@ public class when_replaying_source_facts : Specification
 
     [Fact] void should_publish_a_retry_only_once() => _identities.Length.ShouldEqual(3);
     [Fact] void should_distinguish_different_facts() => _identities.Distinct().Count().ShouldEqual(3);
-    [Fact] void should_use_fact_id_and_contract_type_id() => _identities[0].ShouldEqual($"event-identity:{FactId.ForOperation(_operation, nameof(AccountRegistrationRecorded)).Value:D}:fd1cb0b5-17c1-4f34-b625-c318dc928d97");
+    [Fact] void should_use_fact_id_and_contract_type_id() => _identities[0].ShouldEqual($"event-identity:{FactId.ForOperation(_operation, nameof(AccountRegistrationRecorded)).Value:D}:AccountRegistered");
     [Fact] void should_preserve_the_supplied_source_order() => _contracts.ShouldEqual([typeof(AccountRegistered), typeof(AccountRegistered), typeof(UpstreamKeyLinked)]);
 
     static AccountRegistrationRecorded Registration(FactId operation) => new(DateTimeOffset.UnixEpoch, FactId.ForOperation(operation, nameof(AccountRegistrationRecorded)));

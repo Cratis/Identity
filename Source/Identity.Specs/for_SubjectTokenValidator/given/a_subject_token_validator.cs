@@ -28,7 +28,7 @@ public class a_subject_token_validator : Specification
         keys = Substitute.For<IExternalIssuerKeys>();
         keys.Get(default!, default, default).ReturnsForAnyArgs(Task.FromResult<IReadOnlyCollection<SecurityKey>?>(issuer.PublicKeys));
         replay = new(time);
-        validator = new(options.AsOptions(), keys, replay, time);
+        validator = new(options.AsOptions(), keys, time);
     }
 
     protected Dictionary<string, object> Payload() => ExternalIssuerFixture.Payload(time.Now);

@@ -3,6 +3,7 @@
 ```text
 Spec id: arc-mcp-authorization
 Version: 1
+MCP authorization revision: 2026-07-28
 Status: Signed off
 Signed off: 2026-11-05 by woksin, https://github.com/Cratis/Identity/issues/14; owner confirmation pending
 Issue: https://github.com/Cratis/Arc/issues/3703
@@ -47,7 +48,7 @@ PAT-only is a static-header/minimal profile, not an assertion of OAuth interoper
 
 OAuth-capable MCP servers MUST implement RFC 9728 protected-resource metadata, and OAuth MCP clients MUST use it for discovery. The 401 challenge MUST include `resource_metadata` with the protected-resource metadata URL. That document MUST use the registered resource indicator in `resource`, the configured issuer in `authorization_servers`, and the [catalog](arc-scope-catalog-v1.md) scope names in `scopes_supported`. Resource metadata MUST NOT be confused with authorization-server metadata. Clients MUST verify that the protected-resource metadata `resource` equals the requested resource URL and MUST refuse a mismatch (RFC 9728 §3.3).
 
-The client MUST send RFC 8707 `resource` with the intended resource indicator on both authorization and token requests. The authorization server MUST refuse unregistered resource indicators and MUST use the scope catalog's one-to-one mapping from the RFC 8707 resource indicator URL to its audience slug when binding the resulting access token. For example, `resource=https://direct.example.test/mcp` maps to `aud=direct-api`. Each audience slug MUST map back to exactly one resource indicator URL; `aud` MUST NOT be a URL. The resource verifier MUST validate issuer, the single catalog audience string (for example `direct-api`, not the resource URL), signature, expiry, `typ=at+jwt`, required access-token claims, applicable `tid` tenant binding, and sender binding where required, as defined in identity-contract-v1. It MUST NOT accept an ID token as an access token or forward an access token to a different resource.
+The client SHOULD send RFC 8707 `resource` with the intended resource indicator on both authorization and token requests. When it is absent at authorization, the authorization server MUST infer the resource only when the requested scopes identify exactly one catalog resource; empty or ambiguous inference MUST return `invalid_target`. When it is absent at code redemption, the grant MUST retain its original catalog audience. An explicitly empty indicator, an unknown indicator, or indicators for multiple distinct resources MUST return the appropriate OAuth error rather than falling back to inference. The authorization server MUST refuse unregistered resource indicators and MUST use the scope catalog's one-to-one mapping from the RFC 8707 resource indicator URL to its audience slug when binding the resulting access token. For example, `resource=https://direct.example.test/mcp` maps to `aud=direct-api`. Each audience slug MUST map back to exactly one resource indicator URL; `aud` MUST NOT be a URL. The resource verifier MUST validate issuer, the single catalog audience string (for example `direct-api`, not the resource URL), signature, expiry, `typ=at+jwt`, required access-token claims, applicable `tid` tenant binding, and sender binding where required, as defined in identity-contract-v1. It MUST NOT accept an ID token as an access token or forward an access token to a different resource.
 
 The authorization server MUST require PKCE S256 and MUST reject `plain` and missing PKCE. Clients MUST use S256 and MUST refuse authorization when PKCE metadata is missing. Redirect URIs MUST match exactly. The only native loopback exception follows RFC 8252 for IP literals and variable ports, not `localhost` or wildcard hosts. Resource servers MUST NOT compensate for invalid tokens by falling back to forwarded browser identity. Successful credential verification MUST produce the same [caller contract](arc-verified-caller-v1.md) before product authorization.
 
@@ -107,7 +108,7 @@ Content-Type: application/json
 {"resource":"https://direct.example.test/mcp","authorization_servers":["https://login.example.test"],"scopes_supported":["direct:read","direct:write"]}
 ```
 
-The corresponding synthetic authorization request contains `resource=https%3A%2F%2Fdirect.example.test%2Fmcp`, `code_challenge_method=S256`, and an actual S256 challenge. The token request contains the same encoded `resource` and matching verifier. These are required fields, not complete runnable requests.
+The corresponding synthetic authorization request contains `resource=https%3A%2F%2Fdirect.example.test%2Fmcp`, `code_challenge_method=S256`, and an actual S256 challenge. The token request contains the same encoded `resource` and matching verifier. These are illustrative fields, not complete runnable requests: S256 PKCE and the matching verifier are required, but `resource` may be omitted under the inference and grant-binding rules above.
 
 | Request / configuration | Expected response or result |
 | --- | --- |
@@ -123,7 +124,11 @@ The corresponding synthetic authorization request contains `resource=https%3A%2F
 | Combined, bad-checksum PAT | 401 JSON; no OAuth fallback. |
 | Combined, `DPoP` Authorization scheme with a `direct_pat_v1_` value | 401 JSON in PAT branch; no OAuth verification or introspection. |
 | OAuth token for Studio presented to Direct | 401 JSON for wrong audience. |
-| Resource parameter missing or different at either OAuth request | No usable Direct access token; request refused under this contract. |
+| Resource parameter absent at authorization, scopes identify exactly one resource | Accepted with the inferred catalog audience, unchanged from an explicit grant. |
+| Resource parameter absent at authorization, scopes identify no resource or multiple resources | `invalid_target`; no grant. |
+| Resource parameter absent at code redemption | Retain the grant's original audience. |
+| Explicit resource is empty, unknown, or identifies multiple distinct resources | `invalid_target`; no grant or token for a different resource. |
+| Explicit resource differs from the original grant at code redemption | `invalid_target`; no usable token for the different resource. |
 | OAuth-only, valid `direct:read` token, allowed role, operation also requires `direct:write` | 403 JSON with the insufficient-scope challenge below; client requests union `direct:read direct:write`, subject to retry limit. |
 | Combined, OAuth branch, same missing write scope | Same 403 and challenge; no PAT fallback; bounded union-scope step-up. |
 | PKCE metadata absent | Client refuses authorization. |
@@ -162,6 +167,101 @@ Content-Type: application/json
 For example, a fixture retry limit of 2 allows no third step-up attempt. This value is a test setting, not a locked production default. A PAT request in the combined profile remains an application PAT flow and MUST NOT be sent through OAuth step-up automatically.
 
 Machine-readable group: [profiles and discovery](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/profiles-and-discovery.json), repository path `Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/profiles-and-discovery.json`. Successful fixture requests assert handler admission, not a particular MCP method's response payload. The group has `name`, `description`, `given`, `when.action`, and `then`; `given.vectors` contains individual cases. These data vectors do not demonstrate runtime conformance. Outcomes and reasons are vector vocabulary, not public error messages.
+
+## Migrating vector consumers to 2.0.0
+
+Vector artifact **2.0.0 is breaking for vector consumers**, independently of contract
+version 1. Consumers pinned to 1.0.0 must update their case-ID mappings and expected
+outcomes before selecting the 2.0.0 manifest:
+
+- Replace `authorization-resource-required` with `authorization-resource-inferred`:
+  omitted `resource` is accepted when the authorization scopes identify one resource.
+- Replace `token-resource-required` with `token-resource-inherited`: code redemption
+  may omit `resource` and must retain the original grant audience.
+
+The former case IDs are not aliases for the new cases. Consumers that cannot migrate
+must remain pinned to the immutable 1.0.0 artifact; its historical sections and hashes
+are unchanged.
+
+## Vector artifact
+
+Vector artifact version: 2.0.0
+
+This artifact replaces `authorization-resource-required` and `token-resource-required`
+with `authorization-resource-inferred` and `token-resource-inherited`. Their cases now
+accept omitted resource parameters only with unambiguous authorization scope inference
+or the original code grant's audience. The single catalog audience is unchanged.
+Explicit empty, unknown, and conflicting resource indicators remain invalid.
+
+The manifest selects the new [2.0.0 baseline](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/baselines/v2.0.0.json).
+The 1.0.0 baseline and its versioned documentation below remain byte-identical; case
+IDs are not reassigned to different meanings. Artifact version 2.0.0 is independent
+of contract version 1 and does not publish a tag or claim connector conformance.
+Run the same immutability check and packaging commands below; the selected manifest
+produces `arc-mcp-authorization-v1-vectors-2.0.0.tar.gz` and its sidecar.
+
+## Vector artifact
+
+Vector artifact version: 1.0.0
+
+The [manifest](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/manifest.json)
+assigns stable case IDs without modifying the signed-off vector bytes. Each case uses
+`file` and a zero-based `index` into `given.vectors`. Its `sha256` hashes the UTF-8
+compact JSON object (property order preserved, no whitespace or trailing newline,
+unescaped Unicode, as produced by JavaScript `JSON.stringify`). File hashes cover the
+original bytes. The [changelog](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/CHANGELOG.md)
+versions the artifact independently of contract version 1.
+
+The independently reviewed [v1.0.0 baseline](../../Source/Identity.Specs/Vectors/arc-mcp-authorization-v1/baselines/v1.0.0.json)
+locks the case-ID-to-content-hash bindings and vector-file hashes. Specs and packaging
+compare the manifest against `baselines/v<version>.json`, not against values regenerated
+from the manifest. Released baselines are immutable: never edit or regenerate them.
+Every version bump adds a new independently approved baseline, a changelog section,
+and a `## Vector artifact` section with its own `Vector artifact version:` metadata;
+retain older baselines and both versioned sections byte-identically. The checks require one
+baseline per changelog heading, including the initial release. The release tag
+`vectors/arc-mcp-authorization/v<version>` is the trust anchor, not the mutable working-tree
+baseline. `node scripts/check-vector-baseline-immutability.mjs` compares every released
+baseline with `git show <tag>:<path>` and, while the manifest selects that version,
+compares the manifest and vector content hashes with the tagged revision. It also compares
+the tagged version's changelog and vector-artifact sections byte-for-byte. Historical
+baselines and sections remain unchanged when the manifest and vectors advance to a new version.
+An untagged baseline passes with an unreleased notice; v1.0.0 is anchored when its first
+release tag is cut after the next train merges. On pull requests, the checker also compares
+against `BASE_REF` (or `--base-ref <ref>`, default `origin/main` for pull requests): old
+baselines and versioned documentation sections must remain byte-identical, and changing
+the manifest, vectors, or versioned prose requires a version bump with a new baseline
+and new documentation sections. Build CI and the packaging workflow run this check
+with full Git history and tags. Run `node scripts/check-vector-baseline-immutability.mjs
+--self-test` to exercise the rejection rules in disposable Git repositories.
+IDs are never reassigned to different behavior. Changing a case requires a new ID or an
+artifact version bump; even with a bump, an existing ID must not acquire different meaning.
+Any ID or hash change at the current version fails baseline validation.
+
+### Packaging and manual publication
+
+Run `node scripts/check-vector-baseline-immutability.mjs` before
+`node scripts/package-authorization-vectors.mjs .ai-work/identity-134/artifacts`
+from the repository root. This Node-stdlib script produces
+`arc-mcp-authorization-v1-vectors-1.0.0.tar.gz` and its `.sha256` sidecar. The archive
+contains `manifest.json`, `CHANGELOG.md`, every listed vector file at its root, and all
+versioned baselines under `baselines/`. Packaging validates the current baseline and
+baseline/changelog history before writing the archive.
+Entries are sorted with fixed mode, owner, and timestamp fields; gzip timestamps and
+OS metadata are normalized. Use the same Node version for byte-identical compression.
+
+The release owner can run the **Package authorization vectors** `workflow_dispatch`
+workflow on the reviewed commit to download the pair as a workflow artifact. It does
+not create a Git tag or GitHub release and never runs on push. Publication of the pair
+as immutable assets under the separately approved trust-anchor tag
+`vectors/arc-mcp-authorization/v1.0.0` remains a release-owner action. No cross-repository
+dispatch or token is used.
+
+Arc and AuthProxy consumers should pin the published artifact version and SHA-256,
+verify the sidecar before extraction, verify the manifest and case coverage, and run
+their own conformance specs by case ID. A missing, duplicate, or unexecuted case must
+fail their gate. Consumer CI wiring and local overrides are separate deliverables;
+this package does not assert consumer conformance.
 
 ## Decisions recorded at sign-off
 

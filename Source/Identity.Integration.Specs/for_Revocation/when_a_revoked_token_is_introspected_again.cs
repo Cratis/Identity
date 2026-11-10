@@ -3,7 +3,7 @@
 
 namespace Cratis.Identity.Integration.for_Revocation;
 
-[Collection(IdentityCollection.Name)]
+[Collection(ChronicleOutageCollection.Name)]
 public class when_a_revoked_token_is_introspected_again(IdentityHost host) : IAsyncLifetime
 {
     (HttpStatusCode Status, JsonElement Body) _before;

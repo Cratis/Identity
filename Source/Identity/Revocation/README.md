@@ -17,7 +17,7 @@ Revocation atomically persists the tombstone and delivery intents first, runs th
 
 ## Durability boundary
 
-The shipped registration uses `MongoIndependentFenceLog`, not `CoLocatedMongoFenceLog`. Provision it on a separate Mongo replica-set deployment with separate workload access and an independent backup policy. It must be excluded from **both** the operational and Chronicle backup/restore sets. A second database, connection alias, or different connection text on the same deployment is insufficient. Startup compares the two replica-set identities and refuses equal or unreadable identities. This is a protocol implementation, **not evidence of production B1 provisioning or a completed restore drill**.
+The shipped registration uses `MongoIndependentFenceLog`, published as the `Cratis.Identity.FenceLog.Mongo` package over the `Cratis.Identity.FenceLog` contract; no co-located implementation exists. The operator procedure is in [the fence-log restore runbook](../../../Documentation/security/runbooks/fence-log-restore.md). Provision it on a separate Mongo replica-set deployment with separate workload access and an independent backup policy. It must be excluded from **both** the operational and Chronicle backup/restore sets. A second database, connection alias, or different connection text on the same deployment is insufficient. Startup compares the two replica-set identities and refuses equal or unreadable identities. This is a protocol implementation, **not evidence of production B1 provisioning or a completed restore drill**.
 
 Reservations and sequence allocation commit together in the independent log. Its contiguous watermark L includes filled restrictions, proven voids, and durable recovery-epoch intents; unresolved reservations block advancement. Cancellation and writer commit contend on the same operational grant document. Reconciliation first moves a reservation to Fencing, then atomically cancels its operational writer or recovers its already committed complete record. Only proven cancellation permits a void. An unreachable primary, timeout, or unknown outcome stays unresolved. Cancellation markers are also replayed after restore, so delayed old writers cannot revive voided work.
 
@@ -56,14 +56,14 @@ Offline access JWT validation retains the accepted **630-second residual window*
 
 ## Internal event identities
 
-These generation-one IDs follow the repository's explicit UUID `[EventType]` convention. Operational entry identities and submitted token values never enter their schemas. Grant/family event-source UUIDs use a domain-separated deterministic mapping of the operational authorization identifier. There is no Public reactor or publication until the revocation gate permits it.
+These generation-one events use Chronicle's default event type id, the short CLR type name ([identity-events v1.2 amendment](../../../Documentation/specs/identity-events-v1.2-amendment.md)). Operational entry identities and submitted token values never enter their schemas. Grant/family event-source UUIDs use a domain-separated deterministic mapping of the operational authorization identifier. There is no Public reactor or publication until the revocation gate permits it.
 
 | Internal source fact | Event type ID |
 | --- | --- |
-| `AuthorizationRevocationRecorded` | `ac88f9a7-6364-4f20-9301-d533b491b641` |
-| `RefreshTokenFamilyRevocationRecorded` | `a80e52ab-051e-4771-bff2-488dccd8aa44` |
-| `RefreshTokenFamilyStarted` | `d9a448be-ccf1-4ab5-b43c-f17dad0ba6c3` |
-| `RefreshTokenReuseDetected` | `bedbc6d5-2870-4cf7-aa5e-79e7a2bf3cb6` |
-| `RealmRecoveryEpochAdvanceRecorded` | `bf2cbb34-f181-4931-be63-52d68a143be4` |
-| `FenceLogCustodyEstablished` | `b90e65de-fd11-43c9-b032-e6f73d5ca089` |
-| `FencePublicationCheckpoint` | `507bb271-f4cf-43ca-a5a8-3e3a80fd0093` |
+| `AuthorizationRevocationRecorded` | `AuthorizationRevocationRecorded` |
+| `RefreshTokenFamilyRevocationRecorded` | `RefreshTokenFamilyRevocationRecorded` |
+| `RefreshTokenFamilyStarted` | `RefreshTokenFamilyStarted` |
+| `RefreshTokenReuseDetected` | `RefreshTokenReuseDetected` |
+| `RealmRecoveryEpochAdvanceRecorded` | `RealmRecoveryEpochAdvanceRecorded` |
+| `FenceLogCustodyEstablished` | `FenceLogCustodyEstablished` |
+| `FencePublicationCheckpoint` | `FencePublicationCheckpoint` |

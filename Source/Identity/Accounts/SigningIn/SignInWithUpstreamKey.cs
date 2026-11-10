@@ -63,7 +63,7 @@ internal record SignInWithUpstreamKey(FactId OperationId)
         // This enrolled read survives until Arc commits the returned events. It protects every
         // account input from its observed sequence, including an unlink/disable after recheck.
         _ = await decisions.Get<AccountGuard>(subject.Value);
-        await catchUp.BeforeRetry(CancellationToken.None);
+        await catchUp.BeforeRetry(verified.CancellationToken);
         var reservation = await lookups.Find(key.Digest);
         if (reservation?.AccountSubject != hint?.AccountSubject || reservation?.LinkId != hint?.LinkId)
         {

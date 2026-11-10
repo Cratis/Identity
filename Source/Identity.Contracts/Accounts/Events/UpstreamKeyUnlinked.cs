@@ -10,5 +10,5 @@ namespace Cratis.Identity.Contracts.Accounts.Events;
 /// <param name="KeyHash">The reserved keyed pseudonym.</param>
 /// <param name="ReasonId">The reason reference.</param>
 /// <param name="UnlinkedAt">The unlink time.</param>
-[EventType("f84b03e3-e0c1-4593-962e-917c56e50bcc", generation: 1), Public]
+[EventType, Public]
 public record UpstreamKeyUnlinked(LinkId LinkId, UpstreamLookupDigest KeyHash, ReasonId ReasonId, DateTimeOffset UnlinkedAt);

@@ -26,7 +26,7 @@ public class when_reading_the_authorization_server_metadata(IdentityHost host) :
     [Fact] void should_publish_the_revocation_endpoint() => _metadata.GetProperty("revocation_endpoint").GetString().ShouldEqual($"{IdentityHost.Issuer}connect/revocation");
     [Fact] void should_publish_the_introspection_endpoint() => _metadata.GetProperty("introspection_endpoint").GetString().ShouldEqual($"{IdentityHost.Issuer}connect/introspect");
     [Fact] void should_only_support_s256_pkce() => Strings("code_challenge_methods_supported").ShouldContainOnly("S256");
-    [Fact] void should_only_support_code_and_refresh_grants() => Strings("grant_types_supported").ShouldContainOnly("authorization_code", "refresh_token");
+    [Fact] void should_support_device_grants_when_explicitly_enabled() => Strings("grant_types_supported").ShouldContainOnly("authorization_code", "refresh_token", "urn:ietf:params:oauth:grant-type:device_code");
     [Fact] void should_list_the_resource_scopes() => Strings("scopes_supported").ShouldContain("direct:read");
     [Fact] void should_not_offer_openid_connect_sign_in() => Strings("scopes_supported").ShouldNotContain("openid");
     [Fact] void should_publish_a_public_signing_key() => _jwks.GetProperty("keys").EnumerateArray().Any(key => key.GetProperty("use").GetString() == "sig").ShouldBeTrue();

@@ -5,5 +5,5 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Replay.for_EventLog.given;
 
-[EventType("50f00000-0000-0000-0000-000000000001")]
+[EventType]
 internal record PoisonedEvent(string Value);

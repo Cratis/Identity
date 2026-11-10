@@ -43,7 +43,7 @@ public class a_sign_in_decision : Specification
         _link = Guid.NewGuid();
         var authentication = new VerifiedAuthentication(GitHubConnection.FixedConnectionId, "https://github.com", "42", _clock.Now, FactId.New());
         _verified = new();
-        _verified.Set(authentication, new("profile@example.test", "Person", "new-login"));
+        _verified.Set(authentication, new("profile@example.test", "Person", "new-login"), CancellationToken.None);
         _command = new(authentication.OperationId);
         var keys = Substitute.For<IUpstreamLookupKeys>();
         keys.Current.Returns(new UpstreamLookupKey(1, Enumerable.Range(0, 32).Select(value => (byte)value).ToArray()));

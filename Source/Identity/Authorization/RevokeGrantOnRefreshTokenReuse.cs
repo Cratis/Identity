@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Revocation;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -39,13 +40,20 @@ internal class RevokeGrantOnRefreshTokenReuse(IOpenIddictTokenManager tokens, Gr
     /// <inheritdoc/>
     public async ValueTask HandleAsync(ValidateTokenContext context)
     {
-        if (context.Principal?.HasTokenType(TokenTypeIdentifiers.RefreshToken) != true ||
+        if ((context.Principal?.HasTokenType(TokenTypeIdentifiers.RefreshToken) != true && context.Principal?.HasTokenType(TokenTypeIdentifiers.Private.DeviceCode) != true) ||
             string.IsNullOrEmpty(context.TokenId) ||
             string.IsNullOrEmpty(context.AuthorizationId) ||
             await tokens.FindByIdAsync(context.TokenId, context.CancellationToken) is not { } token ||
             !await tokens.HasStatusAsync(token, Statuses.Redeemed, context.CancellationToken))
         {
             // Anything else is left to OpenIddict's own token-entry validation.
+            return;
+        }
+
+        if (context.Principal.HasTokenType(TokenTypeIdentifiers.Private.DeviceCode))
+        {
+            await grants.Revoke(context.AuthorizationId, RevocationReason.Revoked, context.CancellationToken);
+            context.Reject(error: Errors.InvalidGrant, description: "The device authorization is no longer valid.");
             return;
         }
 

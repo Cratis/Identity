@@ -10,5 +10,5 @@ namespace Cratis.Identity.Contracts.Accounts.Events;
 /// <param name="ReasonId">The reason reference.</param>
 /// <param name="EvidenceId">The evidence reference.</param>
 /// <param name="HoldNotBefore">The minimum hold boundary.</param>
-[EventType("a407f6de-7435-47b3-bcc8-ae3498010e71", generation: 1)]
+[EventType]
 public record UpstreamKeyLinkQuarantined(LinkProposalId LinkProposalId, ReasonId ReasonId, EvidenceId EvidenceId, DateTimeOffset HoldNotBefore);
