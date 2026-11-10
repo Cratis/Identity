@@ -283,19 +283,3 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         ["Identity:GitHub:ClientSecret"] = "unused-in-specs"
     };
 }
-
-/// <summary>
-/// An Identity host that opts into OpenID Connect with the three test web clients and a recorded consent decision.
-/// </summary>
-public class OidcIdentityHost : IdentityHost
-{
-    /// <inheritdoc/>
-    protected override Dictionary<string, string?> Settings()
-    {
-        var settings = base.Settings();
-        settings["Identity:Oidc:IssuanceEnabled"] = "true";
-        settings["Identity:Oidc:ConsentDecision"] = "ImplicitFencedPath";
-        SpecClientDescriptors.AddOidcClients(settings);
-        return settings;
-    }
-}

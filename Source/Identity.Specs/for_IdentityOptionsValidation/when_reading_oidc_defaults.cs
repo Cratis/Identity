@@ -34,7 +34,7 @@ public class when_reading_oidc_defaults : Specification
     [Fact] void should_bind_the_gate() => _bound.Oidc.IssuanceEnabled.ShouldBeTrue();
     [Fact] void should_bind_the_decision() => _bound.Oidc.ConsentDecision.ShouldEqual("ImplicitFencedPath");
     [Fact] void should_bind_clients() => _bound.OidcClients.Select(_ => _.ClientId).ShouldContainOnly("oidc-web", "oidc-default");
-    [Fact] void should_bind_exactly_the_explicit_openid_only_list() => _bound.OidcClients[0].Scopes!.ShouldContainOnly("openid");
+    [Fact] void should_bind_exactly_the_explicit_openid_only_list() => _bound.OidcClients[0].Scopes.ShouldContainOnly("openid");
     [Fact] void should_not_widen_an_explicit_openid_only_ceiling() => _bound.OidcClients[0].EffectiveScopes.ShouldContainOnly("openid");
     [Fact] void should_keep_the_default_for_an_omitted_configured_list() => _bound.OidcClients[1].EffectiveScopes.ShouldContainOnly("openid", "profile");
 }
