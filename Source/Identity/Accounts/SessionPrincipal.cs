@@ -24,6 +24,7 @@ internal static class SessionPrincipal
     {
         var identity = new ClaimsIdentity(upstreamScheme, Claims.Name, Claims.Role);
         identity.AddClaim(new Claim(Claims.Subject, account.Id.Value));
+        identity.AddClaim(new Claim("sid", Guid.NewGuid().ToString("N")));
         identity.AddClaim(new Claim(Claims.Name, account.Name.Value));
         identity.AddClaim(new Claim(IdentityClaims.GitHubId, account.GitHubId.Value));
         identity.AddClaim(new Claim(IdentityClaims.GitHubLogin, account.GitHubLogin.Value));
@@ -46,4 +47,9 @@ internal static class SessionPrincipal
     /// <param name="principal">The session <see cref="ClaimsPrincipal"/>.</param>
     /// <returns>The account identifier, or <see langword="null"/> if the principal carries none.</returns>
     public static string? AccountId(ClaimsPrincipal principal) => principal.FindFirst(Claims.Subject)?.Value;
+
+    /// <summary>Gets the opaque identifier of this browser session.</summary>
+    /// <param name="principal">The session principal.</param>
+    /// <returns>The session identifier, or null for a session created before session identifiers were introduced.</returns>
+    public static string? SessionId(ClaimsPrincipal principal) => principal.FindFirst("sid")?.Value;
 }

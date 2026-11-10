@@ -10,4 +10,5 @@ namespace Cratis.Identity.Upstream;
 /// </summary>
 /// <param name="Account">The active <see cref="Account"/>.</param>
 /// <param name="AuthTime">When the upstream authentication of the session was verified.</param>
-internal record SignedInAccount(Account Account, DateTimeOffset AuthTime);
+/// <param name="SessionId">The opaque browser-session identifier, if the session has one.</param>
+internal record SignedInAccount(Account Account, DateTimeOffset AuthTime, string? SessionId = null);
