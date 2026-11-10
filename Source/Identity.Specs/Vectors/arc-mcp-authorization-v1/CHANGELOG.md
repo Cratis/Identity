@@ -3,6 +3,15 @@
 
 # Arc MCP authorization vector artifact changelog
 
+## 2.0.0
+
+- Replace the global missing-resource refusal cases with new IDs for unambiguous
+  authorization scope inference and code redemption retaining its original audience.
+- Preserve explicit resource validation; ambiguous or empty scope inference cannot
+  authorize a new grant, while an explicitly empty indicator is invalid.
+- Retain the immutable 1.0.0 baseline and its original case bindings. This artifact
+  version changes case meanings and is not a publication or connector-conformance claim.
+
 ## 1.0.0
 
 - Package the 48 signed-off MCP authorization cases without changing vector bytes.
