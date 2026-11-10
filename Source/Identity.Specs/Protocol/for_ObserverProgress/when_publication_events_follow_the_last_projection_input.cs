@@ -25,11 +25,11 @@ public class when_publication_events_follow_the_last_projection_input : Specific
         var store = Substitute.For<IEventStore>();
         _log = Substitute.For<IEventLog>();
         store.EventLog.Returns(_log);
-        store.EventTypes.GetEventTypeFor(Arg.Any<Type>()).Returns(new EventType("0948769e-d249-472e-abb3-93e8743379da", 1));
+        store.EventTypes.GetEventTypeFor(Arg.Any<Type>()).Returns(new EventType("UpstreamKeyLinkRecorded", 1));
         store.Projections.GetStateForModel(Arg.Any<Type>()).Returns(new ProjectionState(ObserverRunningState.Active, true, new(6), new(5), new(99)));
         store.Projections.GetFailedPartitionsForModel(Arg.Any<Type>()).Returns(Task.FromResult<IEnumerable<FailedPartition>>([]));
-        store.EventTypes.GetEventTypeFor(typeof(UpstreamKeyLinkRecorded)).Returns(new EventType("0948769e-d249-472e-abb3-93e8743379da", 1));
-        store.EventTypes.GetEventTypeFor(typeof(UpstreamKeyUnlinkRecorded)).Returns(new EventType("f8795e2f-8822-4a6e-8744-996a37ec9e6e", 1));
+        store.EventTypes.GetEventTypeFor(typeof(UpstreamKeyLinkRecorded)).Returns(new EventType("UpstreamKeyLinkRecorded", 1));
+        store.EventTypes.GetEventTypeFor(typeof(UpstreamKeyUnlinkRecorded)).Returns(new EventType("UpstreamKeyUnlinkRecorded", 1));
         _log.GetTailSequenceNumber(filterEventTypes: Arg.Any<IEnumerable<EventType>>()).Returns(call =>
         {
             _requested = call.ArgAt<IEnumerable<EventType>>(4).ToArray();

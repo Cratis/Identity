@@ -46,7 +46,7 @@ internal static class CheckRunner
                 count++;
             }
         }
-        foreach (var violation in CatalogueChecker.CheckIdentities(shapes))
+        foreach (var violation in CatalogueChecker.CheckIdentities(shapes).Concat(CatalogueChecker.CheckNames(discovered)))
         {
             output.WriteLine($"event-content $ {violation.ReasonId}");
             count++;

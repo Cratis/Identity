@@ -13,5 +13,5 @@ namespace Cratis.Identity.Contracts.Accounts.Events;
 /// <param name="KeyHash">The protected keyed lookup pseudonym.</param>
 /// <param name="EvidenceId">The evidence reference.</param>
 /// <param name="LinkedAt">The link time.</param>
-[EventType("e2d1b4ad-914e-41c6-9187-c589fb36d68c", generation: 1), Public]
+[EventType, Public]
 public record UpstreamKeyLinked(LinkId LinkId, ConnectionId ConnectionId, UpstreamIssuer IdpIssuer, UpstreamLookupDigest KeyHash, EvidenceId EvidenceId, DateTimeOffset LinkedAt);

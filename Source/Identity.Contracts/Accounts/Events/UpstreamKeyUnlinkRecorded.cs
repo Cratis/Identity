@@ -11,5 +11,5 @@ namespace Cratis.Identity.Contracts.Accounts.Events;
 /// <param name="ReasonId">The reason reference.</param>
 /// <param name="UnlinkedAt">The unlink time.</param>
 /// <param name="FactId">The retry-stable fact identity; not present in the Public payload.</param>
-[EventType("de708442-c9b3-4d8b-b677-01450ef9248e", generation: 1)]
+[EventType]
 public record UpstreamKeyUnlinkRecorded(LinkId LinkId, UpstreamLookupDigest KeyHash, ReasonId ReasonId, DateTimeOffset UnlinkedAt, FactId FactId);

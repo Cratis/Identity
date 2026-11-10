@@ -19,7 +19,7 @@ namespace Cratis.Identity.Contracts.Clients.Events;
 /// <param name="ResponseTypes">The explicit response permissions.</param>
 /// <param name="ResourceIndicators">The exact resource indicators.</param>
 /// <param name="Scopes">The explicitly registered scope names.</param>
-[EventType("0e4bb9ea-86c7-4000-bbfd-308a2dbf4989", generation: 1)]
+[EventType]
 public record ClientRegistered(
     string ClientId,
     ClientRegistrationKind RegistrationKind,

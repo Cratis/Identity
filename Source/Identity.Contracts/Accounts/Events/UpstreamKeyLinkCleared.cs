@@ -10,5 +10,5 @@ namespace Cratis.Identity.Contracts.Accounts.Events;
 /// <param name="ResolutionId">The resolution reference.</param>
 /// <param name="EvidenceId">The evidence reference.</param>
 /// <param name="ReasonId">The reason reference.</param>
-[EventType("0f4ff8c1-a7e4-48e4-9bd1-65abbe2b465d", generation: 1)]
+[EventType]
 public record UpstreamKeyLinkCleared(LinkProposalId LinkProposalId, ResolutionId ResolutionId, EvidenceId EvidenceId, ReasonId ReasonId);

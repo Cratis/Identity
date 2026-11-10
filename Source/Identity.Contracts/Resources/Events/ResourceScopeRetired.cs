@@ -8,5 +8,5 @@ namespace Cratis.Identity.Contracts.Resources.Events;
 /// <summary>A resource scope was retired.</summary>
 /// <param name="ScopeName">The resource-local scope name.</param>
 /// <param name="RetiredAt">The retirement time.</param>
-[EventType("6a6869c9-423b-4746-8aa5-93b989b6895f", generation: 1), Public]
+[EventType, Public]
 public record ResourceScopeRetired(string ScopeName, DateTimeOffset RetiredAt);

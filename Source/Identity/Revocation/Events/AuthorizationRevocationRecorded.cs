@@ -13,5 +13,5 @@ namespace Cratis.Identity.Revocation.Events;
 /// <param name="FenceId">The permanent restriction.</param>
 /// <param name="FenceSequence">The log sequence.</param>
 /// <param name="FactId">The retry-stable fact.</param>
-[EventType("ac88f9a7-6364-4f20-9301-d533b491b641", generation: 1)]
+[EventType]
 internal sealed record AuthorizationRevocationRecorded(AccountSubject AccountSubject, ReasonId ReasonId, GrantEpoch GrantEpoch, FenceId FenceId, FenceSequence FenceSequence, FactId FactId);

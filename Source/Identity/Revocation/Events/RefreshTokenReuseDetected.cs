@@ -11,5 +11,5 @@ namespace Cratis.Identity.Revocation.Events;
 /// <param name="DetectionId">The persisted observation identity.</param>
 /// <param name="DetectedAt">The observation time.</param>
 /// <param name="FactId">The retry-stable fact.</param>
-[EventType("bedbc6d5-2870-4cf7-aa5e-79e7a2bf3cb6", generation: 1)]
+[EventType]
 internal sealed record RefreshTokenReuseDetected(GrantId GrantId, DetectionId DetectionId, DateTimeOffset DetectedAt, FactId FactId);

@@ -10,5 +10,5 @@ namespace Cratis.Identity.Contracts.Accounts.Events;
 /// <param name="LinkId">The confirmed link.</param>
 /// <param name="Login">The protected display identifier.</param>
 /// <param name="ObservedAt">The observation time.</param>
-[EventType("ecb91993-88b6-42a1-bdbc-ee644bd50fca", generation: 1)]
+[EventType]
 public record UpstreamKeyDisplayIdentifierObserved(LinkId LinkId, Login Login, DateTimeOffset ObservedAt);
