@@ -21,8 +21,11 @@ namespace Cratis.Identity.Development;
 /// </para>
 /// <para>
 /// A pre-existing directory is used only when it carries the development provenance marker, holds nothing but development
-/// key files and development certificates, is owned by the current user, is neither a link nor reached through one, and (on
-/// Unix) none of its ancestors can be replaced by another user. Files are verified on the handle they are read through.
+/// key files and development certificates, is owned by the current user, is neither a link nor reached through one, and none of
+/// its ancestors can be replaced by another user. Files are verified on the handle they are read through: the mode on Unix,
+/// the access control list (which must exist) on Windows. Residual risk: .NET has no no-follow open and no owner-of-handle
+/// call on Unix, so links are refused before and after the open and the owner is read by path; exploiting that gap needs
+/// write access to the owner-only directory, that is the same user.
 /// A partial write left by a crash is refused for a temporary file and cleaned for a key without its certificate.
 /// Anything else is refused, so a deployed key ring or a link into a repository is never adopted.
 /// </para>
@@ -250,11 +253,14 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
 
     static void RequireNotLink(string path)
     {
-        if (new FileInfo(path).LinkTarget is not null)
+        if (IsLink(path))
         {
-            throw new DevelopmentProfileRefused($"{Path.GetFileName(path)} is a link; the profile never follows links.");
+            throw new DevelopmentProfileRefused($"{Path.GetFileName(path)} is a link or reparse point; the profile never follows links.");
         }
     }
+
+    static bool IsLink(string path) =>
+        new FileInfo(path).LinkTarget is not null || File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint);
 
     static void RequireOwnerOnly(string directory)
     {
@@ -275,8 +281,9 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
 
     /// <summary>
     /// On Unix another user who can write to an ancestor can swap the store for a link or a copy, so every ancestor must be
-    /// owned by the current user or root and not writable by others (a sticky directory excepted). Windows ancestors inherit the
-    /// user's profile access control and are not inspected.
+    /// owned by the current user or root and not writable by others (a sticky directory excepted). On Windows every ancestor must
+    /// be owned by the current user, SYSTEM, Administrators or TrustedInstaller and grant nobody else the right to delete or take
+    /// over what it contains; an access control list that cannot be read is refused.
     /// </summary>
     /// <param name="directory">The store directory.</param>
     /// <exception cref="DevelopmentProfileRefused">Thrown when an ancestor is writable by others or owned by another user.</exception>
@@ -284,6 +291,11 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
     {
         if (OperatingSystem.IsWindows())
         {
+            for (var ancestor = Path.GetDirectoryName(directory); ancestor is not null; ancestor = Path.GetDirectoryName(ancestor))
+            {
+                WindowsOwnerOnlyAccess.RequireSafeAncestor(ancestor);
+            }
+
             return;
         }
 
@@ -386,7 +398,7 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
 
         var isDirectory = Directory.Exists(entry);
         var expected = isDirectory ? name == DataProtectionDirectory : IsDevelopmentFile(name);
-        if (new FileInfo(entry).LinkTarget is not null || !expected)
+        if (IsLink(entry) || !expected)
         {
             throw new DevelopmentProfileRefused($"the key directory holds an unexpected entry ({name}); only development key files are allowed.");
         }
@@ -417,9 +429,13 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
     /// <exception cref="DevelopmentProfileRefused">Thrown when the file is accessible to other users or owned by another user.</exception>
     static FileStream OpenVerified(string file)
     {
+        RequireNotLink(file);
         var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
         try
         {
+            // .NET exposes no no-follow open, so a swap between the check above and the open is detected here, and the
+            // directory is owner-only below verified ancestors, so only the same user could make one.
+            RequireNotLink(file);
             if (OperatingSystem.IsWindows())
             {
                 WindowsOwnerOnlyAccess.RequireOwnerOnly(stream.GetAccessControl(), $"the key file {Path.GetFileName(file)}");
@@ -431,6 +447,7 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
                     throw new DevelopmentProfileRefused($"the key file {Path.GetFileName(file)} is accessible to other users; remove the key directory so it can be recreated.");
                 }
 
+                // .NET has no public owner-of-a-handle call; the owner is read by path straight after the mode check on the handle.
                 RequireOwnedByCurrentUser(file, $"the key file {Path.GetFileName(file)}");
             }
 

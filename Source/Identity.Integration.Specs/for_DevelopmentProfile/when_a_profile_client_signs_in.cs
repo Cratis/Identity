@@ -72,7 +72,7 @@ public class when_a_profile_client_signs_in(DevelopmentProfileHost host) : IAsyn
     [Fact] void should_not_issue_an_id_token() => _token.TryGetProperty("id_token", out _).ShouldBeFalse();
     [Fact] void should_accept_it_against_the_local_issuer_keys_and_mcp_audience() => _local.IsValid.ShouldBeTrue();
     [Fact] void should_reject_it_for_a_deployed_issuer() => _deployedIssuer.IsValid.ShouldBeFalse();
-    [Fact] void should_reject_it_on_the_rest_audience() => _restAudience.IsValid.ShouldBeFalse();
+    [Fact] void should_reject_the_issued_mcp_token_on_the_rest_audience() => _restAudience.IsValid.ShouldBeFalse();
     [Fact] void should_reject_it_with_an_unrelated_key() => _unrelatedKey.IsValid.ShouldBeFalse();
 
     static Task<TokenValidationResult> Validate(string token, string issuer, string audience, IEnumerable<SecurityKey> keys) =>

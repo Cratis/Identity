@@ -56,6 +56,11 @@ static class WindowsOwnerOnlyAccess
     public static void RequireOwnerOnly(FileSystemSecurity security, string what)
     {
         var user = CurrentUser();
+        if (!AccessControlPolicy.HasDiscretionaryAcl(new RawSecurityDescriptor(security.GetSecurityDescriptorBinaryForm(), 0)))
+        {
+            throw new DevelopmentProfileRefused($"{what} has no access control list, which grants everyone access; remove it so it can be recreated.");
+        }
+
         var processOwner = WindowsIdentity.GetCurrent().Owner ?? user;
         if (security.GetOwner(typeof(SecurityIdentifier)) is not SecurityIdentifier owner || (!owner.Equals(user) && !owner.Equals(processOwner)))
         {
@@ -68,6 +73,27 @@ static class WindowsOwnerOnlyAccess
             {
                 throw new DevelopmentProfileRefused($"{what} grants access to other users; remove it so it can be recreated with an owner-only access control list.");
             }
+        }
+    }
+
+    /// <summary>
+    /// Refuses a directory above the key store that another principal could use to replace it.
+    /// </summary>
+    /// <param name="ancestor">The ancestor directory.</param>
+    /// <exception cref="DevelopmentProfileRefused">Thrown when the ancestor cannot be shown safe.</exception>
+    public static void RequireSafeAncestor(string ancestor)
+    {
+        try
+        {
+            var descriptor = new RawSecurityDescriptor(new DirectoryInfo(ancestor).GetAccessControl().GetSecurityDescriptorBinaryForm(), 0);
+            if (AccessControlPolicy.UnsafeAncestorReason(descriptor, CurrentUser()) is { } reason)
+            {
+                throw new DevelopmentProfileRefused($"the directory {ancestor} above the key directory {reason}.");
+            }
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or InvalidOperationException)
+        {
+            throw new DevelopmentProfileRefused($"the access control of {ancestor} above the key directory cannot be read, so the store cannot be shown safe from replacement.");
         }
     }
 

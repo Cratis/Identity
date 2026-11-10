@@ -49,18 +49,21 @@ The profile creates its keys on first run in a per-user directory outside the re
 
 | System | Location |
 | --- | --- |
-| macOS and Linux | `$XDG_DATA_HOME/cratis/identity-dev/<issuer-authority>/`, which is `~/.local/share/cratis/identity-dev/<issuer-authority>/` when `XDG_DATA_HOME` is not set |
+| macOS | `~/Library/Application Support/cratis/identity-dev/<issuer-authority>/` |
+| Linux | `$XDG_DATA_HOME/cratis/identity-dev/<issuer-authority>/`, which is `~/.local/share/cratis/identity-dev/<issuer-authority>/` when `XDG_DATA_HOME` is not set |
 | Windows | `%LOCALAPPDATA%\cratis\identity-dev\<issuer-authority>\` |
 
-The location is .NET's per-user data folder. On macOS that is also `~/.local/share`, not `~/Library/Application Support`.
+The location is .NET's `LocalApplicationData` folder, which .NET resolves to `~/Library/Application Support` on macOS (it ignores `XDG_DATA_HOME` there).
 
-The directory is created owner-only and holds a marker file, development keys and certificates named `NOT-FOR-DEPLOYMENT`, and the Data Protection ring. Files are created with owner-only access and moved into place atomically. On macOS and Linux that is mode `0700` for directories and `0600` for files, and every parent directory must be owned by you or root and not writable by others. On Windows the directory and every file get an access control list that grants only your account, with inheritance from the parent turned off, set when they are created.
+The key store protects against other local users and against accidentally adopting deployed keys. It does not protect against an attacker already running as your own user, who can read the keys regardless.
+
+The directory is created owner-only and holds a marker file, development keys and certificates named `NOT-FOR-DEPLOYMENT`, and the Data Protection ring. Files are created with owner-only access and moved into place atomically. On macOS and Linux that is mode `0700` for directories and `0600` for files, and every parent directory must be owned by you or root and not writable by others. On Windows the directory and every file get an access control list that grants only your account, with inheritance from the parent turned off, set when they are created; an object with no access control list at all (which grants everyone access) is refused, and every parent directory must be owned by you, SYSTEM, Administrators or TrustedInstaller and must not let anyone else delete or take over what it contains. Files are checked on the handle they are read through, and links and reparse points are refused before and after the open. .NET has no no-follow open and, on macOS and Linux, no owner-of-handle call, so the owner of a file is read by path right after the mode check on the handle; exploiting that gap needs write access to your owner-only directory, which is the same-user case above.
 
 Identity refuses to start, naming the problem, when the directory:
 
 - holds anything that is not a development key file, such as a deployed key ring, or a leftover temporary file (`.tmp-*`) from an interrupted run;
 - is a link, is reached through one, or is the repository content folder or inside it;
-- is owned by someone else, is accessible to others, or sits below a directory others can write to;
+- is owned by someone else, is accessible to others, or sits below a directory others can write to or, on Windows, whose access control list cannot be read;
 - holds a certificate without its private key.
 
 A private key without its certificate, which an interrupted first run can leave, is removed and recreated. Delete the directory to start over. Never copy, commit or deploy these keys.
