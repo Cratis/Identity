@@ -28,12 +28,18 @@ public class when_reserving_resources : given.resource_commands
         distinct.IsSuccess.ShouldBeTrue();
     }
 
-    [Fact]
-    async Task should_reserve_normalized_indicator_aliases_before_append()
+    [Theory]
+    [InlineData("https://API.EXAMPLE:443/", "https://api.example")]
+    [InlineData("https://bücher.example", "https://xn--bcher-kva.example")]
+    [InlineData("https://xn--bcher-kva.example", "https://bücher.example")]
+    [InlineData("https://BÜCHER.EXAMPLE.:443/", "https://xn--bcher-kva.example")]
+    [InlineData("https://api.example.", "https://API.EXAMPLE:443/")]
+    public async Task should_reserve_normalized_indicator_aliases_before_append(string original, string alias)
     {
         using var scenario = new EventScenario();
-        var first = new RegisterResource("https://API.EXAMPLE:443/", "api", "api", new("API")).Handle(_decision).AsT0.Single();
-        var second = new RegisterResource("https://api.example", "other", "other", new("Other")).Handle(_decision).AsT0.Single();
+        var first = new RegisterResource(original, "api", "api", new("API")).Handle(_decision).AsT0.Single();
+        var second = new RegisterResource(alias, "other", "other", new("Other")).Handle(_decision).AsT0.Single();
+        ((ResourceRegistrationRecorded)first.Event).ResourceIndicator.ShouldEqual(((ResourceRegistrationRecorded)second.Event).ResourceIndicator);
         await scenario.Given.ForEventSource(first.EventSourceId).Events(first.Event);
         var duplicate = await scenario.When.ForEventSource(second.EventSourceId).Events(second.Event);
         duplicate.Errors.ShouldBeEmpty();

@@ -21,7 +21,7 @@ internal static class ResourceRegistrationValidation
             return null;
         }
 
-        return uri.AbsoluteUri.TrimEnd('/');
+        return CanonicalIndicator(uri);
     }
 
     /// <summary>Validates the normalized resource identity and its non-person label.</summary>
@@ -60,6 +60,29 @@ internal static class ResourceRegistrationValidation
     /// <returns>Whether the text is admitted.</returns>
     public static bool IsLabel(string? value) => value is { Length: > 0 and <= 256 } &&
         !string.IsNullOrWhiteSpace(value) && value.All(character => !char.IsControl(character));
+
+    static string? CanonicalIndicator(Uri uri)
+    {
+        try
+        {
+            var canonical = new UriBuilder(uri)
+            {
+                Host = CanonicalHost(uri),
+                Port = uri.IsDefaultPort ? -1 : uri.Port
+            };
+            return canonical.Uri.AbsoluteUri.TrimEnd('/');
+        }
+        catch (Exception exception) when (exception is UriFormatException or ArgumentException)
+        {
+            return null;
+        }
+    }
+
+    static string CanonicalHost(Uri uri)
+    {
+        var host = uri.IdnHost.TrimEnd('.').ToLowerInvariant();
+        return host.Length == 0 ? throw new UriFormatException() : host;
+    }
 
     static bool IsIndicatorText(string? value) => value is { Length: > 0 and <= 2048 } &&
         !value.Any(char.IsWhiteSpace) && value.IndexOfAny(['\\', '?', '#']) < 0;

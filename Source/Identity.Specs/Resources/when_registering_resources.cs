@@ -26,6 +26,7 @@ public class when_registering_resources : given.resource_commands
     [InlineData(" https://api.example")]
     [InlineData("https://api.example/a//b")]
     [InlineData("https:\\api.example")]
+    [InlineData("https://\u200d.example")]
     public void should_refuse_hostile_indicators(string? indicator) =>
         new RegisterResource(indicator, "api", "api", new("API")).Handle(_decision).IsT1.ShouldBeTrue();
 
@@ -63,6 +64,11 @@ public class when_registering_resources : given.resource_commands
     [Theory]
     [InlineData("https://API.EXAMPLE:443/", "https://api.example")]
     [InlineData("https://API.EXAMPLE/a/../b/", "https://api.example/b")]
+    [InlineData("https://bücher.example", "https://xn--bcher-kva.example")]
+    [InlineData("https://XN--BCHER-KVA.EXAMPLE.:443/", "https://xn--bcher-kva.example")]
+    [InlineData("https://api.example./", "https://api.example")]
+    [InlineData("https://api.example:444/", "https://api.example:444")]
+    [InlineData("https://[2001:DB8::1]:443/", "https://[2001:db8::1]")]
     public void should_emit_only_an_internal_fact_on_a_new_uuid_stream(string indicator, string expected)
     {
         var command = new RegisterResource(indicator, "api", "api", new("API"));
@@ -84,11 +90,22 @@ public class when_registering_resources : given.resource_commands
     [InlineData("https://other.example", "other", "api")]
     public void should_read_and_refuse_configuration_reservations(string indicator, string audience, string prefix)
     {
-        var catalog = new ResourceCatalog(Options.Create(new IdentityOptions
-        {
-            Resources = [new() { Audience = "api", Indicators = ["https://api.example"], Scopes = [new() { Name = "api:read" }] }]
-        }));
+        var catalog = ConfiguredCatalog("https://api.example");
         var command = new RegisterResource(indicator, audience, prefix, new("Other"));
+        command.Handle(command.Provide(new(catalog))).IsT1.ShouldBeTrue();
+    }
+
+    [Theory]
+    [InlineData("https://bücher.example", "https://xn--bcher-kva.example")]
+    [InlineData("https://xn--bcher-kva.example", "https://bücher.example")]
+    [InlineData("https://BÜCHER.EXAMPLE.:443/", "https://xn--bcher-kva.example")]
+    [InlineData("https://xn--bcher-kva.example", "https://BÜCHER.EXAMPLE.:443/")]
+    [InlineData("https://API.EXAMPLE.:443/", "https://api.example")]
+    [InlineData("https://api.example", "https://API.EXAMPLE.:443/")]
+    public void should_refuse_configured_indicator_aliases_in_both_directions(string configured, string proposed)
+    {
+        var catalog = ConfiguredCatalog(configured);
+        var command = new RegisterResource(proposed, "different", "different", new("Other"));
         command.Handle(command.Provide(new(catalog))).IsT1.ShouldBeTrue();
     }
 
@@ -102,4 +119,9 @@ public class when_registering_resources : given.resource_commands
         using var scope = provider.CreateScope();
         scope.ServiceProvider.GetRequiredService<ResourceRegistrationReads>().Read().Resources.ShouldBeEmpty();
     }
+
+    static ResourceCatalog ConfiguredCatalog(string indicator) => new(Options.Create(new IdentityOptions
+    {
+        Resources = [new() { Audience = "api", Indicators = [indicator], Scopes = [new() { Name = "api:read" }] }]
+    }));
 }
