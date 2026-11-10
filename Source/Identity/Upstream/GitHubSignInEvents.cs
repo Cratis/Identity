@@ -17,11 +17,11 @@ namespace Cratis.Identity.Upstream;
 /// Handles the GitHub OAuth sign-in: reads the GitHub user, links it to an account and replaces the upstream
 /// principal with the Identity session principal. The GitHub access token is used once and never stored.
 /// </summary>
-/// <param name="accounts">The verified account sign-in boundary.</param>
+/// <param name="services">Resolves the verified account sign-in boundary lazily, never from the constructor.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
 /// <param name="timeProvider">The trusted clock.</param>
 /// <param name="endpoints">The registered Identity endpoint paths.</param>
-internal class GitHubSignInEvents(IAccountSignIn accounts, ILogger<GitHubSignInEvents> logger, TimeProvider timeProvider, IOptions<IdentityEndpointOptions>? endpoints = null) : OAuthEvents
+internal class GitHubSignInEvents(IServiceProvider services, ILogger<GitHubSignInEvents> logger, TimeProvider timeProvider, IOptions<IdentityEndpointOptions>? endpoints = null) : OAuthEvents
 {
     /// <inheritdoc/>
     public override Task AccessDenied(AccessDeniedContext context)
@@ -60,6 +60,11 @@ internal class GitHubSignInEvents(IAccountSignIn accounts, ILogger<GitHubSignInE
         var user = GitHubUserResponse.Read(body.RootElement) ?? throw new GitHubUserResponseInvalid();
 
         var authentication = new GitHubConnection(GitHubConnection.FixedConnectionId, timeProvider).From(user, FactId.New());
+
+        // Resolved here, not in the constructor: ASP.NET Core builds this remote handler's Events on every
+        // request (to check the callback path), so an eagerly injected IAccountSignIn would reach Chronicle
+        // for unrelated requests such as the readiness probe, before the kernel has finished connecting.
+        var accounts = services.GetRequiredService<IAccountSignIn>();
         var account = await accounts.SignIn(authentication, new(user.Email, user.Name, user.Login), context.HttpContext.RequestAborted);
         logger.SignedIn(account.Id, user.Id, user.Login);
         context.Principal = SessionPrincipal.For(account, IdentitySchemes.GitHub, authentication.AuthTime);

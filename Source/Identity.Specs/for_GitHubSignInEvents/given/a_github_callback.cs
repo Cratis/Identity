@@ -10,6 +10,7 @@ using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Cratis.Identity.for_GitHubSignInEvents.given;
@@ -29,7 +30,8 @@ public class a_github_callback : Specification
         using var token = OAuthTokenResponse.Success(JsonDocument.Parse("{\"access_token\":\"synthetic-test-token\"}"));
         using var user = JsonDocument.Parse("{}");
         _context = new(new ClaimsPrincipal(new ClaimsIdentity()), new(), new DefaultHttpContext(), new("GitHub", "GitHub", typeof(OAuthHandler<OAuthOptions>)), new() { UserInformationEndpoint = "https://api.example.test/user" }, http, token, user.RootElement);
-        await new GitHubSignInEvents(signIn, NullLogger<GitHubSignInEvents>.Instance, TimeProvider.System).CreatingTicket(_context);
+        var services = new ServiceCollection().AddSingleton(signIn).BuildServiceProvider();
+        await new GitHubSignInEvents(services, NullLogger<GitHubSignInEvents>.Instance, TimeProvider.System).CreatingTicket(_context);
     }
 
     sealed class ProfileHandler(string response) : HttpMessageHandler

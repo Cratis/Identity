@@ -48,7 +48,7 @@ public class when_returning_to_a_prefixed_authorization_request : Specification
     }
 
     static GitHubSignInEvents Events(string prefix) => new(
-        Substitute.For<IAccountSignIn>(),
+        Substitute.For<IServiceProvider>(),
         NullLogger<GitHubSignInEvents>.Instance,
         TimeProvider.System,
         Options.Create(new IdentityEndpointOptions { RoutePrefix = prefix }));

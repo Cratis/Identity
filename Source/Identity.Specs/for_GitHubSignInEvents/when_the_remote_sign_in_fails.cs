@@ -21,7 +21,7 @@ public class when_the_remote_sign_in_fails : Specification
     void Establish()
     {
         _logger = new CapturingLogger();
-        _events = new GitHubSignInEvents(Substitute.For<IAccountSignIn>(), _logger, TimeProvider.System);
+        _events = new GitHubSignInEvents(Substitute.For<IServiceProvider>(), _logger, TimeProvider.System);
         _failure = new AuthenticationFailureException("The oauth state was missing or invalid.");
         _context = new RemoteFailureContext(
             new DefaultHttpContext(),

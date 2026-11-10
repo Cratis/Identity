@@ -32,7 +32,7 @@ public class when_the_request_is_aborted_before_the_callback_fails : Specificati
         _aborted.Cancel();
     }
 
-    Task Because() => new GitHubSignInEvents(Substitute.For<IAccountSignIn>(), NullLogger<GitHubSignInEvents>.Instance, TimeProvider.System).RemoteFailure(_context);
+    Task Because() => new GitHubSignInEvents(Substitute.For<IServiceProvider>(), NullLogger<GitHubSignInEvents>.Instance, TimeProvider.System).RemoteFailure(_context);
 
     void Destroy() => _aborted.Dispose();
 

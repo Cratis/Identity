@@ -9,6 +9,7 @@ using Cratis.Identity.Accounts;
 using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Cratis.Identity.for_GitHubSignInEvents;
@@ -28,9 +29,10 @@ public class when_the_sign_in_command_is_refused : Specification
         using var user = JsonDocument.Parse("{}");
         _initial = new(new ClaimsIdentity());
         _context = new(_initial, new(), new DefaultHttpContext(), new("GitHub", "GitHub", typeof(OAuthHandler<OAuthOptions>)), new() { UserInformationEndpoint = "https://api.example.test/user" }, http, token, user.RootElement);
+        var services = new ServiceCollection().AddSingleton(signIn).BuildServiceProvider();
         try
         {
-            await new GitHubSignInEvents(signIn, NullLogger<GitHubSignInEvents>.Instance, TimeProvider.System).CreatingTicket(_context);
+            await new GitHubSignInEvents(services, NullLogger<GitHubSignInEvents>.Instance, TimeProvider.System).CreatingTicket(_context);
         }
         catch (AccountOperationRefused error)
         {

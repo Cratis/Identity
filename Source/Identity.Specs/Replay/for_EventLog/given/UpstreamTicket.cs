@@ -8,6 +8,7 @@ using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Cratis.Identity.Replay.for_EventLog.given;
@@ -27,7 +28,8 @@ internal static class UpstreamTicket
         using var client = new HttpClient(new UserResponse());
         var options = new OAuthOptions { UserInformationEndpoint = "https://api.github.com/user", ClientSecret = Secrets.Client };
         var context = new OAuthCreatingTicketContext(new ClaimsPrincipal(new ClaimsIdentity()), properties, new DefaultHttpContext(), new AuthenticationScheme("GitHub", "GitHub", typeof(OAuthHandler<OAuthOptions>)), options, client, response, user.RootElement);
-        await new GitHubSignInEvents(accounts, NullLogger<GitHubSignInEvents>.Instance, clock).CreatingTicket(context);
+        var services = new ServiceCollection().AddSingleton(accounts).BuildServiceProvider();
+        await new GitHubSignInEvents(services, NullLogger<GitHubSignInEvents>.Instance, clock).CreatingTicket(context);
     }
 
     sealed class UserResponse : HttpMessageHandler

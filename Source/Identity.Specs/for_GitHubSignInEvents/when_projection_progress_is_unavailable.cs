@@ -20,7 +20,7 @@ public class when_projection_progress_is_unavailable : Specification
         {
             Properties = new() { RedirectUri = "/connect/authorize?client_id=cratis-cli" }
         };
-        await new GitHubSignInEvents(Substitute.For<IAccountSignIn>(), NullLogger<GitHubSignInEvents>.Instance, TimeProvider.System).RemoteFailure(_context);
+        await new GitHubSignInEvents(Substitute.For<IServiceProvider>(), NullLogger<GitHubSignInEvents>.Instance, TimeProvider.System).RemoteFailure(_context);
     }
 
     [Fact] void should_return_only_the_defined_temporary_failure() => _context.Response.Headers.Location.ToString().ShouldEqual("/connect/authorize?client_id=cratis-cli&upstream_error=temporarily_unavailable");

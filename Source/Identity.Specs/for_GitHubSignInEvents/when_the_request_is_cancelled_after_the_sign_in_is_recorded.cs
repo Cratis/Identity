@@ -12,6 +12,7 @@ using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Cratis.Identity.for_GitHubSignInEvents;
@@ -55,7 +56,8 @@ public class when_the_request_is_cancelled_after_the_sign_in_is_recorded : Accou
         _http = new() { RequestAborted = _aborted.Token };
         var scheme = new AuthenticationScheme("GitHub", "GitHub", typeof(OAuthHandler<OAuthOptions>));
         _context = new(_initial, new(), _http, scheme, new() { UserInformationEndpoint = "https://api.example.test/user" }, client, token, user.RootElement);
-        var events = new GitHubSignInEvents(_adapter, NullLogger<GitHubSignInEvents>.Instance, TimeProvider.System);
+        var services = new ServiceCollection().AddSingleton<IAccountSignIn>(_adapter).BuildServiceProvider();
+        var events = new GitHubSignInEvents(services, NullLogger<GitHubSignInEvents>.Instance, TimeProvider.System);
         _error = await Catch.Exception(() => events.CreatingTicket(_context));
 
         // The OAuth handler reports a thrown ticket error as a remote failure.
