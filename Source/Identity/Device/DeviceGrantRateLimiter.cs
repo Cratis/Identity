@@ -27,10 +27,10 @@ internal sealed class DeviceGrantRateLimiter(IDeviceGrantStateStore store, IOpti
         try
         {
             var limits = options.Value.DeviceGrant;
-            return (await Attempt("ip", ip, limits.AttemptsPerIp, limits.VerificationWindow, cancellationToken) &&
-                await Attempt("account", account, limits.AttemptsPerAccount, limits.VerificationWindow, cancellationToken) &&
-                await Attempt("code", Normalize(code) ?? "malformed", limits.AttemptsPerCode, limits.VerificationWindow, cancellationToken) &&
-                await Attempt("global", "verification", limits.AttemptsGlobally, limits.VerificationWindow, cancellationToken)) || Refused();
+            return (await Attempt(new("ip", limits.AttemptsPerIp, limits.VerificationWindow), ip, cancellationToken) &&
+                await Attempt(new("account", limits.AttemptsPerAccount, limits.VerificationWindow), account, cancellationToken) &&
+                await Attempt(new("code", limits.AttemptsPerCode, limits.VerificationWindow), Normalize(code) ?? "malformed", cancellationToken) &&
+                await Attempt(new("global", limits.AttemptsGlobally, limits.VerificationWindow), "verification", cancellationToken)) || Refused();
         }
         catch (Exception)
         {
@@ -52,7 +52,7 @@ internal sealed class DeviceGrantRateLimiter(IDeviceGrantStateStore store, IOpti
         if (string.IsNullOrEmpty(ip)) return Refused();
         try
         {
-            return await Attempt("issuance-ip", ip, options.Value.DeviceGrant.IssuancesPerIp, TimeSpan.FromMinutes(1), cancellationToken) || Refused();
+            return await Attempt(new("issuance-ip", options.Value.DeviceGrant.IssuancesPerIp, TimeSpan.FromMinutes(1)), ip, cancellationToken) || Refused();
         }
         catch (Exception)
         {
@@ -73,17 +73,7 @@ internal sealed class DeviceGrantRateLimiter(IDeviceGrantStateStore store, IOpti
             {
                 var now = time.GetUtcNow().UtcDateTime;
                 var previous = await store.Read(id, cancellationToken);
-                var current = previous is not null && previous.ExpiresAt > now ? previous : null;
-                var slow = current is not null && now < current.NextPoll;
-                var interval = checked((current?.Interval ?? (int)options.Value.DeviceGrant.PollingInterval.TotalSeconds) + (slow ? 5 : 0));
-                var next = new DeviceGrantState
-                {
-                    Id = id,
-                    Revision = checked((previous?.Revision ?? 0) + 1),
-                    Interval = interval,
-                    NextPoll = now.AddSeconds(interval),
-                    ExpiresAt = current?.ExpiresAt ?? now.Add(options.Value.DeviceGrant.CodeLifetime)
-                };
+                var (next, slow) = NextPollState(id, previous, now);
                 if (!await store.Replace(next, previous?.Revision, cancellationToken)) continue;
                 if (slow) logger.PollSlowed();
                 return slow;
@@ -101,12 +91,32 @@ internal sealed class DeviceGrantRateLimiter(IDeviceGrantStateStore store, IOpti
 
     static string Digest(string purpose, string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{purpose}:{value}")));
 
-    async Task<bool> Attempt(string purpose, string value, int limit, TimeSpan window, CancellationToken cancellationToken) =>
-        await store.Increment(Digest(purpose, value), time.GetUtcNow().UtcDateTime, window, cancellationToken) <= limit;
+    static bool IsActivePoll(DeviceGrantState? state, DateTime now) => state is not null && state.ExpiresAt > now;
+
+    (DeviceGrantState State, bool Slow) NextPollState(string id, DeviceGrantState? previous, DateTime now)
+    {
+        var current = IsActivePoll(previous, now) ? previous : null;
+        var slow = current is not null && now < current.NextPoll;
+        var interval = checked((current?.Interval ?? (int)options.Value.DeviceGrant.PollingInterval.TotalSeconds) + (slow ? 5 : 0));
+        var next = new DeviceGrantState
+        {
+            Id = id,
+            Revision = checked((previous?.Revision ?? 0) + 1),
+            Interval = interval,
+            NextPoll = now.AddSeconds(interval),
+            ExpiresAt = current?.ExpiresAt ?? now.Add(options.Value.DeviceGrant.CodeLifetime)
+        };
+        return (next, slow);
+    }
+
+    async Task<bool> Attempt(RateWindow window, string value, CancellationToken cancellationToken) =>
+        await store.Increment(Digest(window.Purpose, value), time.GetUtcNow().UtcDateTime, window.Duration, cancellationToken) <= window.Limit;
 
     bool Refused()
     {
         logger.ThrottleRefused();
         return false;
     }
+
+    sealed record RateWindow(string Purpose, int Limit, TimeSpan Duration);
 }

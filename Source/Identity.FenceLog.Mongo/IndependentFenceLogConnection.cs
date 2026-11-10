@@ -52,7 +52,7 @@ public sealed class IndependentFenceLogConnection : IDisposable
         }
 
         var log = new MongoIndependentFenceLog(Database, TimeProvider.System);
-        var metadata = await log.Metadata(cancellationToken);
+        var metadata = await log.Metadata(null, cancellationToken);
         if (metadata["instanceId"].AsString != _options.InstanceId || metadata["allocated"].AsInt64 < _options.MinimumSequence)
         {
             throw new RevocationPending();
