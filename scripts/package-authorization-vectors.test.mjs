@@ -77,12 +77,15 @@ test('baseline rejects a vector file hash edit alone', () => {
 });
 
 test('a version bump requires a new baseline and changelog entry', () => {
-    const changed = { ...manifest, version: '1.1.0' };
-    const updatedChangelog = changelog.replace('## 1.0.0', '## 1.1.0\n\n## 1.0.0');
+    const [major, minor] = manifest.version.split('.').map(Number);
+    const version = `${major}.${minor + 1}.0`;
+    const changed = { ...manifest, version };
+    const updatedChangelog = `## ${version}\n\n${changelog}`;
+    const updatedBaselines = [...baselineNames, `v${version}.json`];
     assert.throws(() => validateBaseline(changed, baseline), /Baseline version mismatch/);
-    assert.throws(() => validateBaselineHistory(changed, ['v1.0.0.json'], updatedChangelog), /Missing current baseline/);
-    assert.throws(() => validateBaselineHistory(changed, ['v1.0.0.json', 'v1.1.0.json'], changelog), /Changelog version mismatch/);
-    validateBaselineHistory(changed, ['v1.0.0.json', 'v1.1.0.json'], updatedChangelog);
+    assert.throws(() => validateBaselineHistory(changed, baselineNames, updatedChangelog), /Missing current baseline/);
+    assert.throws(() => validateBaselineHistory(changed, updatedBaselines, changelog), /Changelog version mismatch/);
+    validateBaselineHistory(changed, updatedBaselines, updatedChangelog);
 });
 
 test('every older baseline must be retained and listed in the changelog', () => {

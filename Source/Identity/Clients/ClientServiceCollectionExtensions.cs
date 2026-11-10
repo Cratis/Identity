@@ -8,6 +8,10 @@ namespace Cratis.Identity.Clients;
 /// <summary>Isolated registration for Internal client administration.</summary>
 internal static class ClientServiceCollectionExtensions
 {
+    /// <summary>Adds configured client descriptors.</summary>
+    /// <param name="services">The service collection.</param>
+    internal static void AddClients(this IServiceCollection services) => services.AddSingleton<ClientDescriptors>();
+
     /// <summary>Registers the server-held producer and registration reads; reducers and constraints use Chronicle discovery.</summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">Protected server configuration.</param>
