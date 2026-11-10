@@ -11,8 +11,10 @@ using MongoDB.Driver.Core.Events;
 namespace Cratis.Identity.Integration.for_GrantFences;
 
 [Collection(IdentityCollection.Name)]
-public class when_reading_a_watermark_snapshot(IdentityHost host)
+public class when_reading_a_watermark_snapshot(IdentityHost host) : IAsyncDisposable
 {
+    readonly List<IMongoDatabase> _databases = [];
+
     [Fact]
     public async Task should_keep_entries_and_counter_consistent_when_a_reservation_commits_between_reads()
     {
@@ -34,7 +36,9 @@ public class when_reading_a_watermark_snapshot(IdentityHost host)
             {
                 // The server has enumerated the entries in this transaction, but the counter read cannot start yet.
                 enumerated.TrySetResult();
-                resume.Task.WaitAsync(TimeSpan.FromSeconds(30)).GetAwaiter().GetResult();
+
+                // Bounded wait; the spec body observes a missing release as a failed assertion, not a driver-thread exception.
+                resume.Task.Wait(TimeSpan.FromSeconds(30));
             }
         });
         using var readerClient = new MongoClient(settings);
@@ -42,7 +46,14 @@ public class when_reading_a_watermark_snapshot(IdentityHost host)
         var watermark = Task.Run(() => reader.Watermark(CancellationToken.None));
         try
         {
-            await enumerated.Task.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+            var first = await Task.WhenAny(enumerated.Task, watermark).WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+            if (first == watermark)
+            {
+                // The read finished before pausing; surface its failure or the missed pause.
+                await watermark;
+                Assert.Fail("The watermark read completed before the entry enumeration was observed.");
+            }
+
             await writer.Reserve(Guid.NewGuid(), "pending-grant", CancellationToken.None);
         }
         finally
@@ -81,10 +92,22 @@ public class when_reading_a_watermark_snapshot(IdentityHost host)
     {
         var independent = host.Services.GetRequiredService<IndependentFenceLogConnection>().Database;
         var database = independent.Client.GetDatabase($"watermark-test-{Guid.NewGuid():N}");
+        _databases.Add(database);
         await database.GetCollection<BsonDocument>("fence-custody").InsertOneAsync(new BsonDocument
         {
             { "_id", "metadata" }, { "instanceId", Guid.NewGuid().ToString("D") }, { "allocated", 0L }, { "epoch", 0L }
         });
         return database;
+    }
+
+    /// <inheritdoc/>
+    public async ValueTask DisposeAsync()
+    {
+        foreach (var database in _databases)
+        {
+            await database.Client.DropDatabaseAsync(database.DatabaseNamespace.DatabaseName);
+        }
+
+        GC.SuppressFinalize(this);
     }
 }

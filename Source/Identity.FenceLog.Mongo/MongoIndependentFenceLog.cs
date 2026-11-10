@@ -177,7 +177,7 @@ public sealed class MongoIndependentFenceLog(Func<IMongoDatabase> database, Time
                 }
             }
 
-            if (expected != (await Metadata(token, transaction))["allocated"].AsInt64)
+            if (expected != (await Metadata(transaction, token))["allocated"].AsInt64)
             {
                 throw new RevocationPending();
             }
@@ -217,7 +217,7 @@ public sealed class MongoIndependentFenceLog(Func<IMongoDatabase> database, Time
     /// <inheritdoc/>
     public async Task<RecoveryCustody> Custody(CancellationToken cancellationToken)
     {
-        var metadata = await Metadata(cancellationToken);
+        var metadata = await Metadata(null, cancellationToken);
         return new(
             metadata["instanceId"].AsString,
             metadata.GetValue("appliedThrough", 0L).AsInt64,
@@ -300,10 +300,10 @@ public sealed class MongoIndependentFenceLog(Func<IMongoDatabase> database, Time
     }
 
     /// <inheritdoc/>
-    public async Task<long> AllocatedThrough(CancellationToken cancellationToken) => (await Metadata(cancellationToken))["allocated"].AsInt64;
+    public async Task<long> AllocatedThrough(CancellationToken cancellationToken) => (await Metadata(null, cancellationToken))["allocated"].AsInt64;
 
     /// <inheritdoc/>
-    public async Task<long> RecoveryEpoch(CancellationToken cancellationToken) => (await Metadata(cancellationToken))["epoch"].AsInt64;
+    public async Task<long> RecoveryEpoch(CancellationToken cancellationToken) => (await Metadata(null, cancellationToken))["epoch"].AsInt64;
 
     /// <inheritdoc/>
     public Task<long> AdvanceEpoch(string restoreId, CancellationToken cancellationToken) => throw new RevocationPending();
@@ -350,11 +350,11 @@ public sealed class MongoIndependentFenceLog(Func<IMongoDatabase> database, Time
     }
 
     /// <summary>Reads and validates existing independent custody metadata.</summary>
-    /// <param name="cancellationToken">Cancellation.</param>
     /// <param name="session">An optional consistent read transaction.</param>
+    /// <param name="cancellationToken">Cancellation.</param>
     /// <returns>The existing metadata; never an initialized replacement.</returns>
     /// <exception cref="RevocationPending">Custody is missing or inconsistent.</exception>
-    internal async Task<BsonDocument> Metadata(CancellationToken cancellationToken, IClientSessionHandle? session = null)
+    internal async Task<BsonDocument> Metadata(IClientSessionHandle? session, CancellationToken cancellationToken)
     {
         var filter = new BsonDocument("_id", "metadata");
         var query = session is null ? _metadata.Find(filter) : _metadata.Find(session, filter);
