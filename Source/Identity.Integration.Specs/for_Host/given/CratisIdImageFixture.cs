@@ -56,6 +56,7 @@ public sealed class CratisIdImageFixture : IAsyncDisposable
     /// <summary>Starts the stores, the Chronicle kernel and the image, and waits until the image reports readiness.</summary>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The startup task.</returns>
+    /// <exception cref="InvalidOperationException">The image did not become ready; the message carries the container logs.</exception>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         await _network.CreateAsync(cancellationToken);
@@ -89,7 +90,56 @@ public sealed class CratisIdImageFixture : IAsyncDisposable
         }
 
         _image = builder.Build();
-        await _image.StartAsync(cancellationToken);
+        try
+        {
+            await _image.StartAsync(cancellationToken);
+        }
+        catch (Exception exception) when (exception is TimeoutException or InvalidOperationException)
+        {
+            var diagnostics = await ReadDiagnosticsAsync();
+            throw new InvalidOperationException($"The image did not become ready. Diagnostics follow.{Environment.NewLine}{diagnostics}", exception);
+        }
+    }
+
+    static string Tail(string text, int lines) => string.Join(Environment.NewLine, text.Split('\n').TakeLast(lines));
+
+    async Task<string> ReadDiagnosticsAsync()
+    {
+        var builder = new System.Text.StringBuilder();
+        foreach (var (name, container) in new[] { ("image", _image), ("chronicle", _chronicle) })
+        {
+            if (container is null)
+            {
+                continue;
+            }
+
+            try
+            {
+                var (stdout, stderr) = await container.GetLogsAsync();
+                builder
+                    .AppendLine($"--- {name} stdout (tail) ---")
+                    .AppendLine(Tail(stdout, 150))
+                    .AppendLine($"--- {name} stderr (tail) ---")
+                    .AppendLine(Tail(stderr, 50));
+            }
+            catch (Exception exception)
+            {
+                builder.AppendLine($"--- {name} logs unavailable: {exception.GetType().Name} ---");
+            }
+        }
+
+        try
+        {
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            using var response = await client.GetAsync(new Uri(BaseAddress, "/readyz"));
+            builder.AppendLine($"--- /readyz: {(int)response.StatusCode} ---").AppendLine(await response.Content.ReadAsStringAsync());
+        }
+        catch (Exception exception)
+        {
+            builder.AppendLine($"--- /readyz probe failed: {exception.GetType().Name} ---");
+        }
+
+        return builder.ToString();
     }
 
     /// <inheritdoc/>
