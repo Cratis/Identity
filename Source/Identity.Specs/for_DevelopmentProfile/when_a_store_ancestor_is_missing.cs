@@ -17,7 +17,10 @@ public class when_a_store_ancestor_is_missing : given.a_development_profile
         Directory.Delete(_missingParent, recursive: true);
     }
 
-    void Because() => _exception = Catch.Exception(() => new DevelopmentKeyStore(_root, _contentRoot, TimeProvider.System,
+    void Because() => _exception = Catch.Exception(() => new DevelopmentKeyStore(
+        _root,
+        _contentRoot,
+        TimeProvider.System,
         beforeDirectoryCreation: _ => _creationAttempted = true).Provision(StoreName));
 
     [Fact] void should_require_the_user_to_create_the_parent_without_creating_any_store_directory()

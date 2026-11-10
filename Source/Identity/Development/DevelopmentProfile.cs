@@ -69,14 +69,17 @@ internal static class DevelopmentProfile
         var issuer = Validate(configuration, startupOptions, development);
         store.ValidateLocation(Authority(issuer));
         prepareParent?.Invoke();
-        var directory = store.Provision(Authority(issuer));
-
-        startupOptions.SecretStore.Path = directory;
+        startupOptions.SecretStore.Path = store.Provision(Authority(issuer));
         startupOptions.Resources = [.. development.Resources];
 
         return new AppliedDevelopmentProfile(development, store.Custody);
     }
 
+    /// <summary>
+    /// Creates the application-data parent folders before the key store validates its ancestor chain.
+    /// </summary>
+    /// <param name="dataRoot">The per-user application data root.</param>
+    /// <exception cref="DevelopmentProfileRefused">The application data root is unavailable.</exception>
     internal static void EnsureParent(string dataRoot)
     {
         if (string.IsNullOrWhiteSpace(dataRoot))

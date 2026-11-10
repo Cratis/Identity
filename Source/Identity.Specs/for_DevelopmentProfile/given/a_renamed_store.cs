@@ -28,7 +28,10 @@ public class a_renamed_store : a_development_profile
         {
             try
             {
-                var store = new DevelopmentKeyStore(_root, _contentRoot, TimeProvider.System,
+                var store = new DevelopmentKeyStore(
+                    _root,
+                    _contentRoot,
+                    TimeProvider.System,
                     beforeStoreUse: directory =>
                     {
                         // Synchronous seam: validation and pinning have finished, but no marker or key has been touched.

@@ -54,9 +54,10 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
     /// <summary>Gets the file system's path comparison.</summary>
     internal static StringComparison PathComparison => OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
+    /// <summary>
+    /// Gets the process-lifetime custody established during provisioning.
+    /// </summary>
     internal DevelopmentKeyStoreRoot Custody { get; private set; } = null!;
-
-    internal void ValidateLocation(string authority) => _ = ResolveLocation(root, contentRoot, authority);
 
     /// <summary>Validates and pins the store, then ensures a currently valid signing and encryption pair.</summary>
     /// <param name="authority">The sanitized issuer authority naming the leaf directory.</param>
@@ -89,6 +90,11 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
         return string.Equals(normalizedPath, normalizedParent, PathComparison) || normalizedPath.StartsWith(normalizedParent + Path.DirectorySeparatorChar, PathComparison);
     }
 
+    /// <summary>
+    /// Determines whether a name matches the development certificate or private-key naming convention.
+    /// </summary>
+    /// <param name="name">The child file name.</param>
+    /// <returns>Whether the name is a recognized development key file.</returns>
     internal static bool IsDevelopmentFile(string name)
     {
         var parts = name.Split('.');
@@ -96,6 +102,12 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
             parts[1].StartsWith(NamePrefix, StringComparison.Ordinal) && parts[1].All(_ => char.IsAsciiLetterOrDigit(_) || _ == '-') &&
             (parts[2] == "crt" || parts[2] == "key");
     }
+
+    /// <summary>
+    /// Validates the configured location before any host bootstrap creates parent folders.
+    /// </summary>
+    /// <param name="authority">The sanitized issuer authority naming the leaf directory.</param>
+    internal void ValidateLocation(string authority) => _ = ResolveLocation(root, contentRoot, authority);
 
     static string ResolveLocation(string dataRoot, string applicationRoot, string authority)
     {

@@ -16,8 +16,12 @@ public class when_an_ancestor_is_owned_by_another_user : given.a_development_pro
         {
             var intermediate = Path.Combine(_root, "cratis");
             Directory.Exists(intermediate).ShouldBeTrue();
-            var store = new DevelopmentKeyStore(_root, _contentRoot, TimeProvider.System,
-                // Model a stationary foreign UID without requiring privileged chown in the runner.
+
+            // Model a stationary foreign UID without requiring privileged chown in the runner.
+            var store = new DevelopmentKeyStore(
+                _root,
+                _contentRoot,
+                TimeProvider.System,
                 ancestorOwner: path => Path.GetFileName(path) == "cratis" ? int.MaxValue : 0);
             store.Provision(StoreName);
         }

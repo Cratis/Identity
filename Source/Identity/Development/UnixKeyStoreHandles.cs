@@ -16,13 +16,38 @@ internal static partial class UnixKeyStoreHandles
 {
     const int Exists = 17;
     const int Missing = 2;
-    const uint DirectoryMode = 448; // 0700
-    const uint FileMode = 384; // 0600
 
+    /// <summary>
+    /// The owner-only directory mode (0700).
+    /// </summary>
+    const uint DirectoryMode = 448;
+
+    /// <summary>
+    /// The owner-only file mode (0600).
+    /// </summary>
+    const uint FileMode = 384;
+
+    /// <summary>
+    /// Gets the effective user identifier used for ownership validation.
+    /// </summary>
     internal static uint CurrentUser => GetEffectiveUser();
 
+    static bool IsLinuxArm => OperatingSystem.IsLinux() && RuntimeInformation.ProcessArchitecture is Architecture.Arm or Architecture.Arm64;
+
+    /// <summary>
+    /// Gets the no-follow file flags combined with O_DIRECTORY.
+    /// </summary>
+    static int DirectoryFlags => FileFlags | (OperatingSystem.IsMacOS() ? 0x100000 : IsLinuxArm ? 0x4000 : 0x10000);
+
+    /// <summary>
+    /// Gets O_NOFOLLOW, O_CLOEXEC and O_NONBLOCK for the platform ABI.
+    /// </summary>
+    static int FileFlags => OperatingSystem.IsMacOS() ? 0x1000104 : IsLinuxArm ? 0x88800 : 0xa0800;
+
+    /// <inheritdoc cref="KeyStoreHandles.OpenRoot"/>
     internal static SafeFileHandle OpenRoot(string path) => Own(OpenAt(-1, path, DirectoryFlags, 0), "open the filesystem root");
 
+    /// <inheritdoc cref="KeyStoreHandles.Open"/>
     internal static SafeFileHandle? Open(SafeFileHandle parent, string name, bool directory, bool create = false)
     {
         var flags = directory ? DirectoryFlags : FileFlags;
@@ -32,17 +57,15 @@ internal static partial class UnixKeyStoreHandles
         }
 
         var fd = OpenAt(parent.DangerousGetHandle().ToInt32(), name, flags, FileMode);
-        if (fd < 0)
+        if (fd < 0 && !create && Marshal.GetLastPInvokeError() == Missing)
         {
-            if (!create && Marshal.GetLastPInvokeError() == Missing)
-            {
-                return null;
-            }
+            return null;
         }
 
         return Own(fd, $"open {name} without following links");
     }
 
+    /// <inheritdoc cref="KeyStoreHandles.CreateDirectory"/>
     internal static void CreateDirectory(SafeFileHandle parent, string name)
     {
         if (MakeDirectoryAt(parent, name, DirectoryMode) != 0 && Marshal.GetLastPInvokeError() != Exists)
@@ -51,6 +74,8 @@ internal static partial class UnixKeyStoreHandles
         }
     }
 
+    /// <inheritdoc cref="KeyStoreHandles.Identity"/>
+    /// <exception cref="DevelopmentProfileRefused">The operating system does not support handle-relative custody.</exception>
     internal static KeyStoreFileIdentity Identity(SafeFileHandle handle)
     {
         if (OperatingSystem.IsMacOS())
@@ -66,6 +91,12 @@ internal static partial class UnixKeyStoreHandles
         throw new DevelopmentProfileRefused("handle-relative development key custody is supported only on Windows, macOS and Linux.");
     }
 
+    /// <summary>
+    /// Enumerates child names using a fresh directory stream with its own offset.
+    /// </summary>
+    /// <param name="parent">The pinned directory handle.</param>
+    /// <returns>The child names, excluding dot entries.</returns>
+    /// <exception cref="DevelopmentProfileRefused">The directory stream cannot be opened or enumerated.</exception>
     internal static IReadOnlyList<string> Entries(SafeFileHandle parent)
     {
         // A fresh open of '.' gives enumeration its own offset, unlike dup of the pinned descriptor.
@@ -106,6 +137,13 @@ internal static partial class UnixKeyStoreHandles
         }
     }
 
+    /// <summary>
+    /// Atomically links a completed temporary file to its destination without replacing an existing file.
+    /// </summary>
+    /// <param name="parent">The pinned parent handle.</param>
+    /// <param name="temporary">The temporary file name.</param>
+    /// <param name="name">The destination name.</param>
+    /// <exception cref="DevelopmentProfileRefused">The file cannot be published without replacing existing content.</exception>
     internal static void Publish(SafeFileHandle parent, string temporary, string name)
     {
         // linkat publishes a complete file atomically and, unlike renameat, never replaces an existing destination.
@@ -115,6 +153,7 @@ internal static partial class UnixKeyStoreHandles
         }
     }
 
+    /// <inheritdoc cref="KeyStoreHandles.Delete"/>
     internal static void Delete(SafeFileHandle parent, string name)
     {
         if (UnlinkAt(parent, name, 0) != 0 && Marshal.GetLastPInvokeError() != Missing)
@@ -123,6 +162,13 @@ internal static partial class UnixKeyStoreHandles
         }
     }
 
+    /// <summary>
+    /// Requires current-user ownership, owner-only mode bits and no extended access grants.
+    /// </summary>
+    /// <param name="handle">The handle to validate for extended access.</param>
+    /// <param name="identity">The metadata read from the handle.</param>
+    /// <param name="what">The diagnostic description of the object.</param>
+    /// <exception cref="DevelopmentProfileRefused">The object permits other users access or belongs to another user.</exception>
     internal static void RequireOwnerOnly(SafeFileHandle handle, KeyStoreFileIdentity identity, string what)
     {
         var ownerMode = identity.IsDirectory ? (int)DirectoryMode : (int)FileMode;
@@ -141,6 +187,14 @@ internal static partial class UnixKeyStoreHandles
         RequireExtendedAccess(handle);
     }
 
+    /// <summary>
+    /// Requires ancestor ownership and permissions that prevent replacement by other users.
+    /// </summary>
+    /// <param name="handle">The pinned ancestor handle.</param>
+    /// <param name="identity">The metadata read from the handle.</param>
+    /// <param name="path">The diagnostic ancestor path.</param>
+    /// <param name="ancestorOwner">An optional ownership reader for specifications.</param>
+    /// <exception cref="DevelopmentProfileRefused">The ancestor is owned by another user or is unsafely writable by others.</exception>
     internal static void RequireSafeAncestor(SafeFileHandle handle, KeyStoreFileIdentity identity, string path, Func<string, int>? ancestorOwner)
     {
         var owner = ancestorOwner is null ? identity.Owner : checked((uint)ancestorOwner(path));
@@ -179,12 +233,6 @@ internal static partial class UnixKeyStoreHandles
     static IntPtr OpenStream(int descriptor) => OperatingSystem.IsMacOS() && RuntimeInformation.ProcessArchitecture == Architecture.X64
         ? OpenDirectoryStreamInode64(descriptor)
         : OpenDirectoryStream(descriptor);
-
-    static bool IsLinuxArm => OperatingSystem.IsLinux() && RuntimeInformation.ProcessArchitecture is Architecture.Arm or Architecture.Arm64;
-
-    static int DirectoryFlags => FileFlags | (OperatingSystem.IsMacOS() ? 0x100000 : IsLinuxArm ? 0x4000 : 0x10000); // O_DIRECTORY
-
-    static int FileFlags => OperatingSystem.IsMacOS() ? 0x1000104 : IsLinuxArm ? 0x88800 : 0xa0800; // O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK
 
     static IntPtr NextEntry(IntPtr directory)
     {

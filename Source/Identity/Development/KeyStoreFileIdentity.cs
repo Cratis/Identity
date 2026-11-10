@@ -13,9 +13,20 @@ namespace Cratis.Identity.Development;
 /// <param name="InodeHigh">The high half of a Windows 128-bit file identifier.</param>
 internal sealed record KeyStoreFileIdentity(ulong Device, ulong Inode, uint Owner, int Mode, ulong InodeHigh = 0)
 {
+    /// <summary>
+    /// Gets whether the object is a directory.
+    /// </summary>
     internal bool IsDirectory => (Mode & 0xf000) == 0x4000;
 
+    /// <summary>
+    /// Gets whether the object is a regular file.
+    /// </summary>
     internal bool IsFile => (Mode & 0xf000) == 0x8000;
 
+    /// <summary>
+    /// Compares the stable object identifiers, excluding mutable security metadata.
+    /// </summary>
+    /// <param name="other">The identity to compare.</param>
+    /// <returns>Whether both identities refer to the same object.</returns>
     internal bool SameObject(KeyStoreFileIdentity other) => Device == other.Device && Inode == other.Inode && InodeHigh == other.InodeHigh;
 }

@@ -24,6 +24,7 @@ internal static partial class WindowsKeyStoreHandles
     const int NoSuchFile = unchecked((int)0xc000000f);
     const int NoMoreFiles = unchecked((int)0x80000006);
 
+    /// <inheritdoc cref="KeyStoreHandles.OpenRoot"/>
     internal static SafeFileHandle OpenRoot(string path)
     {
         var handle = CreateFile(path, MaximumAllowed, ShareAll, IntPtr.Zero, 3, 0x02200000, IntPtr.Zero);
@@ -36,42 +37,48 @@ internal static partial class WindowsKeyStoreHandles
         return handle;
     }
 
+    /// <inheritdoc cref="KeyStoreHandles.Open"/>
     internal static unsafe SafeFileHandle? Open(SafeFileHandle parent, string name, bool directory, bool create = false)
     {
         var descriptor = create ? OwnerOnlyDescriptor(directory) : [];
         fixed (char* characters = name)
-        fixed (byte* security = descriptor)
         {
-            var unicode = new UnicodeName { Length = checked((ushort)(name.Length * 2)), MaximumLength = checked((ushort)(name.Length * 2)), Buffer = (IntPtr)characters };
-            var attributes = new ObjectAttributes
+            fixed (byte* security = descriptor)
             {
-                Length = (uint)Marshal.SizeOf<ObjectAttributes>(),
-                RootDirectory = parent.DangerousGetHandle(),
-                ObjectName = (IntPtr)(&unicode),
-                Attributes = 0x1040, // OBJ_DONT_REPARSE | OBJ_CASE_INSENSITIVE
-                SecurityDescriptor = (IntPtr)security
-            };
-            var status = CreateRelative(out var raw, MaximumAllowed | 0x100000, ref attributes, out _, IntPtr.Zero, 0, ShareAll, create ? 2u : 1u, 0x200020u | (directory ? 1u : 0x40u), IntPtr.Zero, 0);
-            if (!create && status is NameNotFound or PathNotFound or NoSuchFile)
-            {
-                return null;
-            }
+                var unicode = new UnicodeName { Length = checked((ushort)(name.Length * 2)), MaximumLength = checked((ushort)(name.Length * 2)), Buffer = (IntPtr)characters };
+                var attributes = new ObjectAttributes
+                {
+                    Length = (uint)Marshal.SizeOf<ObjectAttributes>(),
+                    RootDirectory = parent.DangerousGetHandle(),
+                    ObjectName = (IntPtr)(&unicode),
+                    Attributes = 0x1040, // OBJ_DONT_REPARSE | OBJ_CASE_INSENSITIVE
+                    SecurityDescriptor = (IntPtr)security
+                };
+                var status = CreateRelative(out var raw, MaximumAllowed | 0x100000, ref attributes, out _, IntPtr.Zero, 0, ShareAll, create ? 2u : 1u, 0x200020u | (directory ? 1u : 0x40u), IntPtr.Zero, 0);
+                if (!create && status is NameNotFound or PathNotFound or NoSuchFile)
+                {
+                    return null;
+                }
 
-            if (status < 0)
-            {
-                throw Refused($"open {name} without following reparse points", status);
-            }
+                if (status < 0)
+                {
+                    throw Refused($"open {name} without following reparse points", status);
+                }
 
-            return new SafeFileHandle(raw, ownsHandle: true);
+                return new SafeFileHandle(raw, ownsHandle: true);
+            }
         }
     }
 
+    /// <inheritdoc cref="KeyStoreHandles.CreateDirectory"/>
     internal static void CreateDirectory(SafeFileHandle parent, string name)
     {
         // The caller already attempted FILE_OPEN. A concurrent creation is refused rather than adopted silently.
-        using var created = Open(parent, name, directory: true, create: true)!;
+        using var created = Open(parent, name, directory: true, create: true);
     }
 
+    /// <inheritdoc cref="KeyStoreHandles.Identity"/>
+    /// <exception cref="DevelopmentProfileRefused">The object is a link or reparse point.</exception>
     internal static KeyStoreFileIdentity Identity(SafeFileHandle handle)
     {
         if (!GetInformation(handle, out var information))
@@ -93,6 +100,12 @@ internal static partial class WindowsKeyStoreHandles
         return new KeyStoreFileIdentity(identity.Volume, identity.IndexLow, 0, mode, identity.IndexHigh);
     }
 
+    /// <summary>
+    /// Requires an owner-only protected access control list on the open handle.
+    /// </summary>
+    /// <param name="handle">The handle to validate.</param>
+    /// <param name="what">The diagnostic description of the object.</param>
+    /// <exception cref="DevelopmentProfileRefused">The access control list is unsupported or unsafe.</exception>
     internal static void RequireOwnerOnly(SafeFileHandle handle, string what)
     {
         var security = new FileSecurity();
@@ -105,6 +118,12 @@ internal static partial class WindowsKeyStoreHandles
         }
     }
 
+    /// <summary>
+    /// Requires an ancestor access control list that prevents replacement by other users.
+    /// </summary>
+    /// <param name="handle">The pinned ancestor handle.</param>
+    /// <param name="path">The diagnostic ancestor path.</param>
+    /// <exception cref="DevelopmentProfileRefused">The ancestor access control list is unsafe.</exception>
     internal static void RequireSafeAncestor(SafeFileHandle handle, string path)
     {
         var descriptor = new RawSecurityDescriptor(ReadSecurity(handle), 0);
@@ -114,10 +133,17 @@ internal static partial class WindowsKeyStoreHandles
         }
     }
 
+    /// <summary>
+    /// Enumerates child names by restarting the scan of the pinned directory handle.
+    /// </summary>
+    /// <param name="parent">The pinned directory handle.</param>
+    /// <returns>The child names, excluding dot entries.</returns>
+    /// <exception cref="DevelopmentProfileRefused">The directory cannot be enumerated.</exception>
     internal static unsafe IReadOnlyList<string> Entries(SafeFileHandle parent)
     {
         var names = new List<string>();
         var buffer = new byte[65536];
+
         // Custody serializes enumeration on this handle; restart the scan for every read/reload.
         fixed (byte* data = buffer)
         {
@@ -141,6 +167,13 @@ internal static partial class WindowsKeyStoreHandles
         }
     }
 
+    /// <summary>
+    /// Atomically renames the open temporary file relative to its pinned parent without replacing an existing file.
+    /// </summary>
+    /// <param name="parent">The pinned parent handle.</param>
+    /// <param name="name">The destination name.</param>
+    /// <param name="file">The open temporary file handle.</param>
+    /// <exception cref="DevelopmentProfileRefused">The file cannot be published without replacing existing content.</exception>
     internal static unsafe void Publish(SafeFileHandle parent, string name, SafeFileHandle file)
     {
         // FILE_RENAME_INFO, with ReplaceIfExists false and a relative RootDirectory.
@@ -149,18 +182,21 @@ internal static partial class WindowsKeyStoreHandles
         var nameOffset = lengthOffset + sizeof(uint);
         var buffer = new byte[nameOffset + (name.Length * 2)];
         fixed (byte* data = buffer)
-        fixed (char* characters = name)
         {
-            *(IntPtr*)(data + rootOffset) = parent.DangerousGetHandle();
-            *(uint*)(data + lengthOffset) = (uint)(name.Length * 2);
-            Buffer.MemoryCopy(characters, data + nameOffset, name.Length * 2, name.Length * 2);
-            if (!SetInformation(file, 3, data, (uint)buffer.Length))
+            fixed (char* characters = name)
             {
-                throw Refused($"publish {name}");
+                *(IntPtr*)(data + rootOffset) = parent.DangerousGetHandle();
+                *(uint*)(data + lengthOffset) = (uint)(name.Length * 2);
+                Buffer.MemoryCopy(characters, data + nameOffset, name.Length * 2, name.Length * 2);
+                if (!SetInformation(file, 3, data, (uint)buffer.Length))
+                {
+                    throw Refused($"publish {name}");
+                }
             }
         }
     }
 
+    /// <inheritdoc cref="KeyStoreHandles.Delete"/>
     internal static unsafe void Delete(SafeFileHandle parent, string name)
     {
         using var file = Open(parent, name, directory: false);
@@ -232,6 +268,45 @@ internal static partial class WindowsKeyStoreHandles
 
     static DevelopmentProfileRefused Refused(string operation, int? status = null) => new($"cannot {operation} in the development key store (system error {status ?? Marshal.GetLastPInvokeError()}); no key material was adopted.");
 
+    [LibraryImport("kernel32.dll", EntryPoint = "CreateFileW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial SafeFileHandle CreateFile(string path, uint access, uint share, IntPtr security, uint disposition, uint flags, IntPtr template);
+
+    [LibraryImport("ntdll.dll", EntryPoint = "NtCreateFile")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial int CreateRelative(out IntPtr file, uint access, ref ObjectAttributes attributes, out IoStatus status, IntPtr allocation, uint fileAttributes, uint share, uint disposition, uint options, IntPtr extendedAttributes, uint extendedAttributesLength);
+
+    [LibraryImport("kernel32.dll", EntryPoint = "GetFileInformationByHandle", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetInformation(SafeFileHandle file, out FileInformation information);
+
+    [LibraryImport("kernel32.dll", EntryPoint = "GetFileInformationByHandleEx", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetIdentityInformation(SafeFileHandle file, int informationClass, out FileIdentityInformation information, uint length);
+
+    [LibraryImport("ntdll.dll", EntryPoint = "NtQueryDirectoryFile")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static unsafe partial int QueryDirectory(SafeFileHandle directory, IntPtr eventHandle, IntPtr routine, IntPtr context, out IoStatus status, byte* buffer, uint length, int informationClass, byte singleEntry, IntPtr name, byte restart);
+
+    [LibraryImport("kernel32.dll", EntryPoint = "SetFileInformationByHandle", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static unsafe partial bool SetInformation(SafeFileHandle file, int informationClass, byte* information, uint length);
+
+    [LibraryImport("advapi32.dll", EntryPoint = "GetSecurityInfo")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial uint GetSecurity(SafeFileHandle file, int objectType, uint information, out IntPtr owner, out IntPtr group, out IntPtr dacl, out IntPtr sacl, out IntPtr descriptor);
+
+    [LibraryImport("advapi32.dll", EntryPoint = "GetSecurityDescriptorLength")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial uint GetSecurityLength(IntPtr descriptor);
+
+    [LibraryImport("kernel32.dll", EntryPoint = "LocalFree")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial IntPtr FreeLocal(IntPtr memory);
+
     [StructLayout(LayoutKind.Sequential)]
     struct UnicodeName
     {
@@ -283,43 +358,4 @@ internal static partial class WindowsKeyStoreHandles
         internal uint IndexHigh;
         internal uint IndexLow;
     }
-
-    [LibraryImport("kernel32.dll", EntryPoint = "CreateFileW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static partial SafeFileHandle CreateFile(string path, uint access, uint share, IntPtr security, uint disposition, uint flags, IntPtr template);
-
-    [LibraryImport("ntdll.dll", EntryPoint = "NtCreateFile")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static partial int CreateRelative(out IntPtr file, uint access, ref ObjectAttributes attributes, out IoStatus status, IntPtr allocation, uint fileAttributes, uint share, uint disposition, uint options, IntPtr extendedAttributes, uint extendedAttributesLength);
-
-    [LibraryImport("kernel32.dll", EntryPoint = "GetFileInformationByHandle", SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool GetInformation(SafeFileHandle file, out FileInformation information);
-
-    [LibraryImport("kernel32.dll", EntryPoint = "GetFileInformationByHandleEx", SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool GetIdentityInformation(SafeFileHandle file, int informationClass, out FileIdentityInformation information, uint length);
-
-    [LibraryImport("ntdll.dll", EntryPoint = "NtQueryDirectoryFile")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static unsafe partial int QueryDirectory(SafeFileHandle directory, IntPtr eventHandle, IntPtr routine, IntPtr context, out IoStatus status, byte* buffer, uint length, int informationClass, byte singleEntry, IntPtr name, byte restart);
-
-    [LibraryImport("kernel32.dll", EntryPoint = "SetFileInformationByHandle", SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static unsafe partial bool SetInformation(SafeFileHandle file, int informationClass, byte* information, uint length);
-
-    [LibraryImport("advapi32.dll", EntryPoint = "GetSecurityInfo")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static partial uint GetSecurity(SafeFileHandle file, int objectType, uint information, out IntPtr owner, out IntPtr group, out IntPtr dacl, out IntPtr sacl, out IntPtr descriptor);
-
-    [LibraryImport("advapi32.dll", EntryPoint = "GetSecurityDescriptorLength")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static partial uint GetSecurityLength(IntPtr descriptor);
-
-    [LibraryImport("kernel32.dll", EntryPoint = "LocalFree")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static partial IntPtr FreeLocal(IntPtr memory);
 }

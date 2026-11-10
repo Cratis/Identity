@@ -11,6 +11,7 @@ namespace Cratis.Identity.Development;
 /// Persists the local Data Protection ring through the same process-lifetime directory custody as the signing keys.
 /// The child directory is pinned during provisioning; the file-system repository's pathname-based opens are never used.
 /// </summary>
+/// <param name="root">The process-lifetime custody of the validated development key directory.</param>
 internal sealed class DevelopmentXmlRepository(DevelopmentKeyStoreRoot root) : IXmlRepository
 {
     readonly DevelopmentKeyStoreRoot _directory = root.GetDirectory(DevelopmentKeyStore.DataProtectionDirectory);

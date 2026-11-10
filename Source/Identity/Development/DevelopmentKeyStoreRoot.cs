@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Cratis.Identity.Hosting;
 using Microsoft.Win32.SafeHandles;
@@ -27,7 +28,30 @@ internal sealed class DevelopmentKeyStoreRoot : IDisposable
         KeyStoreHandles.RequireOwnerOnly(handle, directory: true, "the key directory");
     }
 
+    /// <summary>
+    /// Gets the directory path for diagnostics only, never for custody operations.
+    /// </summary>
     internal string DirectoryPath { get; }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        lock (_lock)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            foreach (var child in _directories.Values)
+            {
+                child.Dispose();
+            }
+
+            _handle.Dispose();
+        }
+    }
 
     /// <summary>
     /// Validates the existing ancestor chain top-down and creates only the final leaf, if absent.
@@ -37,6 +61,7 @@ internal sealed class DevelopmentKeyStoreRoot : IDisposable
     /// <param name="beforeDirectoryCreation">Optional synchronization seam before leaf creation.</param>
     /// <param name="ancestorOwner">Optional ancestor ownership reader for specifications.</param>
     /// <returns>The custody of the validated leaf handle.</returns>
+    /// <exception cref="DevelopmentProfileRefused">An ancestor is missing or the created leaf disappears before it can be pinned.</exception>
     internal static DevelopmentKeyStoreRoot Open(string directory, Action<string>? beforeDirectoryCreation = null, Func<string, int>? ancestorOwner = null)
     {
         var path = Path.GetPathRoot(directory)!;
@@ -76,6 +101,10 @@ internal sealed class DevelopmentKeyStoreRoot : IDisposable
         }
     }
 
+    /// <summary>
+    /// Enumerates entries after revalidating the pinned directory.
+    /// </summary>
+    /// <returns>The child names.</returns>
     internal IReadOnlyList<string> Entries()
     {
         lock (_lock)
@@ -85,6 +114,12 @@ internal sealed class DevelopmentKeyStoreRoot : IDisposable
         }
     }
 
+    /// <summary>
+    /// Gets or creates validated custody of an owner-only child directory.
+    /// </summary>
+    /// <param name="name">The single child directory name.</param>
+    /// <returns>The cached custody of the child directory.</returns>
+    /// <exception cref="DevelopmentProfileRefused">The child disappears before it can be pinned.</exception>
     internal DevelopmentKeyStoreRoot GetDirectory(string name)
     {
         RequireName(name);
@@ -118,6 +153,13 @@ internal sealed class DevelopmentKeyStoreRoot : IDisposable
         }
     }
 
+    /// <summary>
+    /// Opens a child file for reading after validating its actual handle.
+    /// </summary>
+    /// <param name="name">The single child file name.</param>
+    /// <returns>A stream owning the validated file handle.</returns>
+    /// <exception cref="DevelopmentProfileRefused">The file disappears before it can be opened.</exception>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The returned FileStream owns the SafeFileHandle on success; the catch disposes it if validation or stream construction fails.")]
     internal FileStream OpenRead(string name)
     {
         RequireName(name);
@@ -138,6 +180,11 @@ internal sealed class DevelopmentKeyStoreRoot : IDisposable
         }
     }
 
+    /// <summary>
+    /// Reads a validated child file as UTF-8 text.
+    /// </summary>
+    /// <param name="name">The single child file name.</param>
+    /// <returns>The file content.</returns>
     internal string Read(string name)
     {
         using var stream = OpenRead(name);
@@ -145,6 +192,11 @@ internal sealed class DevelopmentKeyStoreRoot : IDisposable
         return reader.ReadToEnd();
     }
 
+    /// <summary>
+    /// Reads the development key files after checking provenance and rejecting unexpected entries.
+    /// </summary>
+    /// <returns>The key file content indexed by name.</returns>
+    /// <exception cref="DevelopmentProfileRefused">The directory contains an unexpected entry.</exception>
     internal IReadOnlyDictionary<string, string> ReadKeyFiles()
     {
         lock (_lock)
@@ -165,6 +217,10 @@ internal sealed class DevelopmentKeyStoreRoot : IDisposable
         }
     }
 
+    /// <summary>
+    /// Requires the development provenance marker to contain its expected value.
+    /// </summary>
+    /// <exception cref="DevelopmentProfileRefused">The marker content is invalid.</exception>
     internal void RequireMarker()
     {
         if (!string.Equals(Read(DevelopmentKeyStore.MarkerFile).Trim(), DevelopmentKeyStore.Marker, StringComparison.Ordinal))
@@ -173,6 +229,11 @@ internal sealed class DevelopmentKeyStoreRoot : IDisposable
         }
     }
 
+    /// <summary>
+    /// Writes and flushes an owner-only temporary file, then publishes it without replacing existing content.
+    /// </summary>
+    /// <param name="name">The single destination file name.</param>
+    /// <param name="content">The UTF-8 text to persist.</param>
     internal void WriteAtomically(string name, string content)
     {
         RequireName(name);
@@ -196,6 +257,10 @@ internal sealed class DevelopmentKeyStoreRoot : IDisposable
         }
     }
 
+    /// <summary>
+    /// Deletes a child file through the revalidated pinned directory.
+    /// </summary>
+    /// <param name="name">The single child file name.</param>
     internal void Delete(string name)
     {
         RequireName(name);
@@ -206,6 +271,11 @@ internal sealed class DevelopmentKeyStoreRoot : IDisposable
         }
     }
 
+    /// <summary>
+    /// Revalidates the identity and owner-only permissions of the pinned directory.
+    /// </summary>
+    /// <exception cref="ObjectDisposedException">Custody has been disposed.</exception>
+    /// <exception cref="DevelopmentProfileRefused">The pinned directory identity has changed.</exception>
     internal void VerifyIdentity()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -215,26 +285,6 @@ internal sealed class DevelopmentKeyStoreRoot : IDisposable
         }
 
         KeyStoreHandles.RequireOwnerOnly(_handle, directory: true, "the key directory");
-    }
-
-    /// <inheritdoc/>
-    public void Dispose()
-    {
-        lock (_lock)
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _disposed = true;
-            foreach (var child in _directories.Values)
-            {
-                child.Dispose();
-            }
-
-            _handle.Dispose();
-        }
     }
 
     static void RequireName(string name)

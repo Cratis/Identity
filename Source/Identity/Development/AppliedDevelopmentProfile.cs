@@ -29,6 +29,7 @@ internal sealed record AppliedDevelopmentProfile(DevelopmentOptions Options, Dev
         var directory = KeyDirectory;
         var development = Options;
         services.AddSingleton(development);
+
         // A factory registration lets the container own and dispose custody when the host shuts down.
         services.AddSingleton(_ => Root);
         services.PostConfigure<IdentityOptions>(options =>
