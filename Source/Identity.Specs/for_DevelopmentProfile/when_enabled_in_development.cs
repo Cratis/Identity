@@ -18,7 +18,7 @@ public class when_enabled_in_development : given.a_development_profile
     {
         Apply();
         _files = [.. Directory.EnumerateFiles(_storeDirectory).Select(Path.GetFileName)];
-        _keys = new SecretStoreKeys(new SecretStoreOptions { Path = _storeDirectory }, TimeProvider.System, NullLogger<SecretStoreKeys>.Instance, providesDataProtection: false);
+        _keys = new SecretStoreKeys(new SecretStoreOptions { Path = _storeDirectory }, TimeProvider.System, NullLogger<SecretStoreKeys>.Instance, providesDataProtection: false, developmentRoot: _custody);
         _ = _keys.Current;
     }
 

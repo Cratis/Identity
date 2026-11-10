@@ -13,7 +13,7 @@ public class when_the_data_root_is_a_link_into_the_repository : given.a_developm
     {
         _repositoryDirectory = Path.Combine(_contentRoot, "data");
         Directory.CreateDirectory(_repositoryDirectory);
-        Directory.Delete(_root);
+        Directory.Delete(_root, recursive: true);
         Directory.CreateSymbolicLink(_root, _repositoryDirectory);
     }
 

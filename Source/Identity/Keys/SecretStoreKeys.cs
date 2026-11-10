@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Configuration;
+using Cratis.Identity.Development;
+using Cratis.Identity.Hosting;
 using Microsoft.Extensions.Primitives;
 
 namespace Cratis.Identity.Keys;
@@ -17,7 +19,8 @@ namespace Cratis.Identity.Keys;
 /// <param name="timeProvider">The <see cref="TimeProvider"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
 /// <param name="providesDataProtection">Whether the store also holds the Data Protection ring. The local-development profile keeps that ring in a Data Protection key directory instead.</param>
-internal sealed class SecretStoreKeys(SecretStoreOptions options, TimeProvider timeProvider, ILogger<SecretStoreKeys> logger, bool providesDataProtection = true) : IDisposable
+/// <param name="developmentRoot">The pinned custody of local-development keys, or null for a deployed store.</param>
+internal sealed class SecretStoreKeys(SecretStoreOptions options, TimeProvider timeProvider, ILogger<SecretStoreKeys> logger, bool providesDataProtection = true, DevelopmentKeyStoreRoot? developmentRoot = null) : IDisposable
 {
     static readonly TimeSpan _dataProtectionExpiryWarning = TimeSpan.FromDays(14);
     readonly Lock _lock = new();
@@ -116,7 +119,7 @@ internal sealed class SecretStoreKeys(SecretStoreOptions options, TimeProvider t
                 logger.IssuanceStopped(exception.Message);
                 return;
             }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or DevelopmentProfileRefused)
             {
                 logger.ReloadRefused(options.Path, exception.GetType().Name);
                 return;
@@ -143,7 +146,7 @@ internal sealed class SecretStoreKeys(SecretStoreOptions options, TimeProvider t
 
     KeySnapshot Build()
     {
-        var ring = KeyRingLoader.Load(SecretStoreDirectory.Read(options.Path));
+        var ring = KeyRingLoader.Load(developmentRoot is null ? SecretStoreDirectory.Read(options.Path) : developmentRoot.ReadKeyFiles());
         var now = timeProvider.GetUtcNow();
 
         var active = ring.DataProtection.Where(_ => _.ActivationDate <= now && now < _.ExpirationDate).ToList();

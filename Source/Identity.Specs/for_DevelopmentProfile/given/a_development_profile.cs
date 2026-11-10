@@ -23,6 +23,8 @@ public class a_development_profile : Specification
     protected ServiceCollection _services;
     protected Exception _exception;
     protected string _dataProtectionPath;
+    private protected DevelopmentKeyStoreRoot _custody;
+    private protected List<DevelopmentKeyStoreRoot> _custodies;
 
     void Establish()
     {
@@ -31,6 +33,8 @@ public class a_development_profile : Specification
         _contentRoot = Path.Combine(parent, "content");
         Directory.CreateDirectory(_root);
         Directory.CreateDirectory(_contentRoot);
+        DevelopmentProfile.EnsureParent(_root);
+        _custodies = [];
         _storeDirectory = Path.Combine(_root, "cratis", "identity-dev", StoreName);
         _environment = new HostingEnvironment { EnvironmentName = "Development", ContentRootPath = _contentRoot };
         _services = [];
@@ -55,7 +59,15 @@ public class a_development_profile : Specification
         };
     }
 
-    void Destroy() => Directory.Delete(Directory.GetParent(_root)!.FullName, true);
+    void Destroy()
+    {
+        foreach (var custody in _custodies)
+        {
+            custody.Dispose();
+        }
+
+        Directory.Delete(Directory.GetParent(_root)!.FullName, true);
+    }
 
     protected IdentityOptions Startup() => _startupOptions = new ConfigurationBuilder().AddInMemoryCollection(_settings).Build().GetSection("Identity").Get<IdentityOptions>() ?? new();
 
@@ -66,5 +78,10 @@ public class a_development_profile : Specification
         var applied = DevelopmentProfile.Apply(configuration, _environment, _startupOptions, new DevelopmentKeyStore(_root, _contentRoot, time ?? TimeProvider.System));
         applied?.Register(_services);
         _dataProtectionPath = applied?.DataProtectionPath;
+        _custody = applied?.Root;
+        if (_custody is not null)
+        {
+            _custodies.Add(_custody);
+        }
     });
 }

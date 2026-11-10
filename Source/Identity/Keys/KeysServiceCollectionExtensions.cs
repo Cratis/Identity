@@ -2,7 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Configuration;
+using Cratis.Identity.Development;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.Options;
 using OpenIddict.Server;
 
@@ -14,8 +16,8 @@ internal static class KeysServiceCollectionExtensions
     /// <summary>Adds the secret-store-backed key ring when configured.</summary>
     /// <param name="services">The services.</param>
     /// <param name="startupOptions">The startup options.</param>
-    /// <param name="developmentDataProtectionPath">The Data Protection key directory of the local-development profile, or <see langword="null"/> for the deployed ring in the secret store.</param>
-    internal static void AddSecretStoreKeys(this IServiceCollection services, IdentityOptions startupOptions, string? developmentDataProtectionPath = null)
+    /// <param name="developmentRoot">The pinned custody of local-development keys, or <see langword="null"/> for a deployed store.</param>
+    internal static void AddSecretStoreKeys(this IServiceCollection services, IdentityOptions startupOptions, DevelopmentKeyStoreRoot? developmentRoot = null)
     {
         var dataProtection = services.AddDataProtection().SetApplicationName("Cratis.Identity");
         if (!startupOptions.SecretStore.IsConfigured)
@@ -24,7 +26,7 @@ internal static class KeysServiceCollectionExtensions
             return;
         }
 
-        var deployed = developmentDataProtectionPath is null;
+        var deployed = developmentRoot is null;
         if (deployed)
         {
             // The secret store is the custody of the ring, so keys are neither generated nor wrapped by Identity.
@@ -32,8 +34,9 @@ internal static class KeysServiceCollectionExtensions
         }
         else
         {
-            // The local-development profile lets ASP.NET Core generate its own ring, next to the development keys.
-            dataProtection.PersistKeysToFileSystem(new DirectoryInfo(developmentDataProtectionPath!));
+            // Never give Data Protection a pathname to re-resolve: use the child pinned during provisioning.
+            services.AddOptions<KeyManagementOptions>().Configure<DevelopmentKeyStoreRoot>((options, root) =>
+                options.XmlRepository = new DevelopmentXmlRepository(root));
             if (OperatingSystem.IsWindows())
             {
                 dataProtection.ProtectKeysWithDpapi();
@@ -46,7 +49,8 @@ internal static class KeysServiceCollectionExtensions
                 sp.GetRequiredService<IOptions<IdentityOptions>>().Value.SecretStore,
                 sp.GetRequiredService<TimeProvider>(),
                 sp.GetRequiredService<ILogger<SecretStoreKeys>>(),
-                deployed);
+                deployed,
+                deployed ? null : sp.GetRequiredService<DevelopmentKeyStoreRoot>());
 
             // The first read validates the store, so an invalid one stops the host when the service is first resolved.
             _ = keys.Current;
