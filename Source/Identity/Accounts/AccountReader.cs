@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Chronicle.ReadModels;
+using Cratis.Identity.Accounts.Linking;
 using Cratis.Identity.Contracts.Accounts;
 
 namespace Cratis.Identity.Accounts;
@@ -18,6 +19,13 @@ internal class AccountReader(IReadModels readModels) : IAccountReader
     /// <param name="subject">The immutable account subject.</param>
     /// <returns>The account, if present.</returns>
     public async Task<Account?> Find(AccountSubject subject) => await readModels.GetInstanceById<Account>(subject.Value);
+
+    /// <summary>
+    /// Reads passive link state after the deciding command has enrolled the same account's guard.
+    /// </summary>
+    /// <param name="subject">The guarded account subject.</param>
+    /// <returns>The account link state, if present.</returns>
+    public async Task<AccountLinkState?> FindLinkState(AccountSubject subject) => await readModels.GetInstanceById<AccountLinkState>(subject.Value);
 
     /// <summary>
     /// Reads an active account for session creation after command completion and projection catch-up.
