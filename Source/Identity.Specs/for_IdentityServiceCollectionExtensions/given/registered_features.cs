@@ -33,9 +33,9 @@ public class registered_features : Specification
 
     protected static string[] Snapshot(IServiceCollection services, IServiceProvider provider)
     {
-        var descriptors = services.Where(IsIdentity).Select(Project).Order(StringComparer.Ordinal).Select(value => $"descriptor|{value}");
+        var descriptors = services.Select(Project).Order(StringComparer.Ordinal).Select(value => $"descriptor|{value}");
         var repeated = services.GroupBy(service => service.ServiceType).Where(group => group.Count() > 1)
-            .OrderBy(group => group.Key.ToString(), StringComparer.Ordinal)
+            .OrderBy(group => group.Key.FullName, StringComparer.Ordinal)
             .SelectMany(group => group.Select(service => $"repeated|{Project(service)}"));
         var hosted = services.Where(service => service.ServiceType == typeof(IHostedService)).Select(service => $"hosted|{Project(service)}");
         var health = provider.GetRequiredService<IOptions<HealthCheckServiceOptions>>().Value.Registrations.Select(check => $"health|{check.Name}");
@@ -46,31 +46,31 @@ public class registered_features : Specification
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton(Substitute.For<IChronicleClient>());
         services.AddSingleton(Substitute.For<IReadModels>());
         services.AddSingleton(Substitute.For<IEventStore>());
         services.AddSingleton(Substitute.For<ICommandPipeline>());
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["Identity:Issuer"] = "https://identity.example.test/",
-            ["Identity:Device:Enabled"] = deviceEnabled.ToString()
+            ["Identity:Device:Enabled"] = deviceEnabled.ToString(),
+            ["Identity:DPoP:Enabled"] = deviceEnabled.ToString()
         }).Build();
-        services.AddCratisIdentity(configuration, new HostingEnvironment { EnvironmentName = Environments.Development });
+        var environment = new HostingEnvironment { EnvironmentName = Environments.Development };
+        services.AddSingleton<IHostEnvironment>(environment);
+        services.AddSingleton<IConfiguration>(configuration);
+        services.AddCratisIdentity(configuration, environment);
         return services;
     }
 
-    static bool IsIdentity(ServiceDescriptor service) =>
-        service.ServiceType.ToString().Contains("Cratis.Identity.", StringComparison.Ordinal) ||
-        (service.ImplementationType?.FullName?.StartsWith("Cratis.Identity.", StringComparison.Ordinal) ?? false) ||
-        (service.ImplementationFactory?.Method.DeclaringType?.FullName?.StartsWith("Cratis.Identity.", StringComparison.Ordinal) ?? false);
-
     static string Project(ServiceDescriptor service) =>
-        $"{service.ServiceType}|{service.Lifetime}|{Implementation(service)}";
+        $"{service.ServiceType.FullName}|{service.Lifetime}|{Implementation(service)}";
 
     static string Implementation(ServiceDescriptor service)
     {
-        if (service.ImplementationType is { } type) return type.ToString();
-        if (service.ImplementationInstance is { } instance) return instance.GetType().ToString();
-        return "<factory>";
+        if (service.ImplementationType is { } type) return type.FullName ?? type.Name;
+        if (service.ImplementationInstance is not null) return "instance";
+        return "factory";
     }
 
     void Destroy()
