@@ -153,7 +153,6 @@ internal static class IdentityServiceCollectionExtensions
         services.AddSingleton<IUpstreamLookupKeys, ConfiguredUpstreamLookupKeys>();
         services.AddSingleton<UpstreamKeyDigester>();
         services.AddSingleton<VerifiedKeyGate>();
-        services.AddScoped<AccountStore>();
         services.AddScoped<UpstreamLookups>();
         services.AddScoped<IUpstreamKeyResolver, UpstreamKeyResolver>();
         services.AddScoped<AccountReader>();
@@ -162,7 +161,9 @@ internal static class IdentityServiceCollectionExtensions
         services.AddScoped<IAccountSignIn>(provider => provider.GetRequiredService<EventSourcedAccountAdapter>());
         services.AddScoped<VerifiedUpstreamSignIn>();
         services.AddScoped<IVerifiedUpstreamSignIn>(provider => provider.GetRequiredService<VerifiedUpstreamSignIn>());
-        services.AddScoped<UpstreamKeyLinking>();
+        services.AddScoped<LinkCeremony>();
+        services.AddScoped<ILinkCeremony>(provider => provider.GetRequiredService<LinkCeremony>());
+        services.AddScoped<AccountLinking>();
         services.AddLookupRevisionGuard();
         return services;
     }

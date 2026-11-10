@@ -26,8 +26,7 @@ public class an_account_store : Specification
     protected IdentityOptions _options;
     private protected UpstreamKeyDigester _digester;
     private protected ReadModelScenario<Account> _profiles;
-    AccountStore _store;
-    private protected UpstreamKeyLinking _linking;
+    private protected LinkingDriver _linking;
     private protected GitHubConnection _github;
     private protected UpstreamLookups _lookups;
     private protected ReadModelScenario<AccountLinkState> _states;
@@ -153,7 +152,7 @@ public class an_account_store : Specification
             throw new AccountOperationRefused(refusal.Message);
         }
 
-        await _store.Append(subject, await _store.Read(subject), result.AsT0.Item1.Select(item => item.Event));
+        await _linking.Append(subject, result.AsT0.Item1);
         return result.AsT0.Item2;
     }
 
@@ -170,8 +169,6 @@ public class an_account_store : Specification
         reader.GetInstances<UpstreamKeyLookup>(default).ReturnsForAnyArgs(_ => Task.FromResult(_reservations.Instances.Values));
         reader.GetInstanceById<AccountLinkState>(default(ReadModelKey)!, default).ReturnsForAnyArgs(call => Task.FromResult(StateFor(call.Arg<ReadModelKey>().Value)));
         _lookups = new(reader);
-        var store = new AccountStore(_events, reader, _clock);
-        _store = store;
-        _linking = new(store, _lookups, _digester, Options.Create(_options), _clock);
+        _linking = new(_events, reader, _digester, Options.Create(_options), _clock, Refresh);
     }
 }

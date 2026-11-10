@@ -104,6 +104,9 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         registration.Artifacts.ShouldNotBeEmpty();
         await store.Reactors.WaitTillSubscribed<AccountPublications>(TimeSpan.FromSeconds(30));
 
+        // The gate starts closed and issuance is refused until restriction recovery finishes; no spec may start before that.
+        await WaitForRecovery(Services);
+
         // AccountLinkStateReducer is [Passive] (folded on demand), so it never subscribes; waiting for it would always time out.
     }
 
