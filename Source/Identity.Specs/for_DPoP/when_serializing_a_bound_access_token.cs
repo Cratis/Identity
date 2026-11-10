@@ -58,7 +58,7 @@ public class when_serializing_a_bound_access_token : Specification
         var identity = new ClaimsIdentity("test");
         identity.AddClaim(new Claim("sub", "synthetic-subject"));
         _context = new ProcessSignInContext(transaction) { Principal = new ClaimsPrincipal(identity), GenerateAccessToken = true, GenerateRefreshToken = true };
-        _context.Principal.SetResources("direct-api");
+        _context.Principal.SetResources("direct-mcp");
         _context.Principal.SetScopes("offline_access");
         transaction.SetProperty(typeof(ProcessAuthenticationContext).FullName, new ProcessAuthenticationContext(transaction) { RefreshTokenPrincipal = _context.Principal });
         await _provider.GetRequiredService<IOpenIddictServerDispatcher>().DispatchAsync(_context);

@@ -16,8 +16,9 @@ internal static class ClientRegistrationRules
     /// </summary>
     /// <param name="descriptor">The proposed client descriptor.</param>
     /// <param name="codeChallengeMethods">The enabled PKCE challenge methods.</param>
+    /// <param name="allowLocalhost">Whether a native client may also register the <c language="text">localhost</c> host. Only the local-development profile's clients pass <see langword="true"/>.</param>
     /// <returns>The validation result, containing no credentials or redirect values.</returns>
-    public static ClientRegistrationValidation Validate(OpenIddictApplicationDescriptor descriptor, IEnumerable<string> codeChallengeMethods)
+    public static ClientRegistrationValidation Validate(OpenIddictApplicationDescriptor descriptor, IEnumerable<string> codeChallengeMethods, bool allowLocalhost = false)
     {
         var refusals = new List<string>();
         if (descriptor.ClientType == ClientTypes.Public &&
@@ -33,7 +34,7 @@ internal static class ClientRegistrationRules
         }
 
         var native = descriptor.ClientType == ClientTypes.Public && descriptor.ApplicationType == ApplicationTypes.Native;
-        if (descriptor.RedirectUris.Any(uri => !IsValidRedirect(uri, native)))
+        if (descriptor.RedirectUris.Any(uri => !IsValidRedirect(uri, native, allowLocalhost)))
         {
             refusals.Add("Redirect URIs must be absolute and contain no user information or fragment; public native clients require an HTTP loopback literal.");
         }
@@ -41,8 +42,11 @@ internal static class ClientRegistrationRules
         return new(refusals);
     }
 
-    static bool IsValidRedirect(Uri uri, bool native) =>
+    static bool IsValidRedirect(Uri uri, bool native, bool allowLocalhost) =>
         uri.IsAbsoluteUri && string.IsNullOrEmpty(uri.UserInfo) && string.IsNullOrEmpty(uri.Fragment) &&
-        (!native || (uri.Scheme == Uri.UriSchemeHttp &&
-            (string.Equals(uri.Host, "127.0.0.1", StringComparison.Ordinal) || string.Equals(uri.Host, "[::1]", StringComparison.Ordinal))));
+        (!native || (uri.Scheme == Uri.UriSchemeHttp && IsNativeHost(uri.Host, allowLocalhost)));
+
+    static bool IsNativeHost(string host, bool allowLocalhost) =>
+        string.Equals(host, "127.0.0.1", StringComparison.Ordinal) || string.Equals(host, "[::1]", StringComparison.Ordinal) ||
+        (allowLocalhost && string.Equals(host, "localhost", StringComparison.Ordinal));
 }

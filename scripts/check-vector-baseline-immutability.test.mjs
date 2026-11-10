@@ -3,6 +3,7 @@
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -54,6 +55,88 @@ async function bump(repo) {
     await repo.writeDocument(changelog, initialChangelog.replace('## 1.0.0', '## 1.1.0\n\n- Add cases.\n\n## 1.0.0'));
     await repo.writeDocument(contract, `${initialContract}## Vector artifact\n\nVector artifact version: 1.1.0\n\nAdditional cases.\n\n`);
 }
+
+async function addOverlay(repo) {
+    const path = 'Source/Identity.Specs/Vectors/v2.1.0';
+    const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+    const bytes = JSON.stringify({ given: { vectors: [{ audience: 'direct-mcp' }] } });
+    const inherited = await readFile(join(repo.root, directory, 'manifest.json'));
+    const manifest = { schema: 2, spec: 'arc-mcp-authorization', contractVersion: 1, version: '2.1.0', inherits: { version: JSON.parse(inherited).version, sha256: hash(inherited) }, files: [{ path: 'scope/vectors.json', sha256: hash(bytes) }], caseCount: 1, caseIds: { 'scope/vectors.json': ['mcp-audience'] } };
+    await mkdir(join(repo.root, path, 'scope'), { recursive: true });
+    await mkdir(join(repo.root, path, 'baselines'), { recursive: true });
+    await repo.writeDocument(`${path}/scope/vectors.json`, bytes);
+    await repo.writeDocument(`${path}/manifest.json`, JSON.stringify(manifest));
+    await repo.writeDocument(`${path}/baselines/v2.1.0.json`, JSON.stringify({ version: '2.1.0', manifestSha256: hash(JSON.stringify(manifest)) }));
+    await repo.writeDocument(`${path}/CHANGELOG.md`, '# Changelog\n\n## 2.1.0\n\nMCP audience.\n');
+    await repo.writeDocument(contract, `${initialContract}## Vector artifact 2.1.0\n\nVector artifact version: 2.1.0\n\nMCP overlay.\n`);
+    return path;
+}
+
+test('overlay and inherited release pass together without changing historical files', async t => {
+    const repo = await repository(t);
+    await addOverlay(repo);
+    await checkBaselineImmutability(repo.root, 'main');
+    assert(repo.messages.some(message => message.includes('immutable overlay 2.1.0')));
+});
+
+test('older release tags do not freeze the newer inherited active vector files', async t => {
+    const repo = await repository(t);
+    const manifest = { ...repo.manifest, version: '2.0.0' };
+    const baseline = { ...JSON.parse(await readFile(join(repo.root, directory, 'baselines/v1.0.0.json'))), version: '2.0.0' };
+    await repo.write('manifest.json', manifest);
+    await repo.write('baselines/v2.0.0.json', baseline);
+    await repo.writeDocument(`${directory}/CHANGELOG.md`, `${initialChangelog}## 2.0.0\n\nNew inherited version.\n`);
+    repo.git('add', '.');
+    repo.git('-c', 'user.name=Vector Test', '-c', 'user.email=vector@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-m', 'Add inherited version');
+    await addOverlay(repo);
+    const document = await readFile(join(repo.root, contract), 'utf8');
+    await repo.writeDocument(contract, `${document}## Vector artifact\n\nVector artifact version: 2.0.0\n\nInherited version.\n`);
+    await checkBaselineImmutability(repo.root);
+});
+
+test('overlay release tag selects the overlay rather than the legacy manifest', async t => {
+    const repo = await repository(t);
+    await addOverlay(repo);
+    repo.git('add', '.');
+    repo.git('-c', 'user.name=Vector Test', '-c', 'user.email=vector@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-m', 'Add overlay');
+    repo.git('tag', 'vectors/arc-mcp-authorization/v2.1.0');
+    await checkBaselineImmutability(repo.root);
+});
+
+test('released overlay cannot be removed', async t => {
+    const repo = await repository(t);
+    const overlay = await addOverlay(repo);
+    repo.git('add', '.');
+    repo.git('-c', 'user.name=Vector Test', '-c', 'user.email=vector@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-m', 'Add overlay');
+    repo.git('tag', 'vectors/arc-mcp-authorization/v2.1.0');
+    await rm(join(repo.root, overlay), { recursive: true });
+    await assert.rejects(checkBaselineImmutability(repo.root), /Released overlay is missing/);
+});
+
+test('overlay baseline cannot be regenerated to conceal changed case ids', async t => {
+    const repo = await repository(t);
+    const overlay = await addOverlay(repo);
+    repo.git('add', '.');
+    repo.git('-c', 'user.name=Vector Test', '-c', 'user.email=vector@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-m', 'Add overlay');
+    const path = `${overlay}/manifest.json`;
+    const changed = JSON.parse(await readFile(join(repo.root, path)));
+    changed.caseIds['scope/vectors.json'] = ['replacement-case'];
+    const bytes = JSON.stringify(changed);
+    const manifestSha256 = createHash('sha256').update(bytes).digest('hex');
+    await repo.writeDocument(path, bytes);
+    await repo.writeDocument(`${overlay}/baselines/v2.1.0.json`, JSON.stringify({ version: '2.1.0', manifestSha256 }));
+    await assert.rejects(checkBaselineImmutability(repo.root, 'main'), /v2\.1\.0 changed relative to main/);
+});
+
+test('overlay rejects payload changes and additional unlisted files', async t => {
+    const repo = await repository(t);
+    const overlay = await addOverlay(repo);
+    await repo.writeDocument(`${overlay}/extra.json`, '{}');
+    await assert.rejects(checkBaselineImmutability(repo.root), /Manifest must list every vector file/);
+    await rm(join(repo.root, overlay, 'extra.json'));
+    await repo.writeDocument(`${overlay}/scope/vectors.json`, '{}');
+    await assert.rejects(checkBaselineImmutability(repo.root), /Vector hash mismatch/);
+});
 
 test('tagged release passes unchanged', async t => {
     const repo = await repository(t);

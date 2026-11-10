@@ -35,8 +35,8 @@ public class when_enforcing_resource_and_pkce : given.an_authorization_server
         _rejections["valid-redemption"] = await Redeem(Resource, Resource);
         _rejections["wrong-verifier"] = await Redeem(Resource, Resource, "a-different-synthetic-verifier-with-forty-three-characters");
         _rejections["missing-verifier"] = await Redeem(Resource, Resource, null);
-        _rejections["audience-at-authorization"] = await Authorize("direct-api", CodeChallengeMethods.Sha256, true);
-        _rejections["audience-at-redemption"] = await Redeem(Resource, "direct-api");
+        _rejections["audience-at-authorization"] = await Authorize(Audience, CodeChallengeMethods.Sha256, true);
+        _rejections["audience-at-redemption"] = await Redeem(Resource, Audience);
         _rejections["ambiguous-inference"] = await Authorize(default, CodeChallengeMethods.Sha256, true, "direct:read studio:read");
         _rejections["empty-inference"] = await Authorize(default, CodeChallengeMethods.Sha256, true, string.Empty);
         _rejections["empty-authorization"] = await Authorize(string.Empty, CodeChallengeMethods.Sha256, true);
@@ -77,8 +77,8 @@ public class when_enforcing_resource_and_pkce : given.an_authorization_server
     [Fact] void should_leave_disabled_device_grant_validation_unchanged_without_resource() => Rejected("device", Errors.UnsupportedGrantType);
     [Fact] void should_leave_disabled_token_exchange_validation_unchanged_without_resource() => Rejected("exchange", Errors.UnsupportedGrantType);
     [Fact] void should_advertise_only_s256() => _advertisedChallengeMethods.ShouldContainOnly(CodeChallengeMethods.Sha256);
-    [Fact] void should_issue_exactly_the_catalog_audience_not_the_resource_url() => _token.Audiences.ShouldContainOnly("direct-api");
-    [Fact] void should_preserve_the_catalog_audience_when_resource_is_inferred() => _inferredToken.Audiences.ShouldContainOnly("direct-api");
+    [Fact] void should_issue_exactly_the_catalog_audience_not_the_resource_url() => _token.Audiences.ShouldContainOnly(Audience);
+    [Fact] void should_preserve_the_catalog_audience_when_resource_is_inferred() => _inferredToken.Audiences.ShouldContainOnly(Audience);
     [Fact] void should_issue_an_access_token_not_an_id_token() => _token.Typ.ShouldEqual("at+jwt");
 
     void AcceptedVector(string id)

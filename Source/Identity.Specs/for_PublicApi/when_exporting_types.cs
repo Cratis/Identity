@@ -31,6 +31,8 @@ public class when_exporting_types : Specification
             typeof(IdentityOptions),
             typeof(IntrospectionClientOptions),
             typeof(MongoDBOptions),
+            typeof(OidcClientOptions),
+            typeof(OidcOptions),
             typeof(ResourceServerOptions),
             typeof(ScopeOptions),
             typeof(SecretStoreOptions),

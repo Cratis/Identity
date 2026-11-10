@@ -8,6 +8,7 @@ using Cratis.Identity.Authorization.TokenExchange;
 using Cratis.Identity.Clients;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.ConsentFlow;
+using Cratis.Identity.Development;
 using Cratis.Identity.Device;
 using Cratis.Identity.DPoP;
 using Cratis.Identity.Keys;
@@ -41,6 +42,8 @@ internal static class IdentityServiceCollectionExtensions
     /// <returns>The <see cref="IServiceCollection"/> for continuation.</returns>
     /// <exception cref="KeysInConfiguration">Thrown when a signing or encryption certificate is still configured.</exception>
     /// <exception cref="SecretStoreNotConfigured">Thrown outside development without a secret store.</exception>
+    /// <exception cref="DevelopmentProfileOnlyInDevelopment">Thrown when the local-development profile is enabled outside Development.</exception>
+    /// <exception cref="DevelopmentProfileRefused">Thrown when the local-development profile's configuration or key store is not safe.</exception>
     /// <exception cref="OptionsValidationException">The hosted-shared preset has missing or invalid production settings.</exception>
     /// <exception cref="ChronicleNotConfigured">The native account path has no configured Chronicle client.</exception>
     /// <exception cref="InvalidMongoDBConnectionString">Thrown when the MongoDB client is first resolved with a connection string that cannot be parsed.</exception>
@@ -54,6 +57,10 @@ internal static class IdentityServiceCollectionExtensions
         {
             throw new KeysInConfiguration($"{IdentityOptions.SectionName}:{setting}");
         }
+
+        // The opt-in local-development profile runs before keys and resources are wired and refuses to run outside Development.
+        var development = DevelopmentProfile.Apply(configuration, environment, startupOptions);
+        development?.Register(services);
 
         var hostedValidation = new HostedSharedConfiguration(configuration, environment).Validate(null, startupOptions);
         if (hostedValidation.Failed)
@@ -92,7 +99,7 @@ internal static class IdentityServiceCollectionExtensions
 
         // Keep hosted-service startup order: storage guards, key reloading, revocation, account guard, then consent.
         services.AddStorage();
-        services.AddSecretStoreKeys(startupOptions);
+        services.AddSecretStoreKeys(startupOptions, development?.Root);
         services.AddResources();
         services.AddTenants();
         services.AddClients();

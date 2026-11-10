@@ -30,7 +30,7 @@ public class when_loading_the_reference_resources : Specification
 
     [Fact] void should_validate_the_configuration() => new IdentityOptionsValidation(new HostingEnvironment { EnvironmentName = Environments.Development }).Validate(null, _options).Succeeded.ShouldBeTrue();
     [Fact] void should_use_a_separate_v1_audience() => _catalog.FindByIndicator("https://cratis.direct/v1").Audience.ShouldEqual("direct-v1");
-    [Fact] void should_keep_the_n1_mcp_audience() => _catalog.FindByIndicator("https://cratis.direct/mcp").Audience.ShouldEqual("direct-api");
+    [Fact] void should_keep_the_n1_mcp_audience() => _catalog.FindByIndicator("https://cratis.direct/mcp").Audience.ShouldEqual("direct-mcp");
     [Fact] void should_have_one_indicator_per_audience() => _catalog.All.All(resource => resource.Indicators.Count() == 1).ShouldBeTrue();
     [Fact] void should_not_share_scopes() => _catalog.All.SelectMany(resource => resource.Scopes).GroupBy(scope => scope.Name).All(group => group.Count() == 1).ShouldBeTrue();
     [Fact] void should_refuse_a_multi_resource_grant() => (_policy.Evaluate(new GrantRequest(["direct:read", "direct:mcp:read"], ["https://cratis.direct/v1", "https://cratis.direct/mcp"])) is NotGrantable).ShouldBeTrue();

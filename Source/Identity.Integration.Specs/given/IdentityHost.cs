@@ -34,11 +34,13 @@ namespace Cratis.Identity.Integration.given;
 /// Everything else is the production pipeline: OpenIddict, the MongoDB stores, the consent page, antiforgery and
 /// the token endpoint. The configuration preserves both shipped Direct resources and adds Studio and Stage so resource
 /// binding can be exercised, tenants the default user is a member of, and a confidential introspection client.
+/// OpenID Connect clients and identity-only issuance remain disabled; <see cref="OidcIdentityHost"/> opts in separately.
 /// </remarks>
 public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public const string Issuer = "https://localhost/";
     public const string DirectMcp = "https://cratis.direct/mcp";
+    public const string DirectMcpAudience = "direct-mcp";
     public const string DirectV1 = "https://cratis.direct/v1";
     public const string StudioMcp = "https://cratis.studio/mcp";
     public const string IntrospectionClientId = ResourceSettings.IntrospectionClientId;

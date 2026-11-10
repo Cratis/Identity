@@ -51,10 +51,11 @@ public sealed class McpResourceStub : IAsyncDisposable
     /// </summary>
     /// <param name="issuer">The discovered issuer.</param>
     /// <param name="keys">The published signing keys.</param>
-    public void Trust(string issuer, IEnumerable<SecurityKey> keys) => _validation = new TokenValidationParameters
+    /// <param name="audience">The audience the resource accepts; the Direct MCP audience when omitted.</param>
+    public void Trust(string issuer, IEnumerable<SecurityKey> keys, string? audience = null) => _validation = new TokenValidationParameters
     {
         ValidIssuer = issuer,
-        ValidAudience = "direct-api",
+        ValidAudience = audience ?? IdentityHost.DirectMcpAudience,
         IssuerSigningKeys = keys,
         ValidTypes = ["at+jwt"]
     };

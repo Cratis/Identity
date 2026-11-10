@@ -28,10 +28,10 @@ public class when_redeeming_an_authorization_grant_through_issuance : given.an_a
     [Fact] void should_reject_attacker_scopes_at_native_code_redemption_validation() => _scopeRejected.Error.ShouldEqual(Errors.InvalidRequest);
     [Fact] void should_not_issue_a_token_when_native_validation_rejects_scopes() => _scopeRejected.Token.ShouldBeNull();
 
-    static void BoundToAuthorization((string[] AuthorizedAudiences, JsonWebToken? Token, string? Error) result)
+    void BoundToAuthorization((string[] AuthorizedAudiences, JsonWebToken? Token, string? Error) result)
     {
         result.Error.ShouldBeNull();
-        result.AuthorizedAudiences.ShouldEqual(["direct-api"]);
+        result.AuthorizedAudiences.ShouldEqual([Audience]);
         result.Token.ShouldNotBeNull();
         result.Token.Audiences.ShouldEqual(result.AuthorizedAudiences);
         result.Token.GetClaim(Claims.Scope).Value.ShouldEqual("direct:read");
