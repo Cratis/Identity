@@ -99,7 +99,7 @@ internal static class IdentityServiceCollectionExtensions
 
         // Keep hosted-service startup order: storage guards, key reloading, revocation, account guard, then consent.
         services.AddStorage();
-        services.AddSecretStoreKeys(startupOptions, development?.DataProtectionPath);
+        services.AddSecretStoreKeys(startupOptions, development?.Root);
         services.AddResources();
         services.AddTenants();
         services.AddClients();

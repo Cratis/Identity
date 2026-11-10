@@ -9,9 +9,12 @@ namespace Cratis.Identity.Development;
 /// The outcome of an enabled local-development profile.
 /// </summary>
 /// <param name="Options">The <see cref="DevelopmentOptions"/> that were applied.</param>
-/// <param name="KeyDirectory">The dedicated directory that holds the development keys.</param>
-internal sealed record AppliedDevelopmentProfile(DevelopmentOptions Options, string KeyDirectory)
+/// <param name="Root">The process-lifetime custody of the development keys.</param>
+internal sealed record AppliedDevelopmentProfile(DevelopmentOptions Options, DevelopmentKeyStoreRoot Root)
 {
+    /// <summary>Gets the diagnostic directory path; key operations use <see cref="Root"/>, never this path.</summary>
+    public string KeyDirectory => Root.DirectoryPath;
+
     /// <summary>
     /// Gets the Data Protection key directory, beside the development keys.
     /// </summary>
@@ -26,6 +29,9 @@ internal sealed record AppliedDevelopmentProfile(DevelopmentOptions Options, str
         var directory = KeyDirectory;
         var development = Options;
         services.AddSingleton(development);
+
+        // A factory registration lets the container own and dispose custody when the host shuts down.
+        services.AddSingleton(_ => Root);
         services.PostConfigure<IdentityOptions>(options =>
         {
             options.SecretStore.Path = directory;

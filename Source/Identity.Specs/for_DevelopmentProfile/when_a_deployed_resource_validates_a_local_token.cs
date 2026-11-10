@@ -30,7 +30,7 @@ public class when_a_deployed_resource_validates_a_local_token : given.a_developm
     async Task Because()
     {
         Apply();
-        _keys = new SecretStoreKeys(new SecretStoreOptions { Path = _storeDirectory }, TimeProvider.System, NullLogger<SecretStoreKeys>.Instance, providesDataProtection: false);
+        _keys = new SecretStoreKeys(new SecretStoreOptions { Path = _storeDirectory }, TimeProvider.System, NullLogger<SecretStoreKeys>.Instance, providesDataProtection: false, developmentRoot: _custody);
         var signer = _keys.Current.Signer;
         _localKey = new RsaSecurityKey(signer.Certificate.GetRSAPublicKey()) { KeyId = signer.Kid };
         _token = Issue(signer, Audience);
