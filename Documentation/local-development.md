@@ -79,7 +79,7 @@ The settings in `Source/Identity.Host/appsettings.Development.json` replace the 
 | Direct MCP | `direct-mcp` | `http://localhost:5200/mcp` | `direct:mcp:read`, `direct:mcp:content.write`, `direct:mcp:work` |
 | Studio MCP | `studio-mcp` | `http://localhost:5300/mcp` | `studio:mcp:read`, `studio:mcp:write` |
 
-The local profile's audience for Direct MCP is `direct-mcp`. The deployed catalog still uses `direct-api` for the Direct MCP resource; renaming the deployed audience to `direct-mcp` is tracked in a separate coordinated change, so until it lands a product that validates a deployed token must expect `direct-api`, and a local `direct-mcp` token is refused by a deployed `direct-api` configuration. The profile does not register `direct-api`. The ports are placeholders. Change the indicators to match how each product runs locally.
+The audience for Direct MCP is `direct-mcp`, the same as in the deployed catalog. `direct-api` is the Direct REST audience, and a token for one is refused by the other. The profile does not register `direct-api`. The ports are placeholders. Change the indicators to match how each product runs locally.
 
 ## Clients
 

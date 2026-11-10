@@ -28,16 +28,21 @@ public class an_authorization_server : for_TokenRateLimitMiddleware.given.an_ide
     protected ServiceProvider Provider;
     private protected IGrantPolicy Policy;
     protected string Resource;
+    protected string Audience;
+    protected virtual string VectorVersion => "v2.0.0";
 
     void Establish()
     {
-        var directory = Path.Combine(AppContext.BaseDirectory, "Vectors", "arc-mcp-authorization-v1");
-        Vectors = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, "profiles-and-discovery.json")));
+        var root = Path.Combine(AppContext.BaseDirectory, "Vectors");
+        var directory = VectorVersion == "v2.0.0" ? Path.Combine(root, "arc-mcp-authorization-v1") : Path.Combine(root, VectorVersion);
+        var file = VectorVersion == "v2.0.0" ? "profiles-and-discovery.json" : "arc-mcp-authorization-v1/profiles-and-discovery.json";
+        Vectors = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, file)));
         Manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, "manifest.json")));
         Resource = Vectors.RootElement.GetProperty("given").GetProperty("fixtureDefaults").GetProperty("resource").GetString();
+        Audience = Case("authorization-resource-inferred").GetProperty("then").GetProperty("audience").GetString();
         Builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
-            ["Identity:Resources:0:Audience"] = "direct-api",
+            ["Identity:Resources:0:Audience"] = Audience,
             ["Identity:Resources:0:Indicators:0"] = Resource,
             ["Identity:Resources:0:Scopes:0:Name"] = "direct:read",
             ["Identity:Resources:1:Audience"] = "studio-api",
@@ -91,9 +96,21 @@ public class an_authorization_server : for_TokenRateLimitMiddleware.given.an_ide
 
     protected JsonElement Case(string id)
     {
-        var entry = Manifest.RootElement.GetProperty("cases").EnumerateArray().Single(_ => _.GetProperty("id").GetString() == id);
-        entry.GetProperty("file").GetString().ShouldEqual("profiles-and-discovery.json");
-        return Vectors.RootElement.GetProperty("given").GetProperty("vectors")[entry.GetProperty("index").GetInt32()];
+        int index;
+        if (Manifest.RootElement.TryGetProperty("caseIds", out var files))
+        {
+            var ids = files.GetProperty("arc-mcp-authorization-v1/profiles-and-discovery.json").EnumerateArray().Select(_ => _.GetString()).ToArray();
+            index = Array.IndexOf(ids, id);
+            index.ShouldBeGreaterThanOrEqual(0);
+        }
+        else
+        {
+            var entry = Manifest.RootElement.GetProperty("cases").EnumerateArray().Single(_ => _.GetProperty("id").GetString() == id);
+            entry.GetProperty("file").GetString().ShouldEqual("profiles-and-discovery.json");
+            index = entry.GetProperty("index").GetInt32();
+        }
+
+        return Vectors.RootElement.GetProperty("given").GetProperty("vectors")[index];
     }
 
     protected OpenIddictServerTransaction Transaction(OpenIddictRequest request, OpenIddictServerEndpointType endpoint) => new()

@@ -8,7 +8,7 @@ It is built on [OpenIddict](https://documentation.openiddict.com/) 7 as an embed
 
 ```text
  cratis CLI ──(browser: code + PKCE)──► Cratis Identity ──(upstream login)──► GitHub
-     │                                       │ issues JWT: aud=direct-api, sub, tid, scope, azp
+     │                                       │ issues JWT: aud=direct-mcp, sub, tid, scope, azp
      ▼                                       │ publishes /.well-known/oauth-authorization-server + JWKS
  AuthProxy (per product, edge) ◄─────────────┘
    validates the JWT with its JwtBearer support: issuer, signature, audience per route, expiry;
@@ -60,7 +60,7 @@ await app.RunAsync();
 | --- | --- |
 | Authorization code flow | Mandatory PKCE, `S256` only (`plain` is refused). No implicit, password or client-credentials grants. |
 | Native clients | Pre-registered public client `cratis-cli` (no secret). Redirect URIs `http://127.0.0.1:<ephemeral-port>/callback` and `http://[::1]:<ephemeral-port>/callback` (RFC 8252). The path and IP literal must match; `localhost` is refused. |
-| Resource indicators (RFC 8707) | `https://cratis.direct/mcp` maps to audience `direct-api`, as required by [N1](Documentation/specs/arc-scope-catalog-v1.md#n1-catalog); `https://cratis.direct/v1` maps to the distinct audience `direct-v1`. Every grant is bound to exactly one resource server. Without a `resource` parameter the resource is inferred from the scopes, but only when they belong to a single resource server. |
+| Resource indicators (RFC 8707) | `https://cratis.direct/mcp` maps to audience `direct-mcp`, as required by [N1](Documentation/specs/arc-scope-catalog-v1.md#n1-catalog); `https://cratis.direct/v1` maps to the distinct audience `direct-v1`. `direct-mcp` and `direct-v1` are not interchangeable: a token for one is refused by the other's endpoint. Every grant is bound to exactly one resource server. Without a `resource` parameter the resource is inferred from the scopes, but only when they belong to a single resource server. |
 | Scopes | API: `direct:read`, `direct:content.write`, `direct:work`. MCP: `direct:mcp:read`, `direct:mcp:content.write`, `direct:mcp:work`. Add `offline_access` for a refresh token. Requested scopes that belong to another resource server are dropped. There is no approve or admin scope: approval is a domain action in Direct, never a token capability. |
 | Refresh tokens | Rotated on every use. Concurrent redemption has a single winner; a failed redemption revokes the grant authorization and its tokens, so even the winner's successor is unusable. Reuse has zero leeway. The family has an absolute lifetime (30 days by default) that rotation does not extend. |
 | Token exchange (RFC 8693) | Off by default. A configured confidential client exchanges a token from a trusted external issuer for a short-lived access token bound to one resource and one tenant. See [Token exchange](Documentation/token-exchange.md). |
@@ -107,7 +107,7 @@ Access tokens are signed JWTs (`typ: at+jwt`, RS256), not encrypted. Default lif
 | Claim | Meaning |
 | --- | --- |
 | `iss` | The configured issuer, exactly. |
-| `aud` | The audience of the resource server, for example `direct-api`. Exactly one. |
+| `aud` | The audience of the resource server, for example `direct-mcp`. Exactly one. |
 | `sub` | The canonical Cratis account id (a GUID). Stable across providers and renames. |
 | `tid` | The tenant the user chose on the consent page. |
 | `scope` | Space-separated granted scopes. |
@@ -165,9 +165,9 @@ Everything is under the `Identity` section (environment variables use `Identity_
 | `DeviceGrant:VerificationWindow` | `00:10:00` | One-to-sixty-minute verification attempt window. |
 | `DeviceGrant:AttemptsPerCode`, `AttemptsPerAccount`, `AttemptsPerIp` | `5`, `20`, `30` | All three budgets apply before code lookup. Upper bounds are 10, 100 and 300 respectively. |
 | `Resources[]` | Direct | `Audience`, `DisplayName`, `Indicators[]`, `Scopes[]` (`Name`, `Description`), `TenantsCallback` (`Url`, `Secret`, `Timeout`). `Tenants[]` (`Id`, `Name`, `Members[]` as numeric GitHub ids, `AllowAllAccounts`) is Development only and cannot be combined with a callback. Validated at startup: duplicate audiences, indicators or scopes, fragments, and protocol scopes are rejected. Outside Development every resource requires an HTTPS callback and a secret of at least 32 characters. |
-| `IntrospectionClients[]` | none | `ClientId`, `ClientSecret` for confidential resource servers that introspect. Use the token's audience as the client id: `direct-api` for `direct:mcp:*` tokens, `direct-v1` for `direct:*` API tokens. Configure a separate secret for each client through the platform's secret configuration mechanism. |
+| `IntrospectionClients[]` | none | `ClientId`, `ClientSecret` for confidential resource servers that introspect. Use the token's audience as the client id: `direct-mcp` for `direct:mcp:*` tokens, `direct-v1` for `direct:*` API tokens. Configure a separate secret for each client through the platform's secret configuration mechanism. |
 
-OpenIddict rejects introspection by a client that is neither the token's audience nor its presenter. Application-specific claims are returned only to a confidential audience client. The integration fixture registers `direct-api` with a test-only secret because its default CLI flow requests `direct:mcp:read` and issues tokens for `direct-api` with presenter `cratis-cli`.
+OpenIddict rejects introspection by a client that is neither the token's audience nor its presenter. Application-specific claims are returned only to a confidential audience client. The integration fixture registers `direct-mcp` with a test-only secret because its default CLI flow requests `direct:mcp:read` and issues tokens for `direct-mcp` with presenter `cratis-cli`.
 
 Clients are declared in code (`ClientDescriptors`) and configuration (introspection clients). The client store is reconciled at startup: undeclared clients are deleted.
 

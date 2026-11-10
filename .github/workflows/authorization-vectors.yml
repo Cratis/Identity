@@ -39,7 +39,7 @@ jobs:
         working-directory: .ai-work/identity-134/artifacts
         run: |
           sha256sum --check ./*.sha256
-          tar -tzf ./*.tar.gz
+          for archive in ./*.tar.gz; do tar -tzf "$archive"; done
       - name: Upload for release-owner review
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

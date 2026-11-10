@@ -38,7 +38,7 @@ public class when_validating_the_caller_of_an_mcp_access_token : Specification
     {
         GenericTokenPrincipal = new ClaimsPrincipal(new ClaimsIdentity("test"))
             .SetTokenType(TokenTypeIdentifiers.AccessToken)
-            .SetAudiences("direct-api")
+            .SetAudiences("direct-mcp")
             .SetPresenters("cratis-cli")
     };
 }

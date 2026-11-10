@@ -1,0 +1,34 @@
+{
+  "schema": 2,
+  "spec": "arc-mcp-authorization",
+  "contractVersion": 1,
+  "version": "2.1.0",
+  "inherits": {"version": "2.0.0", "sha256": "01ac5bdc24aa782df7f47c81a17c5d18cac9ee15601d63d9c8103da076483c79"},
+  "files": [
+    {"path": "arc-mcp-authorization-v1/profiles-and-discovery.json", "sha256": "d4a5491c6e06f90d960fe64fa6153bffcd70f7796a7a4c8d7bd721d50fa94837"},
+    {"path": "arc-scope-catalog-v1/catalog-and-policy.json", "sha256": "85b141c2f73f3c1aeab19cf7749970b1473e04fee28979a0517deaba994686b7"}
+  ],
+  "caseCount": 57,
+  "caseIds": {
+    "arc-mcp-authorization-v1/profiles-and-discovery.json": [
+      "pat-only-missing-credential", "pat-only-no-oauth-discovery", "pat-only-accepts-pat", "pat-only-rejects-oauth",
+      "oauth-only-missing-credential", "oauth-only-resource-discovery", "oauth-only-accepts-oauth", "oauth-only-rejects-pat",
+      "combined-accepts-pat", "combined-accepts-oauth", "combined-missing-credential", "combined-resource-discovery",
+      "combined-invalid-pat-no-fallback", "oauth-only-audience-mismatch", "combined-audience-mismatch-no-fallback",
+      "authorization-resource-inferred", "token-resource-inherited", "token-resource-must-match", "oauth-only-scope-step-up",
+      "combined-scope-step-up", "oauth-only-step-up-retry-limit", "combined-step-up-retry-limit", "client-requires-pkce-metadata",
+      "client-selects-s256", "unbound-client-does-not-require-dpop", "pat-policy-denial-no-oauth-step-up",
+      "oauth-scopes-do-not-grant-product-roles", "mcp-errors-never-redirect", "bound-token-requires-proof",
+      "bound-token-requires-matching-key", "dpop-rejects-replayed-jti", "dpop-requires-matching-target",
+      "dpop-requires-matching-token-hash", "unknown-bearer-rejected-before-verification", "dpop-requires-fresh-iat",
+      "dpop-requires-matching-method", "discovery-resource-must-match", "authorization-requires-registered-resource",
+      "authorization-rejects-plain-pkce", "authorization-requires-pkce", "cookie-plus-bearer-is-ambiguous",
+      "unbound-envelope-plus-bearer-is-ambiguous", "bound-envelope-builds-caller-from-bearer", "envelope-kind-must-match-bearer",
+      "revoked-pat-envelope-no-oauth-fallback", "envelope-subject-must-match-bearer", "multiple-credentials-rejected", "query-credential-rejected"
+    ],
+    "arc-scope-catalog-v1/catalog-and-policy.json": [
+      "direct-read-allowed", "direct-write-role-denied", "studio-audience-denied", "direct-scope-catalog-denied", "stage-audience-denied",
+      "wildcard-scope-denied", "admin-scope-denied", "consent-not-widened", "exchange-without-mapping-denied"
+    ]
+  }
+}

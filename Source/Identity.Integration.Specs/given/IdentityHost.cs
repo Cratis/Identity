@@ -39,7 +39,7 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public const string Issuer = "https://localhost/";
     public const string DirectMcp = "https://cratis.direct/mcp";
-    public const string DirectMcpAudience = "direct-api";
+    public const string DirectMcpAudience = "direct-mcp";
     public const string DirectV1 = "https://cratis.direct/v1";
     public const string StudioMcp = "https://cratis.studio/mcp";
     public const string IntrospectionClientId = ResourceSettings.IntrospectionClientId;
