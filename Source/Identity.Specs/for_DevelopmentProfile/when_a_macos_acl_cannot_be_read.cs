@@ -3,6 +3,7 @@
 
 using Cratis.Identity.Development;
 using Cratis.Identity.Hosting;
+using Microsoft.Win32.SafeHandles;
 
 namespace Cratis.Identity.for_DevelopmentProfile;
 
@@ -12,7 +13,9 @@ public class when_a_macos_acl_cannot_be_read : given.a_macos_acl_profile
     {
         if (OperatingSystem.IsMacOS())
         {
-            MacExtendedAccess.RequireNoGrants(Path.Combine(_root, "missing"));
+            // EBADF comes from acl_get_fd_np, not from the directory-open branch.
+            using var handle = new SafeFileHandle(new IntPtr(-1), ownsHandle: false);
+            MacExtendedAccess.RequireNoGrants(handle);
         }
     });
 

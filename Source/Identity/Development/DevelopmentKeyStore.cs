@@ -33,7 +33,9 @@ namespace Cratis.Identity.Development;
 /// <param name="root">The per-user data root, normally the local application data folder.</param>
 /// <param name="contentRoot">The content root of the host; the store is refused inside it.</param>
 /// <param name="timeProvider">The <see cref="TimeProvider"/>.</param>
-internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeProvider timeProvider)
+/// <param name="beforeDirectoryCreation">Optional synchronization seam before directory creation.</param>
+/// <param name="ancestorOwner">Optional ancestor ownership reader for filesystem race specifications.</param>
+internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeProvider timeProvider, Action<string>? beforeDirectoryCreation = null, Func<string, int>? ancestorOwner = null)
 {
     /// <summary>
     /// The provenance marker file, written when the directory is created. A dot entry, so the key loader ignores it.
@@ -94,8 +96,13 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
     public string Provision(string authority)
     {
         var directory = ResolveLocation(root, contentRoot, authority);
-        RequireSafeAncestors(directory);
+        RequireSafeAncestors(directory, ancestorOwner);
+        beforeDirectoryCreation?.Invoke(directory);
         EnsureDirectory(directory);
+
+        // Recursive creation can encounter an ancestor created by another user after the precheck.
+        // Revalidate the entire chain before reading, deleting or writing any store content.
+        RequireSafeAncestors(directory, ancestorOwner);
         var content = CheckExistingContent(directory);
         RemoveOrphanKeys(directory, content);
         EnsureMarker(directory);
@@ -296,32 +303,29 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
     /// over what it contains; an access control list that cannot be read is refused.
     /// </summary>
     /// <param name="directory">The store directory.</param>
+    /// <param name="ancestorOwner">Optional ancestor ownership reader.</param>
     /// <exception cref="DevelopmentProfileRefused">Thrown when an ancestor is writable by others or owned by another user.</exception>
-    static void RequireSafeAncestors(string directory)
+    static void RequireSafeAncestors(string directory, Func<string, int>? ancestorOwner)
     {
-        if (OperatingSystem.IsWindows())
-        {
-            for (var ancestor = Path.GetDirectoryName(directory); ancestor is not null; ancestor = Path.GetDirectoryName(ancestor))
-            {
-                if (Directory.Exists(ancestor))
-                {
-                    WindowsOwnerOnlyAccess.RequireSafeAncestor(ancestor);
-                }
-            }
-
-            return;
-        }
-
         for (var ancestor = Path.GetDirectoryName(directory); ancestor is not null; ancestor = Path.GetDirectoryName(ancestor))
         {
-            if (Directory.Exists(ancestor))
+            if (!Directory.Exists(ancestor))
             {
-                RequireSafeUnixAncestor(ancestor);
+                continue;
+            }
+
+            if (OperatingSystem.IsWindows())
+            {
+                WindowsOwnerOnlyAccess.RequireSafeAncestor(ancestor);
+            }
+            else
+            {
+                RequireSafeUnixAncestor(ancestor, ancestorOwner);
             }
         }
     }
 
-    static void RequireSafeUnixAncestor(string ancestor)
+    static void RequireSafeUnixAncestor(string ancestor, Func<string, int>? ancestorOwner)
     {
         if (OperatingSystem.IsWindows())
         {
@@ -340,7 +344,7 @@ internal sealed class DevelopmentKeyStore(string root, string contentRoot, TimeP
             throw new DevelopmentProfileRefused($"the directory {ancestor} above the key directory is writable by other users, who could replace the key store.");
         }
 
-        var owner = OwnerOf(ancestor);
+        var owner = ancestorOwner?.Invoke(ancestor) ?? OwnerOf(ancestor);
         if (owner != _currentUid.Value && owner != 0)
         {
             throw new DevelopmentProfileRefused($"the directory {ancestor} above the key directory is owned by another user, who could replace the key store.");
