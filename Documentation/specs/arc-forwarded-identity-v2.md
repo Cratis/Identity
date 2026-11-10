@@ -46,7 +46,7 @@ This specification depends on Identity's `identity-contract` version 1, Terms an
 | Assurance (`acr`/`amr`) | Connection-mapped authentication strength (`acr`) and verified methods (`amr`), never authority inferred from untrusted upstream labels; detailed in Arc verified-caller spec. |
 | Policy epoch | A monotonically increasing organisation-policy revision forcing stale credentials to be re-evaluated against current policy; detailed in Arc verified-caller spec. |
 
-The account key for a person is the exact realm-issued `(issuer, subject)` pair, not an upstream subject or a subject considered across all realms. An audience (`aud`) is a catalog slug such as `direct-api`, not the RFC 8707 resource indicator URL. A trusted catalog maps exactly one registered resource indicator to exactly one audience and scope prefix. Resolve this mapping and the environment/installation binding from trusted state before signing or verification; do not infer them from Host, `X-Forwarded-*` or caller labels.
+The account key for a person is the exact realm-issued `(issuer, subject)` pair, not an upstream subject or a subject considered across all realms. An audience (`aud`) is a catalog slug such as `direct-api` or `direct-mcp`, not the RFC 8707 resource indicator URL. A trusted catalog maps exactly one registered resource indicator to exactly one audience and scope prefix. Resolve this mapping and the environment/installation binding from trusted state before signing or verification; do not infer them from Host, `X-Forwarded-*` or caller labels.
 
 ## Envelope grammar
 
