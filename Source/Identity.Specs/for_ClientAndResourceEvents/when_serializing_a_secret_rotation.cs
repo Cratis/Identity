@@ -22,6 +22,29 @@ public class when_serializing_a_secret_rotation : Specification
     }
 
     [Fact]
+    void should_reject_a_reversed_overlap_deadline() =>
+        Catch.Exception(() => _ = new ClientSecretRotated(_event.ClientSecretId, _event.ClientSecretHash, _event.ActivatedAt, _event.ActivatedAt.AddTicks(-1)))
+            .ShouldBeOfExactType<ArgumentOutOfRangeException>();
+
+    [Fact]
+    void should_reject_a_reversed_overlap_initializer() =>
+        Catch.Exception(() => _ = _event with { PreviousValidUntil = _event.ActivatedAt.AddTicks(-1) }).ShouldBeOfExactType<ArgumentOutOfRangeException>();
+
+    [Fact]
+    void should_reject_serializing_an_activation_after_the_deadline()
+    {
+        var reversed = _event with { ActivatedAt = _event.PreviousValidUntil.AddTicks(1) };
+        Catch.Exception(() => _ = JsonSerializer.Serialize(reversed)).ShouldBeOfExactType<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    void should_preserve_a_bounded_overlap()
+    {
+        var overlap = _event with { PreviousValidUntil = _event.ActivatedAt.AddMinutes(5) };
+        JsonSerializer.Deserialize<ClientSecretRotated>(JsonSerializer.Serialize(overlap)).PreviousValidUntil.ShouldEqual(overlap.PreviousValidUntil);
+    }
+
+    [Fact]
     void should_not_print_digest_material_from_the_event() => _event.ToString().Contains(Digest, StringComparison.Ordinal).ShouldBeFalse();
 
     [Fact]

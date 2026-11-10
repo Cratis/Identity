@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Globalization;
 using Cratis.Identity.Contracts.Check;
 using Cratis.Identity.Contracts.Clients;
 using Cratis.Identity.Contracts.Clients.Events;
@@ -41,6 +42,17 @@ public class when_inspecting_the_contracts : Specification
 
     [Fact]
     void should_keep_the_amendment_consent_choices() => Enum.GetNames<ClientConsentType>().ShouldEqual(["None", "Explicit"]);
+
+    [Theory]
+    [InlineData(typeof(ClientEndpoint), "Authorization=0,Token=1,Revocation=2,Introspection=3,DeviceAuthorization=4")]
+    [InlineData(typeof(ClientGrantType), "AuthorizationCode=0,RefreshToken=1,DeviceCode=2,TokenExchange=3")]
+    [InlineData(typeof(ClientResponseType), "Code=0")]
+    [InlineData(typeof(ClientConsentType), "None=0,Explicit=1")]
+    [InlineData(typeof(ClientType), "Public=0,Confidential=1")]
+    [InlineData(typeof(ClientApplicationType), "Native=0,Web=1")]
+    [InlineData(typeof(ClientRegistrationKind), "PreRegistered=0,ClientIdentifierMetadataDocument=1,DynamicClientRegistration=2")]
+    public void should_pin_each_enum_name_to_its_numeric_assignment(Type type, string expected) =>
+        string.Join(',', Enum.GetNames(type).Select(name => $"{name}={Convert.ToInt32(Enum.Parse(type, name), CultureInfo.InvariantCulture)}")).ShouldEqual(expected);
 
     [Fact]
     void should_allocate_independent_uuid_streams_and_secret_references()
