@@ -24,7 +24,7 @@ internal class EndSessionEndpoint(EndSessionHintValidator hints, IOpenIddictAppl
         context.Response.Headers.CacheControl = "no-store";
         context.Response.Headers["Referrer-Policy"] = "no-referrer";
         var request = await EndSessionRequest.Read(context.Request);
-        if (request is null || !await HasProtectedPost(context))
+        if (request is null)
         {
             return Results.BadRequest("The sign-out form expired or did not come from this browser session.");
         }
@@ -48,11 +48,10 @@ internal class EndSessionEndpoint(EndSessionHintValidator hints, IOpenIddictAppl
         return await Complete(context, request);
     }
 
-    async Task<bool> HasProtectedPost(HttpContext context) =>
-        !HttpMethods.IsPost(context.Request.Method) || await antiforgery.IsRequestValidAsync(context);
-
-    static async Task<bool> NeedsConfirmation(HttpContext context, EndSessionHint? hint) =>
-        !HttpMethods.IsPost(context.Request.Method) && !await MatchesSession(context, hint);
+    async Task<bool> NeedsConfirmation(HttpContext context, EndSessionHint? hint) =>
+        HttpMethods.IsPost(context.Request.Method)
+            ? !await antiforgery.IsRequestValidAsync(context)
+            : !await MatchesSession(context, hint);
 
     static async Task<IResult> Complete(HttpContext context, EndSessionRequest request)
     {
