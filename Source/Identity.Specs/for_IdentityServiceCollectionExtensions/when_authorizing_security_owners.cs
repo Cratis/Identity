@@ -4,6 +4,7 @@
 using System.Security.Claims;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Configuration;
+using Cratis.Identity.Hosting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using static OpenIddict.Abstractions.OpenIddictConstants;

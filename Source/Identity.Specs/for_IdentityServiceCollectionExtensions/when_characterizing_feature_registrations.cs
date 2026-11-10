@@ -8,9 +8,13 @@ public class when_characterizing_feature_registrations : given.registered_featur
     string[] _enabled;
     string[] _disabled;
 
-    // HOLD 9 prevented executing the pre-extraction state. Generate both baselines there before removing these skips.
-    static string[] ExpectedEnabled => throw new InvalidOperationException("Device-enabled baseline has not been generated.");
-    static string[] ExpectedDisabled => throw new InvalidOperationException("Device-disabled baseline has not been generated.");
+    /// <summary>
+    /// Captured by running this projection against b17ded8's original, unextracted registration.
+    /// Unlike e3fcaff, b17ded8 includes the merge replacing AccountStore/UpstreamKeyLinking with
+    /// LinkCeremony, ILinkCeremony and AccountLinking. The only baseline edit was analyzer-required method chaining.
+    /// </summary>
+    static string[] ExpectedEnabled => ReadBaseline("enabled");
+    static string[] ExpectedDisabled => ReadBaseline("disabled");
 
     void Because()
     {
@@ -18,9 +22,20 @@ public class when_characterizing_feature_registrations : given.registered_featur
         _disabled = Snapshot(disabled_services, disabled_provider);
     }
 
-    [Fact(Skip = "HOLD 9: generate the pre-extraction device-enabled descriptor baseline before enabling this assertion.")]
+    [Fact]
     void should_preserve_enabled_registrations_and_order_sensitive_subsequences() => _enabled.ShouldEqual(ExpectedEnabled);
 
-    [Fact(Skip = "HOLD 9: generate the pre-extraction device-disabled descriptor baseline before enabling this assertion.")]
+    [Fact]
     void should_preserve_disabled_registrations_and_order_sensitive_subsequences() => _disabled.ShouldEqual(ExpectedDisabled);
+
+    static string[] ReadBaseline(string variant)
+    {
+        using var stream = typeof(when_characterizing_feature_registrations).Assembly.GetManifestResourceStream(
+            $"Cratis.Identity.for_IdentityServiceCollectionExtensions.Baselines.device-{variant}.txt");
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd()
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(line => !line.StartsWith("//", StringComparison.Ordinal))
+            .ToArray();
+    }
 }

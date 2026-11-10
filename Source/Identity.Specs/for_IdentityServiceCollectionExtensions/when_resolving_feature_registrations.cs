@@ -6,6 +6,7 @@ using Cratis.Identity.Authorization.TokenExchange;
 using Cratis.Identity.Clients;
 using Cratis.Identity.ConsentFlow;
 using Cratis.Identity.Device;
+using Cratis.Identity.Device.Operational;
 using Cratis.Identity.DPoP;
 using Cratis.Identity.Protocol;
 using Cratis.Identity.Resources;

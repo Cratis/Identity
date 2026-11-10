@@ -4,6 +4,7 @@
 using Cratis.Identity.Authorization.RateLimiting;
 using Cratis.Identity.Authorization.TokenExchange;
 using Cratis.Identity.Configuration;
+using Cratis.Identity.Hosting;
 using Cratis.Identity.Operational;
 using Microsoft.Extensions.Options;
 using static OpenIddict.Abstractions.OpenIddictConstants;

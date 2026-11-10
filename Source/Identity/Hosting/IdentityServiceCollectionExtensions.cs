@@ -90,6 +90,7 @@ internal static class IdentityServiceCollectionExtensions
 
         // Protected-decision commands (sign-in) need the command-aware Chronicle decision reader.
         services.AddCommandAwareDecisionReads();
+
         // Keep hosted-service startup order: storage guards, key reloading, revocation, account guard, then consent.
         services.AddStorage();
         services.AddSecretStoreKeys(startupOptions);
@@ -201,8 +202,8 @@ internal static class IdentityServiceCollectionExtensions
                 }
 
                 return ValueTask.CompletedTask;
-            }));
-        server.AddEventHandler<OpenIddictServerEvents.ValidateTokenRequestContext>(builder => builder
+            }))
+            .AddEventHandler<OpenIddictServerEvents.ValidateTokenRequestContext>(builder => builder
             .SetOrder(int.MinValue + 100)
             .UseInlineHandler(context =>
             {
