@@ -124,8 +124,8 @@ internal static class SchemaCompatibility
         }
         for (var index = 0; index < retained.Count; index++)
         {
-            var before = retained[index];
-            var after = compiled[index];
+            var before = retained[index].Canonicalize();
+            var after = compiled[index].Canonicalize();
             var memberPath = $"{path}.{before.Name}";
             if (before with { Fields = after.Fields } != after) result.Add(new(memberPath, "event_field_changed_without_generation"));
             CompareFields(before.Fields, after.Fields, memberPath, result);

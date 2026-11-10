@@ -28,6 +28,14 @@ internal sealed record SchemaField(
         .Select(member => new SchemaField(member.ClrName, member.WireName, member.TypeName, member.Pii, member.Nullable, member.UnderlyingType, From(member.Members)))
         .ToArray();
 
+    /// <summary>Canonicalizes framework type identities in memory, leaving all other metadata unchanged.</summary>
+    /// <returns>The field with runtime-independent framework assembly identities.</returns>
+    internal SchemaField Canonicalize() => this with
+    {
+        Type = FrameworkTypeIdentity.Canonicalize(Type),
+        UnderlyingType = UnderlyingType is null ? null : FrameworkTypeIdentity.Canonicalize(UnderlyingType)
+    };
+
     /// <summary>Compares recursive field metadata without depending on declaration order.</summary>
     /// <param name="left">The retained fields.</param>
     /// <param name="right">The proposed fields.</param>
@@ -35,5 +43,5 @@ internal sealed record SchemaField(
     internal static bool Equivalent(IReadOnlyList<SchemaField> left, IReadOnlyList<SchemaField> right) =>
         left.Count == right.Count && left.OrderBy(field => field.Name, StringComparer.Ordinal)
             .Zip(right.OrderBy(field => field.Name, StringComparer.Ordinal))
-            .All(pair => pair.First with { Fields = pair.Second.Fields } == pair.Second && Equivalent(pair.First.Fields, pair.Second.Fields));
+            .All(pair => pair.First.Canonicalize() with { Fields = pair.Second.Fields } == pair.Second.Canonicalize() && Equivalent(pair.First.Fields, pair.Second.Fields));
 }
