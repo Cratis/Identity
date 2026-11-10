@@ -64,7 +64,7 @@ internal sealed class RevocationOutboxWorker(IServiceScopeFactory scopes, ILogge
             }
             catch (Exception exception)
             {
-                // Do not put store exceptions (which can contain submitted values) into diagnostics.
+                RecoveryFailureDiagnostics.Warn(logger, exception);
                 if (exception is OutboxContentConflict or FenceLogConflict)
                 {
                     _conflict(logger, null);
