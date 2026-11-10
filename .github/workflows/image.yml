@@ -81,7 +81,7 @@ jobs:
           tags: cratis-id:ci
 
       - name: Build the integration specs
-        run: dotnet build Source/Identity.Integration.Specs/Identity.Integration.Specs.csproj --configuration Release
+        run: dotnet build Source/Identity.Integration.Specs/Identity.Integration.Specs.csproj --configuration Release -p:CratisProxiesOutputPath=
 
       - name: Run the image smoke
         env:

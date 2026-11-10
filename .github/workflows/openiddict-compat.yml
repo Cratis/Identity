@@ -61,7 +61,7 @@ jobs:
           NODE
 
       - name: Build candidate (Release, zero warnings)
-        run: dotnet build Identity.slnx --configuration Release
+        run: dotnet build Identity.slnx --configuration Release -p:CratisProxiesOutputPath=
 
       - name: Unit specs
         run: ./Source/Identity.Specs/bin/Release/net11.0/Cratis.Identity.Specs
