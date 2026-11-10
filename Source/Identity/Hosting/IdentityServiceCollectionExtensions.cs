@@ -30,6 +30,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using OpenIddict.Abstractions;
 using OpenIddict.MongoDb;
 using OpenIddict.MongoDb.Models;
 using OpenIddict.Server;
@@ -361,30 +362,7 @@ internal static class IdentityServiceCollectionExtensions
                 .ReplaceTokenStore<OpenIddictMongoDbToken, FencedTokenStore>())
             .AddServer(options =>
             {
-                options
-                    .SetAuthorizationEndpointUris($"{endpoints.RoutePrefix}/connect/authorize".TrimStart('/'))
-                    .SetTokenEndpointUris($"{endpoints.RoutePrefix}/connect/token".TrimStart('/'))
-                    .SetRevocationEndpointUris($"{endpoints.RoutePrefix}/connect/revocation".TrimStart('/'))
-                    .SetIntrospectionEndpointUris($"{endpoints.RoutePrefix}/connect/introspect".TrimStart('/'))
-                    .AllowAuthorizationCodeFlow()
-                    .AllowRefreshTokenFlow()
-                    .AddTokenExchangeFlow(startupOptions)
-                    .RequireProofKeyForCodeExchange()
-                    .DisableSlidingRefreshTokenExpiration()
-                    .SetRefreshTokenReuseLeeway(null)
-                    .DisableAccessTokenEncryption();
-
-                if (startupOptions.DeviceGrant.Enabled)
-                {
-                    options.AllowDeviceAuthorizationFlow()
-                        .SetDeviceAuthorizationEndpointUris($"{endpoints.RoutePrefix}/connect/device".TrimStart('/'))
-                        .SetEndUserVerificationEndpointUris($"{endpoints.RoutePrefix}/device".TrimStart('/'))
-                        .AddEventHandler<OpenIddictServerEvents.HandleDeviceAuthorizationRequestContext>(builder => builder.UseInlineHandler(context =>
-                        {
-                            context.SkipRequest();
-                            return ValueTask.CompletedTask;
-                        }));
-                }
+                ConfigureProtocol(options, endpoints.RoutePrefix, startupOptions);
 
                 if (startupOptions.DeviceGrant.Enabled)
                 {
@@ -444,6 +422,62 @@ internal static class IdentityServiceCollectionExtensions
             services.AddSingleton<IPostConfigureOptions<OpenIddictServerOptions>>(sp => sp.GetRequiredService<ConfigureServerKeys>());
             services.AddSingleton<IOptionsChangeTokenSource<OpenIddictServerOptions>, SecretStoreKeysChangeTokenSource>();
         }
+    }
+
+    static void ConfigureProtocol(OpenIddictServerBuilder server, string routePrefix, IdentityOptions options)
+    {
+        server
+            .SetAuthorizationEndpointUris($"{routePrefix}/connect/authorize".TrimStart('/'))
+            .SetTokenEndpointUris($"{routePrefix}/connect/token".TrimStart('/'))
+            .SetRevocationEndpointUris($"{routePrefix}/connect/revocation".TrimStart('/'))
+            .SetIntrospectionEndpointUris($"{routePrefix}/connect/introspect".TrimStart('/'))
+            .AllowAuthorizationCodeFlow()
+            .AllowRefreshTokenFlow()
+            .AddTokenExchangeFlow(options)
+            .RequireProofKeyForCodeExchange()
+            .DisableSlidingRefreshTokenExpiration()
+            .SetRefreshTokenReuseLeeway(null)
+            .DisableAccessTokenEncryption();
+
+        RequireExplicitCodeResource(server);
+
+        if (options.DeviceGrant.Enabled)
+        {
+            server.AllowDeviceAuthorizationFlow()
+                .SetDeviceAuthorizationEndpointUris($"{routePrefix}/connect/device".TrimStart('/'))
+                .SetEndUserVerificationEndpointUris($"{routePrefix}/device".TrimStart('/'))
+                .AddEventHandler<OpenIddictServerEvents.HandleDeviceAuthorizationRequestContext>(builder => builder.UseInlineHandler(context =>
+                {
+                    context.SkipRequest();
+                    return ValueTask.CompletedTask;
+                }));
+        }
+    }
+
+    static void RequireExplicitCodeResource(OpenIddictServerBuilder server)
+    {
+        server.AddEventHandler<OpenIddictServerEvents.ValidateAuthorizationRequestContext>(builder => builder
+            .SetOrder(int.MinValue + 100)
+            .UseInlineHandler(context =>
+            {
+                if (context.Request.GetResources().Length == 0)
+                {
+                    context.Reject(error: Errors.InvalidTarget, description: "A resource indicator is required.");
+                }
+
+                return ValueTask.CompletedTask;
+            }));
+        server.AddEventHandler<OpenIddictServerEvents.ValidateTokenRequestContext>(builder => builder
+            .SetOrder(int.MinValue + 100)
+            .UseInlineHandler(context =>
+            {
+                if (context.Request.IsAuthorizationCodeGrantType() && context.Request.GetResources().Length == 0)
+                {
+                    context.Reject(error: Errors.InvalidTarget, description: "A resource indicator is required.");
+                }
+
+                return ValueTask.CompletedTask;
+            }));
     }
 
     static void ConfigureServer(OpenIddictServerOptions server, IOptions<IdentityOptions> identity, IResourceCatalog resources)
