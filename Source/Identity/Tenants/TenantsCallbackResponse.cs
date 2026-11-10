@@ -19,8 +19,7 @@ internal static partial class TenantsCallbackResponse
     /// <returns>The selectable tenants, or null for a malformed answer.</returns>
     internal static IEnumerable<SelectableTenant>? Read(JsonElement body)
     {
-        if (!body.TryGetProperty("tenants", out var tenants) || tenants.ValueKind != JsonValueKind.Array ||
-            tenants.GetArrayLength() > 256)
+        if (!body.TryGetProperty("tenants", out var tenants) || !ValidTenantArray(tenants))
         {
             return null;
         }
@@ -29,41 +28,42 @@ internal static partial class TenantsCallbackResponse
         var ids = new HashSet<string>(StringComparer.Ordinal);
         foreach (var tenant in tenants.EnumerateArray())
         {
-            if (tenant.ValueKind != JsonValueKind.Object ||
-                !tenant.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.String)
-            {
-                return null;
-            }
-
-            var tenantId = id.GetString()!;
-            if (!TenantId.IsMatch(tenantId) || !ids.Add(tenantId))
-            {
-                return null;
-            }
-
-            var name = tenantId;
-            if (tenant.TryGetProperty("name", out var displayName))
-            {
-                if (displayName.ValueKind != JsonValueKind.String)
-                {
-                    return null;
-                }
-
-                var displayNameValue = displayName.GetString()!;
-                if (displayNameValue.Length > 128 || displayNameValue.Any(char.IsControl))
-                {
-                    return null;
-                }
-
-                if (!string.IsNullOrWhiteSpace(displayNameValue))
-                {
-                    name = displayNameValue;
-                }
-            }
-
-            result.Add(new SelectableTenant(tenantId, name));
+            var selectable = ReadTenant(tenant, ids);
+            if (selectable is null) return null;
+            result.Add(selectable);
         }
 
         return result;
+    }
+
+    static bool ValidTenantArray(JsonElement tenants) =>
+        tenants.ValueKind == JsonValueKind.Array && tenants.GetArrayLength() <= 256;
+
+    static SelectableTenant? ReadTenant(JsonElement tenant, HashSet<string> ids)
+    {
+        if (tenant.ValueKind != JsonValueKind.Object) return null;
+        if (!tenant.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        var tenantId = id.GetString()!;
+        if (!TenantId.IsMatch(tenantId) || !ids.Add(tenantId))
+        {
+            return null;
+        }
+
+        var name = ReadName(tenant, tenantId);
+        return name is null ? null : new SelectableTenant(tenantId, name);
+    }
+
+    static string? ReadName(JsonElement tenant, string tenantId)
+    {
+        if (!tenant.TryGetProperty("name", out var displayName)) return tenantId;
+        if (displayName.ValueKind != JsonValueKind.String) return null;
+
+        var displayNameValue = displayName.GetString()!;
+        if (displayNameValue.Length > 128 || displayNameValue.Any(char.IsControl)) return null;
+        return string.IsNullOrWhiteSpace(displayNameValue) ? tenantId : displayNameValue;
     }
 }
