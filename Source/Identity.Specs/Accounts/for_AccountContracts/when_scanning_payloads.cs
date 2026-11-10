@@ -16,7 +16,8 @@ public class when_scanning_payloads : Specification
     Type[] _events;
     string[] _violations;
 
-    void Establish() => _events = typeof(AccountRegistered).Assembly.GetTypes().Where(type => type.IsDefined(typeof(EventTypeAttribute))).ToArray();
+    void Establish() => _events = typeof(AccountRegistered).Assembly.GetTypes()
+        .Where(type => type.Namespace == typeof(AccountRegistered).Namespace && type.IsDefined(typeof(EventTypeAttribute))).ToArray();
     void Because() => _violations = _events.SelectMany(given.AccountPayloadScanner.Violations).ToArray();
 
     [Fact] void should_have_no_raw_personal_or_secret_strings() => _violations.ShouldBeEmpty();
