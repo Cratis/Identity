@@ -1,6 +1,8 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Clients.Registering;
+using Cratis.Identity.Clients.RotatingSecret;
 using Cratis.Identity.Contracts.Clients;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,7 +30,7 @@ public class when_composing_client_commands : given.client_commands
     }
 
     [Theory]
-    [InlineData("")]
+    [InlineData(" ")]
     [InlineData("not-base64")]
     [InlineData("AA==")]
     async Task should_fail_on_host_start_before_the_producer_is_resolved(string key)
@@ -41,6 +43,37 @@ public class when_composing_client_commands : given.client_commands
         var error = await Record.ExceptionAsync(() => host.StartAsync(TestContext.Current.CancellationToken));
         error.ShouldBeOfExactType<OptionsValidationException>();
         ((OptionsValidationException)error).Failures.ShouldContain("invalid_client_secret_key_configuration");
+    }
+
+    [Theory]
+    [InlineData(null, 1)]
+    [InlineData("", 1)]
+    [InlineData(null, 0)]
+    [InlineData(null, -1)]
+    async Task should_start_without_a_key_but_refuse_secret_producing_commands(string? key, int revision)
+    {
+        var values = new Dictionary<string, string?>();
+        if (key is not null)
+        {
+            values["Identity:ClientSecrets:Key"] = key;
+        }
+
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+        using var host = new HostBuilder().ConfigureServices(services =>
+        {
+            services.AddClients(configuration);
+            services.Configure<ClientSecretOptions>(options => options.Revision = revision);
+        }).Build();
+        await host.StartAsync(TestContext.Current.CancellationToken);
+        var registration = new RegisterClient(new("keyless-spec-client"), _configuration, Plaintext);
+        var registrationError = Catch.Exception(() => _ = registration.Handle(_registrationDecision, host.Services.GetRequiredService<ClientSecretDigester>()));
+        registrationError.ShouldBeOfExactType<InvalidOperationException>();
+        registrationError.Message.ShouldEqual("invalid_client_secret_key_configuration");
+        var rotation = new RotateSecret(_id, Plaintext, new(Now, Now));
+        var rotationError = Catch.Exception(() => _ = rotation.Handle(_active, host.Services.GetRequiredService<ClientSecretDigester>(), _clock, host.Services.GetRequiredService<IOptions<ClientSecretOptions>>()));
+        rotationError.ShouldBeOfExactType<InvalidOperationException>();
+        rotationError.Message.ShouldEqual("invalid_client_secret_key_configuration");
+        await host.StopAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -83,7 +116,7 @@ public class when_composing_client_commands : given.client_commands
         services.AddClients(new ConfigurationBuilder().Build());
         using var provider = services.BuildServiceProvider();
         var error = Catch.Exception(() => _ = provider.GetRequiredService<ClientSecretDigester>());
-        error.ShouldBeOfExactType<OptionsValidationException>();
-        ((OptionsValidationException)error).Failures.ShouldContain("invalid_client_secret_key_configuration");
+        error.ShouldBeOfExactType<InvalidOperationException>();
+        error.Message.ShouldEqual("invalid_client_secret_key_configuration");
     }
 }

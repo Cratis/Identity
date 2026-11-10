@@ -26,7 +26,6 @@ public class an_identity_host : Specification
             ["Identity:Issuer"] = "https://localhost/",
             ["Identity:GitHub:ClientId"] = "spec-client",
             ["Identity:GitHub:ClientSecret"] = "spec-not-a-secret",
-            ["Identity:ClientSecrets:Key"] = Convert.ToBase64String(Enumerable.Range(0, 32).Select(value => (byte)value).ToArray()),
             ["Identity:TokenRateLimit:PerSourceRequests"] = "2",
             ["Identity:TokenRateLimit:Window"] = "01:00:00"
         });

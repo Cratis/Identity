@@ -15,10 +15,12 @@ internal static class ClientServiceCollectionExtensions
     {
         services.AddOptions<ClientSecretOptions>()
             .Bind(configuration.GetSection("Identity:ClientSecrets"))
-            .Validate(options => options.HasValidKey(), "invalid_client_secret_key_configuration")
-            .Validate(options => options.Revision > 0 && options.MaxOverlap >= TimeSpan.Zero, "invalid_client_secret_policy_configuration")
+            .Validate(options => string.IsNullOrEmpty(options.Key) || options.HasValidKey(), "invalid_client_secret_key_configuration")
+            .Validate(options => HasValidRevision(options) && options.MaxOverlap >= TimeSpan.Zero, "invalid_client_secret_policy_configuration")
             .ValidateOnStart();
         services.AddSingleton<ClientSecretDigester>();
         services.AddScoped<ClientRegistrationReads>();
     }
+
+    static bool HasValidRevision(ClientSecretOptions options) => string.IsNullOrEmpty(options.Key) || options.Revision > 0;
 }
