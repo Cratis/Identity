@@ -105,7 +105,7 @@ internal static class DevelopmentProfile
             throw new DevelopmentProfileRefused("Every Identity:Development:Resources indicator must be an http loopback URI; a deployed resource indicator is never used locally.");
         }
 
-        ValidateClients(development.Clients);
+        ValidateClients(startupOptions, development.Clients);
         return issuer;
     }
 
@@ -114,8 +114,17 @@ internal static class DevelopmentProfile
 
     static bool IsIncomplete(DevelopmentClientOptions client) => string.IsNullOrWhiteSpace(client.ClientId) || client.RedirectUris.Count == 0;
 
-    static void ValidateClients(IList<DevelopmentClientOptions> clients)
+    static void ValidateClients(IdentityOptions startupOptions, IList<DevelopmentClientOptions> clients)
     {
+        var configured = startupOptions.IntrospectionClients.Select(_ => _.ClientId)
+            .Concat(startupOptions.TokenExchange.Clients.Select(_ => _.ClientId))
+            .Concat(startupOptions.OidcClients.Select(_ => _.ClientId))
+            .ToHashSet(StringComparer.Ordinal);
+        if (clients.Any(_ => configured.Contains(_.ClientId)))
+        {
+            throw new DevelopmentProfileRefused("A development client cannot reuse the id of a configured introspection, token exchange or OpenID Connect client.");
+        }
+
         if (clients.Any(IsIncomplete) || HasDuplicateIds(clients))
         {
             throw new DevelopmentProfileRefused("Every Identity:Development:Clients entry needs a unique ClientId and at least one redirect URI.");
