@@ -29,6 +29,8 @@ public class when_exporting_types : Specification
             typeof(GitHubOptions),
             typeof(IdentityEndpointOptions),
             typeof(IdentityOptions),
+            typeof(IdentityOptionsClients),
+            typeof(ClientIdMetadataOptions),
             typeof(IntrospectionClientOptions),
             typeof(MongoDBOptions),
             typeof(OidcClientOptions),

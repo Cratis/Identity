@@ -19,11 +19,7 @@ internal static class OidcClientOptionsValidation
     /// <returns>Validation failures without secrets or callback values.</returns>
     internal static IEnumerable<string> Validate(IdentityOptions options)
     {
-        if (options.Oidc.IssuanceEnabled && options.Oidc.ConsentDecision is not ("ImplicitFencedPath" or "ActivationBarrier"))
-        {
-            yield return "Identity:Oidc:IssuanceEnabled requires ConsentDecision to be ImplicitFencedPath or ActivationBarrier.";
-        }
-
+        foreach (var failure in ValidateIssuance(options)) yield return failure;
         var ids = new HashSet<string>(options.IntrospectionClients.Select(_ => _.ClientId), StringComparer.Ordinal)
         {
             ClientDescriptors.CratisCli
@@ -42,6 +38,19 @@ internal static class OidcClientOptionsValidation
             }
 
             foreach (var failure in ValidateClient(client)) yield return failure;
+        }
+    }
+
+    static IEnumerable<string> ValidateIssuance(IdentityOptions options)
+    {
+        if (!options.Oidc.IssuanceEnabled) yield break;
+        if (string.IsNullOrWhiteSpace(options.Issuer))
+        {
+            yield return "Identity:Issuer must be configured when OpenID Connect issuance is enabled.";
+        }
+        if (options.Oidc.ConsentDecision is not ("ImplicitFencedPath" or "ActivationBarrier"))
+        {
+            yield return "Identity:Oidc:IssuanceEnabled requires ConsentDecision to be ImplicitFencedPath or ActivationBarrier.";
         }
     }
 

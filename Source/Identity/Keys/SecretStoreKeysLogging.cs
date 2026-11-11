@@ -17,6 +17,12 @@ internal static partial class SecretStoreKeysLogging
     [LoggerMessage(LogLevel.Information, "Realm keys changed: signing with {Signer}, encrypting with {Encrypter}")]
     internal static partial void KeysChanged(this ILogger<SecretStoreKeys> logger, string signer, string encrypter);
 
+    [LoggerMessage(LogLevel.Warning, "OIDC signing is unavailable; provision eligible RSA material or repair the secret store")]
+    internal static partial void OidcSigningUnavailable(this ILogger<SecretStoreKeys> logger);
+
+    [LoggerMessage(LogLevel.Information, "OIDC signing is available again")]
+    internal static partial void OidcSigningRestored(this ILogger<SecretStoreKeys> logger);
+
     [LoggerMessage(LogLevel.Warning, "The Data Protection key in use expires at {Expires}; provision a successor in the secret store")]
     internal static partial void DataProtectionKeyExpiring(this ILogger<SecretStoreKeys> logger, DateTimeOffset expires);
 }

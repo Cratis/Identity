@@ -13,7 +13,7 @@ internal static class ProtocolScopes
     /// <summary>
     /// Gets all protocol scopes Identity accepts.
     /// </summary>
-    public static IEnumerable<string> All { get; } = [Scopes.OfflineAccess];
+    public static IEnumerable<string> All { get; } = [Scopes.OfflineAccess, Scopes.OpenId, Scopes.Profile];
 
     /// <summary>
     /// Checks whether a scope is a protocol scope.

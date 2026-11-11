@@ -27,6 +27,9 @@ public class IdentityOptions
     /// </summary>
     public IList<string> SecurityOwners { get; set; } = [];
 
+    /// <summary>Gets or sets public Client ID Metadata Document policy.</summary>
+    public IdentityOptionsClients Clients { get; set; } = new();
+
     /// <summary>Gets or sets the native account options.</summary>
     public AccountsOptions Accounts { get; set; } = new();
 
