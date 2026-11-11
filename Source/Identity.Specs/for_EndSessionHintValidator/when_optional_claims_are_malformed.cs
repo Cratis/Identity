@@ -1,6 +1,8 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Text.Json;
+
 namespace Cratis.Identity.for_EndSessionHintValidator;
 
 public class when_optional_claims_are_malformed : given.a_hint_validator
@@ -18,16 +20,21 @@ public class when_optional_claims_are_malformed : given.a_hint_validator
 
     async Task Because()
     {
-        _nullParty = await Refused(Sign(_ => _["azp"] = null));
+        var nullClaim = JsonSerializer.SerializeToElement<object?>(null);
+        _nullParty = await Refused(Sign(_ => _["azp"] = nullClaim));
         _objectParty = await Refused(Sign(_ => _["azp"] = new { client = ClientId }));
         _arrayParty = await Refused(Sign(_ => _["azp"] = new[] { ClientId }));
-        _nullType = await Refused(Sign(_ => _["oi_tkn_typ"] = null));
+        _nullType = await Refused(Sign(_ => _["oi_tkn_typ"] = nullClaim));
         _objectType = await Refused(Sign(_ => _["oi_tkn_typ"] = new { type = "id_token" }));
-        _nullScope = await Refused(Sign(_ => _["scope"] = null));
-        _nullClient = await Refused(Sign(_ => _["cid"] = null));
-        _nullNotBefore = await Refused(Sign(_ => _["nbf"] = null));
+        _nullScope = await Refused(Sign(_ => _["scope"] = nullClaim));
+        _nullClient = await Refused(Sign(_ => _["cid"] = nullClaim));
+        _nullNotBefore = await Refused(Sign(_ => _["nbf"] = nullClaim));
         _absent = await Refused(Sign());
-        _valid = await Refused(Sign(_ => { _["azp"] = ClientId; _["oi_tkn_typ"] = "id_token"; }));
+        _valid = await Refused(Sign(_ =>
+        {
+            _["azp"] = ClientId;
+            _["oi_tkn_typ"] = "id_token";
+        }));
     }
 
     [Fact] void should_reject_a_null_authorized_party() => _nullParty.ShouldBeTrue();

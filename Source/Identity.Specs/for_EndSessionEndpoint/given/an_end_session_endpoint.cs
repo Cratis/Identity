@@ -28,7 +28,7 @@ public class an_end_session_endpoint : for_EndSessionHintValidator.given.a_hint_
         antiforgery = Substitute.For<IAntiforgery>();
         antiforgery.IsRequestValidAsync(Arg.Any<HttpContext>()).Returns(true);
         antiforgery.GetAndStoreTokens(Arg.Any<HttpContext>()).Returns(new AntiforgeryTokenSet("form-token", "cookie-token", "__logout_antiforgery", "X-CSRF"));
-        applications.GetPostLogoutRedirectUrisAsync(application, Arg.Any<CancellationToken>()).Returns(ImmutableArray.Create(RedirectUri));
+        applications.GetPostLogoutRedirectUrisAsync(application, Arg.Any<CancellationToken>()).Returns(new ValueTask<ImmutableArray<string>>([RedirectUri]));
         _services = new ServiceCollection().AddSingleton(authentication).BuildServiceProvider();
         endpoint = new(validator, applications, antiforgery);
     }
@@ -39,10 +39,10 @@ public class an_end_session_endpoint : for_EndSessionHintValidator.given.a_hint_
         authentication.AuthenticateAsync(Arg.Any<HttpContext>(), IdentitySchemes.Session).Returns(AuthenticateResult.Success(new(principal, IdentitySchemes.Session)));
     }
 
-    protected HttpContext Context(string hint = null, string redirect = null, string state = null, string clientId = null, bool post = false)
+    protected HttpContext Context(string? hint = null, string? redirect = null, string? state = null, string? clientId = null, bool post = false)
     {
         var context = new DefaultHttpContext { RequestServices = _services };
-        var values = new Dictionary<string, string> { ["id_token_hint"] = hint, ["post_logout_redirect_uri"] = redirect, ["state"] = state, ["client_id"] = clientId };
+        var values = new Dictionary<string, string?> { ["id_token_hint"] = hint, ["post_logout_redirect_uri"] = redirect, ["state"] = state, ["client_id"] = clientId };
         context.Request.Path = "/connect/endsession";
         context.Request.Method = post ? HttpMethods.Post : HttpMethods.Get;
         if (post)
@@ -60,7 +60,8 @@ public class an_end_session_endpoint : for_EndSessionHintValidator.given.a_hint_
 
     protected int SignOutCount() => authentication.ReceivedCalls().Count(_ => _.GetMethodInfo().Name == nameof(IAuthenticationService.SignOutAsync));
 
-    protected static string Content(IResult result) => ((Microsoft.AspNetCore.Http.HttpResults.ContentHttpResult)result).ResponseContent;
+    protected static string Content(IResult result) =>
+        ((Microsoft.AspNetCore.Http.HttpResults.ContentHttpResult)result).ResponseContent ?? throw new InvalidOperationException("Expected response content.");
 
     protected static int? Status(IResult result) => ((IStatusCodeHttpResult)result).StatusCode;
 

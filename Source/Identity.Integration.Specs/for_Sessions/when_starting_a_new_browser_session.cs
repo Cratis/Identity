@@ -41,7 +41,7 @@ public class when_starting_a_new_browser_session(IdentityHost host) : Specificat
     static AuthenticationTicket ReadCookie(HttpResponseMessage response, CookieAuthenticationOptions options)
     {
         var cookie = response.Headers.GetValues("Set-Cookie").Select(_ => SetCookieHeaderValue.Parse(_)).Single(_ => _.Name == options.Cookie.Name);
-        return options.TicketDataFormat.Unprotect(cookie.Value.Value);
+        return options.TicketDataFormat.Unprotect(cookie.Value.Value) ?? throw new InvalidOperationException("Expected a valid browser session ticket.");
     }
 
     [Fact] void should_put_a_session_identifier_in_the_real_cookie() => string.IsNullOrEmpty(SessionPrincipal.SessionId(_first)).ShouldBeFalse();

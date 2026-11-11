@@ -20,8 +20,16 @@ public class when_validating_id_token_hints : given.a_hint_validator
         _live = await validator.Validate(Sign());
         _expired = await validator.Validate(Sign(_ => _["exp"] = time.Now.AddMinutes(-1).ToUnixTimeSeconds()));
         _legacy = await validator.Validate(Sign(_ => _.Remove("sid")));
-        _nonce = await validator.Validate(Sign(_ => { _.Remove("auth_time"); _["nonce"] = "nonce-value"; }));
-        _hash = await validator.Validate(Sign(_ => { _.Remove("auth_time"); _["at_hash"] = "hash-value"; }));
+        _nonce = await validator.Validate(Sign(_ =>
+        {
+            _.Remove("auth_time");
+            _["nonce"] = "nonce-value";
+        }));
+        _hash = await validator.Validate(Sign(_ =>
+        {
+            _.Remove("auth_time");
+            _["at_hash"] = "hash-value";
+        }));
         using var next = new ExternalIssuerFixture();
         var nextCredentials = next.RsaCredentials;
         nextCredentials.Key.KeyId = "next-key";

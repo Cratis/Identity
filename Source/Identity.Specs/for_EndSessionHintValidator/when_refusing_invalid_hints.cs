@@ -41,7 +41,7 @@ public class when_refusing_invalid_hints : given.a_hint_validator
         _refused["missing-kid"] = await Refused(WithHeader(new() { ["typ"] = "JWT", ["alg"] = "RS256" }));
         _refused["type"] = await Refused(WithHeader(new() { ["typ"] = "at+jwt", ["alg"] = "RS256", ["kid"] = ExternalIssuerFixture.RsaKeyId }));
         _refused["missing-type"] = await Refused(WithHeader(new() { ["alg"] = "RS256", ["kid"] = ExternalIssuerFixture.RsaKeyId }));
-        applications.GetPermissionsAsync(application, Arg.Any<CancellationToken>()).Returns(ImmutableArray<string>.Empty);
+        applications.GetPermissionsAsync(application, Arg.Any<CancellationToken>()).Returns(new ValueTask<ImmutableArray<string>>([]));
         _refused["non-oidc"] = await Refused(Sign());
     }
 

@@ -38,7 +38,7 @@ public class a_hint_validator : Specification
         application = new();
         applications = Substitute.For<IOpenIddictApplicationManager>();
         applications.FindByClientIdAsync(ClientId, Arg.Any<CancellationToken>()).Returns(application);
-        applications.GetPermissionsAsync(application, Arg.Any<CancellationToken>()).Returns(ImmutableArray.Create(Permissions.Prefixes.Scope + Scopes.OpenId));
+        applications.GetPermissionsAsync(application, Arg.Any<CancellationToken>()).Returns(new ValueTask<ImmutableArray<string>>([Permissions.Prefixes.Scope + Scopes.OpenId]));
         validator = new(monitor, applications, Options.Create(new EndSessionOptions()), time);
     }
 
@@ -53,7 +53,7 @@ public class a_hint_validator : Specification
         ["auth_time"] = time.Now.AddMinutes(-5).ToUnixTimeSeconds()
     };
 
-    protected string Sign(Action<Dictionary<string, object>> change = null)
+    protected string Sign(Action<Dictionary<string, object>>? change = null)
     {
         var payload = Payload();
         change?.Invoke(payload);
