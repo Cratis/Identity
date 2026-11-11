@@ -43,8 +43,27 @@ public static class Requirements
     public const string DPoPProof = "DPOP-PROOF-VALIDATION";
     public const string DPoPMetadata = "DPOP-METADATA";
 
+    public const string OidcOpenIdScope = "OIDC-OPENID-SCOPE";
+    public const string OidcIdTokenClaims = "OIDC-ID-TOKEN-CLAIMS";
+    public const string OidcNonce = "OIDC-NONCE";
+    public const string OidcIdTokenSigned = "OIDC-ID-TOKEN-SIGNED";
+    public const string OidcIdTokenNotAccess = "OIDC-ID-TOKEN-NOT-ACCESS";
+    public const string OidcUserInfo = "OIDC-USERINFO";
+    public const string OidcUserInfoSubMatch = "OIDC-USERINFO-SUB-MATCH";
+    public const string OidcClientAuth = "OIDC-CLIENT-AUTH";
+    public const string OidcDiscovery = "OIDC-DISCOVERY";
+
     public static IReadOnlyList<Requirement> All { get; } =
     [
+        new(OidcOpenIdScope, "OIDC Core §3.1.2.1", "MUST", "Issue identity-only grants only to registered OIDC clients requesting openid."),
+        new(OidcIdTokenClaims, "OIDC Core §2 and §3.1.3.7; identity-oidc-v1", "MUST", "Bind signed ID-token claims to the canonical account, client, authentication and nonce."),
+        new(OidcNonce, "OIDC Core §3.1.2.1 and §3.1.3.6", "MUST", "Require a nonce before login and echo it in the initial ID token."),
+        new(OidcIdTokenSigned, "OIDC Core §3.1.3.7", "MUST", "Sign JWT ID tokens with the published RS256 realm key."),
+        new(OidcIdTokenNotAccess, "RFC 9068 §2.1; identity-contract-v1", "MUST", "Refuse ID tokens as resource, UserInfo, or introspection credentials."),
+        new(OidcUserInfo, "OIDC Core §5.3", "MUST", "Require a validated identity-only bearer and return bounded current-account claims."),
+        new(OidcUserInfoSubMatch, "OIDC Core §5.3.2", "MUST", "Match UserInfo sub to the ID token and honor the granted profile scope."),
+        new(OidcClientAuth, "OIDC Core §9; RFC 6749 §2.3", "MUST", "Authenticate confidential clients before redeeming their authorization codes."),
+        new(OidcDiscovery, "OIDC Discovery §3 and §4", "MUST", "Publish only the enabled code-only provider profile from the configured issuer."),
         new(DPoPIssuance, "RFC 9449 §5 and §6; identity-dpop-v1 §2", "MUST", "When enabled, bind code and approved device issuance to the proof key with object-valued cnf and DPoP token type."),
         new(DPoPRefresh, "RFC 9449 §5; identity-dpop-v1 §2.3", "MUST", "Preserve immutable family binding; refuse missing or different keys without consuming the entry."),
         new(DPoPNonce, "RFC 9449 §8; identity-dpop-v1 §5", "MUST", "Challenge with a stateless AS nonce without consuming the grant."),

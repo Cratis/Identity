@@ -15,6 +15,7 @@ public class OidcIdentityHost : IdentityHost
         settings["Identity:Oidc:IssuanceEnabled"] = "true";
         settings["Identity:Oidc:ConsentDecision"] = "ImplicitFencedPath";
         SpecClientDescriptors.AddOidcClients(settings);
+        settings["Identity:OidcClients:0:Scopes:2"] = "offline_access";
         return settings;
     }
 }
