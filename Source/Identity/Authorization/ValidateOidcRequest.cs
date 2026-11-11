@@ -11,7 +11,7 @@ using static OpenIddict.Server.OpenIddictServerEvents;
 
 namespace Cratis.Identity.Authorization;
 
-/// <summary>Requires a nonce and an explicitly registered client before any OIDC login or consent.</summary>
+/// <summary>Refuses unsupported max_age and requires a nonce and a registered client before OIDC login or consent.</summary>
 /// <param name="options">The validated issuer configuration.</param>
 internal sealed class ValidateOidcRequest(IOptions<IdentityOptions> options) : IOpenIddictServerHandler<ValidateAuthorizationRequestContext>
 {
@@ -24,6 +24,11 @@ internal sealed class ValidateOidcRequest(IOptions<IdentityOptions> options) : I
     /// <inheritdoc/>
     public ValueTask HandleAsync(ValidateAuthorizationRequestContext context)
     {
+        if (context.Request.HasParameter(Parameters.MaxAge))
+        {
+            context.Reject(Errors.InvalidRequest, "max_age is not supported");
+            return ValueTask.CompletedTask;
+        }
         if (!context.Request.HasScope(Scopes.OpenId) && !context.Request.HasScope(Scopes.Profile)) return ValueTask.CompletedTask;
         if (!options.Value.Oidc.IssuanceEnabled)
         {

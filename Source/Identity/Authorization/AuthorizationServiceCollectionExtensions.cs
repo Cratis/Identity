@@ -44,7 +44,6 @@ internal static class AuthorizationServiceCollectionExtensions
         if (options.Oidc.IssuanceEnabled)
         {
             services.AddScoped<UserInfoEndpoint>();
-            services.AddSingleton<OidcAuthenticationProof>();
             services.AddScoped<ValidateOidcRequest>();
             services.AddScoped<RefuseOidcIssuance>();
             services.AddScoped<IdentityTokenSigning>();

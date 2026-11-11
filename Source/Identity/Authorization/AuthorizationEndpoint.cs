@@ -26,8 +26,6 @@ namespace Cratis.Identity.Authorization;
 /// <param name="applications">The <see cref="IOpenIddictApplicationManager"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
 /// <param name="identityOptions">The validated issuance configuration.</param>
-/// <param name="timeProvider">The authentication-age clock.</param>
-/// <param name="authenticationProof">The protected original-request binding for consent.</param>
 internal class AuthorizationEndpoint(
     SignedInAccounts signedInAccounts,
     IGrantPolicy grantPolicy,
@@ -35,11 +33,9 @@ internal class AuthorizationEndpoint(
     ConsentPages consentPages,
     IOpenIddictApplicationManager applications,
     ILogger<AuthorizationEndpoint> logger,
-    IOptions<IdentityOptions>? identityOptions = null,
-    TimeProvider? timeProvider = null,
-    OidcAuthenticationProof? authenticationProof = null)
+    IOptions<IdentityOptions>? identityOptions = null)
 {
-    readonly OidcAuthorization _identity = new(identityOptions?.Value ?? new(), consentPages, timeProvider ?? TimeProvider.System, authenticationProof);
+    readonly OidcAuthorization _identity = new(identityOptions?.Value ?? new(), consentPages);
     readonly ResourceAuthorization _resource = new(tenants, consentPages, applications, logger);
 
     /// <summary>
@@ -51,11 +47,12 @@ internal class AuthorizationEndpoint(
     public async Task<IResult> Handle(HttpContext context)
     {
         var request = context.GetOpenIddictServerRequest() ?? throw new OpenIddictRequestMissing(context.Request.Path);
+        if (request.HasParameter(Parameters.MaxAge)) return OAuthResults.Error(Errors.InvalidRequest, "max_age is not supported");
         // The GitHub callback returns here after an upstream cancel or failure. OpenIddict has revalidated
         // the client and redirect URI, so it can send a safe OAuth error instead of challenging again.
         if (context.Request.Query.ContainsKey("upstream_error")) return UpstreamFailure(context);
 
-        var signedIn = await FindAcceptableAccount(context, request);
+        var signedIn = await signedInAccounts.Find(context, request);
         if (signedIn is null) return RequireLogin(context, request);
         return await Authorize(context, request, signedIn);
     }
@@ -69,13 +66,6 @@ internal class AuthorizationEndpoint(
         request.HasPromptValue(PromptValues.None)
             ? OAuthResults.Error(Errors.LoginRequired, "The user is not signed in.")
             : signedInAccounts.Challenge(context);
-
-    async Task<SignedInAccount?> FindAcceptableAccount(HttpContext context, OpenIddictRequest request)
-    {
-        var signedIn = await signedInAccounts.Find(context, request);
-        if (signedIn is null) return null;
-        return _identity.HasAcceptableAuthentication(context, request, signedIn) ? signedIn : null;
-    }
 
     async Task<IResult> Authorize(HttpContext context, OpenIddictRequest request, SignedInAccount signedIn)
     {
