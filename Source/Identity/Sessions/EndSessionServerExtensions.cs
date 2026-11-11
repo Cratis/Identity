@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Configuration;
-using OpenIddict.Abstractions;
 using static OpenIddict.Server.OpenIddictServerEvents;
 
 namespace Cratis.Identity.Sessions;
