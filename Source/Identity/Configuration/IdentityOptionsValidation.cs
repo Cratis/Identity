@@ -16,7 +16,7 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
     /// <inheritdoc/>
     public ValidateOptionsResult Validate(string? name, IdentityOptions options)
     {
-        var failures = new List<string>();
+        List<string> failures = [];
         ValidateHost(options, failures);
         ValidateResources(options, failures);
         ValidateDPoP(options.DPoP, environment.IsDevelopment(), failures);

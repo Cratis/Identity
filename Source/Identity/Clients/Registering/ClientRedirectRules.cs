@@ -21,7 +21,7 @@ internal static class ClientRedirectRules
             return false;
         }
 
-        var parsed = new List<Uri>();
+        List<Uri> parsed = [];
         foreach (var value in values)
         {
             if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || !IsSafe(uri, applicationType))
