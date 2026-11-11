@@ -9,7 +9,8 @@ namespace Cratis.Identity.Clients.MetadataDocuments;
 /// <param name="resolver">The one-shot DNS seam.</param>
 /// <param name="connector">The direct-IP socket seam.</param>
 /// <param name="options">Optional issuer-owned connection limits.</param>
-internal sealed class GuardedConnect(IHostResolver resolver, IAddressConnector connector, ClientIdMetadataOptions? options = null)
+/// <param name="time">The clock for connection deadlines.</param>
+internal sealed class GuardedConnect(IHostResolver resolver, IAddressConnector connector, ClientIdMetadataOptions? options = null, TimeProvider? time = null)
 {
     /// <summary>Creates a transport with no redirects, credentials, cookies, proxies or decompression.</summary>
     /// <param name="timeout">The connection deadline, within the total fetch deadline.</param>
@@ -38,8 +39,8 @@ internal sealed class GuardedConnect(IHostResolver resolver, IAddressConnector c
     public async ValueTask<Stream> ConnectAsync(string host, int port, CancellationToken cancellationToken)
     {
         if (port != 443) throw new HttpRequestException("Metadata connection refused.");
-        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        deadline.CancelAfter(options?.ConnectTimeout ?? TimeSpan.FromSeconds(3));
+        using var timeout = new CancellationTokenSource(options?.ConnectTimeout ?? TimeSpan.FromSeconds(3), time ?? TimeProvider.System);
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         var addresses = await resolver.ResolveAsync(host, deadline.Token);
         if (addresses.Length == 0 || addresses.Any(_ => !AddressPolicy.IsPublic(_))) throw new HttpRequestException("Metadata address refused.");
         return await connector.ConnectAsync(addresses[0], port, deadline.Token);

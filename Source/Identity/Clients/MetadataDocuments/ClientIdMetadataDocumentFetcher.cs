@@ -10,14 +10,17 @@ namespace Cratis.Identity.Clients.MetadataDocuments;
 /// <param name="http">The credential-free guarded named client.</param>
 /// <param name="parser">The strict metadata parser.</param>
 /// <param name="options">Issuer-owned limits.</param>
-internal sealed class ClientIdMetadataDocumentFetcher(HttpClient http, MetadataDocumentParser parser, ClientIdMetadataOptions options) : IMetadataDocumentFetcher
+/// <param name="time">The clock for deadlines and response freshness.</param>
+internal sealed class ClientIdMetadataDocumentFetcher(HttpClient http, MetadataDocumentParser parser, ClientIdMetadataOptions options, TimeProvider? time = null) : IMetadataDocumentFetcher
 {
+    readonly TimeProvider _time = time ?? TimeProvider.System;
+
     /// <inheritdoc/>
     public async ValueTask<MetadataDocumentResult> FetchAsync(ClientId clientId, CancellationToken cancellationToken)
     {
         if (!ClientIdUrlPolicy.IsValid(clientId.Value)) return MetadataDocumentResult.Refused(MetadataRefusal.InvalidUrl);
-        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        deadline.CancelAfter(options.RequestTimeout);
+        using var timeout = new CancellationTokenSource(options.RequestTimeout, _time);
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, clientId.Value);
@@ -84,6 +87,6 @@ internal sealed class ClientIdMetadataDocumentFetcher(HttpClient http, MetadataD
     TimeSpan OriginLifetime(HttpResponseMessage response)
     {
         if (response.Headers.CacheControl?.MaxAge is { } maxAge) return maxAge;
-        return response.Content.Headers.Expires is { } expires ? expires - (response.Headers.Date ?? DateTimeOffset.UtcNow) : options.DefaultCacheTtl;
+        return response.Content.Headers.Expires is { } expires ? expires - (response.Headers.Date ?? _time.GetUtcNow()) : options.DefaultCacheTtl;
     }
 }

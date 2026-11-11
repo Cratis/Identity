@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using Cratis.Identity.Clients;
 using Cratis.Identity.Clients.MetadataDocuments;
+using Cratis.Identity.for_ClientIdMetadataDocumentFetcher.given;
 using IdentityOptionsClients = Cratis.Identity.Clients.MetadataDocuments.ClientIdMetadataOptions;
 
 namespace Cratis.Identity.for_ClientIdMetadataDocumentFetcher;
@@ -72,7 +73,10 @@ public class when_fetching_documents : Specification
             await Task.Delay(Timeout.InfiniteTimeSpan, cancellation);
             return Response(Valid);
         });
-        (await Fetch(handler, new IdentityOptionsClients { RequestTimeout = TimeSpan.FromMilliseconds(50) })).Refusal.ShouldEqual(MetadataRefusal.Timeout);
+        var clock = new DeadlineClock();
+        var fetch = Fetch(handler, time: clock);
+        clock.Expire();
+        (await fetch).Refusal.ShouldEqual(MetadataRefusal.Timeout);
     }
 
     [Fact]
@@ -82,7 +86,23 @@ public class when_fetching_documents : Specification
         {
             Content = new StreamContent(new StalledStream()) { Headers = { ContentType = new MediaTypeHeaderValue("application/json") } }
         });
-        (await Fetch(handler, new IdentityOptionsClients { RequestTimeout = TimeSpan.FromMilliseconds(50) })).Refusal.ShouldEqual(MetadataRefusal.Timeout);
+        var clock = new DeadlineClock();
+        var fetch = Fetch(handler, time: clock);
+        clock.Expire();
+        (await fetch).Refusal.ShouldEqual(MetadataRefusal.Timeout);
+    }
+
+    [Fact]
+    async Task should_use_the_injected_clock_when_expires_has_no_date_header()
+    {
+        var now = DateTimeOffset.UnixEpoch;
+        using var handler = new ResponseHandler(() =>
+        {
+            var response = Response(Valid);
+            response.Content.Headers.Expires = now + TimeSpan.FromMinutes(5);
+            return response;
+        });
+        (await Fetch(handler, time: new Cratis.Identity.given.FixedTimeProvider(now))).Lifetime.ShouldEqual(TimeSpan.FromMinutes(5));
     }
 
     [Fact]
@@ -132,11 +152,11 @@ public class when_fetching_documents : Specification
         handler.Requests.ShouldEqual(0);
     }
 
-    static async Task<MetadataDocumentResult> Fetch(ResponseHandler handler, IdentityOptionsClients? options = null)
+    static async Task<MetadataDocumentResult> Fetch(ResponseHandler handler, IdentityOptionsClients? options = null, TimeProvider? time = null)
     {
         options ??= new IdentityOptionsClients();
         using var client = new HttpClient(handler, disposeHandler: false);
-        return await new ClientIdMetadataDocumentFetcher(client, new MetadataDocumentParser(options), options).FetchAsync(new ClientId(ClientId), CancellationToken.None);
+        return await new ClientIdMetadataDocumentFetcher(client, new MetadataDocumentParser(options), options, time).FetchAsync(new ClientId(ClientId), CancellationToken.None);
     }
 
     static HttpResponseMessage Response(string text, string? contentType = "application/json")
