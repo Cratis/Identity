@@ -2,7 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Net;
+#if !NET11_0_OR_GREATER
 using System.Net.Http.Json;
+#endif
 using System.Security.Claims;
 using System.Text.Json;
 using Cratis.Arc.Commands;

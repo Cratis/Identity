@@ -197,7 +197,7 @@ To run it locally, on a machine with Docker:
 
 ```bash
 docker build -f Docker/Dockerfile --target cratis-id --build-arg HOST=Identity.CratisId -t cratis-id:ci .
-CI=true CRATIS_ID_IMAGE_SMOKE_ENABLED=true ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs \
+CI=true CRATIS_ID_IMAGE_SMOKE_ENABLED=true ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs \
   -class Cratis.Identity.Integration.for_Host.when_starting_the_cratis_id_image \
   -class Cratis.Identity.Integration.for_Host.when_starting_the_cratis_id_image_without_configuration
 ```

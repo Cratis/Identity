@@ -15,8 +15,8 @@ public class when_the_callback_lists_tenants_for_the_person : given.a_tenants_ca
     [Fact] void should_use_post() => handler.Requests.Single().Method.ShouldEqual(HttpMethod.Post);
     [Fact] void should_authenticate() => handler.Requests.Single().Headers.Authorization.ToString().ShouldEqual($"Bearer {options.Secret}");
     [Fact] void should_accept_json() => handler.Requests.Single().Headers.Accept.Single().MediaType.ShouldEqual("application/json");
-    [Fact] void should_send_the_audience() => JsonDocument.Parse(handler.RequestBody).RootElement.GetProperty("audience").GetString().ShouldEqual(resource.Audience);
-    [Fact] void should_send_the_subject() => JsonDocument.Parse(handler.RequestBody).RootElement.GetProperty("subject").GetString().ShouldEqual(account.Id.Value);
-    [Fact] void should_send_the_legacy_github_id() => JsonDocument.Parse(handler.RequestBody).RootElement.GetProperty("github_id").GetString().ShouldEqual("501");
+    [Fact] void should_send_the_audience() => JsonElement.Parse(handler.RequestBody).GetProperty("audience").GetString().ShouldEqual(resource.Audience);
+    [Fact] void should_send_the_subject() => JsonElement.Parse(handler.RequestBody).GetProperty("subject").GetString().ShouldEqual(account.Id.Value);
+    [Fact] void should_send_the_legacy_github_id() => JsonElement.Parse(handler.RequestBody).GetProperty("github_id").GetString().ShouldEqual("501");
     [Fact] void should_not_put_the_subject_in_the_url() => handler.Requests.Single().RequestUri.AbsoluteUri.Contains(account.Id.Value, StringComparison.Ordinal).ShouldBeFalse();
 }

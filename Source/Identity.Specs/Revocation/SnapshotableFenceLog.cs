@@ -8,7 +8,7 @@ namespace Cratis.Identity.RevocationSpecs;
 /// <summary>Independent log fake: own sequence counter, tombstones, epoch and watermark, restorable on its own.</summary>
 internal sealed class SnapshotableFenceLog : IIndependentFenceLog
 {
-    readonly object _gate = new();
+    readonly Lock _gate = new();
     Dictionary<Guid, (long Sequence, string GrantId)> _reservations = [];
     Dictionary<long, FenceRecord> _records = [];
     Dictionary<string, long> _restores = [];
