@@ -106,7 +106,7 @@ Only a designated realm identity administrator may resolve an Identity link conf
 | Identifier | Format and rules |
 |---|---|
 | Resource indicator | A registered absolute HTTPS URL using the realm-issuer URL conventions in §2.2, e.g. `https://direct.cratis.io`. Compared exactly; not inferred from an untrusted request host. Sent as OAuth `resource` on authorization and token requests. |
-| Audience | One catalog-assigned ASCII string, 1–64 characters, matching `^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`, e.g. `direct-api`. A catalog maps one resource indicator to one audience and scope prefix. Tokens MUST contain exactly one audience string, not an array or a list of products. |
+| Audience | One catalog-assigned ASCII string, 1–64 characters, matching `^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`, e.g. `direct-api` (REST) or `direct-mcp` (MCP). A catalog maps one resource indicator to one audience and scope prefix. Tokens MUST contain exactly one audience string, not an array or a list of products. |
 | Scope | Catalog-assigned `<prefix>:<operation>`, e.g. `direct:read`, `direct:write`, `direct:work`. Prefix and operation each match `^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`. There MUST NOT be an approve or admin scope. Scopes are ceilings, not roles or membership. |
 | Tenant id | Product-assigned opaque ASCII string of 1–64 characters matching `^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$`, e.g. `t-1234`. Stable and never reassigned within the product installation. MUST NOT encode PII. Its identity is scoped by resource and installation, not globally inferred from the string. |
 

@@ -8,7 +8,7 @@ namespace Cratis.Identity.given;
 
 public static class Configurations
 {
-    public const string DirectAudience = "direct-api";
+    public const string DirectAudience = "direct-mcp";
     public const string DirectMcp = "https://cratis.direct/mcp";
     public const string DirectV1 = "https://cratis.direct/v1";
     public const string StudioAudience = "studio-api";

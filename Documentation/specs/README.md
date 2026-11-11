@@ -11,6 +11,7 @@ Specifications define contracts shared by Identity and its consumers. RFC 2119 k
 | identity-events | 1.2 | Draft | [Default event type ids amendment](identity-events-v1.2-amendment.md) |
 | identity-tenant-model | 1 | Signed off | [Tenant model: organisation, workspace and namespace](identity-tenant-model-v1.md) |
 | identity-access-token | 1 | Signed off | [JWT access-token profile](identity-access-token-v1.md) |
+| identity-credential-record | 1 | Draft | [Credential record and adapter boundary](identity-credential-record-v1.md) |
 | identity-dpop | 1 | Signed off | [DPoP edge profile](identity-dpop-v1.md) |
 | identity-revocation | 1 | Signed off | [Revocation protocol and fence durability](identity-revocation-v1.md) |
 | identity-standards-references | 1 | Signed off | [Verified standards references](identity-standards-references-v1.md) |
