@@ -20,7 +20,7 @@ internal static class ClientRegistrationRules
     /// <returns>The validation result, containing no credentials or redirect values.</returns>
     public static ClientRegistrationValidation Validate(OpenIddictApplicationDescriptor descriptor, IEnumerable<string> codeChallengeMethods, bool allowLocalhost = false)
     {
-        var refusals = new List<string>();
+        List<string> refusals = [];
         if (descriptor.ClientType == ClientTypes.Public &&
             (!descriptor.Requirements.Contains(Requirements.Features.ProofKeyForCodeExchange) ||
              !codeChallengeMethods.ToHashSet(StringComparer.Ordinal).SetEquals([CodeChallengeMethods.Sha256])))
