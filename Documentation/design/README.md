@@ -10,3 +10,8 @@ Design notes guide implementation; they do not replace the [specifications](../s
 | identity-platform-corrections | 1 | Draft | [Identity platform corrections](identity-platform-corrections-v1.md) |
 | identity-erasure-consumers | 1 | Draft | [Identity erasure: consumer obligations](identity-erasure-consumers-v1.md) |
 | mcp-client-compatibility-matrix | 1 | Draft | [MCP client compatibility matrix](mcp-client-compatibility-matrix.md) |
+| direct-mcp-resources-and-audiences | 1 | Draft | [Direct MCP resources and audiences](direct-mcp-resources-and-audiences.md) |
+| direct-bearer-route-edge-trust | 1 | Draft | [Edge trust on Direct bearer routes](direct-bearer-route-edge-trust.md) |
+| direct-tenants-callback-transport | 1 | Draft | [Tenants callback transport](direct-tenants-callback-transport.md) |
+| direct-credential-kinds-and-sequence | 1 | Draft | [Direct credential kinds and sequence](direct-credential-kinds-and-sequence.md) |
+| direct-mcp-client-registration | 1 | Draft | [Direct MCP client registration](direct-mcp-client-registration.md) |

@@ -62,7 +62,7 @@ Recommendation: in staging, the default is acceptable only while network policy 
 
 ### Indexed collections
 
-Configuration arrays are addressed by index, and environment variables merge into the shipped `appsettings.json` arrays **by index**. For `Identity:Resources` the shipped order is a contract: index `0` is `https://cratis.direct/v1` (audience `direct-v1`) and index `1` is `https://cratis.direct/mcp` (audience `direct-mcp`). Index `2` is Studio (audience `studio-mcp`). Infrastructure sets `Identity__Resources__<N>__TenantsCallback__Url` and `__Secret`, plus `Identity__Resources__2__Indicators__0` for Studio. Reordering or inserting a shipped entry silently re-targets those secrets, so any further entry must be appended (index `3` onward) and the automation must pair index and secret.
+Configuration arrays are addressed by index, and environment variables merge into the shipped `appsettings.json` arrays **by index**. For `Identity:Resources` the shipped order is a contract: index `0` is `https://app.cratis.direct/v1` (audience `direct-v1`) and index `1` is `https://app.cratis.direct/mcp` (audience `direct-mcp`). Index `2` is Studio (audience `studio-mcp`). Infrastructure sets `Identity__Resources__<N>__TenantsCallback__Url` and `__Secret`, plus `Identity__Resources__2__Indicators__0` for Studio. Reordering or inserting a shipped entry silently re-targets those secrets, so any further entry must be appended (index `3` onward) and the automation must pair index and secret.
 
 `Identity__IntrospectionClients__<N>__ClientId` and `__ClientSecret` are both required for each entry, and client ids must be unique; the shipped list is empty. Use contiguous indexes starting at `0`. Validation enforces only that the secret is present; use a high-entropy value of at least 32 characters, as for callbacks.
 
@@ -132,8 +132,8 @@ The shipped catalog has two Direct entries and the Studio entry:
 
 | Resource indicator | Audience | Scope names |
 | --- | --- | --- |
-| `https://cratis.direct/v1` | `direct-v1` | `direct:read`, `direct:content.write`, `direct:work` |
-| `https://cratis.direct/mcp` | `direct-mcp` | `direct:mcp:read`, `direct:mcp:content.write`, `direct:mcp:work` |
+| `https://app.cratis.direct/v1` | `direct-v1` | `direct:read`, `direct:content.write`, `direct:work` |
+| `https://app.cratis.direct/mcp` | `direct-mcp` | `direct:mcp:read`, `direct:mcp:content.write`, `direct:mcp:work` |
 | Supplied by the environment (see below) | `studio-mcp` | `studio:mcp:read`, `studio:mcp:write` |
 
 Resources have no fixed tenants. **Direct must expose a tenants callback with a shared secret of at least 32 characters, and so must Studio when it is enabled**; authentication to the callback does not replace the product's live membership checks. Direct must configure a callback for both resource entries, even when both use the same product endpoint. Product owners supply callback URLs and secrets. The image does not implement product callbacks.
