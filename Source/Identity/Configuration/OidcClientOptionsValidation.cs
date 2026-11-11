@@ -20,10 +20,11 @@ internal static class OidcClientOptionsValidation
     internal static IEnumerable<string> Validate(IdentityOptions options)
     {
         foreach (var failure in ValidateIssuance(options)) yield return failure;
-        var ids = new HashSet<string>(options.IntrospectionClients.Select(_ => _.ClientId), StringComparer.Ordinal)
-        {
+        HashSet<string> ids =
+        [
+            with(collection: options.IntrospectionClients.Select(_ => _.ClientId), comparer: StringComparer.Ordinal),
             ClientDescriptors.CratisCli
-        };
+        ];
         ids.UnionWith(options.TokenExchange.Clients.Select(_ => _.ClientId));
         foreach (var client in options.OidcClients)
         {

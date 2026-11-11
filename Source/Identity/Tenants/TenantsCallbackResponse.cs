@@ -24,8 +24,8 @@ internal static partial class TenantsCallbackResponse
             return null;
         }
 
-        var result = new List<SelectableTenant>();
-        var ids = new HashSet<string>(StringComparer.Ordinal);
+        List<SelectableTenant> result = [];
+        HashSet<string> ids = [with(comparer: StringComparer.Ordinal)];
         foreach (var tenant in tenants.EnumerateArray())
         {
             var selectable = ReadTenant(tenant, ids);

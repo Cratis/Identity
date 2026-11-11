@@ -23,7 +23,7 @@ internal static class TokenExchangeOptionsValidation
     internal static IEnumerable<string> Validate(IdentityOptions options, bool isDevelopment)
     {
         var exchange = options.TokenExchange;
-        var failures = new List<string>();
+        List<string> failures = [];
         failures.AddRange(Duplicates(exchange.Issuers.Select(_ => _.Issuer), "token-exchange issuer"));
         failures.AddRange(Duplicates(exchange.Clients.Select(_ => _.ClientId), "token-exchange client"));
         foreach (var client in exchange.Clients.Where(_ => options.IntrospectionClients.Any(i => string.Equals(i.ClientId, _.ClientId, StringComparison.Ordinal)) ||
