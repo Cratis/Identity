@@ -14,7 +14,7 @@ Content-Type: application/x-www-form-urlencoded
 grant_type=urn:ietf:params:oauth:grant-type:token-exchange
 &subject_token=<external-jwt>
 &subject_token_type=urn:ietf:params:oauth:token-type:jwt
-&resource=https://cratis.direct/mcp
+&resource=https://app.cratis.direct/mcp
 &scope=direct:mcp:read
 &tenant=<tenant-id>
 ```
