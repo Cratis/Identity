@@ -25,6 +25,13 @@ public class when_prompt_none_is_requested(OidcIdentityHost host) : an_oidc_logi
         mixed.Add(new("prompt", "login none"));
         using var invalid = await fresh.Authorize(mixed);
         _mixed = await OidcErrors.From(invalid);
+
+        // OpenIddict refuses an invalid prompt combination before the redirect URI is validated, so the error is local.
+        if (_mixed is null && (int)invalid.StatusCode == 400)
+        {
+            var body = await invalid.Content.ReadAsStringAsync();
+            _mixed = body.Contains("invalid_request", StringComparison.Ordinal) ? "invalid_request" : body;
+        }
     }
 
     [Fact] void should_require_consent_without_remembered_approval() => _signedIn.ShouldEqual("consent_required");
