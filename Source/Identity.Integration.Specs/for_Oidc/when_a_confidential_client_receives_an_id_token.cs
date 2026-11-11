@@ -30,9 +30,9 @@ public class when_a_confidential_client_receives_an_id_token(OidcIdentityHost ho
     }
 
     [Fact] void should_reject_openid_for_the_cli() => Conformance.Conformance.Expect(Requirements.OidcOpenIdScope, () => _nonOidcError.ShouldEqual("invalid_scope"));
-    [Fact] void should_reject_profile_outside_the_client_ceiling() => Conformance.Conformance.Expect(Requirements.OidcOpenIdScope, () => _ceilingError.ShouldEqual("invalid_scope"));
+    [Fact] void should_reject_profile_outside_the_client_ceiling() => Conformance.Conformance.Expect(Requirements.OidcOpenIdScope, () => _ceilingError.ShouldEqual("invalid_request"));
     [Fact] void should_reject_unknown_scopes() => Conformance.Conformance.Expect(Requirements.OidcOpenIdScope, () => _unknownError.ShouldEqual("invalid_scope"));
-    [Fact] void should_reject_identity_scopes_with_a_resource() => Conformance.Conformance.Expect(Requirements.OidcOpenIdScope, () => _resourceError.ShouldEqual("invalid_target"));
+    [Fact] void should_reject_identity_scopes_with_a_resource() => Conformance.Conformance.Expect(Requirements.OidcOpenIdScope, () => _resourceError.ShouldEqual("invalid_request"));
     [Fact] void should_issue_an_identity_token_for_openid() => Conformance.Conformance.Expect(Requirements.OidcOpenIdScope, () => string.IsNullOrEmpty(_idToken).ShouldBeFalse());
     [Fact] void should_not_treat_it_as_a_resource_grant() => Conformance.Conformance.Expect(Requirements.OidcOpenIdScope, () => _identity.TryGetProperty("tenant_id", out _).ShouldBeFalse());
     [Fact] void should_publish_bearer_token_type() => Conformance.Conformance.Expect(Requirements.OidcOpenIdScope, () => _tokens.GetProperty("token_type").GetString().ShouldEqual("Bearer"));
