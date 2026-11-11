@@ -7,6 +7,7 @@ using Cratis.Identity.Authorization.RateLimiting;
 using Cratis.Identity.Device;
 using Cratis.Identity.Hosting;
 using Cratis.Identity.Realm;
+using Cratis.Identity.Sessions;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 
@@ -34,7 +35,7 @@ public static class IdentityWebApplicationExtensions
     }
 
     /// <summary>
-    /// Maps authorization and token endpoints, and optionally the sign-out form. No middleware, health or root routes are added.
+    /// Maps authorization, token and explicitly configured end-session endpoints, and optionally the sign-out form. No middleware, health or root routes are added.
     /// OpenIddict serves discovery, JWKS, revocation and introspection through authentication middleware.
     /// </summary>
     /// <param name="app">The endpoint route builder.</param>
@@ -61,6 +62,12 @@ public static class IdentityWebApplicationExtensions
             .DisableAntiforgery();
         group.MapPost("/connect/token", (HttpContext context, TokenEndpoint endpoint) => endpoint.Handle(context))
             .DisableAntiforgery();
+        if (!string.IsNullOrWhiteSpace(app.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<Cratis.Identity.Configuration.IdentityOptions>>().Value.Issuer))
+        {
+            group.MapMethods("/connect/endsession", [HttpMethods.Get, HttpMethods.Post], (HttpContext context, EndSessionEndpoint endpoint) => endpoint.Handle(context))
+                .DisableAntiforgery();
+        }
+
         if (options.MapSignOut)
         {
             MapSignOut(app, $"{options.RoutePrefix}/logout");

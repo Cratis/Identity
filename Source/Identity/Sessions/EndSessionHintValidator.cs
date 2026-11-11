@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using Cratis.Identity.Authorization.TokenExchange;
+using Cratis.Identity.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -87,12 +88,14 @@ internal class EndSessionHintValidator(IOptionsMonitor<OpenIddictServerOptions> 
     async Task<object?> FindOpenIdApplication(string clientId, CancellationToken cancellationToken)
     {
         var application = await applications.FindByClientIdAsync(clientId, cancellationToken);
-        if (application is null || !(await applications.GetPermissionsAsync(application, cancellationToken)).Contains(Permissions.Prefixes.Scope + Scopes.OpenId, StringComparer.Ordinal))
+        if (application is null)
         {
             return null;
         }
 
-        return application;
+        var permissions = await applications.GetPermissionsAsync(application, cancellationToken);
+        return permissions.Contains(Permissions.Prefixes.Scope + Scopes.OpenId, StringComparer.Ordinal) &&
+            permissions.Contains(Permissions.Endpoints.EndSession, StringComparer.Ordinal) ? application : null;
     }
 
     [SuppressMessage("Security", "CA5404", Justification = "Logout hints may be expired. Validate checks the single audience against a registered OIDC client; AcceptsToken checks issuance age, expiration ordering, and not-before time after signature and issuer validation.")]

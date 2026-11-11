@@ -4,6 +4,7 @@
 using System.Collections.Immutable;
 using System.Text;
 using System.Text.Json;
+using Cratis.Identity.Configuration;
 using Cratis.Identity.given;
 using Cratis.Identity.Sessions;
 using Microsoft.Extensions.Options;
@@ -38,7 +39,7 @@ public class a_hint_validator : Specification
         application = new();
         applications = Substitute.For<IOpenIddictApplicationManager>();
         applications.FindByClientIdAsync(ClientId, Arg.Any<CancellationToken>()).Returns(application);
-        applications.GetPermissionsAsync(application, Arg.Any<CancellationToken>()).Returns(new ValueTask<ImmutableArray<string>>([Permissions.Prefixes.Scope + Scopes.OpenId]));
+        applications.GetPermissionsAsync(application, Arg.Any<CancellationToken>()).Returns(new ValueTask<ImmutableArray<string>>([Permissions.Prefixes.Scope + Scopes.OpenId, Permissions.Endpoints.EndSession]));
         validator = new(monitor, applications, Options.Create(new EndSessionOptions()), time);
     }
 
