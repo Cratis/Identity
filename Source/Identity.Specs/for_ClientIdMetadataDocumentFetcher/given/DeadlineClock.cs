@@ -29,7 +29,7 @@ public sealed class DeadlineClock : TimeProvider
         public void Dispose() => _disposed = true;
         public ValueTask DisposeAsync()
         {
-            Dispose();
+            _disposed = true;
             return ValueTask.CompletedTask;
         }
     }

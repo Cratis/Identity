@@ -25,9 +25,9 @@ public class when_requests_overlap : Specification
         var documents = new ClientIdMetadataDocuments(fetcher, new ClientIdMetadataOptions { Enabled = true }, Substitute.For<IResourceCatalog>(), TimeProvider.System, NullLogger<ClientIdMetadataDocuments>.Instance);
         var firstRequest = new RequestMetadataDocuments(documents);
         var nextRequest = new RequestMetadataDocuments(documents);
-        var first = firstRequest.Resolve(new(Client)).AsTask();
-        var sameRequest = firstRequest.Resolve(new(Client)).AsTask();
-        var otherRequest = nextRequest.Resolve(new(Client)).AsTask();
+        var first = firstRequest.Resolve(new(Client), TestContext.Current.CancellationToken).AsTask();
+        var sameRequest = firstRequest.Resolve(new(Client), TestContext.Current.CancellationToken).AsTask();
+        var otherRequest = nextRequest.Resolve(new(Client), TestContext.Current.CancellationToken).AsTask();
         await fetcher.Received(1).FetchAsync(Arg.Any<ClientId>(), Arg.Any<CancellationToken>());
         completion.SetResult(firstResult);
         var results = await Task.WhenAll(first, sameRequest, otherRequest);

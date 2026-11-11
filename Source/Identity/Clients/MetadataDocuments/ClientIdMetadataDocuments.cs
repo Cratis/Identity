@@ -33,6 +33,7 @@ internal sealed class ClientIdMetadataDocuments(IMetadataDocumentFetcher fetcher
         if (entry is null) return MetadataDocumentResult.Refused(MetadataRefusal.Capacity);
         if (owner) _ = Load(entry, clientId, host);
         var result = await entry.Completion.Task.WaitAsync(cancellationToken);
+
         // An in-flight response can be shared only if its eventual cache policy permits reuse.
         if (RequiresOwnFetch(owner, result)) return await Resolve(clientId, cancellationToken);
         logger.Lookup(host, result.Refusal, (long)time.GetElapsedTime(started).TotalMilliseconds, hit);
@@ -45,9 +46,9 @@ internal sealed class ClientIdMetadataDocuments(IMetadataDocumentFetcher fetcher
     /// <returns>A descriptor, or null for every refusal.</returns>
     public async ValueTask<OpenIddictApplicationDescriptor?> FindAsync(ClientId clientId, CancellationToken cancellationToken) => (await Resolve(clientId, cancellationToken)).Descriptor;
 
-    bool AllowsHost(string host) => options.AllowedHosts.Count == 0 || options.AllowedHosts.Contains(host, StringComparer.Ordinal);
-
     static bool RequiresOwnFetch(bool owner, MetadataDocumentResult result) => !owner && result.Descriptor is not null && result.Lifetime <= TimeSpan.Zero;
+
+    bool AllowsHost(string host) => options.AllowedHosts.Count == 0 || options.AllowedHosts.Contains(host, StringComparer.Ordinal);
 
     async Task Load(MetadataDocumentCacheEntry entry, ClientId clientId, string host)
     {

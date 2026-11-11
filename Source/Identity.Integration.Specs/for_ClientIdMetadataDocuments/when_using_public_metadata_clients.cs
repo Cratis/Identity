@@ -13,9 +13,14 @@ using OpenIddict.Abstractions;
 namespace Cratis.Identity.Integration.for_ClientIdMetadataDocuments;
 
 [Collection(MetadataIdentityCollection.Name)]
+[Requirement(Requirements.CimdDiscovery)]
+[Requirement(Requirements.CimdConsent)]
+[Requirement(Requirements.CimdRestartRefresh)]
+[Requirement(Requirements.CimdRevalidation)]
+[Requirement(Requirements.CimdPublicProfile)]
 public class when_using_public_metadata_clients(MetadataIdentityHost host)
 {
-    [Fact, Requirement(Requirements.CimdDiscovery)]
+    [Fact]
     public async Task should_advertise_cimd_and_none_on_both_documents_without_dynamic_registration()
     {
         var browser = host.CreateBrowser();
@@ -29,7 +34,7 @@ public class when_using_public_metadata_clients(MetadataIdentityHost host)
         }
     }
 
-    [Theory, Requirement(Requirements.CimdConsent), Requirement(Requirements.CimdRestartRefresh)]
+    [Theory]
     [InlineData("native", "http://127.0.0.1/callback", "http://127.0.0.1:49152/callback")]
     [InlineData("web", "https://client.example/callback", "https://client.example/callback")]
     public async Task should_authorize_issue_rotate_and_refresh_with_a_fresh_provider(string kind, string declaration, string redirectUri)
@@ -70,7 +75,7 @@ public class when_using_public_metadata_clients(MetadataIdentityHost host)
         rotated.Body.GetProperty("refresh_token").GetString().ShouldNotEqual(refresh);
     }
 
-    [Fact, Requirement(Requirements.CimdRevalidation)]
+    [Fact]
     public async Task should_accept_an_immediately_repaired_document_after_an_invalid_client_lookup()
     {
         const string Id = "https://client.example/repaired.json";
@@ -84,7 +89,7 @@ public class when_using_public_metadata_clients(MetadataIdentityHost host)
         accepted.StatusCode.ShouldEqual(HttpStatusCode.OK);
     }
 
-    [Fact, Requirement(Requirements.CimdPublicProfile)]
+    [Fact]
     public async Task should_refuse_missing_pkce_and_document_claimed_scopes_or_unknown_resources()
     {
         const string Id = "https://client.example/refusals.json";
@@ -106,7 +111,7 @@ public class when_using_public_metadata_clients(MetadataIdentityHost host)
         await AssertRejected(resource, "invalid_target");
     }
 
-    [Theory, Requirement(Requirements.CimdRevalidation)]
+    [Theory]
     [InlineData("no-store", "noncacheable-store.example")]
     [InlineData("no-cache", "noncacheable-cache.example")]
     public async Task should_fetch_noncacheable_metadata_once_per_protocol_request(string cacheControl, string hostname)

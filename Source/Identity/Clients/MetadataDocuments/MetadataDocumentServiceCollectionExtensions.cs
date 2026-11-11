@@ -26,6 +26,7 @@ internal static class MetadataDocumentServiceCollectionExtensions
         services.AddSingleton<GuardedConnect>();
         services.AddSingleton<MetadataDocumentParser>();
         services.AddHttpClient(ClientName, client => client.Timeout = Timeout.InfiniteTimeSpan)
+
             // Host-wide retries, hedging and other delegating handlers must not multiply admitted fetches.
             .ConfigureAdditionalHttpMessageHandlers((handlers, _) => handlers.Clear())
             .ConfigurePrimaryHttpMessageHandler(provider => provider.GetRequiredService<GuardedConnect>().CreateHandler(provider.GetRequiredService<ClientIdMetadataOptions>().ConnectTimeout))

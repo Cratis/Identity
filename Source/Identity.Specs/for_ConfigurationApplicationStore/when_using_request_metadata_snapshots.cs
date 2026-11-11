@@ -41,7 +41,7 @@ public class when_using_request_metadata_snapshots : Specification
             var application = await manager.FindByClientIdAsync(Client, CancellationToken.None);
             applicationId = await manager.GetIdAsync(application, CancellationToken.None);
             var resolver = request.ServiceProvider.GetRequiredService<IClientIdMetadataDocuments>();
-            (await resolver.Resolve(new(Client))).Descriptor.RedirectUris.Clear();
+            (await resolver.Resolve(new(Client), TestContext.Current.CancellationToken)).Descriptor.RedirectUris.Clear();
             var again = await manager.FindByIdAsync(applicationId, CancellationToken.None);
             (await manager.GetRedirectUrisAsync(again, CancellationToken.None)).ShouldContainOnly("https://client.example/callback");
             (await manager.GetDisplayNameAsync(again, CancellationToken.None)).ShouldEqual("First");

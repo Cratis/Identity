@@ -20,11 +20,13 @@ internal sealed class RequestMetadataDocuments(ClientIdMetadataDocuments documen
         Task<MetadataDocumentResult> pending;
         lock (_gate)
         {
-            if (!_snapshots.TryGetValue(clientId.Value, out pending))
+            if (!_snapshots.TryGetValue(clientId.Value, out var existing))
             {
-                pending = documents.Resolve(clientId, CancellationToken.None).AsTask();
-                _snapshots.Add(clientId.Value, pending);
+                existing = documents.Resolve(clientId, CancellationToken.None).AsTask();
+                _snapshots.Add(clientId.Value, existing);
             }
+
+            pending = existing;
         }
 
         var result = await pending.WaitAsync(cancellationToken);

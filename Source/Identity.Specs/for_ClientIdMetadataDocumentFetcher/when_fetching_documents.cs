@@ -68,28 +68,42 @@ public class when_fetching_documents : Specification
     [Fact]
     async Task should_cancel_a_stalled_response_at_the_total_deadline()
     {
-        using var handler = new ResponseHandler(async cancellation =>
+        var handler = new ResponseHandler(async cancellation =>
         {
             await Task.Delay(Timeout.InfiniteTimeSpan, cancellation);
             return Response(Valid);
         });
-        var clock = new DeadlineClock();
-        var fetch = Fetch(handler, time: clock);
-        clock.Expire();
-        (await fetch).Refusal.ShouldEqual(MetadataRefusal.Timeout);
+        try
+        {
+            var clock = new DeadlineClock();
+            var fetch = Fetch(handler, time: clock);
+            clock.Expire();
+            (await fetch).Refusal.ShouldEqual(MetadataRefusal.Timeout);
+        }
+        finally
+        {
+            handler.Dispose();
+        }
     }
 
     [Fact]
     async Task should_apply_the_total_deadline_to_a_stalled_body()
     {
-        using var handler = new ResponseHandler(() => new HttpResponseMessage(HttpStatusCode.OK)
+        var handler = new ResponseHandler(() => new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StreamContent(new StalledStream()) { Headers = { ContentType = new MediaTypeHeaderValue("application/json") } }
         });
-        var clock = new DeadlineClock();
-        var fetch = Fetch(handler, time: clock);
-        clock.Expire();
-        (await fetch).Refusal.ShouldEqual(MetadataRefusal.Timeout);
+        try
+        {
+            var clock = new DeadlineClock();
+            var fetch = Fetch(handler, time: clock);
+            clock.Expire();
+            (await fetch).Refusal.ShouldEqual(MetadataRefusal.Timeout);
+        }
+        finally
+        {
+            handler.Dispose();
+        }
     }
 
     [Fact]
