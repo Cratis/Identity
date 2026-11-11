@@ -13,6 +13,7 @@ public class when_an_id_token_is_used_as_an_access_token(OidcIdentityHost host) 
 {
     HttpStatusCode _userInfoStatus;
     JsonElement _introspection;
+    HttpStatusCode _introspectionStatus;
     bool _resourceValidationRejected;
 
     async Task Because()
@@ -21,7 +22,9 @@ public class when_an_id_token_is_used_as_an_access_token(OidcIdentityHost host) 
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _idToken);
         using var response = await _browser.Client.SendAsync(request);
         _userInfoStatus = response.StatusCode;
-        _introspection = (await _browser.Introspect(_idToken)).Body;
+        var introspection = await _browser.Introspect(_idToken);
+        _introspection = introspection.Body;
+        _introspectionStatus = introspection.Status;
         var keys = new JsonWebKeySet(await _browser.Client.GetStringAsync("/.well-known/jwks")).GetSigningKeys();
         var validation = await new JsonWebTokenHandler().ValidateTokenAsync(_idToken, new TokenValidationParameters
         {
@@ -34,7 +37,13 @@ public class when_an_id_token_is_used_as_an_access_token(OidcIdentityHost host) 
     }
 
     [Fact] void should_refuse_it_at_userinfo() => Check(() => _userInfoStatus.ShouldEqual(HttpStatusCode.Unauthorized));
-    [Fact] void should_not_be_an_active_introspection_credential() => Check(() => _introspection.GetProperty("active").GetBoolean().ShouldBeFalse());
+    [Fact]
+    void should_reject_the_unsupported_token_type_at_introspection() => Check(() =>
+    {
+        _introspectionStatus.ShouldEqual(HttpStatusCode.BadRequest);
+        _introspection.GetProperty("error").GetString().ShouldEqual("unsupported_token_type");
+        _introspection.TryGetProperty("active", out _).ShouldBeFalse();
+    });
     [Fact] void should_not_return_a_cid_alias() => Check(() => _introspection.TryGetProperty("cid", out _).ShouldBeFalse());
     [Fact] void should_not_return_a_credential_alias() => Check(() => _introspection.TryGetProperty("credential_id", out _).ShouldBeFalse());
     [Fact] void should_fail_resource_audience_and_type_validation() => Check(() => _resourceValidationRejected.ShouldBeTrue());

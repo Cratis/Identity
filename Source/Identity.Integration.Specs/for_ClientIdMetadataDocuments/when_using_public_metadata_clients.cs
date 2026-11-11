@@ -5,10 +5,13 @@ using Cratis.Identity.Clients;
 using Cratis.Identity.Integration.for_ClientIdMetadataDocuments.given;
 using Cratis.Identity.Protocol.Stores;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using OpenIddict.Abstractions;
+using OpenIddict.Server;
 
 namespace Cratis.Identity.Integration.for_ClientIdMetadataDocuments;
 
@@ -21,17 +24,16 @@ namespace Cratis.Identity.Integration.for_ClientIdMetadataDocuments;
 public class when_using_public_metadata_clients(MetadataIdentityHost host)
 {
     [Fact]
-    public async Task should_advertise_cimd_and_none_on_both_documents_without_dynamic_registration()
+    public async Task should_advertise_cimd_and_none_on_the_resource_lane_without_dynamic_registration()
     {
         var browser = host.CreateBrowser();
-        foreach (var path in new[] { "/.well-known/oauth-authorization-server", "/.well-known/openid-configuration" })
-        {
-            using var json = JsonDocument.Parse(await browser.Client.GetStringAsync(path, TestContext.Current.CancellationToken));
-            json.RootElement.GetProperty("client_id_metadata_document_supported").GetBoolean().ShouldBeTrue();
-            json.RootElement.GetProperty("token_endpoint_auth_methods_supported").EnumerateArray().Any(_ => _.GetString() == "none").ShouldBeTrue();
-            json.RootElement.TryGetProperty("registration_endpoint", out _).ShouldBeFalse();
-            json.RootElement.TryGetProperty("client_registration_types_supported", out _).ShouldBeFalse();
-        }
+        using var json = JsonDocument.Parse(await browser.Client.GetStringAsync("/.well-known/oauth-authorization-server", TestContext.Current.CancellationToken));
+        json.RootElement.GetProperty("client_id_metadata_document_supported").GetBoolean().ShouldBeTrue();
+        json.RootElement.GetProperty("token_endpoint_auth_methods_supported").EnumerateArray().Select(value => value.GetString()).ShouldContain("none");
+        json.RootElement.TryGetProperty("registration_endpoint", out _).ShouldBeFalse();
+        json.RootElement.TryGetProperty("client_registration_types_supported", out _).ShouldBeFalse();
+        using var identity = JsonDocument.Parse(await browser.Client.GetStringAsync("/.well-known/openid-configuration", TestContext.Current.CancellationToken));
+        identity.RootElement.EnumerateObject().Select(property => property.Name).ShouldContainOnly("issuer", "jwks_uri");
     }
 
     [Theory]
@@ -63,7 +65,15 @@ public class when_using_public_metadata_clients(MetadataIdentityHost host)
         var refresh = token.Body.GetProperty("refresh_token").GetString();
 
         // A new host/provider retains the real database, keys, fences and grants but has no metadata or reverse-ID cache.
-        await using var restarted = host.WithWebHostBuilder(_ => { });
+        var credentials = host.Services.GetRequiredService<IOptions<OpenIddictServerOptions>>().Value;
+        await using var restarted = host.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+            services.PostConfigure<OpenIddictServerOptions>(options =>
+            {
+                options.SigningCredentials.Clear();
+                options.SigningCredentials.AddRange(credentials.SigningCredentials);
+                options.EncryptionCredentials.Clear();
+                options.EncryptionCredentials.AddRange(credentials.EncryptionCredentials);
+            })));
         await IdentityHost.WaitForRecovery(restarted.Services);
         await using var scope = restarted.Services.CreateAsyncScope();
         var resolver = scope.ServiceProvider.GetRequiredService<IClientIdMetadataDocuments>();
@@ -83,7 +93,7 @@ public class when_using_public_metadata_clients(MetadataIdentityHost host)
         var pkce = Browser.Pkce();
         host.SetDocument(Id, "{}");
         using var refused = await browser.Authorize(Parameters(Id, "http://127.0.0.1:49152/callback", pkce.Challenge));
-        await AssertRejected(refused, "invalid_client");
+        await AssertRejected(refused, "invalid_request");
         host.SetDocument(Id, Document(Id, "http://127.0.0.1/callback"));
         using var accepted = await browser.Authorize(Parameters(Id, "http://127.0.0.1:49152/callback", pkce.Challenge));
         accepted.StatusCode.ShouldEqual(HttpStatusCode.OK);
@@ -146,21 +156,14 @@ public class when_using_public_metadata_clients(MetadataIdentityHost host)
         host.RequestsFor(id).ShouldEqual(++fetches);
         host.SetDocument(id, "{}", cacheControl);
         using var refused = await browser.Authorize(Parameters(id, Redirect, Browser.Pkce().Challenge));
-        await AssertRejected(refused, "invalid_client");
+        await AssertRejected(refused, "invalid_request");
         host.RequestsFor(id).ShouldEqual(++fetches);
     }
 
     static async Task AssertRejected(HttpResponseMessage response, string error)
     {
-        if (response.Headers.Location is { } location)
-        {
-            QueryHelpers.ParseQuery(location.Query)["error"].ToString().ShouldEqual(error);
-        }
-        else
-        {
-            response.StatusCode.ShouldEqual(HttpStatusCode.BadRequest);
-            (await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)).ShouldContain(error);
-        }
+        if (response.Headers.Location is null) response.StatusCode.ShouldEqual(HttpStatusCode.BadRequest);
+        (await OidcErrors.From(response)).ShouldEqual(error);
     }
 
     static List<KeyValuePair<string, string?>> Parameters(string id, string redirect, string challenge) =>

@@ -16,10 +16,11 @@ public class when_matching_userinfo_to_an_openid_only_token(OidcIdentityHost hos
 
     async Task Because()
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/connect/userinfo");
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/connect/userinfo") { Content = new FormUrlEncodedContent([]) };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
         using var response = await _browser.Client.SendAsync(request);
         _status = response.StatusCode;
+        _status.ShouldEqual(HttpStatusCode.OK);
         _userInfo = await Browser.ReadJson(response);
     }
 
