@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Chronicle;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,6 +32,7 @@ public class an_oidc_server : Specification
             ["Identity:Tokens:IdentityTokenLifetime"] = "00:04:00"
         };
         builder.Configuration.AddInMemoryCollection(settings);
+        builder.Services.AddSingleton(Substitute.For<IChronicleClient>());
         builder.AddCratisIdentity();
         _provider = builder.Services.BuildServiceProvider();
         _server = _provider.GetRequiredService<IOptionsMonitor<OpenIddictServerOptions>>().CurrentValue;

@@ -14,6 +14,7 @@ public class when_validating_the_oidc_issuance_gate : given.an_oidc_configuratio
     [InlineData(true, "ActivationBarrier", true)]
     void should_require_a_recorded_decision_before_opening(bool enabled, string decision, bool valid)
     {
+        options.Issuer = "https://identity.example/";
         options.Oidc.IssuanceEnabled = enabled;
         options.Oidc.ConsentDecision = decision;
         Validate().Succeeded.ShouldEqual(valid);
