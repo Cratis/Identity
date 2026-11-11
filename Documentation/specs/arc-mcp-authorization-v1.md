@@ -54,6 +54,8 @@ The authorization server MUST require PKCE S256 and MUST reject `plain` and miss
 
 Pre-registered first-party clients remain supported. Client ID Metadata Documents SHOULD be supported, pinned to [draft-ietf-oauth-client-id-metadata-document-03](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document-03). Dynamic Client Registration is optional (MAY), for backwards compatibility only, subject to the registration security contract and tested connector needs. Connector compatibility MUST remain unverified until tested against supported versions.
 
+For Identity's opt-in public-client subset, outbound-fetch safeguards, cache and admission limits, and configuration, see [Client ID Metadata Documents](../security/client-id-metadata-documents.md). This implementation guide does not change the normative contract above.
+
 DPoP is optional for MCP clients using unbound tokens; this contract MUST NOT impose it on every client. Client support is unverified. A sender-bound token carrying `cnf.jkt` MUST NOT be accepted as a plain bearer. Its verifier MUST validate the proof per RFC 9449 §4.3, including `typ=dpop+jwt`, signature, `htm` and `htu` matching the request, `ath` equal to the presented token's hash, and `iat` within a configured window. A missing, non-positive or unbounded `iat` window MUST cause refusal of sender-bound tokens; the window MUST be finite (recommended at most 5 minutes). The `jti` replay cache MUST retain entries at least for that window. The verifier MUST require a valid matching DPoP header and MUST refuse a missing header, a proof with the wrong key thumbprint, a replayed proof `jti`, or any invalid proof with 401. Optional client support MUST NOT disable an existing token binding.
 
 ### Combined dispatch
