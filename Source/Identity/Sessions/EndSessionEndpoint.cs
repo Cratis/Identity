@@ -48,11 +48,6 @@ internal class EndSessionEndpoint(EndSessionHintValidator hints, IOpenIddictAppl
         return await Complete(context, request);
     }
 
-    async Task<bool> NeedsConfirmation(HttpContext context, EndSessionHint? hint) =>
-        HttpMethods.IsPost(context.Request.Method)
-            ? !await antiforgery.IsRequestValidAsync(context)
-            : !await MatchesSession(context, hint);
-
     static async Task<IResult> Complete(HttpContext context, EndSessionRequest request)
     {
         await context.SignOutAsync(IdentitySchemes.Session);
@@ -74,20 +69,6 @@ internal class EndSessionEndpoint(EndSessionHintValidator hints, IOpenIddictAppl
     static bool MatchesClient(string? clientId, EndSessionHint? hint) =>
         clientId is null || hint is null || string.Equals(clientId, hint.ClientId, StringComparison.Ordinal);
 
-    async Task<bool> IsKnownClient(string? clientId, CancellationToken cancellationToken) =>
-        clientId is null || await applications.FindByClientIdAsync(clientId, cancellationToken) is not null;
-
-    async Task<bool> AcceptsRedirect(string? redirect, EndSessionHint? hint, CancellationToken cancellationToken)
-    {
-        if (redirect is null)
-        {
-            return true;
-        }
-
-        return hint is not null && IsAbsoluteRedirectWithoutFragment(redirect) &&
-            (await applications.GetPostLogoutRedirectUrisAsync(hint.Application, cancellationToken)).Contains(redirect, StringComparer.Ordinal);
-    }
-
     static bool IsAbsoluteRedirectWithoutFragment(string redirect) =>
         Uri.TryCreate(redirect, UriKind.Absolute, out var uri) && string.IsNullOrEmpty(uri.Fragment);
 
@@ -102,5 +83,24 @@ internal class EndSessionEndpoint(EndSessionHintValidator hints, IOpenIddictAppl
         return session.Succeeded && session.Principal is { } principal &&
             string.Equals(hint.SessionId, SessionPrincipal.SessionId(principal), StringComparison.Ordinal) &&
             string.Equals(hint.Subject, SessionPrincipal.AccountId(principal), StringComparison.Ordinal);
+    }
+
+    async Task<bool> NeedsConfirmation(HttpContext context, EndSessionHint? hint) =>
+        HttpMethods.IsPost(context.Request.Method)
+            ? !await antiforgery.IsRequestValidAsync(context)
+            : !await MatchesSession(context, hint);
+
+    async Task<bool> IsKnownClient(string? clientId, CancellationToken cancellationToken) =>
+        clientId is null || await applications.FindByClientIdAsync(clientId, cancellationToken) is not null;
+
+    async Task<bool> AcceptsRedirect(string? redirect, EndSessionHint? hint, CancellationToken cancellationToken)
+    {
+        if (redirect is null)
+        {
+            return true;
+        }
+
+        return hint is not null && IsAbsoluteRedirectWithoutFragment(redirect) &&
+            (await applications.GetPostLogoutRedirectUrisAsync(hint.Application, cancellationToken)).Contains(redirect, StringComparer.Ordinal);
     }
 }

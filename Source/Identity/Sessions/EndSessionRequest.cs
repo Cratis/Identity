@@ -34,7 +34,7 @@ internal record EndSessionRequest(string? Hint, string? ClientId, string? Redire
             return null;
         }
 
-        var parameters = fields.ToDictionary(_ => _.Key, _ => (string?)_.Value[0], StringComparer.Ordinal);
+        var parameters = fields.ToDictionary(_ => _.Key, _ => _.Value[0], StringComparer.Ordinal);
         return new(parameters.GetValueOrDefault("id_token_hint"), parameters.GetValueOrDefault("client_id"), parameters.GetValueOrDefault("post_logout_redirect_uri"), parameters.GetValueOrDefault("state"));
     }
 }

@@ -49,15 +49,6 @@ internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginO
         return account is null ? null : new SignedInAccount(account, authTime.Value, SessionPrincipal.SessionId(session.Principal));
     }
 
-    bool TryGetReusableSubject(OpenIddictRequest request, DateTimeOffset authTime, string? accountId, out AccountSubject? subject)
-    {
-        subject = null;
-        return !RequiresReauthentication(request, authTime) && AccountSubject.TryParse(accountId, out subject);
-    }
-
-    bool RequiresReauthentication(OpenIddictRequest request, DateTimeOffset authTime) =>
-        request.MaxAge is { } maximum && (maximum == 0 || ((time ?? TimeProvider.System).GetUtcNow() - authTime).TotalSeconds > maximum);
-
     /// <summary>
     /// Sends the browser to upstream login, returning to the same authorization request afterwards.
     /// </summary>
@@ -70,4 +61,13 @@ internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginO
         var returnUrl = $"{context.Request.PathBase}{context.Request.Path}{QueryString.Create(parameters)}";
         return Results.Challenge(new AuthenticationProperties { RedirectUri = returnUrl }, [upstream.Value.Scheme]);
     }
+
+    bool TryGetReusableSubject(OpenIddictRequest request, DateTimeOffset authTime, string? accountId, out AccountSubject? subject)
+    {
+        subject = null;
+        return !RequiresReauthentication(request, authTime) && AccountSubject.TryParse(accountId, out subject);
+    }
+
+    bool RequiresReauthentication(OpenIddictRequest request, DateTimeOffset authTime) =>
+        request.MaxAge is { } maximum && (maximum == 0 || ((time ?? TimeProvider.System).GetUtcNow() - authTime).TotalSeconds > maximum);
 }

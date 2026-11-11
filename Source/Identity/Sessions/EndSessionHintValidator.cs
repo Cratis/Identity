@@ -50,6 +50,40 @@ internal class EndSessionHintValidator(IOptionsMonitor<OpenIddictServerOptions> 
         return new(clientId, token.Subject, sessionId, application);
     }
 
+    static bool CanReadHint(string hint) => !string.IsNullOrEmpty(hint) && hint.Length <= MaximumHintLength && CanonicalCompactToken.IsCanonical(hint);
+
+    static bool HasSupportedHeader(JsonWebToken token) => token.Typ == "JWT" && token.Alg == SecurityAlgorithms.RsaSha256 && !string.IsNullOrEmpty(token.Kid);
+
+    static string? Audience(JsonWebToken token)
+    {
+        var audiences = token.Audiences.ToArray();
+        if (audiences.Length != 1 || string.IsNullOrEmpty(audiences[0]))
+        {
+            return null;
+        }
+
+        return MatchesOptionalClaim(token, Claims.AuthorizedParty, audiences[0]) ? audiences[0] : null;
+    }
+
+    static bool HasIdentityClaims(JsonWebToken token) =>
+        !string.IsNullOrWhiteSpace(token.Subject) &&
+        HasNoAccessTokenClaims(token) && HasIdTokenType(token) && HasIdTokenMarker(token);
+
+    static bool HasNoAccessTokenClaims(JsonWebToken token) =>
+        !ContainsClaim(token, Claims.Scope) && !ContainsClaim(token, "cid");
+
+    static bool HasIdTokenType(JsonWebToken token) => MatchesOptionalClaim(token, "oi_tkn_typ", "id_token");
+
+    static bool ContainsClaim(JsonWebToken token, string name) => token.TryGetPayloadValue<object>(name, out _);
+
+    static bool MatchesOptionalClaim(JsonWebToken token, string name, string expected) =>
+        !ContainsClaim(token, name) || (token.TryGetPayloadValue<string>(name, out var value) && string.Equals(value, expected, StringComparison.Ordinal));
+
+    static bool HasIdTokenMarker(JsonWebToken token) =>
+        HasValue(token, Claims.Nonce) || HasValue(token, Claims.AccessTokenHash) || token.TryGetPayloadValue<long>(Claims.AuthenticationTime, out _);
+
+    static bool HasValue(JsonWebToken token, string name) => token.TryGetPayloadValue<string>(name, out var value) && !string.IsNullOrEmpty(value);
+
     async Task<object?> FindOpenIdApplication(string clientId, CancellationToken cancellationToken)
     {
         var application = await applications.FindByClientIdAsync(clientId, cancellationToken);
@@ -61,6 +95,7 @@ internal class EndSessionHintValidator(IOptionsMonitor<OpenIddictServerOptions> 
         return application;
     }
 
+    [SuppressMessage("Security", "CA5404", Justification = "Logout hints may be expired. Validate checks the single audience against a registered OIDC client; AcceptsToken checks issuance age, expiration ordering, and not-before time after signature and issuer validation.")]
     async Task<JsonWebToken?> Verify(string hint)
     {
         if (!CanReadHint(hint))
@@ -109,43 +144,9 @@ internal class EndSessionHintValidator(IOptionsMonitor<OpenIddictServerOptions> 
 
     bool AcceptsToken([NotNullWhen(true)] JsonWebToken? token) => token is not null && HasIdentityClaims(token) && HasAcceptableTimes(token);
 
-    static bool CanReadHint(string hint) => !string.IsNullOrEmpty(hint) && hint.Length <= MaximumHintLength && CanonicalCompactToken.IsCanonical(hint);
-
-    static bool HasSupportedHeader(JsonWebToken token) => token.Typ == "JWT" && token.Alg == SecurityAlgorithms.RsaSha256 && !string.IsNullOrEmpty(token.Kid);
-
-    static string? Audience(JsonWebToken token)
-    {
-        var audiences = token.Audiences.ToArray();
-        if (audiences.Length != 1 || string.IsNullOrEmpty(audiences[0]))
-        {
-            return null;
-        }
-
-        return MatchesOptionalClaim(token, Claims.AuthorizedParty, audiences[0]) ? audiences[0] : null;
-    }
-
-    static bool HasIdentityClaims(JsonWebToken token) =>
-        !string.IsNullOrWhiteSpace(token.Subject) &&
-        HasNoAccessTokenClaims(token) && HasIdTokenType(token) && HasIdTokenMarker(token);
-
-    static bool HasNoAccessTokenClaims(JsonWebToken token) =>
-        !ContainsClaim(token, Claims.Scope) && !ContainsClaim(token, "cid");
-
-    static bool HasIdTokenType(JsonWebToken token) => MatchesOptionalClaim(token, "oi_tkn_typ", "id_token");
-
-    static bool ContainsClaim(JsonWebToken token, string name) => token.PayloadClaimNames.Contains(name, StringComparer.Ordinal);
-
-    static bool MatchesOptionalClaim(JsonWebToken token, string name, string expected) =>
-        !ContainsClaim(token, name) || (token.TryGetPayloadValue<string>(name, out var value) && string.Equals(value, expected, StringComparison.Ordinal));
-
-    static bool HasIdTokenMarker(JsonWebToken token) =>
-        HasValue(token, Claims.Nonce) || HasValue(token, Claims.AccessTokenHash) || token.TryGetPayloadValue<long>(Claims.AuthenticationTime, out _);
-
-    static bool HasValue(JsonWebToken token, string name) => token.TryGetPayloadValue<string>(name, out var value) && !string.IsNullOrEmpty(value);
-
     bool HasAcceptableTimes(JsonWebToken token)
     {
-        if (!token.TryGetPayloadValue<long>(Claims.IssuedAt, out var issued) || !token.TryGetPayloadValue<long>(Claims.Expiration, out var expires))
+        if (!token.TryGetPayloadValue<long>(Claims.IssuedAt, out var issued) || !token.TryGetPayloadValue<long>(JwtRegisteredClaimNames.Exp, out var expires))
         {
             return false;
         }
