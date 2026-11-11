@@ -13,7 +13,7 @@ public class when_creating_a_profile_grant : given.an_identity_grant
 {
     ClaimsIdentity _identity;
 
-    void Because() => _identity = OidcIdentity.Create(new(_account, AuthTime, SessionId), ClientId, new IdentityOnlyGrant(["openid", "profile"]));
+    void Because() => _identity = OidcIdentity.Create(new(_account, AuthTime, SessionId), ClientId, new IdentityOnlyGrant(["openid", "profile"]), "example-nonce");
 
     [Fact] void should_use_the_canonical_subject() => _identity.GetClaim(Claims.Subject).ShouldEqual(_account.Id.Value);
     [Fact] void should_bind_only_to_userinfo() => _identity.GetResources().ShouldContainOnly(OidcIdentity.UserInfoAudience);
@@ -24,7 +24,8 @@ public class when_creating_a_profile_grant : given.an_identity_grant
     [Fact] void should_preserve_the_original_authentication_time() => _identity.GetClaim(Claims.AuthenticationTime).ShouldEqual("1700000000");
     [Fact] void should_encode_auth_time_as_an_integer() => _identity.FindFirst(Claims.AuthenticationTime).ValueType.ShouldEqual(ClaimValueTypes.Integer64);
     [Fact] void should_send_auth_time_only_to_the_identity_token() => _identity.FindFirst(Claims.AuthenticationTime).GetDestinations().ShouldContainOnly(Destinations.IdentityToken);
-    [Fact] void should_carry_basic_assurance() => _identity.GetClaim(Claims.AuthenticationContextReference).ShouldEqual("basic");
+    [Fact] void should_not_define_an_assurance_contract() => _identity.GetClaim(Claims.AuthenticationContextReference).ShouldBeNull();
+    [Fact] void should_preserve_the_nonce() => _identity.GetClaim(Claims.Nonce).ShouldEqual("example-nonce");
     [Fact] void should_preserve_the_site_session() => _identity.GetClaim(OidcIdentity.SessionIdClaim).ShouldEqual(SessionId);
     [Fact] void should_send_sid_only_to_the_identity_token() => _identity.FindFirst(OidcIdentity.SessionIdClaim).GetDestinations().ShouldContainOnly(Destinations.IdentityToken);
     [Fact] void should_not_add_a_tenant() => _identity.GetClaim(IdentityClaims.TenantId).ShouldBeNull();

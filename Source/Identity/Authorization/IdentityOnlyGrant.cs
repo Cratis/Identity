@@ -34,6 +34,11 @@ internal sealed record IdentityOnlyGrant(IEnumerable<string> Scopes) : GrantEval
             return new NotGrantable(Errors.InvalidScope, "Identity scopes are only available to registered OpenID Connect clients.");
         }
 
+        if (scopes.Where(ProtocolScopes.Contains).Except(client.EffectiveScopes, StringComparer.Ordinal).Any())
+        {
+            return new NotGrantable(Errors.InvalidScope, "The requested identity scopes exceed the registered client ceiling.");
+        }
+
         var resourceScopes = scopes.Where(scope => !ProtocolScopes.Contains(scope)).ToArray();
         if (resourceScopes.Any(scope => !resources.FindByScope(scope).Any()))
         {

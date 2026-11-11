@@ -12,7 +12,7 @@ public class when_creating_without_profile : given.an_identity_grant
 {
     ClaimsIdentity _identity;
 
-    void Because() => _identity = OidcIdentity.Create(new(_account, AuthTime), ClientId, new IdentityOnlyGrant(["openid"]));
+    void Because() => _identity = OidcIdentity.Create(new(_account, AuthTime), ClientId, new IdentityOnlyGrant(["openid"]), "example-nonce");
 
     [Fact] void should_not_add_name() => _identity.GetClaim(Claims.Name).ShouldBeNull();
     [Fact] void should_not_add_preferred_username() => _identity.GetClaim(Claims.PreferredUsername).ShouldBeNull();

@@ -27,13 +27,15 @@ internal static class OidcIdentity
     /// <param name="authentication">The active account and its verified site authentication.</param>
     /// <param name="clientId">The registered client.</param>
     /// <param name="grant">The identity-only scopes.</param>
+    /// <param name="nonce">The nonce required and validated at authorization.</param>
     /// <returns>The identity stored in the protected authorization code.</returns>
-    public static ClaimsIdentity Create(SignedInAccount authentication, string clientId, IdentityOnlyGrant grant)
+    public static ClaimsIdentity Create(SignedInAccount authentication, string clientId, IdentityOnlyGrant grant, string nonce)
     {
         var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
         identity.SetScopes(grant.Scopes);
         identity.SetResources(UserInfoAudience);
         identity.SetClaim(GrantMarker, "true");
+        identity.SetClaim(Claims.Nonce, nonce);
         identity.SetClaim(SessionIdClaim, authentication.SessionId);
         identity.AddClaim(new Claim(Claims.AuthenticationTime, authentication.AuthTime.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64));
         Apply(identity, authentication.Account, clientId);
@@ -44,10 +46,12 @@ internal static class OidcIdentity
     /// <param name="granted">The protected code or refresh principal.</param>
     /// <param name="account">The current active canonical account.</param>
     /// <param name="clientId">The client redeeming its grant.</param>
+    /// <param name="scopes">An optional validated narrowing of the original scope ceiling.</param>
     /// <returns>The renewed identity with current profile values and unchanged private grant metadata.</returns>
-    public static ClaimsIdentity Renew(ClaimsPrincipal granted, Account account, string clientId)
+    public static ClaimsIdentity Renew(ClaimsPrincipal granted, Account account, string clientId, IEnumerable<string>? scopes = null)
     {
         var identity = new ClaimsIdentity(granted.Claims, TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
+        if (scopes is not null) identity.SetScopes(scopes);
         Apply(identity, account, clientId);
         return identity;
     }
@@ -61,7 +65,6 @@ internal static class OidcIdentity
     {
         identity.SetClaim(Claims.Subject, account.Id.Value);
         identity.SetClaim(Claims.AuthorizedParty, clientId);
-        identity.SetClaim(Claims.AuthenticationContextReference, AccessTokenIdentity.BasicAssurance);
         SetProfile(identity, account);
         identity.SetDestinations(claim => DestinationsFor(claim.Type, identity.HasScope(Scopes.Profile)));
     }
@@ -76,7 +79,7 @@ internal static class OidcIdentity
     static IEnumerable<string> DestinationsFor(string type, bool hasProfile) => type switch
     {
         Claims.Subject => [Destinations.AccessToken, Destinations.IdentityToken],
-        Claims.AuthenticationTime or Claims.AuthenticationContextReference or SessionIdClaim or Claims.AuthorizedParty => [Destinations.IdentityToken],
+        Claims.AuthenticationTime or Claims.Nonce or SessionIdClaim or Claims.AuthorizedParty => [Destinations.IdentityToken],
         Claims.Name or Claims.PreferredUsername when hasProfile => [Destinations.IdentityToken],
         _ => []
     };

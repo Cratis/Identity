@@ -14,12 +14,13 @@ public class when_renewing_a_profile_grant : given.an_identity_grant
 
     void Because()
     {
-        var original = OidcIdentity.Create(new(_account, AuthTime, SessionId), ClientId, new IdentityOnlyGrant(["openid", "profile", "offline_access"]));
+        var original = OidcIdentity.Create(new(_account, AuthTime, SessionId), ClientId, new IdentityOnlyGrant(["openid", "profile", "offline_access"]), "example-nonce");
         original.SetAuthorizationId("example-authorization");
         _identity = OidcIdentity.Renew(new ClaimsPrincipal(original), _account with { Name = "Updated Member", GitHubLogin = "updated-member" }, ClientId);
     }
 
     [Fact] void should_keep_the_original_authentication_time() => _identity.GetClaim(Claims.AuthenticationTime).ShouldEqual("1700000000");
+    [Fact] void should_keep_the_original_nonce() => _identity.GetClaim(Claims.Nonce).ShouldEqual("example-nonce");
     [Fact] void should_keep_the_original_session() => _identity.GetClaim(OidcIdentity.SessionIdClaim).ShouldEqual(SessionId);
     [Fact] void should_keep_the_authorization_binding() => _identity.GetAuthorizationId().ShouldEqual("example-authorization");
     [Fact] void should_keep_the_scope_ceiling() => _identity.GetScopes().ShouldContainOnly("openid", "profile", "offline_access");

@@ -1,8 +1,10 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Security.Claims;
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Authorization.TokenExchange;
+using Cratis.Identity.Configuration;
 using Cratis.Identity.Contracts;
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Device;
@@ -11,6 +13,7 @@ using Cratis.Identity.Revocation;
 using Cratis.Identity.Tenants;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -31,6 +34,7 @@ namespace Cratis.Identity.Authorization;
 /// <param name="fences">The primary grant authority.</param>
 /// <param name="deviceAdmission">The device recovery and epoch checks.</param>
 /// <param name="exchange">The RFC 8693 <see cref="TokenExchangeGrant"/>.</param>
+/// <param name="identityOptions">The validated issuance configuration.</param>
 internal class TokenEndpoint(
     IAccountReader accounts,
     IGrantPolicy grantPolicy,
@@ -39,8 +43,10 @@ internal class TokenEndpoint(
     ILogger<TokenEndpoint> logger,
     IFenceStore fences,
     DeviceGrantAdmission deviceAdmission,
-    TokenExchangeGrant exchange)
+    TokenExchangeGrant exchange,
+    IOptions<IdentityOptions>? identityOptions = null)
 {
+    readonly IdentityOptions _options = identityOptions?.Value ?? new();
     /// <summary>
     /// Handles a token request.
     /// </summary>
@@ -60,19 +66,21 @@ internal class TokenEndpoint(
             return OAuthResults.Error(Errors.UnsupportedGrantType, "The grant type is not supported.");
         }
 
+        return await Redeem(context, request);
+    }
+
+    async Task<IResult> Redeem(HttpContext context, OpenIddictRequest request)
+    {
         var result = await context.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-        if (request.IsDeviceCodeGrantType() && (!result.Succeeded || result.Principal is null || !await deviceAdmission.CanUse(result.Principal, true, context.RequestAborted)))
+        if (!await DeviceGrantIsValid(request, result, context.RequestAborted))
         {
             return OAuthResults.Error(Errors.InvalidGrant, "The device authorization is no longer valid.");
         }
 
-        var granted = result.Principal!;
+        if (!result.Succeeded || result.Principal is null) return OAuthResults.Error(Errors.InvalidGrant, "The grant is no longer valid.");
+        var granted = result.Principal;
+        if (ValidateBinding(granted, request) is { } bindingRejection) return bindingRejection;
         var authorizationId = granted.GetAuthorizationId();
-
-        if (grantPolicy.EvaluateTokenRequest(request.GetResources(), granted.GetResources()) is { } rejection)
-        {
-            return OAuthResults.Error(rejection.Error, rejection.Description);
-        }
 
         var accountId = granted.GetClaim(Claims.Subject);
         var account = AccountSubject.TryParse(accountId, out var subject) ? await accounts.FindActive(subject!, context.RequestAborted) : null;
@@ -82,54 +90,83 @@ internal class TokenEndpoint(
             return OAuthResults.Error(Errors.InvalidGrant, "The account this grant belongs to no longer exists.");
         }
 
-        var grantedAudiences = granted.GetResources();
-        if (grantedAudiences.Length == 0)
+        if (await ValidateRenewal(context, request, granted, account) is { } renewalRejection) return renewalRejection;
+        return IssueRenewed(granted, account, request);
+    }
+
+    async Task<bool> DeviceGrantIsValid(OpenIddictRequest request, AuthenticateResult result, CancellationToken cancellationToken)
+    {
+        if (!request.IsDeviceCodeGrantType()) return true;
+        if (!result.Succeeded || result.Principal is null) return false;
+        return await deviceAdmission.CanUse(result.Principal, true, cancellationToken);
+    }
+
+    IResult? ValidateBinding(ClaimsPrincipal granted, OpenIddictRequest request)
+    {
+        if (OidcIdentity.IsIdentityOnly(granted))
         {
-            return OAuthResults.Error(Errors.InvalidGrant, "The grant is not bound to a resource.");
+            return IdentityGrantAdmission.CanRedeem(granted, request, _options) ? null : OAuthResults.Error(Errors.InvalidGrant, "The identity grant is no longer valid.");
+        }
+        var rejection = grantPolicy.EvaluateTokenRequest(request.GetResources(), granted.GetResources());
+        return rejection is null ? null : OAuthResults.Error(rejection.Error, rejection.Description);
+    }
+
+    async Task<IResult?> ValidateRenewal(HttpContext context, OpenIddictRequest request, ClaimsPrincipal granted, Account account)
+    {
+        if (!OidcIdentity.IsIdentityOnly(granted) && await ValidateResources(context, granted, account) is { } resourceRejection) return resourceRejection;
+        if (!await RefreshStateIsValid(granted, request, context.RequestAborted)) return OAuthResults.Error(Errors.InvalidGrant, "The refresh token is no longer valid.");
+        // Authentication time is never invented from the current time.
+        return AccessTokenIdentity.AuthTimeOf(granted) is null ? OAuthResults.Error(Errors.InvalidGrant, "The refresh token is no longer valid.") : null;
+    }
+
+    async Task<bool> RefreshStateIsValid(ClaimsPrincipal granted, OpenIddictRequest request, CancellationToken cancellationToken)
+    {
+        var authorizationId = granted.GetAuthorizationId();
+        if (string.IsNullOrEmpty(authorizationId)) return false;
+        try
+        {
+            var state = await fences.Read(authorizationId, cancellationToken);
+            if (state is null) return !request.IsRefreshTokenGrantType();
+            // A known non-current entry must reach redemption so reuse fences the family.
+            return state.Fence is null && GrantStateValidation.IsKnown(state);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    IResult IssueRenewed(ClaimsPrincipal granted, Account account, OpenIddictRequest request)
+    {
+        if (OidcIdentity.IsIdentityOnly(granted))
+        {
+            var requestedScopes = request.GetScopes();
+            return OAuthResults.Issue(OidcIdentity.Renew(granted, account, request.ClientId!, requestedScopes.Length > 0 ? requestedScopes : null));
         }
 
+        var receivesUpstreamIdentity = granted.GetResources().All(_ => resources.FindByAudience(_)?.ReceivesUpstreamIdentity == true);
+        return OAuthResults.Issue(AccessTokenIdentity.Renew(granted, account, request.ClientId!, receivesUpstreamIdentity));
+    }
+
+    async Task<IResult?> ValidateResources(HttpContext context, ClaimsPrincipal granted, Account account)
+    {
+        var grantedAudiences = granted.GetResources();
+        if (grantedAudiences.Length == 0) return OAuthResults.Error(Errors.InvalidGrant, "The grant is not bound to a resource.");
         var tenantId = granted.GetClaim(IdentityClaims.TenantId);
         foreach (var resource in grantedAudiences.Select(resources.FindByAudience))
         {
             var lookup = resource is null ? new TenantsListed([]) : await tenants.SelectableTenants(account, resource, context.RequestAborted);
             if (lookup is not TenantsListed listed)
             {
-                logger.TenantsUnavailable(authorizationId, account.Id, resource!.Audience);
+                logger.TenantsUnavailable(granted.GetAuthorizationId(), account.Id, resource!.Audience);
                 return OAuthResults.Error(Errors.TemporarilyUnavailable, "Tenant selection is unavailable right now. Try again later.");
             }
-
-            var selectable = listed.Tenants;
-            if (!selectable.Any(_ => string.Equals(_.Id, tenantId, StringComparison.Ordinal)))
+            if (!listed.Tenants.Any(tenant => string.Equals(tenant.Id, tenantId, StringComparison.Ordinal)))
             {
-                logger.TenantNoLongerSelectable(authorizationId, account.Id, tenantId, resource?.Audience ?? "(unknown)");
+                logger.TenantNoLongerSelectable(granted.GetAuthorizationId(), account.Id, tenantId, resource?.Audience ?? "(unknown)");
                 return OAuthResults.Error(Errors.InvalidGrant, "The account can no longer use the tenant this grant was authorized for.");
             }
         }
-
-        try
-        {
-            var state = string.IsNullOrEmpty(authorizationId) ? null : await fences.Read(authorizationId, context.RequestAborted);
-            if (string.IsNullOrEmpty(authorizationId) || state?.Fence is not null || (state is not null && !GrantStateValidation.IsKnown(state)) ||
-                (request.IsRefreshTokenGrantType() && state is null))
-            {
-                return OAuthResults.Error(Errors.InvalidGrant, "The refresh token is no longer valid.");
-            }
-        }
-        catch (Exception)
-        {
-            return OAuthResults.Error(Errors.InvalidGrant, "The refresh token is no longer valid.");
-        }
-
-        // Offline access JWTs retain the accepted 630-second lifetime+skew window after a fence.
-        // Online refresh admission is decided again by the single-document consume/install CAS.
-        // A known non-current entry must reach redemption so concurrent reuse fences the family.
-        // A grant without its original authentication time cannot be renewed: auth_time is never invented from the current time.
-        if (AccessTokenIdentity.AuthTimeOf(granted) is null)
-        {
-            return OAuthResults.Error(Errors.InvalidGrant, "The refresh token is no longer valid.");
-        }
-
-        var receivesUpstreamIdentity = grantedAudiences.All(_ => resources.FindByAudience(_)?.ReceivesUpstreamIdentity == true);
-        return OAuthResults.Issue(AccessTokenIdentity.Renew(granted, account, request.ClientId!, receivesUpstreamIdentity));
+        return null;
     }
 }

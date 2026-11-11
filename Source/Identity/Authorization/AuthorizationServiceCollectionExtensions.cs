@@ -34,12 +34,22 @@ internal static class AuthorizationServiceCollectionExtensions
 
     /// <summary>Adds authorization, token exchange and refresh grant services.</summary>
     /// <param name="services">The services.</param>
-    internal static void AddAuthorizationEndpoints(this IServiceCollection services)
+    /// <param name="options">The startup issuance gate.</param>
+    internal static void AddAuthorizationEndpoints(this IServiceCollection services, IdentityOptions options)
     {
         services.AddSingleton<IGrantPolicy, GrantPolicy>();
         services.AddScoped<ConsentPages>();
         services.AddScoped<AuthorizationEndpoint>();
         services.AddScoped<TokenEndpoint>();
+        if (options.Oidc.IssuanceEnabled)
+        {
+            services.AddScoped<UserInfoEndpoint>();
+            services.AddSingleton<OidcAuthenticationProof>();
+            services.AddScoped<ValidateOidcRequest>();
+            services.AddScoped<RefuseOidcIssuance>();
+            services.AddScoped<IdentityTokenSigning>();
+            services.AddScoped<IdentityTokenMetadata>();
+        }
         services.AddHttpContextAccessor();
         services.AddScoped<TokenExchangeGrant>();
         services.AddSingleton<ISubjectTokenReplayGuard, MongoSubjectTokenReplayGuard>();

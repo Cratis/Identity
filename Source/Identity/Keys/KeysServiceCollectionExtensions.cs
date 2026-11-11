@@ -50,10 +50,12 @@ internal static class KeysServiceCollectionExtensions
                 sp.GetRequiredService<TimeProvider>(),
                 sp.GetRequiredService<ILogger<SecretStoreKeys>>(),
                 deployed,
-                deployed ? null : sp.GetRequiredService<DevelopmentKeyStoreRoot>());
+                deployed ? null : sp.GetRequiredService<DevelopmentKeyStoreRoot>(),
+                observeOidc: startupOptions.OidcClients.Count > 0);
 
             // The first read validates the store, so an invalid one stops the host when the service is first resolved.
             _ = keys.Current;
+            if (startupOptions.OidcClients.Count > 0) OidcSigningKey.Require(keys, sp.GetRequiredService<TimeProvider>().GetUtcNow());
             return keys;
         });
         if (deployed)
