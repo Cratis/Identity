@@ -57,7 +57,7 @@ internal static partial class UnixKeyStoreHandles
         }
 
         var fd = OpenAt(parent.DangerousGetHandle().ToInt32(), name, flags, FileMode);
-        if (fd < 0 && !create && Marshal.GetLastPInvokeError() == Missing)
+        if (IsMissingOnLookup(fd, create))
         {
             return null;
         }
@@ -212,6 +212,8 @@ internal static partial class UnixKeyStoreHandles
 
         RequireExtendedAccess(handle);
     }
+
+    static bool IsMissingOnLookup(int fd, bool create) => fd < 0 && !create && Marshal.GetLastPInvokeError() == Missing;
 
     static void RequireExtendedAccess(SafeFileHandle handle)
     {
