@@ -52,7 +52,7 @@ app.UseCratisChronicle();
 await app.RunAsync();
 ```
 
-`UseCratisIdentity` explicitly installs the Identity pipeline: routing → realm scope → security headers → authentication. Call it once before Arc/Chronicle middleware and endpoint execution; do not put authentication ahead of it for Identity routes. Its security headers apply globally in hosts that opt in. Authentication and generated Identity API routes use the realm namespace; non-Identity routes retain the host's namespace resolver. `MapCratisIdentity` only maps authorization and token endpoints; it adds no middleware, `/`, or `/healthz`. Hosts own their health and root routes, without collisions regardless of mapping order. Sign-out HTML is off by default; opt in with `MapSignOut = true` as above. Call `MapCratisIdentity` once per host: repeated mapping throws rather than changing the sign-out setting shared with realm middleware. Mapping alone does not validate protocol requests. Without the OpenIddict middleware context, authorization and token handlers fail closed with `OpenIddictRequestMissing` before business logic runs; install `UseCratisIdentity` for the required pipeline order. `Source/Identity.Host` remains the sample host and default Docker/compose target. `Source/Identity.CratisId` is the hosted-shared Cratis ID server; its [image contract](Documentation/deployment/cratis-id-image-contract.md) defines configuration, readiness and the D13 prerequisites before production issuance.
+`UseCratisIdentity` explicitly installs the Identity pipeline: routing → realm scope → security headers → authentication. Call it once before Arc/Chronicle middleware and endpoint execution; do not put authentication ahead of it for Identity routes. Its security headers apply globally in hosts that opt in. Authentication and generated Identity API routes use the realm namespace; non-Identity routes retain the host's namespace resolver. `MapCratisIdentity` maps authorization, token and provider-discovery routes, plus opt-in UserInfo and device routes; it adds no middleware, `/`, or `/healthz`. Hosts own their health and root routes, without collisions regardless of mapping order. Sign-out HTML is off by default; opt in with `MapSignOut = true` as above. Call `MapCratisIdentity` once per host: repeated mapping throws rather than changing the sign-out setting shared with realm middleware. Mapping alone does not validate protocol requests. Without the OpenIddict middleware context, authorization and token handlers fail closed with `OpenIddictRequestMissing` before business logic runs; install `UseCratisIdentity` for the required pipeline order. `Source/Identity.Host` remains the sample host and default Docker/compose target. `Source/Identity.CratisId` is the hosted-shared Cratis ID server; its [image contract](Documentation/deployment/cratis-id-image-contract.md) defines configuration, readiness and the D13 prerequisites before production issuance.
 
 ## What v1 implements
 
@@ -130,7 +130,8 @@ A resource server must validate `iss`, the signature against the JWKS, `aud`, `e
 | `POST /connect/revocation` | Token revocation. |
 | `POST /connect/introspect` | Token introspection for resource servers. |
 | `GET /.well-known/oauth-authorization-server` | RFC 8414 authorization server metadata; includes `authorization_response_iss_parameter_supported: true`. |
-| `GET /.well-known/openid-configuration` | OpenIddict's discovery fallback. This server does **not** offer the `openid` scope or issue ID tokens in v1. |
+| `GET /.well-known/openid-configuration` | Provider discovery. With OIDC disabled, publishes only the configured issuer and JWKS URI. |
+| `GET/POST /connect/userinfo` | Opt-in OIDC UserInfo for an identity-only bearer access token. |
 | `GET /.well-known/jwks` | Public signing keys. |
 | `GET /signin-github` | GitHub OAuth callback. Register it on the GitHub OAuth app. |
 | `GET/POST /logout` (opt-in) | Identity site cookie sign-out: GET serves an antiforgery-protected form; POST clears the session cookie. This does not revoke CLI grants. |
@@ -155,6 +156,10 @@ Everything is under the `Identity` section (environment variables use `Identity_
 | `SecretStore:Path` | — | Directory the platform mounts from its secret store, holding realm signing keys, encryption keys and the Data Protection key ring (see [Keys and the secret store](#keys-and-the-secret-store)). **Required outside development.** The old `SigningCertificate` and `EncryptionCertificate` settings are refused at startup. |
 | `SecretStore:ReloadInterval` | `00:01:00` | How often the directory is read again; between one second and five minutes. |
 | `Tokens:AccessTokenLifetime` | `00:05:00` | Startup refuses zero or more than ten minutes. Also the longest a revoked grant keeps working at a resource server that does not introspect. |
+| `Tokens:IdentityTokenLifetime` | `00:05:00` | Positive, at most one hour; applies only to enabled OIDC ID tokens. |
+| `Oidc:IssuanceEnabled` | `false` | Enables OIDC scope registration, UserInfo and provider metadata. Requires a configured issuer and recorded consent decision. |
+| `Oidc:ConsentDecision` | empty | `ImplicitFencedPath` or `ActivationBarrier`; records the operator's issuance decision, not proof that dormant consent activation has been wired. |
+| `OidcClients[]` | none | Confidential clients: `ClientId`, externally supplied `ClientSecret`, `DisplayName`, exact `RedirectUris[]`, `PostLogoutRedirectUris[]`, and a scope ceiling drawn from `openid`, `profile`, `offline_access`. |
 | `Tokens:AuthorizationCodeLifetime` | `00:02:00` | |
 | `Tokens:RefreshTokenLifetime` | `30.00:00:00` | Absolute lifetime of a refresh-token family. |
 | `TokenExchange` | none | `Issuers[]` and `Clients[]` for token exchange; nothing is enabled until both are configured. See [Token exchange](Documentation/token-exchange.md). |
@@ -169,7 +174,19 @@ Everything is under the `Identity` section (environment variables use `Identity_
 
 OpenIddict rejects introspection by a client that is neither the token's audience nor its presenter. Application-specific claims are returned only to a confidential audience client. The integration fixture registers `direct-mcp` with a test-only secret because its default CLI flow requests `direct:mcp:read` and issues tokens for `direct-mcp` with presenter `cratis-cli`.
 
-Clients are declared in code (`ClientDescriptors`) and configuration (introspection clients). The client store is reconciled at startup: undeclared clients are deleted.
+Clients are declared in code (`ClientDescriptors`) and configuration (introspection and OIDC clients). The client store is reconciled at startup: undeclared clients are deleted.
+
+## OpenID Connect sign-in
+
+OIDC is off by default, including in the Cratis ID host. Configure a confidential entry under `Identity:OidcClients`, provide its secret through the deployment secret mechanism (for example the configuration key `Identity__OidcClients__0__ClientSecret`), and register the relying party's exact HTTPS callback and post-logout callback. Loopback IP HTTP callbacks are Development-only. Do not commit client secrets or enable a placeholder client.
+
+Set a public `Identity:Issuer`, record `Identity:Oidc:ConsentDecision`, and opt in with `Identity:Oidc:IssuanceEnabled=true` only after deployment composition is ready. OIDC clients require an eligible RSA signing key of at least 2048 bits in the realm ring; the development ephemeral RSA signer also qualifies. A mixed RSA/EC ring still signs ID tokens with RS256, independently of OAuth access-token signing. Missing or failed-reload RSA material refuses OIDC issuance rather than downgrading.
+
+Request `response_type=code`, S256 PKCE, `scope=openid profile`, a fresh nonempty `nonce`, and `state`. Confidential client authentication is required at `/connect/token`. Identity-only requests do not supply a resource or select a tenant: the relying party selects its product tenant after sign-in. Explicit browser consent is antiforgery-protected; `prompt=none` does not reuse remembered approval. Request `offline_access` only when it is also in the client's ceiling.
+
+Validate the ID token as an RS256 `JWT` using the configured issuer's JWKS and the relying party client id as its audience. Check nonce on initial sign-in. `auth_time` describes the original upstream authentication, not the refresh; ID tokens have no tenant, upstream-identity or resource-authorization claims. `profile` adds only `name` and `preferred_username`. Send the returned **access token**, never the ID token, to `/connect/userinfo`; UserInfo returns current canonical account values, with the same `sub` and only the granted profile fields. The access token's logical audience is `cratis-identity-userinfo`, not a product resource.
+
+Refresh preserves the original subject, authentication time and available `sid`, rotates the refresh token, and issues a new ID token and `at_hash`. The refreshed ID token omits nonce. Scope/resource upgrades are refused, and existing revocation and refresh-reuse fences still apply. The separate [OIDC ID-token contract](Documentation/specs/identity-oidc-v1.md) specifies claims and validation. RP-initiated logout is composed by the session/logout implementation; enabling this protocol core alone does not install it.
 
 In development (`ASPNETCORE_ENVIRONMENT=Development`) without a `SecretStore:Path`, Identity uses ephemeral signing and encryption keys and the default Data Protection ring, so tokens stop validating when it restarts, and it allows plain HTTP.
 
@@ -286,7 +303,7 @@ The compose file configures one tenant, `local`, for your GitHub user on both Di
 
 ## CLI protocol contract
 
-For the compose setup, the issuer is exactly `http://localhost:5100/` and the discovery URL is `http://localhost:5100/.well-known/oauth-authorization-server`. For a deployed service, the CLI must request `/.well-known/oauth-authorization-server` on the issuer origin (or `/.well-known/openid-configuration` as fallback) and compare the discovered `issuer` with its configured issuer. The returned endpoint URLs are absolute. Authorization responses include `iss` on the loopback redirect, including OAuth error responses; the CLI must compare it to the discovered issuer along with its `state`.
+For the compose setup, the issuer is exactly `http://localhost:5100/` and the discovery URL is `http://localhost:5100/.well-known/oauth-authorization-server`. For a deployed service, the CLI must request `/.well-known/oauth-authorization-server` on the issuer origin and compare the discovered `issuer` with its configured issuer. The returned endpoint URLs are absolute. Authorization responses include `iss` on the loopback redirect, including OAuth error responses; the CLI must compare it to the discovered issuer along with its `state`.
 
 The CLI sends `client_id=cratis-cli`, `response_type=code`, `code_challenge_method=S256`, its challenge, a random `state`, `redirect_uri=http://127.0.0.1:<ephemeral-port>/callback` (or `[::1]`), `scope=direct:mcp:read direct:mcp:content.write direct:mcp:work offline_access` with `resource=https://cratis.direct/mcp`, or `scope=direct:read direct:content.write direct:work offline_access` with `resource=https://cratis.direct/v1` (request only what is needed), and optionally `tenant=<requested-tenant>` to the authorization endpoint. No secret is sent. The user must consent and choose a tenant; the hint cannot grant access. The CLI redeems the code at the discovered token endpoint using the **same** redirect URI, its PKCE verifier and the same `resource` value; refresh requests also send `client_id`, `refresh_token`, `grant_type=refresh_token` and `resource`. It posts `client_id`, `token` and `token_type_hint=refresh_token` to the discovered revocation endpoint on logout. Each resource indicator yields one access-token audience: `direct-api` for MCP or `direct-v1` for API. A new grant is required to switch tenants; changing a CLI context alone cannot change `tid`.
 
@@ -331,7 +348,7 @@ In rough order, following the long-term architecture:
 7. **RFC 9396 `authorization_details`** for transaction-bound approvals, for example a specific publication payload hash.
 8. **Token exchange (RFC 8693) with `act`** so agents, including Direct's own workers, act for a user with attributable, narrowed tokens.
 9. **More upstream providers and customer SSO per tenant** (Microsoft, Google, Apple; OIDC/SAML per customer), with account linking.
-10. **Direct browser login through Identity**: AuthProxy becomes an OIDC client of Identity, giving single sign-on across Cratis products. This is when `openid` and identity tokens get turned on.
+10. **Direct browser login through Identity**: compose the opt-in OIDC protocol core with the session/logout implementation and register AuthProxy as a confidential relying party before enabling single sign-on across products.
 11. **Operations**: rate limiting on the authorization and token endpoints, and metrics.
 
 ## License
