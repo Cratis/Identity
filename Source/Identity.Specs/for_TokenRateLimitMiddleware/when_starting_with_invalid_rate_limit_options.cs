@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Configuration;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.for_TokenRateLimitMiddleware;
@@ -22,9 +21,8 @@ public class when_starting_with_invalid_rate_limit_options : given.an_identity_h
         Builder.Configuration[$"Identity:TokenRateLimit:{setting}"] = value;
         RegisterIdentity();
         App = Builder.Build();
-        App.MapCratisIdentity();
 
-        // Do not resolve IOptions first: ValidateOnStart must reject this host itself.
+        // Mapping endpoints also resolves IOptions: isolate ValidateOnStart so the host itself must reject these options.
         var exception = await Assert.ThrowsAsync<OptionsValidationException>(() => App.StartAsync(TestContext.Current.CancellationToken));
 
         exception.OptionsType.ShouldEqual(typeof(IdentityOptions));

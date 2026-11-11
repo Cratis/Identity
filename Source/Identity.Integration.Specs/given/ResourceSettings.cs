@@ -11,7 +11,7 @@ public static class ResourceSettings
     /// <summary>
     /// The confidential resource server client that introspects the CLI's MCP-audience access tokens.
     /// </summary>
-    public const string IntrospectionClientId = "direct-api";
+    public const string IntrospectionClientId = "direct-mcp";
 
     /// <summary>
     /// The test-only secret for the MCP introspection client.

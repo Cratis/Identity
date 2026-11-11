@@ -23,7 +23,7 @@ public class when_reading_the_shipped_resource_order : Specification
 
     [Fact] void should_have_exactly_three_resources() => _options.Resources.Count.ShouldEqual(3);
     [Fact] void should_keep_the_direct_v1_audience_at_index_zero() => _options.Resources[0].Audience.ShouldEqual("direct-v1");
-    [Fact] void should_keep_the_direct_api_audience_at_index_one() => _options.Resources[1].Audience.ShouldEqual("direct-api");
+    [Fact] void should_keep_the_direct_mcp_audience_at_index_one() => _options.Resources[1].Audience.ShouldEqual("direct-mcp");
     [Fact] void should_keep_the_studio_audience_at_index_two() => _options.Resources[2].Audience.ShouldEqual("studio-mcp");
     [Fact] void should_ship_studio_without_an_indicator() => _options.Resources[2].Indicators.ShouldBeEmpty();
     [Fact] void should_ship_the_studio_scopes() => _options.Resources[2].Scopes.Select(scope => scope.Name).SequenceEqual(["studio:mcp:read", "studio:mcp:write"]).ShouldBeTrue();

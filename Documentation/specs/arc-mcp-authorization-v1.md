@@ -48,11 +48,13 @@ PAT-only is a static-header/minimal profile, not an assertion of OAuth interoper
 
 OAuth-capable MCP servers MUST implement RFC 9728 protected-resource metadata, and OAuth MCP clients MUST use it for discovery. The 401 challenge MUST include `resource_metadata` with the protected-resource metadata URL. That document MUST use the registered resource indicator in `resource`, the configured issuer in `authorization_servers`, and the [catalog](arc-scope-catalog-v1.md) scope names in `scopes_supported`. Resource metadata MUST NOT be confused with authorization-server metadata. Clients MUST verify that the protected-resource metadata `resource` equals the requested resource URL and MUST refuse a mismatch (RFC 9728 §3.3).
 
-The client SHOULD send RFC 8707 `resource` with the intended resource indicator on both authorization and token requests. When it is absent at authorization, the authorization server MUST infer the resource only when the requested scopes identify exactly one catalog resource; empty or ambiguous inference MUST return `invalid_target`. When it is absent at code redemption, the grant MUST retain its original catalog audience. An explicitly empty indicator, an unknown indicator, or indicators for multiple distinct resources MUST return the appropriate OAuth error rather than falling back to inference. The authorization server MUST refuse unregistered resource indicators and MUST use the scope catalog's one-to-one mapping from the RFC 8707 resource indicator URL to its audience slug when binding the resulting access token. For example, `resource=https://direct.example.test/mcp` maps to `aud=direct-api`. Each audience slug MUST map back to exactly one resource indicator URL; `aud` MUST NOT be a URL. The resource verifier MUST validate issuer, the single catalog audience string (for example `direct-api`, not the resource URL), signature, expiry, `typ=at+jwt`, required access-token claims, applicable `tid` tenant binding, and sender binding where required, as defined in identity-contract-v1. It MUST NOT accept an ID token as an access token or forward an access token to a different resource.
+The client SHOULD send RFC 8707 `resource` with the intended resource indicator on both authorization and token requests. When it is absent at authorization, the authorization server MUST infer the resource only when the requested scopes identify exactly one catalog resource; empty or ambiguous inference MUST return `invalid_target`. When it is absent at code redemption, the grant MUST retain its original catalog audience. An explicitly empty indicator, an unknown indicator, or indicators for multiple distinct resources MUST return the appropriate OAuth error rather than falling back to inference. The authorization server MUST refuse unregistered resource indicators and MUST use the scope catalog's one-to-one mapping from the RFC 8707 resource indicator URL to its audience slug when binding the resulting access token. For example, `resource=https://direct.example.test/mcp` maps to `aud=direct-mcp`; a `direct-api` (REST) token is not accepted at the MCP endpoint, nor a `direct-mcp` token at the REST API. Each audience slug MUST map back to exactly one resource indicator URL; `aud` MUST NOT be a URL. The resource verifier MUST validate issuer, the single catalog audience string (for example `direct-mcp`, not the resource URL), signature, expiry, `typ=at+jwt`, required access-token claims, applicable `tid` tenant binding, and sender binding where required, as defined in identity-contract-v1. It MUST NOT accept an ID token as an access token or forward an access token to a different resource.
 
 The authorization server MUST require PKCE S256 and MUST reject `plain` and missing PKCE. Clients MUST use S256 and MUST refuse authorization when PKCE metadata is missing. Redirect URIs MUST match exactly. The only native loopback exception follows RFC 8252 for IP literals and variable ports, not `localhost` or wildcard hosts. Resource servers MUST NOT compensate for invalid tokens by falling back to forwarded browser identity. Successful credential verification MUST produce the same [caller contract](arc-verified-caller-v1.md) before product authorization.
 
 Pre-registered first-party clients remain supported. Client ID Metadata Documents SHOULD be supported, pinned to [draft-ietf-oauth-client-id-metadata-document-03](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document-03). Dynamic Client Registration is optional (MAY), for backwards compatibility only, subject to the registration security contract and tested connector needs. Connector compatibility MUST remain unverified until tested against supported versions.
+
+For Identity's opt-in public-client subset, outbound-fetch safeguards, cache and admission limits, and configuration, see [Client ID Metadata Documents](../security/client-id-metadata-documents.md). This implementation guide does not change the normative contract above.
 
 DPoP is optional for MCP clients using unbound tokens; this contract MUST NOT impose it on every client. Client support is unverified. A sender-bound token carrying `cnf.jkt` MUST NOT be accepted as a plain bearer. Its verifier MUST validate the proof per RFC 9449 §4.3, including `typ=dpop+jwt`, signature, `htm` and `htu` matching the request, `ath` equal to the presented token's hash, and `iat` within a configured window. A missing, non-positive or unbounded `iat` window MUST cause refusal of sender-bound tokens; the window MUST be finite (recommended at most 5 minutes). The `jti` replay cache MUST retain entries at least for that window. The verifier MUST require a valid matching DPoP header and MUST refuse a missing header, a proof with the wrong key thumbprint, a replayed proof `jti`, or any invalid proof with 401. Optional client support MUST NOT disable an existing token binding.
 
@@ -262,6 +264,44 @@ verify the sidecar before extraction, verify the manifest and case coverage, and
 their own conformance specs by case ID. A missing, duplicate, or unexecuted case must
 fail their gate. Consumer CI wiring and local overrides are separate deliverables;
 this package does not assert consumer conformance.
+
+## Vector artifact 2.1.0
+
+Vector artifact version: 2.1.0
+
+The MCP audience is `direct-mcp`; `direct-api` remains a REST audience. Version 2.0.0
+and all its files and baselines remain unchanged and continue to verify.
+`Source/Identity.Specs/Vectors/v2.1.0/` is an overlay containing only
+`arc-mcp-authorization-v1/profiles-and-discovery.json` and
+`arc-scope-catalog-v1/catalog-and-policy.json`, with 57 cases. The 2.0.0 archive
+contains only the top-level `profiles-and-discovery.json` vector file, with 48 cases,
+plus its manifest, changelog, and baselines. The 2.1.0 overlay replaces those
+48 authorization cases and adds nine scope-catalog cases. Load each artifact's
+files at the paths declared by its manifest; do not unpack one archive over the other.
+All other fixtures, including the signed `identity-access-token-v1` REST JWT
+examples, are inherited unchanged from the repository at the pinned
+`vectors/arc-mcp-authorization/v2.0.0` tag, not from the 2.0.0 archive.
+
+The overlay uses manifest schema 2: `inherits` pins the 2.0.0 manifest by version
+and SHA-256, `files` pins each replacement's complete bytes, and `caseIds` lists
+ordered case IDs per file. Its baseline pins the complete manifest bytes; this
+locks the inheritance, case bindings, file hashes, and case count together.
+Schema 1 and its historical case hashes remain supported without modification.
+
+The packaging command above verifies and packages both versions into separate
+archives and checksum sidecars. The 2.1.0 archive contains the overlay manifest,
+changelog, baseline, and two replacement files at their relative paths, not copies
+of inherited JWT fixtures. Consumers obtain inherited fixtures from the repository
+at the pinned 2.0.0 tag; those fixtures are not included in either archive.
+When invoked for a release tag, packaging selects that tag's version and refuses
+an unknown version. The new trust-anchor tag is
+`vectors/arc-mcp-authorization/v2.1.0`; creating it remains a release-owner action.
+The immutability check protects both trees and inherited fixtures against the base
+revision and existing release tags. The overlay also freezes the original
+`arc-scope-catalog-v1` and `identity-access-token-v1` fixtures against future edits:
+changes require a new vector version, not edits to those inherited files in place.
+Unit specs exercise authorization and token
+issuance using both versions, including the new MCP audience.
 
 ## Decisions recorded at sign-off
 

@@ -1,7 +1,9 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Configuration;
 using Cratis.Identity.Resources;
+using Microsoft.Extensions.Options;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Cratis.Identity.Authorization;
@@ -16,11 +18,23 @@ namespace Cratis.Identity.Authorization;
 /// that belong to another resource server are dropped rather than granted.
 /// </remarks>
 /// <param name="resources">The <see cref="IResourceCatalog"/>.</param>
-internal class GrantPolicy(IResourceCatalog resources) : IGrantPolicy
+/// <param name="options">The configured identity clients.</param>
+internal class GrantPolicy(IResourceCatalog resources, IOptions<IdentityOptions> options) : IGrantPolicy
 {
+    /// <summary>Creates a resource-only grant policy.</summary>
+    /// <param name="resources">The resource catalog.</param>
+    public GrantPolicy(IResourceCatalog resources) : this(resources, Options.Create(new IdentityOptions()))
+    {
+    }
+
     /// <inheritdoc/>
     public GrantEvaluation Evaluate(GrantRequest request)
     {
+        if (IdentityOnlyGrant.Evaluate(request, options.Value.OidcClients, resources) is { } identityDecision)
+        {
+            return identityDecision;
+        }
+
         var scopes = request.Scopes.Distinct(StringComparer.Ordinal).ToArray();
         var indicators = request.ResourceIndicators.Distinct(StringComparer.Ordinal).ToArray();
 

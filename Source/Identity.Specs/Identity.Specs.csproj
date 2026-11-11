@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <RootNamespace>Cratis.Identity</RootNamespace>
     <AssemblyName>Cratis.Identity.Specs</AssemblyName>
     <IsPackable>false</IsPackable>
@@ -39,8 +39,10 @@
     <ProjectReference Include="../Identity.Contracts.Check/Identity.Contracts.Check.csproj" />
     <None Include="Vectors/**" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../Identity.Host/appsettings.json" Link="Identity.appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../Identity.Host/appsettings.Development.json" Link="Identity.appsettings.Development.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../Identity.CratisId/appsettings.json" Link="CratisId.appsettings.json" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="../Identity.Integration.Specs/given/ResourceSettings.cs" Link="given/ResourceSettings.cs" />
+    <Compile Include="../Identity.Integration.Specs/given/OidcErrors.cs" Link="given/OidcErrors.cs" />
     <None Include="../../Documentation/specs/identity-events-v1.md" Link="identity-events-v1.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../Documentation/specs/identity-events-v1.2-amendment.md" Link="identity-events-v1.2-amendment.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../Documentation/specs/arc-mcp-authorization-v1.md" Link="arc-mcp-authorization-v1.md" CopyToOutputDirectory="PreserveNewest" />

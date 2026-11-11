@@ -37,7 +37,7 @@ public class when_choosing_a_route_prefix : given.an_identity_host
         server.IntrospectionEndpointUris.Single().OriginalString.ShouldEqual($"{prefix}/connect/introspect".TrimStart('/'));
         server.Issuer.AbsoluteUri.ShouldEqual("https://identity.example/");
         ((IEndpointRouteBuilder)app).DataSources.SelectMany(source => source.Endpoints).Cast<RouteEndpoint>()
-            .Select(route => route.RoutePattern.RawText).ShouldContainOnly($"{prefix}/connect/authorize", $"{prefix}/connect/token", $"{prefix}/connect/endsession");
+            .Select(route => route.RoutePattern.RawText).ShouldContainOnly($"{prefix}/connect/authorize", $"{prefix}/connect/token", $"{prefix}/connect/endsession", "/.well-known/openid-configuration");
     }
 
     [Theory]
@@ -46,6 +46,7 @@ public class when_choosing_a_route_prefix : given.an_identity_host
     [InlineData("/connect/token", "POST", 404)]
     [InlineData("/connect/authorize", "GET", 404)]
     [InlineData("/.well-known/openid-configuration", "GET", 200)]
+    [InlineData("/.well-known/oauth-authorization-server", "GET", 200)]
     [InlineData("/id/.well-known/openid-configuration", "GET", 404)]
     async Task should_dispatch_prefixed_protocol_requests_and_leave_discovery_unprefixed(string path, string method, int status)
     {
@@ -53,10 +54,12 @@ public class when_choosing_a_route_prefix : given.an_identity_host
         builder.AddCratisIdentity();
         builder.Services.PostConfigure<OAuthOptions>(IdentitySchemes.GitHub, options => options.EventsType = null);
         await using var app = builder.Build();
+        app.UseRouting();
         app.UseCratisIdentity();
         app.MapCratisIdentity();
         app.Run(context =>
         {
+            if (context.GetEndpoint() is { } endpoint) return endpoint.RequestDelegate(context);
             context.Response.StatusCode = StatusCodes.Status404NotFound;
             return Task.CompletedTask;
         });
@@ -74,9 +77,17 @@ public class when_choosing_a_route_prefix : given.an_identity_host
             response.Response.Body.Position = 0;
             using var document = await JsonDocument.ParseAsync(response.Response.Body, cancellationToken: TestContext.Current.CancellationToken);
             document.RootElement.GetProperty("issuer").GetString().ShouldEqual("https://identity.example/");
-            document.RootElement.GetProperty("token_endpoint").GetString().ShouldEqual("https://identity.example/id/connect/token");
-            document.RootElement.GetProperty("authorization_endpoint").GetString().ShouldEqual("https://identity.example/id/connect/authorize");
             document.RootElement.GetProperty("jwks_uri").GetString().ShouldNotContain("/id/");
+            if (path == "/.well-known/openid-configuration")
+            {
+                document.RootElement.TryGetProperty("token_endpoint", out _).ShouldBeFalse();
+                document.RootElement.TryGetProperty("authorization_endpoint", out _).ShouldBeFalse();
+            }
+            else
+            {
+                document.RootElement.GetProperty("token_endpoint").GetString().ShouldEqual("https://identity.example/id/connect/token");
+                document.RootElement.GetProperty("authorization_endpoint").GetString().ShouldEqual("https://identity.example/id/connect/authorize");
+            }
         }
     }
 }

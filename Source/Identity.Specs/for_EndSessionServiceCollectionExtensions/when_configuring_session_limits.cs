@@ -14,14 +14,14 @@ public class when_configuring_session_limits : Specification
     [Theory]
     [InlineData(null, 86400)]
     [InlineData("02:00:00", 7200)]
-    public void should_bind_the_public_and_validator_options_without_changing_the_cookie_key(string? maximumAge, int seconds)
+    public async Task should_bind_the_public_and_validator_options_without_changing_the_cookie_key(string? maximumAge, int seconds)
     {
         var section = Configuration(maximumAge).GetSection(IdentityOptions.SectionName);
         var identity = section.Get<IdentityOptions>()!;
         var services = new ServiceCollection();
         services.AddEndSession(section);
-        using var provider = services.BuildServiceProvider();
-        provider.GetRequiredService<IStartupValidator>().Validate();
+        await using var provider = services.BuildServiceProvider();
+        await provider.GetRequiredService<IAsyncStartupValidator>().ValidateAsync(TestContext.Current.CancellationToken);
         var limits = provider.GetRequiredService<IOptions<EndSessionOptions>>().Value;
         limits.EndSessionHintMaxAge.ShouldEqual(TimeSpan.FromSeconds(seconds));
         identity.Sessions.EndSessionHintMaxAge.ShouldEqual(limits.EndSessionHintMaxAge);
@@ -31,12 +31,12 @@ public class when_configuring_session_limits : Specification
     [Theory]
     [InlineData("00:00:00")]
     [InlineData("-00:00:01")]
-    public void should_refuse_non_positive_hint_ages_at_startup(string maximumAge)
+    public async Task should_refuse_non_positive_hint_ages_at_startup(string maximumAge)
     {
         var services = new ServiceCollection();
         services.AddEndSession(Configuration(maximumAge).GetSection(IdentityOptions.SectionName));
-        using var provider = services.BuildServiceProvider();
-        var exception = Catch.Exception(provider.GetRequiredService<IStartupValidator>().Validate);
+        await using var provider = services.BuildServiceProvider();
+        var exception = await Catch.Exception(() => provider.GetRequiredService<IAsyncStartupValidator>().ValidateAsync(TestContext.Current.CancellationToken));
         exception.ShouldBeOfExactType<OptionsValidationException>();
         exception.Message.ShouldContain("Identity:Sessions:EndSessionHintMaxAge must be positive.");
     }

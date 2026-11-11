@@ -6,8 +6,10 @@ using Cratis.Identity.Accounts;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Authorization.TokenExchange;
 using Cratis.Identity.Clients;
+using Cratis.Identity.Clients.MetadataDocuments;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.ConsentFlow;
+using Cratis.Identity.Development;
 using Cratis.Identity.Device;
 using Cratis.Identity.DPoP;
 using Cratis.Identity.Keys;
@@ -42,6 +44,8 @@ internal static class IdentityServiceCollectionExtensions
     /// <returns>The <see cref="IServiceCollection"/> for continuation.</returns>
     /// <exception cref="KeysInConfiguration">Thrown when a signing or encryption certificate is still configured.</exception>
     /// <exception cref="SecretStoreNotConfigured">Thrown outside development without a secret store.</exception>
+    /// <exception cref="DevelopmentProfileOnlyInDevelopment">Thrown when the local-development profile is enabled outside Development.</exception>
+    /// <exception cref="DevelopmentProfileRefused">Thrown when the local-development profile's configuration or key store is not safe.</exception>
     /// <exception cref="OptionsValidationException">The hosted-shared preset has missing or invalid production settings.</exception>
     /// <exception cref="ChronicleNotConfigured">The native account path has no configured Chronicle client.</exception>
     /// <exception cref="InvalidMongoDBConnectionString">Thrown when the MongoDB client is first resolved with a connection string that cannot be parsed.</exception>
@@ -55,6 +59,10 @@ internal static class IdentityServiceCollectionExtensions
         {
             throw new KeysInConfiguration($"{IdentityOptions.SectionName}:{setting}");
         }
+
+        // The opt-in local-development profile runs before keys and resources are wired and refuses to run outside Development.
+        var development = DevelopmentProfile.Apply(configuration, environment, startupOptions);
+        development?.Register(services);
 
         var hostedValidation = new HostedSharedConfiguration(configuration, environment).Validate(null, startupOptions);
         if (hostedValidation.Failed)
@@ -93,11 +101,12 @@ internal static class IdentityServiceCollectionExtensions
 
         // Keep hosted-service startup order: storage guards, key reloading, revocation, account guard, then consent.
         services.AddStorage();
-        services.AddSecretStoreKeys(startupOptions);
+        services.AddSecretStoreKeys(startupOptions, development?.Root);
         services.AddResources();
         services.AddTenants();
         services.AddClients();
-        services.AddAuthorizationEndpoints();
+        services.AddClientIdMetadataDocuments(startupOptions.Clients.MetadataDocuments.Enabled);
+        services.AddAuthorizationEndpoints(startupOptions);
         services.AddDeviceGrant(startupOptions.DeviceGrant.Enabled);
         services.AddRevocation(configuration);
         services.AddProtocolServices();
@@ -123,7 +132,7 @@ internal static class IdentityServiceCollectionExtensions
         }
 
         services.AddOpenIddict()
-            .AddCore(options => options.UseConfigurationStores()
+            .AddCore(options => options.UseConfigurationStores(startupOptions.Clients.MetadataDocuments.Enabled)
                 .SetDefaultAuthorizationEntity<OpenIddictMongoDbAuthorization>()
                 .SetDefaultTokenEntity<OpenIddictMongoDbToken>()
                 .ReplaceAuthorizationStore<OpenIddictMongoDbAuthorization, FencedAuthorizationStore>()
@@ -140,19 +149,11 @@ internal static class IdentityServiceCollectionExtensions
 
                 AddEphemeralCredentialsInDevelopment(options, startupOptions);
 
-                var aspNetCore = options.UseAspNetCore()
-                    .EnableAuthorizationEndpointPassthrough()
-                    .EnableTokenEndpointPassthrough();
-
-                if (startupOptions.DeviceGrant.Enabled) aspNetCore.EnableEndUserVerificationEndpointPassthrough();
-
-                if (environment.IsDevelopment())
-                {
-                    aspNetCore.DisableTransportSecurityRequirement();
-                }
+                ConfigureAspNetCore(options.UseAspNetCore(), startupOptions, environment);
 
                 options.AddAuthorizationHandlers(startupOptions.SecretStore.IsConfigured)
                     .AddDPoPHandlers(startupOptions.DPoP.Enabled);
+                if (startupOptions.Oidc.IssuanceEnabled) IdentityTokenHandlers.AddTo(options);
             });
 
         services.AddOptions<OpenIddictServerOptions>().Configure<IOptions<IdentityOptions>, IResourceCatalog>(ConfigureServer);
@@ -163,9 +164,23 @@ internal static class IdentityServiceCollectionExtensions
         }
     }
 
+    static void ConfigureAspNetCore(OpenIddictServerAspNetCoreBuilder integration, IdentityOptions options, IHostEnvironment environment)
+    {
+        integration.EnableAuthorizationEndpointPassthrough().EnableTokenEndpointPassthrough();
+        if (options.DeviceGrant.Enabled) integration.EnableEndUserVerificationEndpointPassthrough();
+        if (options.Oidc.IssuanceEnabled) integration.EnableUserInfoEndpointPassthrough();
+        if (environment.IsDevelopment()) integration.DisableTransportSecurityRequirement();
+    }
+
     static void ConfigureProtocol(OpenIddictServerBuilder server, string routePrefix, IdentityOptions options)
     {
+        if (options.Clients.MetadataDocuments.Enabled)
+        {
+            server.AddEventHandler<OpenIddictServerEvents.HandleConfigurationRequestContext>(builder => builder.UseSingletonHandler<AdvertiseClientIdMetadataDocuments>());
+        }
+
         server
+            .SetConfigurationEndpointUris(".well-known/oauth-authorization-server")
             .SetAuthorizationEndpointUris($"{routePrefix}/connect/authorize".TrimStart('/'))
             .SetTokenEndpointUris($"{routePrefix}/connect/token".TrimStart('/'))
             .SetRevocationEndpointUris($"{routePrefix}/connect/revocation".TrimStart('/'))
@@ -178,6 +193,11 @@ internal static class IdentityServiceCollectionExtensions
             .DisableSlidingRefreshTokenExpiration()
             .SetRefreshTokenReuseLeeway(null)
             .DisableAccessTokenEncryption();
+
+        if (options.Oidc.IssuanceEnabled)
+        {
+            server.SetUserInfoEndpointUris($"{routePrefix}/connect/userinfo".TrimStart('/'));
+        }
 
         if (options.DeviceGrant.Enabled)
         {
@@ -216,9 +236,13 @@ internal static class IdentityServiceCollectionExtensions
             server.UserCodeCharset.UnionWith(options.DeviceGrant.UserCodeCharset.Select(_ => _.ToString()));
         }
 
-        // OAuth only: no OpenID Connect sign-in is offered to clients yet, so identity tokens are not advertised.
         server.Scopes.Remove(Scopes.OpenId);
-        server.Scopes.UnionWith(ProtocolScopes.All);
+        server.Scopes.Remove(Scopes.Profile);
+        server.Scopes.UnionWith(ProtocolScopes.All.Where(scope => options.Oidc.IssuanceEnabled || scope == Scopes.OfflineAccess));
+        if (options.Oidc.IssuanceEnabled)
+        {
+            server.IdentityTokenLifetime = options.Tokens.IdentityTokenLifetime;
+        }
         server.Scopes.UnionWith(resources.All.SelectMany(_ => _.Scopes).Select(_ => _.Name));
         server.Resources.UnionWith(resources.All.SelectMany(_ => _.Indicators).Select(_ => new Uri(_, UriKind.Absolute)));
     }

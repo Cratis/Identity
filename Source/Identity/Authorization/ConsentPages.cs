@@ -31,6 +31,20 @@ internal class ConsentPages(IAntiforgery antiforgery)
         return Results.Content(ConsentPage.Render(consent, tokens.RequestToken!), "text/html; charset=utf-8");
     }
 
+    /// <summary>Renders identity-only consent without resource or tenant fields.</summary>
+    /// <param name="context">The HTTP request context.</param>
+    /// <param name="consent">The identity-only consent.</param>
+    /// <returns>The encoded consent page.</returns>
+    public IResult Render(HttpContext context, IdentityConsent consent)
+    {
+        var tokens = antiforgery.GetAndStoreTokens(context);
+        context.Response.Headers.CacheControl = "no-store";
+        var redirectOrigin = consent.RedirectUri.GetLeftPart(UriPartial.Authority);
+        context.Response.Headers.ContentSecurityPolicy =
+            $"default-src 'none'; form-action 'self' {redirectOrigin}; frame-ancestors 'none'; base-uri 'none'";
+        return Results.Content(IdentityConsentPage.Render(consent, tokens.RequestToken!), "text/html; charset=utf-8");
+    }
+
     /// <summary>
     /// Validates that a consent submission came from a consent page Identity served to the same browser session.
     /// </summary>

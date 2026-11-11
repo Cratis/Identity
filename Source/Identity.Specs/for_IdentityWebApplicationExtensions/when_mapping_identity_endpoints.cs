@@ -16,14 +16,14 @@ namespace Cratis.Identity.for_IdentityWebApplicationExtensions;
 public class when_mapping_identity_endpoints : given.an_identity_host
 {
     [Fact]
-    async Task should_map_authorization_token_and_end_session_without_adding_middleware()
+    async Task should_map_authorization_token_end_session_and_provider_discovery_without_adding_middleware()
     {
         var builder = CreateBuilder();
         builder.AddCratisIdentity();
         await using var app = builder.Build();
         app.MapCratisIdentity();
         var routes = ((IEndpointRouteBuilder)app).DataSources.SelectMany(source => source.Endpoints).Cast<RouteEndpoint>().ToArray();
-        routes.Select(route => route.RoutePattern.RawText).ShouldContainOnly("/connect/authorize", "/connect/token", "/connect/endsession");
+        routes.Select(route => route.RoutePattern.RawText).ShouldContainOnly("/connect/authorize", "/connect/token", "/connect/endsession", "/.well-known/openid-configuration");
         routes.Single(route => route.RoutePattern.RawText == "/connect/token").Metadata.GetMetadata<HttpMethodMetadata>().HttpMethods.ShouldContainOnly("POST");
         var invoked = false;
         app.Run(context =>
@@ -49,7 +49,7 @@ public class when_mapping_identity_endpoints : given.an_identity_host
         await using var app = builder.Build();
         app.MapCratisIdentity();
         var routes = ((IEndpointRouteBuilder)app).DataSources.SelectMany(source => source.Endpoints).Cast<RouteEndpoint>().ToArray();
-        routes.Select(route => route.RoutePattern.RawText).ShouldContainOnly($"{prefix}/connect/authorize", $"{prefix}/connect/token", $"{prefix}/connect/endsession", $"{prefix}/connect/device", $"{prefix}/device");
+        routes.Select(route => route.RoutePattern.RawText).ShouldContainOnly($"{prefix}/connect/authorize", $"{prefix}/connect/token", $"{prefix}/connect/endsession", $"{prefix}/connect/device", $"{prefix}/device", "/.well-known/openid-configuration");
         var server = app.Services.GetRequiredService<IOptions<OpenIddict.Server.OpenIddictServerOptions>>().Value;
         server.DeviceAuthorizationEndpointUris.Single().OriginalString.ShouldEqual($"{prefix}/connect/device".TrimStart('/'));
         server.EndUserVerificationEndpointUris.Single().OriginalString.ShouldEqual($"{prefix}/device".TrimStart('/'));

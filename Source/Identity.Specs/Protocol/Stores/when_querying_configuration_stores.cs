@@ -34,7 +34,7 @@ public class when_querying_configuration_stores : given.a_configuration_catalog
         await foreach (var scope in Scopes.FindByResourceAsync("spec-api", CancellationToken.None)) _byResource.Add(scope);
         await foreach (var scope in Scopes.FindByNamesAsync(["spec:read", "unknown"], CancellationToken.None)) _byNames.Add(scope);
         await foreach (var name in Scopes.ListAsync((query, prefix) => query.Where(_ => _.Name.StartsWith(prefix)).Select(_ => _.Name), "spec", CancellationToken.None)) _scopeQuery.Add(name);
-        var descriptions = new List<string>();
+        List<string> descriptions = [];
         foreach (var scope in _byResource) descriptions.Add(await Scopes.GetDescriptionAsync(scope, CancellationToken.None));
         _descriptions = [.. descriptions];
         var applicationById = await Applications.FindByIdAsync(await Applications.GetIdAsync(_page.Single(), CancellationToken.None), CancellationToken.None);

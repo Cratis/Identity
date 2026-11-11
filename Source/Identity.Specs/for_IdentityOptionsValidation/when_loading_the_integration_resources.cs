@@ -34,17 +34,17 @@ public class when_loading_the_integration_resources : Specification
     }
 
     [Fact] void should_validate_the_merged_configuration() => new IdentityOptionsValidation(new HostingEnvironment { EnvironmentName = Environments.Development }).Validate(null, _options).Succeeded.ShouldBeTrue();
-    [Fact] void should_preserve_both_direct_resources_and_append_the_test_resources() => _options.Resources.Select(resource => resource.Audience).SequenceEqual(["direct-v1", "direct-api", "studio-api", "stage-api"]).ShouldBeTrue();
-    [Fact] void should_use_the_mcp_audience_as_the_introspection_client_id() => _introspection.ClientId.ShouldEqual(Resource("direct-api").Audience);
+    [Fact] void should_preserve_both_direct_resources_and_append_the_test_resources() => _options.Resources.Select(resource => resource.Audience).SequenceEqual(["direct-v1", "direct-mcp", "studio-api", "stage-api"]).ShouldBeTrue();
+    [Fact] void should_use_the_mcp_audience_as_the_introspection_client_id() => _introspection.ClientId.ShouldEqual(Resource("direct-mcp").Audience);
     [Fact] void should_register_a_confidential_introspection_client() => _introspection.ClientType.ShouldEqual(OpenIddictConstants.ClientTypes.Confidential);
     [Fact] void should_configure_the_mcp_introspection_secret() => _introspection.ClientSecret.ShouldEqual(ResourceSettings.IntrospectionClientSecret);
     [Fact] void should_only_grant_the_introspection_endpoint() => _introspection.Permissions.Single().ShouldEqual(OpenIddictConstants.Permissions.Endpoints.Introspection);
     [Fact] void should_keep_the_api_indicator() => Resource("direct-v1").Indicators.Single().ShouldEqual("https://cratis.direct/v1");
-    [Fact] void should_keep_the_mcp_indicator() => Resource("direct-api").Indicators.Single().ShouldEqual("https://cratis.direct/mcp");
+    [Fact] void should_keep_the_mcp_indicator() => Resource("direct-mcp").Indicators.Single().ShouldEqual("https://cratis.direct/mcp");
     [Fact] void should_keep_the_api_scopes() => Resource("direct-v1").Scopes.Select(scope => scope.Name).SequenceEqual(["direct:read", "direct:content.write", "direct:work"]).ShouldBeTrue();
-    [Fact] void should_keep_the_mcp_scopes() => Resource("direct-api").Scopes.Select(scope => scope.Name).SequenceEqual(["direct:mcp:read", "direct:mcp:content.write", "direct:mcp:work"]).ShouldBeTrue();
+    [Fact] void should_keep_the_mcp_scopes() => Resource("direct-mcp").Scopes.Select(scope => scope.Name).SequenceEqual(["direct:mcp:read", "direct:mcp:content.write", "direct:mcp:work"]).ShouldBeTrue();
     [Fact] void should_configure_both_api_tenants() => Resource("direct-v1").Tenants.Select(tenant => tenant.Id).SequenceEqual(["cratis", "second"]).ShouldBeTrue();
-    [Fact] void should_configure_both_mcp_tenants() => Resource("direct-api").Tenants.Select(tenant => tenant.Id).SequenceEqual(["cratis", "second"]).ShouldBeTrue();
+    [Fact] void should_configure_both_mcp_tenants() => Resource("direct-mcp").Tenants.Select(tenant => tenant.Id).SequenceEqual(["cratis", "second"]).ShouldBeTrue();
     [Fact] void should_keep_the_member_in_both_direct_resources() => _options.Resources.Take(2).SelectMany(resource => resource.Tenants).All(tenant => tenant.Members.SequenceEqual(["134365"])).ShouldBeTrue();
     [Fact] void should_register_studio_without_inherited_direct_scopes() => Resource("studio-api").Scopes.Single().Name.ShouldEqual("studio:read");
     [Fact] void should_keep_the_studio_indicator() => Resource("studio-api").Indicators.Single().ShouldEqual("https://cratis.studio/mcp");
