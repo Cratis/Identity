@@ -43,6 +43,11 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
             failures.Add("The secret store reload interval must be between one second and five minutes.");
         }
 
+        if (options.Tokens.IdentityTokenLifetime <= TimeSpan.Zero || options.Tokens.IdentityTokenLifetime > TimeSpan.FromHours(1))
+        {
+            failures.Add("Identity:Tokens:IdentityTokenLifetime must be positive and no greater than 01:00:00.");
+        }
+
         if (options.Tokens.AccessTokenLifetime <= TimeSpan.Zero || options.Tokens.AccessTokenLifetime > TimeSpan.FromMinutes(10))
         {
             failures.Add("Identity:Tokens:AccessTokenLifetime must be positive and no greater than 00:10:00.");

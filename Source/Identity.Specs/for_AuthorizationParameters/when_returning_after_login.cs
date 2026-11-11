@@ -13,11 +13,13 @@ public class when_returning_after_login : Specification
     [
         new("client_id", "cratis-cli"),
         new("prompt", "login consent"),
+        new("max_age", "300"),
         new("resource", "https://cratis.direct/mcp"),
         new("resource", "https://cratis.direct/v1")
     ]);
 
     [Fact] void should_remove_the_login_prompt_but_keep_other_prompts() => _result.Single(_ => _.Key == "prompt").Value.ShouldEqual("consent");
     [Fact] void should_keep_repeated_parameters() => _result.Count(_ => _.Key == "resource").ShouldEqual(2);
+    [Fact] void should_not_strip_or_rewrite_max_age() => _result.ShouldContain(new KeyValuePair<string, string>("max_age", "300"));
     [Fact] void should_keep_the_client() => _result.ShouldContain(new KeyValuePair<string, string>("client_id", "cratis-cli"));
 }

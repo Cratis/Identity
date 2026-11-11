@@ -16,6 +16,11 @@ public class TokenOptions
     public TimeSpan AccessTokenLifetime { get; set; } = TimeSpan.FromMinutes(5);
 
     /// <summary>
+    /// Gets or sets the lifetime of ID tokens. Defaults to five minutes and cannot exceed one hour.
+    /// </summary>
+    public TimeSpan IdentityTokenLifetime { get; set; } = TimeSpan.FromMinutes(5);
+
+    /// <summary>
     /// Gets or sets the lifetime of authorization codes.
     /// </summary>
     public TimeSpan AuthorizationCodeLifetime { get; set; } = TimeSpan.FromMinutes(2);

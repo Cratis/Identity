@@ -1,11 +1,11 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Cratis.Identity.Accounts;
-using Cratis.Identity.Clients.MetadataDocuments;
+using Cratis.Identity.Configuration;
 using Cratis.Identity.Tenants;
 using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore;
+using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
@@ -25,14 +25,19 @@ namespace Cratis.Identity.Authorization;
 /// <param name="consentPages">The <see cref="ConsentPages"/>.</param>
 /// <param name="applications">The <see cref="IOpenIddictApplicationManager"/>.</param>
 /// <param name="logger">The <see cref="ILogger"/>.</param>
+/// <param name="identityOptions">The validated issuance configuration.</param>
 internal class AuthorizationEndpoint(
     SignedInAccounts signedInAccounts,
     IGrantPolicy grantPolicy,
     ITenantDirectory tenants,
     ConsentPages consentPages,
     IOpenIddictApplicationManager applications,
-    ILogger<AuthorizationEndpoint> logger)
+    ILogger<AuthorizationEndpoint> logger,
+    IOptions<IdentityOptions>? identityOptions = null)
 {
+    readonly OidcAuthorization _identity = new(identityOptions?.Value ?? new(), consentPages);
+    readonly ResourceAuthorization _resource = new(tenants, consentPages, applications, logger);
+
     /// <summary>
     /// Handles an authorization request or a consent submission.
     /// </summary>
@@ -42,98 +47,32 @@ internal class AuthorizationEndpoint(
     public async Task<IResult> Handle(HttpContext context)
     {
         var request = context.GetOpenIddictServerRequest() ?? throw new OpenIddictRequestMissing(context.Request.Path);
-        var clientId = request.ClientId!;
+        if (await MaxAgeRequest.IsPresent(context.Request)) return OAuthResults.Error(Errors.InvalidRequest, "max_age is not supported");
 
         // The GitHub callback returns here after an upstream cancel or failure. OpenIddict has revalidated
         // the client and redirect URI, so it can send a safe OAuth error instead of challenging again.
-        if (context.Request.Query.ContainsKey("upstream_error"))
-        {
-            return context.Request.Query["upstream_error"] == "temporarily_unavailable"
-                ? OAuthResults.Error(Errors.TemporarilyUnavailable, "Sign-in is temporarily unavailable. Try again later.")
-                : OAuthResults.Error(Errors.AccessDenied, "Sign-in could not be completed.");
-        }
+        if (context.Request.Query.ContainsKey("upstream_error")) return UpstreamFailure(context);
 
         var signedIn = await signedInAccounts.Find(context, request);
-        if (signedIn is null)
-        {
-            return request.HasPromptValue(PromptValues.None)
-                ? OAuthResults.Error(Errors.LoginRequired, "The user is not signed in.")
-                : signedInAccounts.Challenge(context);
-        }
-
-        var account = signedIn.Account;
-        var evaluation = grantPolicy.Evaluate(new GrantRequest(request.GetScopes(), request.GetResources()));
-        if (evaluation is NotGrantable notGrantable)
-        {
-            return OAuthResults.Error(notGrantable.Error, notGrantable.Description);
-        }
-
-        var grant = ((Grantable)evaluation).Grant;
-
-        var lookup = await tenants.SelectableTenants(account, grant.Resource, context.RequestAborted);
-        if (lookup is not TenantsListed listed)
-        {
-            logger.TenantsUnavailable(account.Id, grant.Resource.Audience);
-            return OAuthResults.Error(Errors.TemporarilyUnavailable, "Tenant selection is unavailable right now. Try again later.");
-        }
-
-        var selectable = listed.Tenants.ToArray();
-        if (selectable.Length == 0)
-        {
-            logger.NoSelectableTenant(account.Id, grant.Resource.Audience);
-            return OAuthResults.Error(Errors.AccessDenied, "The account has no tenant it can use with the requested resource.");
-        }
-
-        var decision = IsConsentSubmission(context) ? context.Request.Form[ConsentForm.Decision].ToString() : null;
-        if (decision is null)
-        {
-            return request.HasPromptValue(PromptValues.None)
-                ? OAuthResults.Error(Errors.ConsentRequired, "The user must approve the request interactively.")
-                : consentPages.Render(context, await ConsentFor(context, account, grant, selectable));
-        }
-
-        if (!await consentPages.IsValidSubmission(context))
-        {
-            return Results.BadRequest("The consent form expired or did not come from this browser session. Start the sign-in again.");
-        }
-
-        if (!string.Equals(decision, ConsentForm.Allow, StringComparison.Ordinal))
-        {
-            logger.ConsentDenied(account.Id, clientId);
-            return OAuthResults.Error(Errors.AccessDenied, "The user denied the request.");
-        }
-
-        var tenantId = context.Request.Form[ConsentForm.Tenant].ToString();
-        var tenant = selectable.FirstOrDefault(_ => string.Equals(_.Id, tenantId, StringComparison.Ordinal));
-        if (tenant is null)
-        {
-            var consent = await ConsentFor(context, account, grant, selectable);
-            return consentPages.Render(context, consent with { Error = "Select one of the listed tenants." });
-        }
-
-        logger.ConsentGranted(account.Id, clientId, grant.Resource.Audience, tenant.Id, string.Join(' ', grant.Scopes));
-        return OAuthResults.Issue(AccessTokenIdentity.Create(account, clientId, grant, tenant, signedIn.AuthTime));
+        if (signedIn is null) return RequireLogin(context, request);
+        return await Authorize(context, request, signedIn);
     }
 
-    static bool IsConsentSubmission(HttpContext context) =>
-        HttpMethods.IsPost(context.Request.Method) && context.Request.HasFormContentType && context.Request.Form.ContainsKey(ConsentForm.Decision);
+    static IResult UpstreamFailure(HttpContext context) =>
+        context.Request.Query["upstream_error"] == "temporarily_unavailable"
+            ? OAuthResults.Error(Errors.TemporarilyUnavailable, "Sign-in is temporarily unavailable. Try again later.")
+            : OAuthResults.Error(Errors.AccessDenied, "Sign-in could not be completed.");
 
-    async Task<Consent> ConsentFor(HttpContext context, Account account, Grant grant, IEnumerable<SelectableTenant> selectable)
+    IResult RequireLogin(HttpContext context, OpenIddictRequest request) =>
+        request.HasPromptValue(PromptValues.None)
+            ? OAuthResults.Error(Errors.LoginRequired, "The user is not signed in.")
+            : signedInAccounts.Challenge(context);
+
+    async Task<IResult> Authorize(HttpContext context, OpenIddictRequest request, SignedInAccount signedIn)
     {
-        var request = context.GetOpenIddictServerRequest() ?? throw new OpenIddictRequestMissing(context.Request.Path);
-        var application = await applications.FindByClientIdAsync(request.ClientId!, context.RequestAborted) ?? throw new ClientNotRegistered(request.ClientId!);
-        var name = await applications.GetDisplayNameAsync(application, context.RequestAborted) ?? request.ClientId!;
-        var properties = await applications.GetPropertiesAsync(application, context.RequestAborted);
-        var host = properties?.ContainsKey(MetadataDescriptor.Provenance) == true ? new Uri(request.ClientId!).IdnHost : null;
-        if (host is not null) logger.Consent(host);
-        return new Consent(
-            request.ClientId!,
-            name,
-            new Uri(request.RedirectUri!),
-            grant,
-            selectable,
-            account,
-            AuthorizationParameters.From(context.Request),
-            ClientIdentityHost: host);
+        var evaluation = grantPolicy.Evaluate(new GrantRequest(request.GetScopes(), request.GetResources(), request.ClientId));
+        if (evaluation is NotGrantable notGrantable) return OAuthResults.Error(notGrantable.Error, notGrantable.Description);
+        if (evaluation is IdentityOnlyGrant identityGrant) return await _identity.Authorize(context, signedIn, identityGrant);
+        return await _resource.Authorize(context, signedIn, ((Grantable)evaluation).Grant);
     }
 }

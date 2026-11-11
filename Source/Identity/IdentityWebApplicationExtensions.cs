@@ -4,11 +4,13 @@
 using System.Net;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Authorization.RateLimiting;
+using Cratis.Identity.Configuration;
 using Cratis.Identity.Device;
 using Cratis.Identity.Hosting;
 using Cratis.Identity.Realm;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.AspNetCore.Builder;
 
@@ -61,12 +63,25 @@ public static class IdentityWebApplicationExtensions
             .DisableAntiforgery();
         group.MapPost("/connect/token", (HttpContext context, TokenEndpoint endpoint) => endpoint.Handle(context))
             .DisableAntiforgery();
+        MapOidc(app, group, options);
         if (options.MapSignOut)
         {
             MapSignOut(app, $"{options.RoutePrefix}/logout");
         }
 
         return app;
+    }
+
+    static void MapOidc(IEndpointRouteBuilder app, RouteGroupBuilder group, IdentityEndpointOptions endpoints)
+    {
+        var options = app.ServiceProvider.GetRequiredService<IOptions<IdentityOptions>>().Value;
+        app.MapGet("/.well-known/openid-configuration", () => string.IsNullOrWhiteSpace(options.Issuer)
+            ? Results.NotFound()
+            : Results.Json(OidcProviderMetadata.Create(options, endpoints)));
+        if (options.Oidc.IssuanceEnabled)
+        {
+            group.MapMethods("/connect/userinfo", [HttpMethods.Get, HttpMethods.Post], (HttpContext context, UserInfoEndpoint endpoint) => endpoint.Handle(context)).DisableAntiforgery();
+        }
     }
 
     static void MapSignOut(IEndpointRouteBuilder app, string path)
