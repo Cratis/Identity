@@ -30,6 +30,7 @@ internal static class EndSessionServerExtensions
                     context.SkipRequest();
                     return ValueTask.CompletedTask;
                 }))
+
             // Degraded mode requires a custom validator. Extraction hands requests to our endpoint;
             // if that handoff ever stops running, reject rather than authorize an OpenIddict redirect.
             .AddEventHandler<ValidateEndSessionRequestContext>(builder => builder
