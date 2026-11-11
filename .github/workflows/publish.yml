@@ -37,12 +37,15 @@ on:
       - "Directory.*.targets"
 
 permissions:
-  issues: write
-  contents: write
-  packages: write
+  contents: read
 
 jobs:
   release:
+    # Only main releases, also for a manual dispatch from another branch.
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      issues: write
+      contents: write
     runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}
     timeout-minutes: 30
     outputs:
@@ -68,7 +71,7 @@ jobs:
   publish-image:
     name: Publish hosted-shared image
     needs: release
-    if: needs.release.outputs.publish == 'true' && vars.CRATIS_ID_IMAGE_PUBLISH_ENABLED == 'true'
+    if: github.ref == 'refs/heads/main' && needs.release.outputs.publish == 'true' && vars.CRATIS_ID_IMAGE_PUBLISH_ENABLED == 'true'
     runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}
     timeout-minutes: 30
     permissions:
