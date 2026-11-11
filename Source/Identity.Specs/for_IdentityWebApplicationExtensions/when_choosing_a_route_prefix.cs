@@ -37,7 +37,7 @@ public class when_choosing_a_route_prefix : given.an_identity_host
         server.IntrospectionEndpointUris.Single().OriginalString.ShouldEqual($"{prefix}/connect/introspect".TrimStart('/'));
         server.Issuer.AbsoluteUri.ShouldEqual("https://identity.example/");
         ((IEndpointRouteBuilder)app).DataSources.SelectMany(source => source.Endpoints).Cast<RouteEndpoint>()
-            .Select(route => route.RoutePattern.RawText).ShouldContainOnly($"{prefix}/connect/authorize", $"{prefix}/connect/token", "/.well-known/openid-configuration");
+            .Select(route => route.RoutePattern.RawText).ShouldContainOnly($"{prefix}/connect/authorize", $"{prefix}/connect/token", $"{prefix}/connect/endsession", "/.well-known/openid-configuration");
     }
 
     [Theory]

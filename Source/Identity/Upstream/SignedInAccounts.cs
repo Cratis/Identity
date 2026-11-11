@@ -16,7 +16,8 @@ namespace Cratis.Identity.Upstream;
 /// </summary>
 /// <param name="accounts">The active-account reader.</param>
 /// <param name="upstream">The <see cref="UpstreamLoginOptions"/>.</param>
-internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginOptions> upstream)
+/// <param name="time">The clock used to evaluate the requested maximum authentication age, or the system clock when omitted.</param>
+internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginOptions> upstream, TimeProvider? time = null)
 {
     /// <summary>
     /// Finds the account signed in to the Identity site for an authorization request.
@@ -32,15 +33,20 @@ internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginO
             return null;
         }
 
+        if (string.IsNullOrWhiteSpace(SessionPrincipal.SessionId(session.Principal)))
+        {
+            return null;
+        }
+
         var accountId = SessionPrincipal.AccountId(session.Principal);
         var authTime = SessionPrincipal.AuthTime(session.Principal);
-        if (authTime is null || !AccountSubject.TryParse(accountId, out var subject))
+        if (authTime is null || !TryGetReusableSubject(request, authTime.Value, accountId, out var subject))
         {
             return null;
         }
 
         var account = await accounts.FindActive(subject!, context.RequestAborted);
-        return account is null ? null : new SignedInAccount(account, authTime.Value);
+        return account is null ? null : new SignedInAccount(account, authTime.Value, SessionPrincipal.SessionId(session.Principal));
     }
 
     /// <summary>
@@ -55,4 +61,13 @@ internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginO
         var returnUrl = $"{context.Request.PathBase}{context.Request.Path}{QueryString.Create(parameters)}";
         return Results.Challenge(new AuthenticationProperties { RedirectUri = returnUrl }, [upstream.Value.Scheme]);
     }
+
+    bool TryGetReusableSubject(OpenIddictRequest request, DateTimeOffset authTime, string? accountId, out AccountSubject? subject)
+    {
+        subject = null;
+        return !RequiresReauthentication(request, authTime) && AccountSubject.TryParse(accountId, out subject);
+    }
+
+    bool RequiresReauthentication(OpenIddictRequest request, DateTimeOffset authTime) =>
+        request.MaxAge is { } maximum && (maximum == 0 || ((time ?? TimeProvider.System).GetUtcNow() - authTime).TotalSeconds > maximum);
 }

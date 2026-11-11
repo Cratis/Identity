@@ -85,6 +85,8 @@ descriptor|Cratis.Identity.Revocation.ReconcileRecovery|Scoped|Cratis.Identity.R
 descriptor|Cratis.Identity.Revocation.ReconcileReservation|Scoped|Cratis.Identity.Revocation.ReconcileReservation
 descriptor|Cratis.Identity.Revocation.RecoveryGate|Singleton|Cratis.Identity.Revocation.RecoveryGate
 descriptor|Cratis.Identity.Revocation.RecoverySession|Singleton|Cratis.Identity.Revocation.RecoverySession
+descriptor|Cratis.Identity.Sessions.EndSessionEndpoint|Scoped|Cratis.Identity.Sessions.EndSessionEndpoint
+descriptor|Cratis.Identity.Sessions.EndSessionHintValidator|Scoped|Cratis.Identity.Sessions.EndSessionHintValidator
 descriptor|Cratis.Identity.Storage.StorageIndexes|Singleton|Cratis.Identity.Storage.StorageIndexes
 descriptor|Cratis.Identity.Tenants.ConfiguredTenantDirectory|Singleton|Cratis.Identity.Tenants.ConfiguredTenantDirectory
 descriptor|Cratis.Identity.Tenants.ITenantDirectory|Singleton|Cratis.Identity.Tenants.TenantDirectory
@@ -160,6 +162,7 @@ descriptor|Microsoft.Extensions.ObjectPool.ObjectPoolProvider|Singleton|Microsof
 descriptor|Microsoft.Extensions.ObjectPool.ObjectPool`1[[Microsoft.AspNetCore.Antiforgery.AntiforgerySerializationContext, Microsoft.AspNetCore.Antiforgery, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Singleton|factory
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Cratis.Identity.Clients.ClientSecretOptions, Cratis.Identity, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Cratis.Identity.Configuration.DeviceGrantOptions, Cratis.Identity, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]|Singleton|instance
+descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Cratis.Identity.Configuration.EndSessionOptions, Cratis.Identity, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Cratis.Identity.Configuration.IdentityOptions, Cratis.Identity, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Cratis.Identity.ConsentFlow.ConsentActivationOptions, Cratis.Identity, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.AspNetCore.Antiforgery.AntiforgeryOptions, Microsoft.AspNetCore.Antiforgery, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Singleton|instance
@@ -184,6 +187,7 @@ descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.Extension
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.Extensions.Http.HttpClientFactoryOptions, Microsoft.Extensions.Http, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.Extensions.Http.HttpClientFactoryOptions, Microsoft.Extensions.Http, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.Extensions.Logging.LoggerFilterOptions, Microsoft.Extensions.Logging, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Singleton|instance
+descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.Extensions.Options.StartupValidatorOptions, Microsoft.Extensions.Options, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Transient|factory
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.Extensions.Options.StartupValidatorOptions, Microsoft.Extensions.Options, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Transient|factory
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.Extensions.Options.StartupValidatorOptions, Microsoft.Extensions.Options, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Transient|factory
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.Extensions.Options.StartupValidatorOptions, Microsoft.Extensions.Options, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Transient|factory
@@ -222,9 +226,13 @@ descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.O
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
+descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
+descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
+descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Transient|factory
 descriptor|Microsoft.Extensions.Options.IOptionsChangeTokenSource`1[[Cratis.Identity.Clients.ClientSecretOptions, Cratis.Identity, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IOptionsChangeTokenSource`1[[Cratis.Identity.Configuration.DeviceGrantOptions, Cratis.Identity, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]|Singleton|instance
+descriptor|Microsoft.Extensions.Options.IOptionsChangeTokenSource`1[[Cratis.Identity.Configuration.EndSessionOptions, Cratis.Identity, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IOptionsChangeTokenSource`1[[Cratis.Identity.Configuration.IdentityOptions, Cratis.Identity, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IOptionsChangeTokenSource`1[[Cratis.Identity.ConsentFlow.ConsentActivationOptions, Cratis.Identity, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IOptionsFactory`1|Transient|Microsoft.Extensions.Options.OptionsFactory`1
@@ -248,6 +256,7 @@ descriptor|Microsoft.Extensions.Options.IPostConfigureOptions`1[[OpenIddict.Serv
 descriptor|Microsoft.Extensions.Options.IStartupValidator|Transient|Microsoft.Extensions.Options.StartupValidator
 descriptor|Microsoft.Extensions.Options.IValidateOptions`1[[Cratis.Identity.Clients.ClientSecretOptions, Cratis.Identity, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IValidateOptions`1[[Cratis.Identity.Clients.ClientSecretOptions, Cratis.Identity, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]|Singleton|instance
+descriptor|Microsoft.Extensions.Options.IValidateOptions`1[[Cratis.Identity.Configuration.EndSessionOptions, Cratis.Identity, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IValidateOptions`1[[Cratis.Identity.Configuration.IdentityOptions, Cratis.Identity, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]|Singleton|Cratis.Identity.Configuration.IdentityOptionsValidation
 descriptor|Microsoft.Extensions.Options.IValidateOptions`1[[Cratis.Identity.ConsentFlow.ConsentActivationOptions, Cratis.Identity, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IValidateOptions`1[[Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions, Microsoft.AspNetCore.Authentication.Cookies, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Singleton|instance
@@ -439,7 +448,9 @@ descriptor|OpenIddict.Server.OpenIddictServerHandlerFilters+RequireTokenStorageE
 descriptor|OpenIddict.Server.OpenIddictServerHandlerFilters+RequireUserCodeGenerated|Singleton|OpenIddict.Server.OpenIddictServerHandlerFilters+RequireUserCodeGenerated
 descriptor|OpenIddict.Server.OpenIddictServerHandlerFilters+RequireUserCodeValidated|Singleton|OpenIddict.Server.OpenIddictServerHandlerFilters+RequireUserCodeValidated
 descriptor|OpenIddict.Server.OpenIddictServerHandlerFilters+RequireUserInfoRequest|Singleton|OpenIddict.Server.OpenIddictServerHandlerFilters+RequireUserInfoRequest
+descriptor|OpenIddict.Server.OpenIddictServerHandler`1[[OpenIddict.Server.OpenIddictServerEvents+ExtractEndSessionRequestContext, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 descriptor|OpenIddict.Server.OpenIddictServerHandler`1[[OpenIddict.Server.OpenIddictServerEvents+ValidateAuthorizationRequestContext, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
+descriptor|OpenIddict.Server.OpenIddictServerHandler`1[[OpenIddict.Server.OpenIddictServerEvents+ValidateEndSessionRequestContext, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 descriptor|OpenIddict.Server.OpenIddictServerHandler`1[[OpenIddict.Server.OpenIddictServerEvents+ValidateTokenRequestContext, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 descriptor|OpenIddict.Server.OpenIddictServerHandlers+AttachAuthorization|Scoped|OpenIddict.Server.OpenIddictServerHandlers+AttachAuthorization
 descriptor|OpenIddict.Server.OpenIddictServerHandlers+AttachCustomChallengeParameters|Singleton|OpenIddict.Server.OpenIddictServerHandlers+AttachCustomChallengeParameters
@@ -788,9 +799,13 @@ repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.Extensions.
 repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.Extensions.Options.StartupValidatorOptions, Microsoft.Extensions.Options, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Transient|factory
 repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.Extensions.Options.StartupValidatorOptions, Microsoft.Extensions.Options, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Transient|factory
 repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.Extensions.Options.StartupValidatorOptions, Microsoft.Extensions.Options, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Transient|factory
+repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.Extensions.Options.StartupValidatorOptions, Microsoft.Extensions.Options, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Transient|factory
 repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreOptions, OpenIddict.Server.AspNetCore, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreOptions, OpenIddict.Server.AspNetCore, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreOptions, OpenIddict.Server.AspNetCore, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
+repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
+repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
+repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance

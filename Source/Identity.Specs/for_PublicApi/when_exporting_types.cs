@@ -25,6 +25,7 @@ public class when_exporting_types : Specification
             typeof(AccountsOptions),
             typeof(DeviceGrantOptions),
             typeof(DPoPOptions),
+            typeof(EndSessionOptions),
             typeof(ExternalIssuerOptions),
             typeof(GitHubOptions),
             typeof(IdentityEndpointOptions),

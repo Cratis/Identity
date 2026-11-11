@@ -60,6 +60,9 @@ public class IdentityOptions
     /// <summary>Gets or sets token-endpoint DPoP sender binding.</summary>
     public DPoPOptions DPoP { get; set; } = new();
 
+    /// <summary>Gets or sets the end-session hint limits.</summary>
+    public EndSessionOptions Sessions { get; set; } = new();
+
     /// <summary>
     /// Gets or sets the lifetime of the Identity site session cookie.
     /// </summary>

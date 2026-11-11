@@ -17,6 +17,7 @@ using Cratis.Identity.Protocol;
 using Cratis.Identity.Realm;
 using Cratis.Identity.Resources;
 using Cratis.Identity.Revocation;
+using Cratis.Identity.Sessions;
 using Cratis.Identity.Storage;
 using Cratis.Identity.Tenants;
 using Cratis.Identity.Upstream;
@@ -114,6 +115,7 @@ internal static class IdentityServiceCollectionExtensions
         services.AddConsentActivation(configuration.GetSection("Identity:ConsentActivation"));
 
         services.AddSessionAndUpstreamLogin(environment);
+        services.AddEndSession(section);
         services.AddIdentityAuthorization();
         services.AddAuthorizationServer(startupOptions, configuration, environment);
         services.AddDPoP(startupOptions.DPoP.Enabled);
@@ -183,6 +185,7 @@ internal static class IdentityServiceCollectionExtensions
             .SetTokenEndpointUris($"{routePrefix}/connect/token".TrimStart('/'))
             .SetRevocationEndpointUris($"{routePrefix}/connect/revocation".TrimStart('/'))
             .SetIntrospectionEndpointUris($"{routePrefix}/connect/introspect".TrimStart('/'))
+            .AddEndSessionEndpoint(routePrefix, options)
             .AllowAuthorizationCodeFlow()
             .AllowRefreshTokenFlow()
             .AddTokenExchangeFlow(options)

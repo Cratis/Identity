@@ -136,9 +136,12 @@ A resource server must validate `iss`, the signature against the JWKS, `aud`, `e
 | `GET /.well-known/jwks` | Public signing keys. |
 | `GET /signin-github` | GitHub OAuth callback. Register it on the GitHub OAuth app. |
 | `GET/POST /logout` (opt-in) | Identity site cookie sign-out: GET serves an antiforgery-protected form; POST clears the session cookie. This does not revoke CLI grants. |
+| `GET/POST /connect/endsession` (explicit issuer required) | RP-initiated sign-out of this Identity browser session only. No grant revocation, relying-party session termination or back-channel logout. |
 | `GET /healthz` (host-owned) | Liveness in the sample and Cratis ID hosts, not mapped by the package. |
 
 Set `Identity:Endpoints:RoutePrefix` before `AddCratisIdentity` to move the four `/connect/*` endpoints and optional `/logout`, for example to `/id/connect/token`. The default is empty. Prefixes must be at most 128 ASCII unreserved path characters, start with one `/`, and have no trailing slash, empty or dot segments, escapes, whitespace, query, fragment or backslash. `/.well-known`, `/signin-github`, `/healthz` and `/readyz` prefixes are reserved (including descendants). Invalid shapes fail registration and mapping. A mapping delegate that supplies a different prefix fails rather than diverging from OpenIddict. Discovery/JWKS, the issuer and the registered GitHub callback remain unprefixed. Arc-generated API routes also stay at their original paths; realm matching does not prepend the protocol prefix to them. GitHub sign-in failure or denial may resume only at `{PathBase}{RoutePrefix}/connect/authorize?…`, using the registered endpoint options.
+
+End-session uses the same route prefix and is not registered or mapped without explicit `Identity:Issuer`, including in development. Hints are validated against `OpenIddictServerOptions.Issuer`, never request headers. A redirect requires a verified ID-token hint for a client with both the `openid` scope permission and the end-session endpoint permission, plus an exact registered post-logout redirect URI for that client. GET completion requires a session-bound verified hint to avoid confirmation; POST completion requires valid antiforgery. `/logout` remains unchanged. This wiring does not enable OIDC token issuance.
 
 The validated prefix is available through `IOptions<IdentityEndpointOptions>` for token-endpoint middleware, including rate limiting. This base has no token limiter; this is its integration boundary, not a claim that prefixed limiting has been verified. A limiter added later must match `{RoutePrefix}/connect/token` using those options.
 
@@ -165,6 +168,7 @@ Everything is under the `Identity` section (environment variables use `Identity_
 | `Tokens:RefreshTokenLifetime` | `30.00:00:00` | Absolute lifetime of a refresh-token family. |
 | `TokenExchange` | none | `Issuers[]` and `Clients[]` for token exchange; nothing is enabled until both are configured. See [Token exchange](Documentation/token-exchange.md). |
 | `SessionLifetime` | `01:00:00` | The Identity site session cookie; not sliding. |
+| `Sessions:EndSessionHintMaxAge` | `1.00:00:00` | Maximum ID-token hint age since issuance, including expired hints. Must be positive; validated at startup. Available as `IdentityOptions.Sessions`. |
 | `DeviceGrant:Enabled` | `true` | Enables the RFC 8628 device authorization grant for `cratis-cli`. |
 | `DeviceGrant:CodeLifetime` | `00:10:00` | User and device codes expire together, between one and fifteen minutes; approval does not extend this deadline. |
 | `DeviceGrant:PollingInterval` | `00:00:05` | Whole seconds, between five and sixty. Each early poll adds five seconds to subsequent intervals (`slow_down`). |

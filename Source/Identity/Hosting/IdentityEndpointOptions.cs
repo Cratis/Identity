@@ -20,6 +20,9 @@ public class IdentityEndpointOptions
     /// </summary>
     public bool MapSignOut { get; set; }
 
+    /// <summary>Gets whether an explicit issuer enabled end-session at registration.</summary>
+    internal bool EndSessionEnabled { get; init; }
+
     /// <summary>Gets or sets whether endpoint mapping has finalized the sign-out setting.</summary>
     internal bool IsMapped { get; set; }
 
