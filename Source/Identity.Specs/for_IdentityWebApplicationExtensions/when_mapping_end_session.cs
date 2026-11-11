@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using OpenIddict.Abstractions;
 using OpenIddict.Server;
 using static OpenIddict.Server.OpenIddictServerEvents;
 
@@ -37,6 +38,7 @@ public class when_mapping_end_session : given.an_identity_host
     public async Task should_not_activate_end_session_without_an_explicit_issuer()
     {
         var builder = CreateBuilder();
+        builder.Configuration["Identity:Issuer"] = null;
         builder.AddCratisIdentity();
         await using var app = builder.Build();
         app.MapCratisIdentity();
@@ -45,6 +47,47 @@ public class when_mapping_end_session : given.an_identity_host
         var server = app.Services.GetRequiredService<IOptions<OpenIddictServerOptions>>().Value;
         server.EndSessionEndpointUris.ShouldBeEmpty();
         server.Handlers.Exists(handler => handler.ContextType == typeof(ExtractEndSessionRequestContext) && handler.Order == int.MinValue + 100).ShouldBeFalse();
+        server.Handlers.Exists(handler => handler.ContextType == typeof(ValidateEndSessionRequestContext) && handler.Order == int.MinValue + 100).ShouldBeFalse();
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task should_freeze_end_session_activation_at_registration(bool enabled)
+    {
+        var builder = CreateBuilder();
+        builder.Configuration["Identity:Issuer"] = enabled ? "https://identity.example/" : null;
+        builder.AddCratisIdentity();
+        builder.Configuration["Identity:Issuer"] = enabled ? null : "https://identity.example/";
+        await using var app = builder.Build();
+        app.MapCratisIdentity();
+        var routes = ((IEndpointRouteBuilder)app).DataSources.SelectMany(source => source.Endpoints).Cast<RouteEndpoint>().ToArray();
+        routes.Any(route => route.RoutePattern.RawText == "/connect/endsession").ShouldEqual(enabled);
+        var server = app.Services.GetRequiredService<IOptions<OpenIddictServerOptions>>().Value;
+        (server.EndSessionEndpointUris.Count != 0).ShouldEqual(enabled);
+    }
+
+    [Fact]
+    public async Task should_reject_end_session_if_openiddict_validation_is_reached()
+    {
+        var builder = CreateBuilder();
+        builder.AddCratisIdentity();
+        await using var app = builder.Build();
+        var server = app.Services.GetRequiredService<IOptions<OpenIddictServerOptions>>().Value;
+        var descriptor = server.Handlers.Single(handler => handler.ContextType == typeof(ValidateEndSessionRequestContext) && handler.Order == int.MinValue + 100);
+        var handler = (IOpenIddictServerHandler<ValidateEndSessionRequestContext>)app.Services.GetRequiredService(descriptor.ServiceDescriptor.ServiceType);
+        var context = new ValidateEndSessionRequestContext(new OpenIddictServerTransaction
+        {
+            Options = server,
+            Logger = NullLogger.Instance,
+            EndpointType = OpenIddictServerEndpointType.EndSession,
+            Request = new OpenIddictRequest { PostLogoutRedirectUri = "https://untrusted.example/logout" }
+        });
+        await handler.HandleAsync(context);
+        context.IsRejected.ShouldBeTrue();
+        context.Error.ShouldEqual(OpenIddictConstants.Errors.InvalidRequest);
+        context.IsRequestSkipped.ShouldBeFalse();
+        context.IsRequestHandled.ShouldBeFalse();
     }
 
     [Fact]

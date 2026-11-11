@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Configuration;
+using OpenIddict.Abstractions;
 using static OpenIddict.Server.OpenIddictServerEvents;
 
 namespace Cratis.Identity.Sessions;
@@ -27,6 +28,15 @@ internal static class EndSessionServerExtensions
                 .UseInlineHandler(context =>
                 {
                     context.SkipRequest();
+                    return ValueTask.CompletedTask;
+                }))
+            // Degraded mode requires a custom validator. Extraction hands requests to our endpoint;
+            // if that handoff ever stops running, reject rather than authorize an OpenIddict redirect.
+            .AddEventHandler<ValidateEndSessionRequestContext>(builder => builder
+                .SetOrder(int.MinValue + 100)
+                .UseInlineHandler(context =>
+                {
+                    context.Reject(error: OpenIddictConstants.Errors.InvalidRequest);
                     return ValueTask.CompletedTask;
                 }));
     }

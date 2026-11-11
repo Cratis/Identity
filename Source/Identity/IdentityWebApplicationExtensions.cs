@@ -62,7 +62,7 @@ public static class IdentityWebApplicationExtensions
             .DisableAntiforgery();
         group.MapPost("/connect/token", (HttpContext context, TokenEndpoint endpoint) => endpoint.Handle(context))
             .DisableAntiforgery();
-        if (!string.IsNullOrWhiteSpace(app.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<Cratis.Identity.Configuration.IdentityOptions>>().Value.Issuer))
+        if (options.EndSessionEnabled)
         {
             group.MapMethods("/connect/endsession", [HttpMethods.Get, HttpMethods.Post], (HttpContext context, EndSessionEndpoint endpoint) => endpoint.Handle(context))
                 .DisableAntiforgery();
