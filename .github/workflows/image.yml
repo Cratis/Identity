@@ -61,6 +61,9 @@ jobs:
           DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
         with:
           global-json-file: global.json
+          dotnet-version: |
+            10.0.x
+            11.0.x
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
@@ -85,7 +88,7 @@ jobs:
           CRATIS_ID_IMAGE_SMOKE_ENABLED: 'true'
           CRATIS_ID_IMAGE_SMOKE_IMAGE: cratis-id:ci
         run: >-
-          ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs
+          ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs
           -class Cratis.Identity.Integration.for_Host.when_starting_the_cratis_id_image
           -class Cratis.Identity.Integration.for_Host.when_starting_the_cratis_id_image_without_configuration
 

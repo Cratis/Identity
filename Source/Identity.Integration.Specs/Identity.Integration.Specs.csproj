@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <RootNamespace>Cratis.Identity.Integration</RootNamespace>
     <AssemblyName>Cratis.Identity.Integration.Specs</AssemblyName>
     <IsPackable>false</IsPackable>

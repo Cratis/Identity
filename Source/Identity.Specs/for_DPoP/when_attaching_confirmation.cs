@@ -34,7 +34,7 @@ public class when_attaching_confirmation : Specification
 
     [Fact] void should_use_the_dpop_response_scheme() => _response.TokenType.ShouldEqual("DPoP");
     [Fact] void should_emit_a_json_object_claim() => _context.AccessTokenPrincipal.FindFirst("cnf").ValueType.ShouldEqual("JSON");
-    [Fact] void should_carry_the_thumbprint() => JsonDocument.Parse(_context.AccessTokenPrincipal.GetClaim("cnf")).RootElement.GetProperty("jkt").GetString().ShouldEqual("synthetic-thumbprint");
+    [Fact] void should_carry_the_thumbprint() => JsonElement.Parse(_context.AccessTokenPrincipal.GetClaim("cnf")).GetProperty("jkt").GetString().ShouldEqual("synthetic-thumbprint");
     [Fact] void should_not_add_confirmation_to_the_id_token() => _context.IdentityTokenPrincipal.HasClaim(claim => claim.Type == "cnf").ShouldBeFalse();
     [Fact] void should_not_add_confirmation_to_the_refresh_token() => _context.RefreshTokenPrincipal.HasClaim(claim => claim.Type == "cnf").ShouldBeFalse();
     [Fact] void should_not_add_confirmation_to_the_shared_principal() => _context.Principal.HasClaim(claim => claim.Type == "cnf").ShouldBeFalse();

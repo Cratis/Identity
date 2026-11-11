@@ -141,7 +141,7 @@ public partial class Browser(HttpClient client)
 
         using var response = await client.SendAsync(request);
         var text = await response.Content.ReadAsStringAsync();
-        return (response.StatusCode, text.Length == 0 ? default : JsonDocument.Parse(text).RootElement.Clone());
+        return (response.StatusCode, text.Length == 0 ? default : JsonElement.Parse(text));
     }
 
     /// <summary>
