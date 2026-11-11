@@ -10,8 +10,7 @@ namespace Cratis.Identity.for_OidcSigningKey;
 
 public class when_choosing_the_id_token_key : Specification
 {
-    X509Certificate2 _rsa;
-    X509Certificate2 _ec;
+    List<X509Certificate2> _certificates = [];
     RealmKey _current;
     RealmKey _older;
     RealmKey _expired;
@@ -22,15 +21,12 @@ public class when_choosing_the_id_token_key : Specification
     void Establish()
     {
         _now = KeyMaterial.Now;
-        var rsa = KeyMaterial.CurrentRsa();
-        var ec = KeyMaterial.Ec(_now.AddHours(-2), _now.AddDays(1));
-        _rsa = X509Certificate2.CreateFromPem(rsa.Certificate, rsa.Key);
-        _ec = X509Certificate2.CreateFromPem(ec.Certificate, ec.Key);
-        _current = new("rsa-current", KeyPurpose.Signing, _rsa, SecurityAlgorithms.RsaSha256, _now - KeyEligibility.PrePublication - TimeSpan.FromHours(1), _now.AddDays(1));
-        _older = _current with { Kid = "rsa-older", NotBefore = _current.NotBefore.AddDays(-1) };
-        _expired = _current with { Kid = "rsa-expired", NotAfter = _now };
-        _prepublished = _current with { Kid = "rsa-future", NotBefore = _now };
-        _elliptic = _current with { Kid = "ec-current", Certificate = _ec, Algorithm = SecurityAlgorithms.EcdsaSha256 };
+        var activated = _now - KeyEligibility.PrePublication - TimeSpan.FromHours(1);
+        _current = Key("rsa-current", KeyMaterial.Rsa(activated, _now.AddDays(1)));
+        _older = Key("rsa-older", KeyMaterial.Rsa(activated.AddDays(-1), _now.AddDays(1)));
+        _expired = Key("rsa-expired", KeyMaterial.Rsa(activated, _now));
+        _prepublished = Key("rsa-future", KeyMaterial.Rsa(_now, _now.AddDays(1)));
+        _elliptic = Key("ec-current", KeyMaterial.Ec(_now.AddHours(-2), _now.AddDays(1)), SecurityAlgorithms.EcdsaSha256);
     }
 
     [Fact] void should_choose_the_newest_eligible_rsa() => OidcSigningKey.Select([_older, _current, _expired, _prepublished, _elliptic], _now).ShouldEqual(_current);
@@ -41,7 +37,13 @@ public class when_choosing_the_id_token_key : Specification
 
     void Destroy()
     {
-        _rsa.Dispose();
-        _ec.Dispose();
+        foreach (var certificate in _certificates) certificate.Dispose();
+    }
+
+    RealmKey Key(string kid, PemPair material, string algorithm = SecurityAlgorithms.RsaSha256)
+    {
+        var certificate = X509Certificate2.CreateFromPem(material.Certificate, material.Key);
+        _certificates.Add(certificate);
+        return new(kid, kid, certificate, KeyPurpose.Signing, algorithm);
     }
 }

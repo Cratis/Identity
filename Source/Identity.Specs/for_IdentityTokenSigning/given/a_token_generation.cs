@@ -55,7 +55,7 @@ public class a_token_generation : for_OidcIdentity.given.an_identity_grant
     protected async Task Generate()
     {
         await _handler.HandleAsync(_context);
-        var handler = new JsonWebTokenHandler();
+        var handler = new JsonWebTokenHandler { SetDefaultTimesOnTokenCreation = false };
         var token = handler.CreateToken(_context.SecurityTokenDescriptor);
         _jwt = handler.ReadJsonWebToken(token);
         _payload = JsonDocument.Parse(Base64UrlEncoder.Decode(_jwt.EncodedPayload)).RootElement.Clone();
@@ -63,7 +63,10 @@ public class a_token_generation : for_OidcIdentity.given.an_identity_grant
         {
             ValidIssuer = "https://identity.example/", ValidAudience = ClientId,
             IssuerSigningKey = new RsaSecurityKey(_rsa), ValidAlgorithms = [SecurityAlgorithms.RsaSha256],
-            ValidTypes = ["JWT"], ValidateLifetime = false
+            ValidTypes = ["JWT"], ValidateLifetime = true,
+            LifetimeValidator = (notBefore, expires, _, _) =>
+                expires > AuthTime.UtcDateTime &&
+                (!notBefore.HasValue || notBefore.Value <= AuthTime.UtcDateTime)
         });
         _signatureValid = validated.IsValid;
     }

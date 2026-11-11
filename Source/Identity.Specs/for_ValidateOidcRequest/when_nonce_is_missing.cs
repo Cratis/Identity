@@ -26,7 +26,7 @@ public class when_nonce_is_missing : Specification
             Options = new(),
             Request = new OpenIddictRequest { ClientId = "oidc-web", Scope = "openid profile" },
             Response = new()
-        }) { ClientId = "oidc-web" };
+        });
     }
 
     async Task Because() => await _handler.HandleAsync(_context);

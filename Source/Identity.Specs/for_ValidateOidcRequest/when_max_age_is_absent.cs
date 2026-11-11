@@ -31,12 +31,12 @@ public class when_max_age_is_absent : Specification
                 Response = new()
             };
             transaction.SetProperty(typeof(HttpRequest).FullName!, new WeakReference<HttpRequest>(http.Request));
-            var context = new ValidateAuthorizationRequestContext(transaction) { ClientId = "oidc-web" };
+            var context = new ValidateAuthorizationRequestContext(transaction);
             await handler.HandleAsync(context);
             _contexts.Add(context);
         }
     }
 
-    [Fact] void should_leave_a_valid_identity_request_unchanged() => _contexts.All(context => !context.IsRejected).ShouldBeTrue();
-    [Fact] void should_not_supply_an_error() => _contexts.All(context => context.Error is null).ShouldBeTrue();
+    [Fact] void should_leave_a_valid_identity_request_unchanged() => _contexts.TrueForAll(context => !context.IsRejected).ShouldBeTrue();
+    [Fact] void should_not_supply_an_error() => _contexts.TrueForAll(context => context.Error is null).ShouldBeTrue();
 }

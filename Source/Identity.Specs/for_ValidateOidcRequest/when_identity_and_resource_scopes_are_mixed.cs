@@ -36,5 +36,5 @@ public class when_identity_and_resource_scopes_are_mixed : Specification
         Options = new(),
         Request = new OpenIddictRequest { ClientId = "oidc-web", Scope = scope, Nonce = "request-nonce" },
         Response = new()
-    }) { ClientId = "oidc-web" };
+    });
 }

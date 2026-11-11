@@ -34,7 +34,7 @@ public class when_max_age_is_requested : Specification
         }
     }
 
-    [Fact] void should_refuse_without_looking_up_a_session_or_redirecting_to_login() => _results.All(result => result is ForbidHttpResult).ShouldBeTrue();
+    [Fact] void should_refuse_without_looking_up_a_session_or_redirecting_to_login() => _results.TrueForAll(result => result is ForbidHttpResult).ShouldBeTrue();
     [Fact] void should_report_invalid_request() => _results.Cast<ForbidHttpResult>().All(result => result.Properties!.Items[OpenIddictServerAspNetCoreConstants.Properties.Error] == "invalid_request").ShouldBeTrue();
     [Fact] void should_explain_that_max_age_is_unsupported() => _results.Cast<ForbidHttpResult>().All(result => result.Properties!.Items[OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] == "max_age is not supported").ShouldBeTrue();
 }
