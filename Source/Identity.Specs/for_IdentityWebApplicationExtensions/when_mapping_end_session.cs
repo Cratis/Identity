@@ -27,11 +27,11 @@ public class when_mapping_end_session : given.an_identity_host
         app.MapCratisIdentity(options => options.MapSignOut = true);
         var routes = ((IEndpointRouteBuilder)app).DataSources.SelectMany(source => source.Endpoints).Cast<RouteEndpoint>().ToArray();
         var endpoint = routes.Single(route => route.RoutePattern.RawText == $"{prefix}/connect/endsession");
-        endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods.ShouldContainOnly("GET", "POST");
+        endpoint.Metadata.GetMetadata<HttpMethodMetadata>().HttpMethods.ShouldContainOnly("GET", "POST");
         routes.Count(route => route.RoutePattern.RawText == $"{prefix}/logout").ShouldEqual(2);
         var server = app.Services.GetRequiredService<IOptions<OpenIddictServerOptions>>().Value;
         server.EndSessionEndpointUris.Single().OriginalString.ShouldEqual($"{prefix}/connect/endsession".TrimStart('/'));
-        server.Issuer!.AbsoluteUri.ShouldEqual("https://identity.example/");
+        server.Issuer.AbsoluteUri.ShouldEqual("https://identity.example/");
     }
 
     [Fact]

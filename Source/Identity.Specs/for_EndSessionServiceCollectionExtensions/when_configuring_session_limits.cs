@@ -17,7 +17,7 @@ public class when_configuring_session_limits : Specification
     public async Task should_bind_the_public_and_validator_options_without_changing_the_cookie_key(string? maximumAge, int seconds)
     {
         var section = Configuration(maximumAge).GetSection(IdentityOptions.SectionName);
-        var identity = section.Get<IdentityOptions>()!;
+        var identity = section.Get<IdentityOptions>();
         var services = new ServiceCollection();
         services.AddEndSession(section);
         await using var provider = services.BuildServiceProvider();
