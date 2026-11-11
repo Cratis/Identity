@@ -99,7 +99,7 @@ change from rewriting code, manifest rows, and fixtures together,
 Release warnings-as-errors build and format verification. For example, locally:
 
 ```sh
-dotnet Source/Identity.Contracts.Check/bin/Release/net10.0/Cratis.Identity.Contracts.Check.dll --released-ref origin/main Identity.slnx
+dotnet Source/Identity.Contracts.Check/bin/Release/net11.0/Cratis.Identity.Contracts.Check.dll --released-ref origin/main Identity.slnx
 ```
 
 This mode resolves the requested ref to a commit with `git rev-parse`, reads its
@@ -139,7 +139,7 @@ baseline is not an exemption. As soon as the baseline exists in the trusted base
 this bootstrap exemption no longer applies. Otherwise the workflow runs:
 
 ```sh
-dotnet Source/Identity.Contracts.Check/bin/Release/net10.0/Cratis.Identity.Contracts.Check.dll --released-ref "$base_commit" Identity.slnx
+dotnet Source/Identity.Contracts.Check/bin/Release/net11.0/Cratis.Identity.Contracts.Check.dll --released-ref "$base_commit" Identity.slnx
 ```
 
 The same job runs `dotnet build Identity.slnx --configuration Release -warnaserror`

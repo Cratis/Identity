@@ -22,7 +22,7 @@ docker build -f Docker/Dockerfile --target cratis-id --build-arg HOST=Identity.C
 
 Both arguments matter: `HOST` selects the project to publish; `--target cratis-id` selects its entrypoint. Without them, the final `reference` target and `Identity.Host` project preserve local compose behavior.
 
-The runtime is .NET 10 ASP.NET Core, chiseled and non-root, listening on HTTP port `8080`. It has no shell or package manager and contains no realm keys, upstream credentials or provisioned databases. Mount secrets read-only with permissions readable by the image's non-root user. No Docker socket, privileged mode or container-managed MongoDB/Chronicle is part of the server contract.
+The runtime is .NET 11 ASP.NET Core, chiseled and non-root, listening on HTTP port `8080`. It has no shell or package manager and contains no realm keys, upstream credentials or provisioned databases. Mount secrets read-only with permissions readable by the image's non-root user. No Docker socket, privileged mode or container-managed MongoDB/Chronicle is part of the server contract.
 
 ## Required configuration
 
