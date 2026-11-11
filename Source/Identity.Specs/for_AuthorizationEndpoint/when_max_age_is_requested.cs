@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Authorization;
+using Cratis.Identity.Authorization.given;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using OpenIddict.Abstractions;
@@ -17,14 +18,13 @@ public class when_max_age_is_requested : Specification
     async Task Because()
     {
         var endpoint = new AuthorizationEndpoint(null!, null!, null!, null!, null!, null!);
-        foreach (var value in new[] { "0", "300", "-1", "invalid", "" })
+        foreach (var context in MaxAgeRequests.All())
         {
-            var context = new DefaultHttpContext();
             context.Features.Set(new OpenIddictServerAspNetCoreFeature
             {
                 Transaction = new OpenIddictServerTransaction
                 {
-                    Request = new OpenIddictRequest(new Dictionary<string, string?> { ["max_age"] = value })
+                    Request = new OpenIddictRequest
                     {
                         ClientId = "oidc-web", Scope = "openid", Nonce = "request-nonce"
                     }

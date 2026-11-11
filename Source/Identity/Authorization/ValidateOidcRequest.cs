@@ -3,6 +3,7 @@
 
 using Cratis.Identity.Configuration;
 using Cratis.Identity.Resources;
+using Microsoft.AspNetCore;
 using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;
@@ -22,14 +23,14 @@ internal sealed class ValidateOidcRequest(IOptions<IdentityOptions> options) : I
         .Build();
 
     /// <inheritdoc/>
-    public ValueTask HandleAsync(ValidateAuthorizationRequestContext context)
+    public async ValueTask HandleAsync(ValidateAuthorizationRequestContext context)
     {
-        if (context.Request.HasParameter(Parameters.MaxAge))
+        if (await MaxAgeRequest.IsPresent(context.Transaction.GetHttpRequest()))
         {
             context.Reject(Errors.InvalidRequest, "max_age is not supported");
-            return ValueTask.CompletedTask;
+            return;
         }
-        if (!context.Request.HasScope(Scopes.OpenId) && !context.Request.HasScope(Scopes.Profile)) return ValueTask.CompletedTask;
+        if (!context.Request.HasScope(Scopes.OpenId) && !context.Request.HasScope(Scopes.Profile)) return;
         if (!options.Value.Oidc.IssuanceEnabled)
         {
             context.Reject(Errors.TemporarilyUnavailable, "OpenID Connect issuance is disabled.");
@@ -46,6 +47,5 @@ internal sealed class ValidateOidcRequest(IOptions<IdentityOptions> options) : I
         {
             context.Reject(Errors.InvalidRequest, "OpenID Connect requests require a nonce.");
         }
-        return ValueTask.CompletedTask;
     }
 }
