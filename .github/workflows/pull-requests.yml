@@ -1,0 +1,99 @@
+# Copyright (c) Cratis. All rights reserved.
+# Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+name: Pull Requests
+
+# One caller for every pull-request check so a single always-running `gate` job can require them all.
+# A path-filtered workflow that never starts never reports; here each callee is skipped by `changes`
+# instead, and a skipped job counts as passed in `gate`. Label and edit events re-run everything on
+# purpose (the policy check needs them); heavy jobs must not be skipped on those events, because a
+# cancelled code run would let a later run pass `gate` without having built anything.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited, labeled, unlabeled]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ${{ vars.RUNNER_GATE || 'cratis-arc-small' }}
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      runner-guard: ${{ steps.filter.outputs.runner-guard }}
+    steps:
+      # The pull request files API lists at most 3,000 files, so a larger pull request could hide
+      # changed paths from the filter and skip checks. Fail closed instead of filtering a partial list.
+      - name: Refuse pull requests the filter cannot see in full
+        env:
+          CHANGED_FILES: ${{ github.event.pull_request.changed_files }}
+        run: |
+          if [ "${CHANGED_FILES:-0}" -ge 3000 ]; then
+            echo "::error title=changes::This pull request changes $CHANGED_FILES files; split it so path filtering sees every file."
+            exit 1
+          fi
+      - id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            runner-guard:
+              - ".github/workflows/**"
+
+  # No path filter: these checks previously ran on every pull request to main.
+  build:
+    if: ${{ github.event.pull_request.base.ref == 'main' }}
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+
+  image:
+    if: ${{ github.event.pull_request.base.ref == 'main' }}
+    uses: ./.github/workflows/image.yml
+    permissions:
+      contents: read
+      packages: write
+
+  runner-guard:
+    needs: changes
+    if: ${{ needs.changes.outputs.runner-guard == 'true' }}
+    uses: ./.github/workflows/runner-guard.yml
+    permissions:
+      contents: read
+
+  # No filter: the policy check must always run (its old trigger had no paths).
+  policy:
+    uses: ./.github/workflows/verify-pull-request-policy.yml
+    permissions:
+      contents: read
+      pull-requests: write
+
+  # Every other job in this file MUST be listed in `needs`: a job left out is invisible to the gate.
+  gate:
+    name: gate
+    if: ${{ always() }}
+    needs: [changes, build, image, runner-guard, policy]
+    runs-on: ${{ vars.RUNNER_GATE || 'cratis-arc-small' }}
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Every needed job passed or was skipped
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key)\t\(.value.result)"'
+          # Fail closed: anything other than success or skipped (failure, cancelled, or a result we do not know) fails.
+          bad=$(echo "$NEEDS" | jq -r 'to_entries[] | select(.value.result | IN("success","skipped") | not) | .key')
+          # `changes` is the only job that decides what is skipped, so it must have succeeded, never been skipped.
+          [ "$(echo "$NEEDS" | jq -r '.changes.result')" = "success" ] || bad="$bad changes"
+          if [ -n "${bad// /}" ]; then
+            echo "::error title=gate::Failed, cancelled or unknown: $bad"
+            exit 1
+          fi

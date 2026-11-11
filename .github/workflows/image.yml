@@ -3,9 +3,9 @@
 
 name: CratisId image
 
+# Called from pull-requests.yml; the PR triggers and path filters live there.
 on:
-  pull_request:
-    branches: [main]
+  workflow_call:
   push:
     branches: [main]
     tags: ['v*']
@@ -17,7 +17,7 @@ jobs:
   build:
     name: Build hosted-shared image
     concurrency:
-      group: ${{ github.workflow }}-build-${{ github.ref }}
+      group: cratis-id-image-build-${{ github.ref }}
       cancel-in-progress: true
     runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}
     timeout-minutes: 15
@@ -39,7 +39,7 @@ jobs:
   smoke:
     name: Smoke hosted-shared image
     concurrency:
-      group: ${{ github.workflow }}-smoke-${{ github.ref }}
+      group: cratis-id-image-smoke-${{ github.ref }}
       cancel-in-progress: true
     needs: build
     runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}
