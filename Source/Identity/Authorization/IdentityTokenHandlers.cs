@@ -1,8 +1,6 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using OpenIddict.Server;
-
 namespace Cratis.Identity.Authorization;
 
 /// <summary>Registers only the explicitly enabled OIDC profile.</summary>

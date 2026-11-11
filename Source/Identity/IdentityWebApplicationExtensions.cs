@@ -76,7 +76,7 @@ public static class IdentityWebApplicationExtensions
     {
         var options = app.ServiceProvider.GetRequiredService<IOptions<IdentityOptions>>().Value;
         app.MapGet("/.well-known/openid-configuration", () => string.IsNullOrWhiteSpace(options.Issuer)
-            ? (IResult)Results.NotFound()
+            ? Results.NotFound()
             : Results.Json(OidcProviderMetadata.Create(options, endpoints)));
         if (options.Oidc.IssuanceEnabled)
         {

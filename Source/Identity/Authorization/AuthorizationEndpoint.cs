@@ -48,6 +48,7 @@ internal class AuthorizationEndpoint(
     {
         var request = context.GetOpenIddictServerRequest() ?? throw new OpenIddictRequestMissing(context.Request.Path);
         if (await MaxAgeRequest.IsPresent(context.Request)) return OAuthResults.Error(Errors.InvalidRequest, "max_age is not supported");
+
         // The GitHub callback returns here after an upstream cancel or failure. OpenIddict has revalidated
         // the client and redirect URI, so it can send a safe OAuth error instead of challenging again.
         if (context.Request.Query.ContainsKey("upstream_error")) return UpstreamFailure(context);

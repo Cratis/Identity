@@ -55,9 +55,6 @@ internal sealed class IdentityTokenSigning(IOptions<IdentityOptions> options, Ti
         return ValueTask.CompletedTask;
     }
 
-    bool CanSign(GenerateTokenContext context, SigningCredentials? credentials) =>
-        options.Value.Oidc.IssuanceEnabled && credentials is not null && !string.IsNullOrEmpty(context.ClientId);
-
     static bool HasRequiredClaims(ClaimsIdentity? identity, bool refresh)
     {
         if (identity is null) return false;
@@ -85,4 +82,7 @@ internal sealed class IdentityTokenSigning(IOptions<IdentityOptions> options, Ti
         descriptor.Claims[Claims.JwtId] = tokenId ?? Guid.NewGuid().ToString("N");
         descriptor.Expires = descriptor.IssuedAt!.Value.Add(lifetime);
     }
+
+    bool CanSign(GenerateTokenContext context, SigningCredentials? credentials) =>
+        options.Value.Oidc.IssuanceEnabled && credentials is not null && !string.IsNullOrEmpty(context.ClientId);
 }

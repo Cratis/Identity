@@ -35,6 +35,7 @@ internal class TokenGrantRenewal(IdentityOptions options, ResourceTokenGrant res
     {
         if (await ValidateResources(context, granted, account) is { } rejection) return rejection;
         if (!await refresh.IsValid(granted, request, context.RequestAborted)) return OAuthResults.Error(Errors.InvalidGrant, "The refresh token is no longer valid.");
+
         // Authentication time is never invented from the current time.
         return AccessTokenIdentity.AuthTimeOf(granted) is null ? OAuthResults.Error(Errors.InvalidGrant, "The refresh token is no longer valid.") : null;
     }

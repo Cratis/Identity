@@ -17,18 +17,10 @@ internal static class OidcSigningKey
     /// <param name="now">The current UTC time.</param>
     /// <returns>The eligible RSA key, without a not-yet-eligible fallback.</returns>
     public static RealmKey? Select(IEnumerable<RealmKey> keys, DateTimeOffset now) => keys
-        .Where(IsRsaSigner)
-        .Where(key => key.NotBefore + KeyEligibility.PrePublication <= now && key.NotAfter > now)
+        .Where(key => IsRsaSigner(key) && key.NotBefore + KeyEligibility.PrePublication <= now && key.NotAfter > now)
         .OrderByDescending(key => key.NotBefore)
         .ThenBy(key => key.Kid, StringComparer.Ordinal)
         .FirstOrDefault();
-
-    static bool IsRsaSigner(RealmKey key)
-    {
-        if (key.Purpose != KeyPurpose.Signing || key.Algorithm != SecurityAlgorithms.RsaSha256) return false;
-        using var rsa = key.Certificate.GetRSAPublicKey();
-        return rsa?.KeySize >= 2048;
-    }
 
     /// <summary>Finds an eligible credential already included in this request's published server snapshot.</summary>
     /// <param name="server">The request's server options.</param>
@@ -47,11 +39,19 @@ internal static class OidcSigningKey
     /// <summary>Rejects deployment with OIDC clients but no eligible RSA signer.</summary>
     /// <param name="keys">The validated secret-store snapshot.</param>
     /// <param name="now">The current UTC time.</param>
+    /// <exception cref="OptionsValidationException">No eligible RSA signing key is available.</exception>
     public static void Require(SecretStoreKeys keys, DateTimeOffset now)
     {
         if (Select(keys.Current.Ring.Signing, now) is null)
         {
             throw new OptionsValidationException(Options.DefaultName, typeof(IdentityOptions), ["OpenID Connect clients require a currently valid, prepublished RSA signing key of at least 2048 bits for RS256."]);
         }
+    }
+
+    static bool IsRsaSigner(RealmKey key)
+    {
+        if (key.Purpose != KeyPurpose.Signing || key.Algorithm != SecurityAlgorithms.RsaSha256) return false;
+        using var rsa = key.Certificate.GetRSAPublicKey();
+        return rsa?.KeySize >= 2048;
     }
 }

@@ -80,26 +80,6 @@ internal sealed class SecretStoreKeys(SecretStoreOptions options, TimeProvider t
     }
 
     /// <summary>
-    /// Resolves readiness and the eligible ID-token credential against one ring snapshot.
-    /// </summary>
-    /// <param name="credentials">The server's registered signing credentials.</param>
-    /// <param name="now">The issuance time.</param>
-    /// <returns>The credential admitted by the current ring, or null when issuance is unavailable.</returns>
-    internal SigningCredentials? FindIdentityTokenCredential(IEnumerable<SigningCredentials> credentials, DateTimeOffset now)
-    {
-        lock (_lock)
-        {
-            var snapshot = Current;
-            if (!_lastReadSucceeded || _keysUnusable) return null;
-            if (now >= snapshot.Signer.NotAfter || now >= snapshot.Encrypter.NotAfter) return null;
-
-            var selected = OidcSigningKey.Select(snapshot.Ring.Signing, now);
-            return selected is null ? null : credentials.FirstOrDefault(credential =>
-                credential.Algorithm == SecurityAlgorithms.RsaSha256 && credential.Kid == selected.Kid);
-        }
-    }
-
-    /// <summary>
     /// Gets a cancellation token that fires with <see cref="ChangeToken"/>, for the Data Protection key ring cache.
     /// </summary>
     public CancellationToken CacheExpirationToken
@@ -189,6 +169,26 @@ internal sealed class SecretStoreKeys(SecretStoreOptions options, TimeProvider t
 
     /// <inheritdoc/>
     public void Dispose() => _changed.Dispose();
+
+    /// <summary>
+    /// Resolves readiness and the eligible ID-token credential against one ring snapshot.
+    /// </summary>
+    /// <param name="credentials">The server's registered signing credentials.</param>
+    /// <param name="now">The issuance time.</param>
+    /// <returns>The credential admitted by the current ring, or null when issuance is unavailable.</returns>
+    internal SigningCredentials? FindIdentityTokenCredential(IEnumerable<SigningCredentials> credentials, DateTimeOffset now)
+    {
+        lock (_lock)
+        {
+            var snapshot = Current;
+            if (!_lastReadSucceeded || _keysUnusable) return null;
+            if (now >= snapshot.Signer.NotAfter || now >= snapshot.Encrypter.NotAfter) return null;
+
+            var selected = OidcSigningKey.Select(snapshot.Ring.Signing, now);
+            return selected is null ? null : credentials.FirstOrDefault(credential =>
+                credential.Algorithm == SecurityAlgorithms.RsaSha256 && credential.Kid == selected.Kid);
+        }
+    }
 
     KeySnapshot InitialSnapshot()
     {

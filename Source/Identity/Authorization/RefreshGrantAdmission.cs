@@ -33,6 +33,7 @@ internal class RefreshGrantAdmission(IFenceStore fences)
     static bool Admits(GrantState? state, OpenIddictRequest request)
     {
         if (state is null) return !request.IsRefreshTokenGrantType();
+
         // A known non-current entry must reach redemption so reuse fences the family.
         return state.Fence is null && GrantStateValidation.IsKnown(state);
     }

@@ -5,8 +5,16 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Cratis.Identity.Authorization;
 
+/// <summary>
+/// Detects an explicit maximum-age parameter on an authorization request.
+/// </summary>
 internal static class MaxAgeRequest
 {
+    /// <summary>
+    /// Checks the query and, when applicable, the posted form for the parameter.
+    /// </summary>
+    /// <param name="request">The current HTTP request, if available.</param>
+    /// <returns>Whether the request contains the maximum-age parameter.</returns>
     internal static async ValueTask<bool> IsPresent(HttpRequest? request)
     {
         if (request is null) return false;
