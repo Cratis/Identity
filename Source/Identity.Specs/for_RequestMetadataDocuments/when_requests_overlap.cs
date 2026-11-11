@@ -39,4 +39,56 @@ public class when_requests_overlap : Specification
         results[2].Descriptor.RedirectUris.Count.ShouldEqual(1);
         await fetcher.Received(2).FetchAsync(Arg.Any<ClientId>(), Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    async Task should_bound_outbound_work_when_many_requests_overlap_on_a_noncacheable_document()
+    {
+        const string Client = "https://client.example/hostile.json";
+        const int Callers = 64;
+        var completion = new TaskCompletionSource<MetadataDocumentResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        static MetadataDocumentResult Result() => new(MetadataDescriptor.Create(new ClientIdMetadataDocument(new Uri(Client), "Name", [new Uri("https://client.example/callback")])), MetadataRefusal.None, TimeSpan.Zero);
+        var calls = 0;
+        var fetcher = Substitute.For<IMetadataDocumentFetcher>();
+        fetcher.FetchAsync(Arg.Any<ClientId>(), Arg.Any<CancellationToken>()).Returns(_ => Interlocked.Increment(ref calls) == 1 ? new ValueTask<MetadataDocumentResult>(completion.Task) : new ValueTask<MetadataDocumentResult>(Result()));
+        var options = new ClientIdMetadataOptions { Enabled = true, MaxFetchesPerHostPerMinute = 4, MaxConcurrentFetches = 8 };
+        var documents = new ClientIdMetadataDocuments(fetcher, options, Substitute.For<IResourceCatalog>(), TimeProvider.System, NullLogger<ClientIdMetadataDocuments>.Instance);
+        var pending = Enumerable.Range(0, Callers).Select(_ => new RequestMetadataDocuments(documents).Resolve(new(Client), TestContext.Current.CancellationToken).AsTask()).ToArray();
+        completion.SetResult(Result());
+        var results = await Task.WhenAll(pending).WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        results.Length.ShouldEqual(Callers);
+        calls.ShouldBeLessThanOrEqual(options.MaxFetchesPerHostPerMinute);
+        results.Count(_ => _.Descriptor is not null).ShouldBeLessThanOrEqual(options.MaxFetchesPerHostPerMinute);
+        results.Where(_ => _.Descriptor is null).ShouldEachConformTo(_ => _.Refusal == MetadataRefusal.RateLimited);
+    }
+
+    static async Task<MetadataDocumentResult> Stall(CancellationToken cancellationToken)
+    {
+        await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+        return MetadataDocumentResult.Refused(MetadataRefusal.Timeout);
+    }
+
+    [Fact]
+    async Task should_stop_a_cancelled_caller_that_is_fetching_its_own_noncacheable_copy()
+    {
+        const string Client = "https://client.example/cancelled.json";
+        var completion = new TaskCompletionSource<MetadataDocumentResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var second = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var calls = 0;
+        var fetcher = Substitute.For<IMetadataDocumentFetcher>();
+        fetcher.FetchAsync(Arg.Any<ClientId>(), Arg.Any<CancellationToken>()).Returns(call =>
+        {
+            if (Interlocked.Increment(ref calls) == 1) return new ValueTask<MetadataDocumentResult>(completion.Task);
+            second.TrySetResult();
+            return new ValueTask<MetadataDocumentResult>(Stall(call.Arg<CancellationToken>()));
+        });
+        var documents = new ClientIdMetadataDocuments(fetcher, new ClientIdMetadataOptions { Enabled = true }, Substitute.For<IResourceCatalog>(), TimeProvider.System, NullLogger<ClientIdMetadataDocuments>.Instance);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var owner = documents.Resolve(new(Client), TestContext.Current.CancellationToken).AsTask();
+        var waiter = documents.Resolve(new(Client), cancellation.Token).AsTask();
+        completion.SetResult(new MetadataDocumentResult(MetadataDescriptor.Create(new ClientIdMetadataDocument(new Uri(Client), "Name", [new Uri("https://client.example/callback")])), MetadataRefusal.None, TimeSpan.Zero));
+        await owner;
+        await second.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        await cancellation.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiter.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken));
+    }
 }

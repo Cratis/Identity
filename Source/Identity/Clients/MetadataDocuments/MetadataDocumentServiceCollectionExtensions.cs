@@ -25,7 +25,13 @@ internal static class MetadataDocumentServiceCollectionExtensions
         services.TryAddSingleton<IAddressConnector, AddressConnector>();
         services.AddSingleton<GuardedConnect>();
         services.AddSingleton<MetadataDocumentParser>();
-        services.AddHttpClient(ClientName, client => client.Timeout = Timeout.InfiniteTimeSpan)
+        services.AddHttpClient(ClientName, client =>
+            {
+                client.Timeout = Timeout.InfiniteTimeSpan;
+
+                // Host-wide default headers (Authorization, API keys) must never reach attacker-chosen hosts.
+                client.DefaultRequestHeaders.Clear();
+            })
 
             // Host-wide retries, hedging and other delegating handlers must not multiply admitted fetches.
             .ConfigureAdditionalHttpMessageHandlers((handlers, _) => handlers.Clear())

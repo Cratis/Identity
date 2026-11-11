@@ -35,7 +35,7 @@ internal sealed class ClientIdMetadataDocuments(IMetadataDocumentFetcher fetcher
         var result = await entry.Completion.Task.WaitAsync(cancellationToken);
 
         // An in-flight response can be shared only if its eventual cache policy permits reuse.
-        if (RequiresOwnFetch(owner, result)) return await Resolve(clientId, cancellationToken);
+        if (RequiresOwnFetch(owner, result)) result = await FetchOwn(clientId, host, cancellationToken);
         logger.Lookup(host, result.Refusal, (long)time.GetElapsedTime(started).TotalMilliseconds, hit);
         return result.Descriptor is null ? result : result with { Descriptor = MetadataDescriptor.Copy(result.Descriptor) };
     }
@@ -49,6 +49,36 @@ internal sealed class ClientIdMetadataDocuments(IMetadataDocumentFetcher fetcher
     static bool RequiresOwnFetch(bool owner, MetadataDocumentResult result) => !owner && result.Descriptor is not null && result.Lifetime <= TimeSpan.Zero;
 
     bool AllowsHost(string host) => options.AllowedHosts.Count == 0 || options.AllowedHosts.Contains(host, StringComparer.Ordinal);
+
+    /// <summary>One admitted, deadline-bounded fetch for a caller that cannot share a non-cacheable flight; never recursive, never queued, surplus callers are refused.</summary>
+    /// <param name="clientId">The exact client identifier.</param>
+    /// <param name="host">The validated canonical host.</param>
+    /// <param name="cancellationToken">The caller cancellation token.</param>
+    /// <returns>The caller's own result.</returns>
+    async Task<MetadataDocumentResult> FetchOwn(ClientId clientId, string host, CancellationToken cancellationToken)
+    {
+        if (!_admission.TryEnter(host)) return MetadataDocumentResult.Refused(MetadataRefusal.RateLimited);
+
+        try
+        {
+            using var deadline = new CancellationTokenSource(options.RequestTimeout, time);
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(deadline.Token, cancellationToken);
+            var result = await fetcher.FetchAsync(clientId, linked.Token);
+            if (result.Descriptor is null) return result;
+
+            result = result with { Descriptor = MetadataDescriptor.Copy(result.Descriptor) };
+            MetadataDescriptor.ApplyResources(result.Descriptor, resources);
+            return result;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return MetadataDocumentResult.Refused(MetadataRefusal.Timeout);
+        }
+        finally
+        {
+            _admission.Exit();
+        }
+    }
 
     async Task Load(MetadataDocumentCacheEntry entry, ClientId clientId, string host)
     {
