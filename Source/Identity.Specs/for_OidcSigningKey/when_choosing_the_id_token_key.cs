@@ -33,7 +33,7 @@ public class when_choosing_the_id_token_key : Specification
     [Fact] void should_not_fall_back_to_an_expired_key() => OidcSigningKey.Select([_expired], _now).ShouldBeNull();
     [Fact] void should_not_fall_back_to_a_prepublication_key() => OidcSigningKey.Select([_prepublished], _now).ShouldBeNull();
     [Fact] void should_not_fall_back_to_ec() => OidcSigningKey.Select([_elliptic], _now).ShouldBeNull();
-    [Fact] void should_break_activation_ties_by_ordinal_kid() => OidcSigningKey.Select([_current with { Kid = "b" }, _current with { Kid = "a" }], _now)!.Kid.ShouldEqual("a");
+    [Fact] void should_break_activation_ties_by_ordinal_kid() => OidcSigningKey.Select([_current with { Kid = "b" }, _current with { Kid = "a" }], _now).Kid.ShouldEqual("a");
 
     void Destroy()
     {

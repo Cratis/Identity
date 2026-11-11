@@ -53,7 +53,7 @@ public static class IdentityWebApplicationExtensions
     {
         var options = app.ServiceProvider.ResolveIdentityEndpoints(configure);
         var group = app.MapGroup(options.RoutePrefix.Value ?? string.Empty);
-        if (app.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<Cratis.Identity.Configuration.DeviceGrantOptions>>().Value.Enabled)
+        if (app.ServiceProvider.GetRequiredService<IOptions<DeviceGrantOptions>>().Value.Enabled)
         {
             DeviceAuthorizationEndpoint.Map(group);
             DeviceVerificationEndpoint.Map(group);

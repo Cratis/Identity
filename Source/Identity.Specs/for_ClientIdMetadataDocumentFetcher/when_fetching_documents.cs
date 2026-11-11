@@ -116,7 +116,7 @@ public class when_fetching_documents : Specification
             response.Content.Headers.Expires = now + TimeSpan.FromMinutes(5);
             return response;
         });
-        (await Fetch(handler, time: new Cratis.Identity.given.FixedTimeProvider(now))).Lifetime.ShouldEqual(TimeSpan.FromMinutes(5));
+        (await Fetch(handler, time: new Identity.given.FixedTimeProvider(now))).Lifetime.ShouldEqual(TimeSpan.FromMinutes(5));
     }
 
     [Fact]

@@ -40,7 +40,8 @@ public class a_token_generation : for_OidcIdentity.given.an_identity_grant
             Options = new OpenIddictServerOptions { SigningCredentials = { ec, rsa } },
             Request = new OpenIddictRequest { GrantType = GrantType, ClientId = ClientId },
             Response = new()
-        }) { ClientId = ClientId, TokenType = OpenIddictConstants.TokenTypeIdentifiers.IdentityToken, SigningCredentials = ec };
+        })
+        { ClientId = ClientId, TokenType = OpenIddictConstants.TokenTypeIdentifiers.IdentityToken, SigningCredentials = ec };
         var identity = OidcIdentity.Create(new(_account, AuthTime, SessionId), ClientId, new IdentityOnlyGrant(["openid", "profile"]), "example-nonce");
         identity.SetClaim("tenant_id", "must-not-escape");
         identity.SetClaim("github_id", "must-not-escape");
@@ -61,9 +62,12 @@ public class a_token_generation : for_OidcIdentity.given.an_identity_grant
         _payload = JsonElement.Parse(Base64UrlEncoder.Decode(_jwt.EncodedPayload));
         var validated = await handler.ValidateTokenAsync(token, new TokenValidationParameters
         {
-            ValidIssuer = "https://identity.example/", ValidAudience = ClientId,
-            IssuerSigningKey = new RsaSecurityKey(_rsa), ValidAlgorithms = [SecurityAlgorithms.RsaSha256],
-            ValidTypes = ["JWT"], ValidateLifetime = true,
+            ValidIssuer = "https://identity.example/",
+            ValidAudience = ClientId,
+            IssuerSigningKey = new RsaSecurityKey(_rsa),
+            ValidAlgorithms = [SecurityAlgorithms.RsaSha256],
+            ValidTypes = ["JWT"],
+            ValidateLifetime = true,
             LifetimeValidator = (notBefore, expires, _, _) =>
                 expires > AuthTime.UtcDateTime &&
                 (!notBefore.HasValue || notBefore.Value <= AuthTime.UtcDateTime)

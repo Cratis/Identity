@@ -18,9 +18,12 @@ public static class OidcTokens
         var keys = new JsonWebKeySet(await client.GetStringAsync("/.well-known/jwks")).GetSigningKeys();
         return await new JsonWebTokenHandler().ValidateTokenAsync(token, new TokenValidationParameters
         {
-            ValidIssuer = IdentityHost.Issuer, ValidAudience = clientId,
-            IssuerSigningKeys = keys, ValidateIssuerSigningKey = true,
-            ValidAlgorithms = [SecurityAlgorithms.RsaSha256], ValidTypes = ["JWT"],
+            ValidIssuer = IdentityHost.Issuer,
+            ValidAudience = clientId,
+            IssuerSigningKeys = keys,
+            ValidateIssuerSigningKey = true,
+            ValidAlgorithms = [SecurityAlgorithms.RsaSha256],
+            ValidTypes = ["JWT"],
             ClockSkew = TimeSpan.FromSeconds(30)
         });
     }

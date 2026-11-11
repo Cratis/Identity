@@ -20,8 +20,8 @@ public class an_oidc_login(OidcIdentityHost host) : Specification
         var result = await OidcRequests.Login(_browser, ClientId, Scope);
         if (result.Status != HttpStatusCode.OK) throw new InvalidOperationException("OIDC code redemption did not succeed.");
         _tokens = result.Body;
-        _idToken = _tokens.GetProperty("id_token").GetString()!;
-        _accessToken = _tokens.GetProperty("access_token").GetString()!;
+        _idToken = _tokens.GetProperty("id_token").GetString();
+        _accessToken = _tokens.GetProperty("access_token").GetString();
         _identity = OidcTokens.Payload(_idToken);
     }
 

@@ -41,7 +41,7 @@ public class when_oidc_issuance_is_disabled_with_an_ec_ring : for_SecretStoreKey
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddSingleton<TimeProvider>(_time);
-        services.AddSingleton<IOptions<IdentityOptions>>(Options.Create(options));
+        services.AddSingleton(Options.Create(options));
         services.AddSecretStoreKeys(options);
         using var provider = services.BuildServiceProvider();
         return Catch.Exception(() => provider.GetRequiredService<SecretStoreKeys>());

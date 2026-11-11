@@ -25,8 +25,10 @@ public class when_an_id_token_is_used_as_an_access_token(OidcIdentityHost host) 
         var keys = new JsonWebKeySet(await _browser.Client.GetStringAsync("/.well-known/jwks")).GetSigningKeys();
         var validation = await new JsonWebTokenHandler().ValidateTokenAsync(_idToken, new TokenValidationParameters
         {
-            ValidIssuer = IdentityHost.Issuer, ValidAudience = IdentityHost.DirectMcpAudience,
-            IssuerSigningKeys = keys, ValidTypes = ["at+jwt"]
+            ValidIssuer = IdentityHost.Issuer,
+            ValidAudience = IdentityHost.DirectMcpAudience,
+            IssuerSigningKeys = keys,
+            ValidTypes = ["at+jwt"]
         });
         _resourceValidationRejected = !validation.IsValid;
     }

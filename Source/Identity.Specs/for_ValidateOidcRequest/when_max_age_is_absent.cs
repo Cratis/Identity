@@ -30,7 +30,7 @@ public class when_max_age_is_absent : Specification
                 Request = new OpenIddictRequest { ClientId = "oidc-web", Scope = "openid", Nonce = "request-nonce" },
                 Response = new()
             };
-            transaction.SetProperty(typeof(HttpRequest).FullName!, new WeakReference<HttpRequest>(http.Request));
+            transaction.SetProperty(typeof(HttpRequest).FullName, new WeakReference<HttpRequest>(http.Request));
             var context = new ValidateAuthorizationRequestContext(transaction);
             await handler.HandleAsync(context);
             _contexts.Add(context);
