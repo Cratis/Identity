@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -45,7 +44,7 @@ public class when_mapping_end_session : given.an_identity_host
         routes.Any(route => route.RoutePattern.RawText == "/connect/endsession").ShouldBeFalse();
         var server = app.Services.GetRequiredService<IOptions<OpenIddictServerOptions>>().Value;
         server.EndSessionEndpointUris.ShouldBeEmpty();
-        server.Handlers.Any(handler => handler.ContextType == typeof(ExtractEndSessionRequestContext) && handler.Order == int.MinValue + 100).ShouldBeFalse();
+        server.Handlers.Exists(handler => handler.ContextType == typeof(ExtractEndSessionRequestContext) && handler.Order == int.MinValue + 100).ShouldBeFalse();
     }
 
     [Fact]
