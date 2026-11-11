@@ -26,18 +26,22 @@ internal static class MetadataDocumentServiceCollectionExtensions
         services.AddSingleton<GuardedConnect>();
         services.AddSingleton<MetadataDocumentParser>();
         services.AddHttpClient(ClientName, client => client.Timeout = Timeout.InfiniteTimeSpan)
+            // Host-wide retries, hedging and other delegating handlers must not multiply admitted fetches.
+            .ConfigureAdditionalHttpMessageHandlers((handlers, _) => handlers.Clear())
             .ConfigurePrimaryHttpMessageHandler(provider => provider.GetRequiredService<GuardedConnect>().CreateHandler(provider.GetRequiredService<ClientIdMetadataOptions>().ConnectTimeout))
             .RemoveAllLoggers();
         services.AddSingleton<IMetadataDocumentFetcher>(provider => new ClientIdMetadataDocumentFetcher(
             provider.GetRequiredService<IHttpClientFactory>().CreateClient(ClientName),
             provider.GetRequiredService<MetadataDocumentParser>(),
-            provider.GetRequiredService<ClientIdMetadataOptions>()));
-        services.AddSingleton<IClientIdMetadataDocuments>(provider => new ClientIdMetadataDocuments(
+            provider.GetRequiredService<ClientIdMetadataOptions>(),
+            provider.GetRequiredService<TimeProvider>()));
+        services.AddSingleton(provider => new ClientIdMetadataDocuments(
             provider.GetRequiredService<IMetadataDocumentFetcher>(),
             provider.GetRequiredService<ClientIdMetadataOptions>(),
             provider.GetRequiredService<IResourceCatalog>(),
             provider.GetRequiredService<TimeProvider>(),
             provider.GetRequiredService<ILogger<ClientIdMetadataDocuments>>()));
+        services.AddScoped<IClientIdMetadataDocuments, RequestMetadataDocuments>();
         return services;
     }
 }

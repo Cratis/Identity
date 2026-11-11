@@ -26,12 +26,14 @@ internal sealed class ClientIdMetadataDocuments(IMetadataDocumentFetcher fetcher
         cancellationToken.ThrowIfCancellationRequested();
         if (!options.Enabled || !ClientIdUrlPolicy.IsValid(clientId.Value)) return MetadataDocumentResult.Refused(MetadataRefusal.InvalidUrl);
         var host = new Uri(clientId.Value).IdnHost;
-        if (options.AllowedHosts.Count > 0 && !options.AllowedHosts.Contains(host, StringComparer.Ordinal)) return MetadataDocumentResult.Refused(MetadataRefusal.InvalidUrl);
+        if (!AllowsHost(host)) return MetadataDocumentResult.Refused(MetadataRefusal.InvalidUrl);
         var started = time.GetTimestamp();
         var entry = _cache.Reserve(clientId.Value, out var owner, out var hit);
         if (entry is null) return MetadataDocumentResult.Refused(MetadataRefusal.Capacity);
         if (owner) _ = Load(entry, clientId, host);
         var result = await entry.Completion.Task.WaitAsync(cancellationToken);
+        // An in-flight response can be shared only if its eventual cache policy permits reuse.
+        if (RequiresOwnFetch(owner, result)) return await Resolve(clientId, cancellationToken);
         logger.Lookup(host, result.Refusal, (long)time.GetElapsedTime(started).TotalMilliseconds, hit);
         return result.Descriptor is null ? result : result with { Descriptor = MetadataDescriptor.Copy(result.Descriptor) };
     }
@@ -41,6 +43,10 @@ internal sealed class ClientIdMetadataDocuments(IMetadataDocumentFetcher fetcher
     /// <param name="cancellationToken">The caller cancellation token.</param>
     /// <returns>A descriptor, or null for every refusal.</returns>
     public async ValueTask<OpenIddictApplicationDescriptor?> FindAsync(ClientId clientId, CancellationToken cancellationToken) => (await Resolve(clientId, cancellationToken)).Descriptor;
+
+    bool AllowsHost(string host) => options.AllowedHosts.Count == 0 || options.AllowedHosts.Contains(host, StringComparer.Ordinal);
+
+    static bool RequiresOwnFetch(bool owner, MetadataDocumentResult result) => !owner && result.Descriptor is not null && result.Lifetime <= TimeSpan.Zero;
 
     async Task Load(MetadataDocumentCacheEntry entry, ClientId clientId, string host)
     {
@@ -53,7 +59,7 @@ internal sealed class ClientIdMetadataDocuments(IMetadataDocumentFetcher fetcher
         try
         {
             // Waiter cancellation must not cancel another caller's shared fetch. The shared operation has its own deadline.
-            using var deadline = new CancellationTokenSource(options.RequestTimeout);
+            using var deadline = new CancellationTokenSource(options.RequestTimeout, time);
             var result = await fetcher.FetchAsync(clientId, deadline.Token);
             if (result.Descriptor is not null)
             {

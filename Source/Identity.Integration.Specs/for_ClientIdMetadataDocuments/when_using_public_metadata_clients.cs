@@ -12,11 +12,10 @@ using OpenIddict.Abstractions;
 
 namespace Cratis.Identity.Integration.for_ClientIdMetadataDocuments;
 
-[Requirement(Requirements.CimdDiscovery), Requirement(Requirements.CimdPublicProfile), Requirement(Requirements.CimdRevalidation), Requirement(Requirements.CimdConsent), Requirement(Requirements.CimdRestartRefresh)]
 [Collection(MetadataIdentityCollection.Name)]
 public class when_using_public_metadata_clients(MetadataIdentityHost host)
 {
-    [Fact]
+    [Fact, Requirement(Requirements.CimdDiscovery)]
     public async Task should_advertise_cimd_and_none_on_both_documents_without_dynamic_registration()
     {
         var browser = host.CreateBrowser();
@@ -30,7 +29,7 @@ public class when_using_public_metadata_clients(MetadataIdentityHost host)
         }
     }
 
-    [Theory]
+    [Theory, Requirement(Requirements.CimdConsent), Requirement(Requirements.CimdRestartRefresh)]
     [InlineData("native", "http://127.0.0.1/callback", "http://127.0.0.1:49152/callback")]
     [InlineData("web", "https://client.example/callback", "https://client.example/callback")]
     public async Task should_authorize_issue_rotate_and_refresh_with_a_fresh_provider(string kind, string declaration, string redirectUri)
@@ -71,7 +70,7 @@ public class when_using_public_metadata_clients(MetadataIdentityHost host)
         rotated.Body.GetProperty("refresh_token").GetString().ShouldNotEqual(refresh);
     }
 
-    [Fact]
+    [Fact, Requirement(Requirements.CimdRevalidation)]
     public async Task should_accept_an_immediately_repaired_document_after_an_invalid_client_lookup()
     {
         const string Id = "https://client.example/repaired.json";
@@ -79,13 +78,13 @@ public class when_using_public_metadata_clients(MetadataIdentityHost host)
         var pkce = Browser.Pkce();
         host.SetDocument(Id, "{}");
         using var refused = await browser.Authorize(Parameters(Id, "http://127.0.0.1:49152/callback", pkce.Challenge));
-        refused.StatusCode.ShouldEqual(HttpStatusCode.BadRequest);
+        await AssertRejected(refused, "invalid_client");
         host.SetDocument(Id, Document(Id, "http://127.0.0.1/callback"));
         using var accepted = await browser.Authorize(Parameters(Id, "http://127.0.0.1:49152/callback", pkce.Challenge));
         accepted.StatusCode.ShouldEqual(HttpStatusCode.OK);
     }
 
-    [Fact]
+    [Fact, Requirement(Requirements.CimdPublicProfile)]
     public async Task should_refuse_missing_pkce_and_document_claimed_scopes_or_unknown_resources()
     {
         const string Id = "https://client.example/refusals.json";
@@ -105,6 +104,45 @@ public class when_using_public_metadata_clients(MetadataIdentityHost host)
         unknown.Add(new("resource", "https://unknown.example/mcp"));
         using var resource = await browser.Authorize(unknown);
         await AssertRejected(resource, "invalid_target");
+    }
+
+    [Theory, Requirement(Requirements.CimdRevalidation)]
+    [InlineData("no-store", "noncacheable-store.example")]
+    [InlineData("no-cache", "noncacheable-cache.example")]
+    public async Task should_fetch_noncacheable_metadata_once_per_protocol_request(string cacheControl, string hostname)
+    {
+        var id = $"https://{hostname}/client.json";
+        const string Redirect = "http://127.0.0.1:49152/callback";
+        host.SetDocument(id, Document(id, "http://127.0.0.1/callback"), cacheControl);
+        var browser = host.CreateBrowser();
+        var pkce = Browser.Pkce();
+        using var page = await browser.Authorize(Parameters(id, Redirect, pkce.Challenge));
+        page.StatusCode.ShouldEqual(HttpStatusCode.OK);
+        var fetches = host.RequestsFor(id);
+        (fetches is 1 or 2).ShouldBeTrue(); // Initial authorization may include the sign-in round trip.
+        using var redirected = await browser.Consent(await page.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        redirected.StatusCode.ShouldEqual(HttpStatusCode.Redirect);
+        host.RequestsFor(id).ShouldEqual(++fetches);
+        var code = QueryHelpers.ParseQuery(redirected.Headers.Location.Query)["code"].ToString();
+        var token = await browser.PostForm("/connect/token",
+        [
+            new("grant_type", "authorization_code"), new("client_id", id), new("code", code),
+            new("redirect_uri", Redirect), new("code_verifier", pkce.Verifier), new("resource", IdentityHost.DirectMcp)
+        ]);
+        token.Status.ShouldEqual(HttpStatusCode.OK);
+        host.RequestsFor(id).ShouldEqual(++fetches);
+        var rotated = await browser.PostForm("/connect/token",
+        [
+            new("grant_type", "refresh_token"), new("client_id", id),
+            new("refresh_token", token.Body.GetProperty("refresh_token").GetString()), new("resource", IdentityHost.DirectMcp)
+        ]);
+        rotated.Status.ShouldEqual(HttpStatusCode.OK);
+        rotated.Body.GetProperty("refresh_token").GetString().ShouldNotEqual(token.Body.GetProperty("refresh_token").GetString());
+        host.RequestsFor(id).ShouldEqual(++fetches);
+        host.SetDocument(id, "{}", cacheControl);
+        using var refused = await browser.Authorize(Parameters(id, Redirect, Browser.Pkce().Challenge));
+        await AssertRejected(refused, "invalid_client");
+        host.RequestsFor(id).ShouldEqual(++fetches);
     }
 
     static async Task AssertRejected(HttpResponseMessage response, string error)
