@@ -10,10 +10,10 @@ public class when_comparing_framework_type_identities : Specification
 {
     public enum AssemblyIdentity
     {
-        SystemCollections,
-        MicrosoftExtensionsOptions,
-        CratisIdentity,
-        OtherLibrary
+        SystemCollections = 0,
+        MicrosoftExtensionsOptions = 1,
+        CratisIdentity = 2,
+        OtherLibrary = 3
     }
 
     [Fact]
