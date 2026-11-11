@@ -73,6 +73,20 @@ DPoP is disabled by default. AuthProxy remains Bearer-only; resource-server proo
 
 The AS nonce uses the issuer's existing shared Data Protection ring and purpose `Cratis.Identity.Dpop.Nonce.v1`, replacing the draft profile's standalone HMAC secret/encoding. The secret-store loader and contracts are unchanged. The older fixed nonce-encoding fixture describes the draft HMAC format, not Data Protection ciphertext. Focused unit specs cover nonce origin/key/time binding, shared-store failure, immutable family properties and access-only confirmation. Retained ring keys remain usable across rotation; all replicas must share the ring and application discriminator.
 
+## Opt-in public Client ID Metadata Documents
+
+The [supported CIMD subset](client-id-metadata-documents.md) is pinned to draft -03 and disabled by default. It does not implement confidential metadata clients or RFC 7591 registration. The real issuer/store scenarios in `for_ClientIdMetadataDocuments/when_using_public_metadata_clients` replace only the named outbound metadata HTTP handler. They are compiled locally and execute only in CI; no vendor-client interoperability is claimed.
+
+| Requirement | Obligation |
+| --- | --- |
+| `CIMD-DISCOVERY` | Advertise CIMD and `none` on both discovery documents only when enabled; no registration endpoint. |
+| `CIMD-PUBLIC-PROFILE` | Public code/S256 issuance, server-owned resource scopes, native loopback and exact web redirects. |
+| `CIMD-REVALIDATION` | Repair an invalid-client lookup without a negative document/entity cache; unit manager specs also exercise expiry and failed revalidation. |
+| `CIMD-UNVERIFIED-CONSENT` | Separate ASCII client identity from an explicitly unverified name and warn about local-process ambiguity. |
+| `CIMD-RESTART-REFRESH` | Revalidate metadata and rotate a retained refresh token after starting a fresh provider against the same stores. |
+
+The executable catalogue remains `Conformance/Requirements.cs`; it has no checked-in `conformance.v1.json` mirror. The existing catalogue coverage checks require every new ID to map to discovered facts and reject unknown tags. Network/byte/parser bounds, address pinning, cache/admission floods, sanitization and real-manager freshness are additionally covered by non-integration specs. These are focused profile checks, not complete draft certification.
+
 ## Running and upgrading
 
 Local gate (never run the integration executable locally):

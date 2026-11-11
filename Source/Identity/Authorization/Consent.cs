@@ -17,6 +17,7 @@ namespace Cratis.Identity.Authorization;
 /// <param name="Account">The signed-in <see cref="Accounts.Account"/>.</param>
 /// <param name="Parameters">The OAuth parameters of the authorization request, carried through the form.</param>
 /// <param name="Error">An error to show, for example when no tenant was selected.</param>
+/// <param name="ClientIdentityHost">The validated ASCII CIMD hostname, or null for a configured client.</param>
 internal record Consent(
     string ClientId,
     string ClientName,
@@ -25,4 +26,5 @@ internal record Consent(
     IEnumerable<SelectableTenant> Tenants,
     Account Account,
     IEnumerable<KeyValuePair<string, string>> Parameters,
-    string? Error = null);
+    string? Error = null,
+    string? ClientIdentityHost = null);

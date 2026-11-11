@@ -8,6 +8,11 @@ namespace Cratis.Identity.Integration.Conformance;
 /// </summary>
 public static class Requirements
 {
+    public const string CimdDiscovery = "CIMD-DISCOVERY";
+    public const string CimdPublicProfile = "CIMD-PUBLIC-PROFILE";
+    public const string CimdRevalidation = "CIMD-REVALIDATION";
+    public const string CimdConsent = "CIMD-UNVERIFIED-CONSENT";
+    public const string CimdRestartRefresh = "CIMD-RESTART-REFRESH";
     public const string PkceRequired = "PKCE-REQUIRED";
     public const string PkceS256Only = "PKCE-S256-ONLY";
     public const string PkceVerifierBound = "PKCE-VERIFIER-BOUND";
@@ -45,6 +50,11 @@ public static class Requirements
 
     public static IReadOnlyList<Requirement> All { get; } =
     [
+        new(CimdDiscovery, "draft-ietf-oauth-client-id-metadata-document-03 §6", "MUST", "Advertise CIMD and none only when enabled, without RFC 7591 registration metadata."),
+        new(CimdPublicProfile, "draft-ietf-oauth-client-id-metadata-document-03 §4; RFC 7636; RFC 8252 §7.3", "MUST", "Admit public code/S256 clients with server-owned scopes, exact web redirects and native loopback port matching."),
+        new(CimdRevalidation, "draft-ietf-oauth-client-id-metadata-document-03 §5", "MUST", "Revalidate expired metadata and allow an invalid lookup to recover immediately after repair."),
+        new(CimdConsent, "draft-ietf-oauth-client-id-metadata-document-03 §7", "MUST", "Show ASCII identity and explicitly unverified names; warn that loopback does not identify the local program."),
+        new(CimdRestartRefresh, "RFC 9700 §4.14.2; CIMD operational cache policy", "MUST", "Preserve application identity and rotate a retained refresh token after metadata and reverse-ID caches are lost."),
         new(DPoPIssuance, "RFC 9449 §5 and §6; identity-dpop-v1 §2", "MUST", "When enabled, bind code and approved device issuance to the proof key with object-valued cnf and DPoP token type."),
         new(DPoPRefresh, "RFC 9449 §5; identity-dpop-v1 §2.3", "MUST", "Preserve immutable family binding; refuse missing or different keys without consuming the entry."),
         new(DPoPNonce, "RFC 9449 §8; identity-dpop-v1 §5", "MUST", "Challenge with a stateless AS nonce without consuming the grant."),

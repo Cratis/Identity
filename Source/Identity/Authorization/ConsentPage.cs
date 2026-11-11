@@ -3,6 +3,7 @@
 
 using System.Text;
 using System.Text.Encodings.Web;
+using Cratis.Identity.Clients.MetadataDocuments;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Cratis.Identity.Authorization;
@@ -26,12 +27,15 @@ internal static class ConsentPage
     /// <returns>The HTML.</returns>
     public static string Render(Consent consent, string antiforgeryToken)
     {
+        var clientName = consent.ClientIdentityHost is null ? consent.ClientName : MetadataClientName.Sanitize(consent.ClientName, consent.ClientIdentityHost);
         var html = new StringBuilder()
             .Append("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\">")
             .Append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><meta name=\"referrer\" content=\"no-referrer\">")
-            .Append("<title>Authorize ").Append(E(consent.ClientName)).Append(" - Cratis</title><style>").Append(Style).Append("</style></head><body>")
-            .Append("<h1>Authorize ").Append(E(consent.ClientName)).Append("?</h1>")
-            .Append("<p>Signed in as <strong>").Append(E(consent.Account.GitHubLogin.Value)).Append("</strong> (GitHub).</p>")
+            .Append("<title>Authorize ").Append(E(clientName)).Append(" - Cratis</title><style>").Append(Style).Append("</style></head><body>")
+            .Append("<h1>Authorize ").Append(E(clientName)).Append("?</h1>");
+
+        AppendClientIdentity(html, consent, clientName);
+        html.Append("<p>Signed in as <strong>").Append(E(consent.Account.GitHubLogin.Value)).Append("</strong> (GitHub).</p>")
             .Append("<p class=\"warn\">Only continue if you started this sign-in yourself. The client identifies itself as <code>")
             .Append(E(consent.ClientId)).Append("</code>; Identity cannot prove which program is asking.</p>")
             .Append("<dl><dt>Access will be sent to</dt><dd>").Append(E(DescribeRedirect(consent.RedirectUri))).Append("</dd>")
@@ -75,6 +79,17 @@ internal static class ConsentPage
         redirectUri.IsLoopback
             ? $"a program on this computer ({redirectUri.Authority})"
             : redirectUri.Authority;
+
+    static void AppendClientIdentity(StringBuilder html, Consent consent, string clientName)
+    {
+        if (consent.ClientIdentityHost is null) return;
+        html.Append("<p><strong>Client identity: ").Append(E(consent.ClientIdentityHost)).Append("</strong> (from <code>").Append(E(consent.ClientId)).Append("</code>)</p>")
+            .Append("<p>Name provided by the client (not verified): ").Append(E(clientName)).Append("</p>");
+        if (consent.RedirectUri.IsLoopback)
+        {
+            html.Append("<p class=\"warn\">Any local program can use this loopback client identity. The hostname and name do not identify the program on this computer.</p>");
+        }
+    }
 
     static void AppendTenants(StringBuilder html, Consent consent)
     {

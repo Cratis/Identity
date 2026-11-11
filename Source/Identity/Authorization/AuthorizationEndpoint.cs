@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Accounts;
+using Cratis.Identity.Clients.MetadataDocuments;
 using Cratis.Identity.Tenants;
 using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore;
@@ -88,7 +89,7 @@ internal class AuthorizationEndpoint(
         {
             return request.HasPromptValue(PromptValues.None)
                 ? OAuthResults.Error(Errors.ConsentRequired, "The user must approve the request interactively.")
-                : consentPages.Render(context, await ConsentFor(context, request, account, grant, selectable));
+                : consentPages.Render(context, await ConsentFor(context, account, grant, selectable));
         }
 
         if (!await consentPages.IsValidSubmission(context))
@@ -106,7 +107,7 @@ internal class AuthorizationEndpoint(
         var tenant = selectable.FirstOrDefault(_ => string.Equals(_.Id, tenantId, StringComparison.Ordinal));
         if (tenant is null)
         {
-            var consent = await ConsentFor(context, request, account, grant, selectable);
+            var consent = await ConsentFor(context, account, grant, selectable);
             return consentPages.Render(context, consent with { Error = "Select one of the listed tenants." });
         }
 
@@ -117,10 +118,14 @@ internal class AuthorizationEndpoint(
     static bool IsConsentSubmission(HttpContext context) =>
         HttpMethods.IsPost(context.Request.Method) && context.Request.HasFormContentType && context.Request.Form.ContainsKey(ConsentForm.Decision);
 
-    async Task<Consent> ConsentFor(HttpContext context, OpenIddictRequest request, Account account, Grant grant, IEnumerable<SelectableTenant> selectable)
+    async Task<Consent> ConsentFor(HttpContext context, Account account, Grant grant, IEnumerable<SelectableTenant> selectable)
     {
+        var request = context.GetOpenIddictServerRequest() ?? throw new OpenIddictRequestMissing(context.Request.Path);
         var application = await applications.FindByClientIdAsync(request.ClientId!, context.RequestAborted) ?? throw new ClientNotRegistered(request.ClientId!);
         var name = await applications.GetDisplayNameAsync(application, context.RequestAborted) ?? request.ClientId!;
+        var properties = await applications.GetPropertiesAsync(application, context.RequestAborted);
+        var host = properties?.ContainsKey(MetadataDescriptor.Provenance) == true ? new Uri(request.ClientId!).IdnHost : null;
+        if (host is not null) logger.Consent(host);
         return new Consent(
             request.ClientId!,
             name,
@@ -128,6 +133,7 @@ internal class AuthorizationEndpoint(
             grant,
             selectable,
             account,
-            AuthorizationParameters.From(context.Request));
+            AuthorizationParameters.From(context.Request),
+            ClientIdentityHost: host);
     }
 }

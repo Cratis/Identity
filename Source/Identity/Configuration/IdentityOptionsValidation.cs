@@ -25,6 +25,7 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
         failures.AddRange(OidcClientOptionsValidation.Validate(options));
         failures.AddRange(TokenRateLimitOptionsValidation.Validate(options.TokenRateLimit));
         ValidateAccounts(options.Accounts, failures);
+        failures.AddRange(IdentityOptionsClientsValidation.Validate(options.Clients.MetadataDocuments));
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }
 
