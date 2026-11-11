@@ -41,9 +41,7 @@ internal static class OidcSigningKey
         {
             return server.SigningCredentials.FirstOrDefault(credential => credential.Algorithm == SecurityAlgorithms.RsaSha256 && credential.Key.KeySize >= 2048);
         }
-        if (!keys.CanIssueIdentityTokens || !keys.CanIssue) return null;
-        var selected = Select(keys.Current.Ring.Signing, now);
-        return selected is null ? null : server.SigningCredentials.FirstOrDefault(credential => credential.Algorithm == SecurityAlgorithms.RsaSha256 && credential.Kid == selected.Kid);
+        return keys.FindIdentityTokenCredential(server.SigningCredentials, now);
     }
 
     /// <summary>Rejects deployment with OIDC clients but no eligible RSA signer.</summary>

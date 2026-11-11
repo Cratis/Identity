@@ -9,11 +9,12 @@ namespace Cratis.Identity.Authorization;
 /// <summary>Evaluates OIDC session age against the original upstream authentication, never cookie renewal.</summary>
 internal static class OidcAuthentication
 {
-    /// <summary>Checks max_age using the same integer-second precision as auth_time.</summary>
+    /// <summary>Requires a new login for zero max_age; positive ages use auth_time's integer-second precision.</summary>
     /// <param name="request">The validated authorization request.</param>
     /// <param name="authTime">The original upstream authentication time.</param>
     /// <param name="now">The current UTC time.</param>
     /// <returns>Whether authentication satisfies the request.</returns>
     public static bool IsFresh(OpenIddictRequest request, DateTimeOffset authTime, DateTimeOffset now) =>
-        !request.HasScope(Scopes.OpenId) || request.MaxAge is null || now.ToUnixTimeSeconds() - authTime.ToUnixTimeSeconds() <= request.MaxAge.Value;
+        !request.HasScope(Scopes.OpenId) || request.MaxAge is null ||
+        (request.MaxAge.Value > 0 && now.ToUnixTimeSeconds() - authTime.ToUnixTimeSeconds() <= request.MaxAge.Value);
 }

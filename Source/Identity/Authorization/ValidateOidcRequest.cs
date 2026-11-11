@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Identity.Configuration;
+using Cratis.Identity.Resources;
 using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;
@@ -31,6 +32,10 @@ internal sealed class ValidateOidcRequest(IOptions<IdentityOptions> options) : I
         else if (!options.Value.OidcClients.Any(client => string.Equals(client.ClientId, context.ClientId, StringComparison.Ordinal)))
         {
             context.Reject(Errors.InvalidScope, "Identity scopes require a registered OpenID Connect client.");
+        }
+        else if (context.Request.GetScopes().Any(scope => !ProtocolScopes.Contains(scope)))
+        {
+            context.Reject(Errors.InvalidScope, "Identity scopes cannot be combined with resource scopes.");
         }
         else if (string.IsNullOrWhiteSpace(context.Request.Nonce))
         {

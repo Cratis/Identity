@@ -45,7 +45,14 @@ internal sealed record IdentityOnlyGrant(IEnumerable<string> Scopes) : GrantEval
             return new NotGrantable(Errors.InvalidScope, "The requested scope is not known.");
         }
 
-        return resourceScopes.Length > 0 ? null : EvaluateIdentity(request, scopes, client);
+        if (resourceScopes.Length == 0)
+        {
+            return EvaluateIdentity(request, scopes, client);
+        }
+
+        return scopes.Contains(OidcScopes.OpenId, StringComparer.Ordinal)
+            ? new NotGrantable(Errors.InvalidScope, "Identity scopes cannot be combined with resource scopes.")
+            : null;
     }
 
     static GrantEvaluation EvaluateIdentity(GrantRequest request, string[] scopes, OidcClientOptions client)

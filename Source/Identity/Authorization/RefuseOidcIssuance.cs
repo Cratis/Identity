@@ -26,7 +26,7 @@ internal sealed class RefuseOidcIssuance(IOptions<IdentityOptions> options, Time
     /// <inheritdoc/>
     public ValueTask HandleAsync(ProcessSignInContext context)
     {
-        if (!context.Principal.HasScope(Scopes.OpenId)) return ValueTask.CompletedTask;
+        if (context.Principal?.HasScope(Scopes.OpenId) != true) return ValueTask.CompletedTask;
         if (!options.Value.Oidc.IssuanceEnabled || OidcSigningKey.Find(context.Options, keys, timeProvider.GetUtcNow()) is null)
         {
             context.Reject(Errors.TemporarilyUnavailable, "OpenID Connect issuance has no eligible RS256 signer.");

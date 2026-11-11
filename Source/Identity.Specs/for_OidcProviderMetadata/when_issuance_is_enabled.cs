@@ -20,7 +20,8 @@ public class when_issuance_is_enabled : Specification
 
     [Fact] void should_advertise_only_rs256() => ((string[])_metadata["id_token_signing_alg_values_supported"]).ShouldContainOnly("RS256");
     [Fact] void should_preserve_the_route_prefix() => _metadata["userinfo_endpoint"].ShouldEqual("https://identity.example/identity/connect/userinfo");
-    [Fact] void should_publish_the_logout_contract_for_composition() => _metadata["end_session_endpoint"].ShouldEqual("https://identity.example/identity/connect/endsession");
+    [Fact] void should_not_advertise_an_unregistered_logout_endpoint() => _metadata.ContainsKey("end_session_endpoint").ShouldBeFalse();
+    [Fact] void should_advertise_the_expiration_claim() => ((string[])_metadata["claims_supported"]).ShouldContain("exp");
     [Fact] void should_be_code_only() => ((string[])_metadata["response_types_supported"]).ShouldContainOnly("code");
     [Fact] void should_not_advertise_undefined_assurance_or_email() => ((string[])_metadata["claims_supported"]).ShouldNotContain("email");
 }

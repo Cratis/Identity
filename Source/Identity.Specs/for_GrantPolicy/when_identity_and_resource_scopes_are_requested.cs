@@ -7,9 +7,9 @@ namespace Cratis.Identity.for_GrantPolicy;
 
 public class when_identity_and_resource_scopes_are_requested : given.an_oidc_grant_policy
 {
-    Grantable _result;
+    NotGrantable _result;
 
-    void Because() => _result = (Grantable)_policy.Evaluate(new GrantRequest(["openid", "direct:read"], [], "oidc-web"));
+    void Because() => _result = (NotGrantable)_policy.Evaluate(new GrantRequest(["openid", "direct:read"], [], "oidc-web"));
 
-    [Fact] void should_keep_the_resource_binding() => _result.Grant.Resource.Owns("direct:read").ShouldBeTrue();
+    [Fact] void should_refuse_mixed_identity_and_resource_scopes() => _result.Error.ShouldEqual("invalid_scope");
 }

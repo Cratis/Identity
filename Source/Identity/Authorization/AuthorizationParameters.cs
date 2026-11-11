@@ -35,13 +35,15 @@ internal static class AuthorizationParameters
     }
 
     /// <summary>
-    /// Gets the parameters to return to after upstream login. A <c language="text">login</c> prompt has been satisfied by the
-    /// login itself, so it is removed; keeping it would send the user back to login forever.
+    /// Gets the parameters to return to after upstream login. A <c language="text">login</c> prompt and
+    /// <c language="text">max_age</c> have been satisfied by the login itself, so they are removed to avoid a login loop.
+    /// The upstream handler carries this return URL in its protected OAuth state.
     /// </summary>
     /// <param name="parameters">The parameters of the authorization request.</param>
     /// <returns>The parameters to return with.</returns>
     public static IEnumerable<KeyValuePair<string, string>> AfterLogin(IEnumerable<KeyValuePair<string, string>> parameters) =>
         parameters
+            .Where(_ => !string.Equals(_.Key, Parameters.MaxAge, StringComparison.Ordinal))
             .Select(_ => string.Equals(_.Key, Parameters.Prompt, StringComparison.Ordinal)
                 ? new KeyValuePair<string, string>(_.Key, string.Join(' ', _.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(p => !string.Equals(p, PromptValues.Login, StringComparison.Ordinal))))
                 : _)
