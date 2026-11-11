@@ -5,6 +5,7 @@ using System.Text;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Clients;
 using Cratis.Identity.Clients.MetadataDocuments;
+using Cratis.Identity.Configuration;
 using Cratis.Identity.Hosting;
 using Cratis.Identity.Protocol.Stores;
 using Cratis.Identity.Resources;

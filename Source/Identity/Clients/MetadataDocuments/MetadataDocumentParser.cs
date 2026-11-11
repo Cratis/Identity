@@ -3,6 +3,7 @@
 
 using System.Text;
 using System.Text.Json;
+using Cratis.Identity.Configuration;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Cratis.Identity.Clients.MetadataDocuments;

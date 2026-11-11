@@ -3,6 +3,7 @@
 
 using System.Net;
 using System.Net.Http.Headers;
+using Cratis.Identity.Configuration;
 
 namespace Cratis.Identity.Clients.MetadataDocuments;
 

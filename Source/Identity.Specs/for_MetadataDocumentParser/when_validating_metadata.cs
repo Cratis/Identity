@@ -4,7 +4,7 @@
 using System.Text;
 using Cratis.Identity.Clients.MetadataDocuments;
 using static OpenIddict.Abstractions.OpenIddictConstants;
-using IdentityOptionsClients = Cratis.Identity.Clients.MetadataDocuments.ClientIdMetadataOptions;
+using IdentityOptionsClients = Cratis.Identity.Configuration.ClientIdMetadataOptions;
 
 namespace Cratis.Identity.for_MetadataDocumentParser;
 

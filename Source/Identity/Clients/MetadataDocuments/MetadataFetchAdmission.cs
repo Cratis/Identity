@@ -1,6 +1,8 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Configuration;
+
 namespace Cratis.Identity.Clients.MetadataDocuments;
 
 /// <summary>Bounded retry admission, separate from the positive metadata cache. No failures are cached.</summary>

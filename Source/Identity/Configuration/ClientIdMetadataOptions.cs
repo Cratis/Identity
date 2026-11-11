@@ -1,7 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Cratis.Identity.Clients.MetadataDocuments;
+namespace Cratis.Identity.Configuration;
 
 /// <summary>Issuer-owned opt-in policy for the public-client subset of CIMD draft -03.</summary>
 public class ClientIdMetadataOptions

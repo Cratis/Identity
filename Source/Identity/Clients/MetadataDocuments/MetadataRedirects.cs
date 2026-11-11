@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using Cratis.Identity.Clients.Registering;
+using Cratis.Identity.Configuration;
 using Cratis.Identity.Contracts.Clients;
 
 namespace Cratis.Identity.Clients.MetadataDocuments;

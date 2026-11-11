@@ -3,6 +3,7 @@
 
 using Cratis.Identity.Clients;
 using Cratis.Identity.Clients.MetadataDocuments;
+using Cratis.Identity.Configuration;
 using Cratis.Identity.Resources;
 using Microsoft.Extensions.Logging.Abstractions;
 
