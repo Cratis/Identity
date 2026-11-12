@@ -2,6 +2,10 @@
 
 Specifications define contracts shared by Identity and its consumers. RFC 2119 keywords **MUST**, **MUST NOT**, **REQUIRED**, **SHOULD**, **SHOULD NOT** and **MAY** express normative requirements. In a Draft, they describe the proposed contract, not an already deployed or approved implementation. Locked specifications record the signed-off contract and change only through a new version file, as the conventions below require.
 
+## Coverage maps
+
+- [Container and kernel contract map](container-kernel-contract-map.md): assertion coverage, retained platform candidates and automatic CI selection. This inventory is not a versioned protocol specification.
+
 ## Index
 
 | Spec id | Version | Status | Document |

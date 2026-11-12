@@ -8,6 +8,8 @@ on:
   workflow_call:
   push:
     branches: [main]
+  schedule:
+    - cron: "43 6 * * *"
 
 permissions:
   contents: read
@@ -16,7 +18,7 @@ jobs:
   build:
     name: Build hosted-shared image
     concurrency:
-      group: cratis-id-image-build-${{ github.ref }}
+      group: cratis-id-image-build-${{ github.event_name }}-${{ github.ref }}
       cancel-in-progress: true
     runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}
     timeout-minutes: 15
@@ -38,7 +40,7 @@ jobs:
   smoke:
     name: Smoke hosted-shared image
     concurrency:
-      group: cratis-id-image-smoke-${{ github.ref }}
+      group: cratis-id-image-smoke-${{ github.event_name }}-${{ github.ref }}
       cancel-in-progress: true
     needs: build
     runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}

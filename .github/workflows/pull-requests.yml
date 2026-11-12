@@ -27,6 +27,8 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
+      build: ${{ steps.filter.outputs.build }}
+      image: ${{ steps.filter.outputs.image }}
       runner-guard: ${{ steps.filter.outputs.runner-guard }}
     steps:
       # The pull request files API lists at most 3,000 files, so a larger pull request could hide
@@ -42,19 +44,45 @@ jobs:
       - id: filter
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         with:
+          # Dependency closures are documented in Documentation/specs/container-kernel-contract-map.md.
           filters: |
+            build:
+              - "Source/**"
+              - "Identity.slnx"
+              - "Directory.*.props"
+              - "global.json"
+              - ".editorconfig"
+              - ".globalconfig"
+              - "scripts/**"
+              - "Documentation/specs/**"
+              - ".github/workflows/build.yml"
+              - ".github/workflows/pull-requests.yml"
+            image:
+              - "Source/**"
+              - "Docker/**"
+              - ".dockerignore"
+              - "Identity.slnx"
+              - "Directory.*.props"
+              - "global.json"
+              - ".editorconfig"
+              - ".globalconfig"
+              - "Documentation/specs/container-kernel-contract-map.md"
+              - ".github/workflows/image.yml"
+              - ".github/workflows/pull-requests.yml"
             runner-guard:
               - ".github/workflows/**"
 
-  # No path filter: these checks previously ran on every pull request to main.
+  # Label/edit events retain full reruns; other events select the mapped contract paths.
   build:
-    if: ${{ github.event.pull_request.base.ref == 'main' }}
+    needs: changes
+    if: ${{ github.event.pull_request.base.ref == 'main' && (needs.changes.outputs.build == 'true' || contains(fromJSON('["edited","labeled","unlabeled"]'), github.event.action)) }}
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
 
   image:
-    if: ${{ github.event.pull_request.base.ref == 'main' }}
+    needs: changes
+    if: ${{ github.event.pull_request.base.ref == 'main' && (needs.changes.outputs.image == 'true' || contains(fromJSON('["edited","labeled","unlabeled"]'), github.event.action)) }}
     uses: ./.github/workflows/image.yml
     permissions:
       contents: read
