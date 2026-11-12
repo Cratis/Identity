@@ -44,7 +44,7 @@ public class when_the_token_endpoint_is_flooded(IdentityHost host) : IAsyncLifet
 
     [Fact] void should_preserve_invalid_client_before_the_limit() => _first.StatusCode.ShouldEqual(HttpStatusCode.Unauthorized);
     [Fact] void should_limit_before_client_authentication() => _limited.StatusCode.ShouldEqual(HttpStatusCode.TooManyRequests);
-    [Fact] void should_use_a_generic_oauth_refusal() => JsonDocument.Parse(_body).RootElement.GetProperty("error").GetString().ShouldEqual("temporarily_unavailable");
+    [Fact] void should_use_a_generic_oauth_refusal() => JsonElement.Parse(_body).GetProperty("error").GetString().ShouldEqual("temporarily_unavailable");
     [Fact] void should_give_the_full_window() => _limited.Headers.RetryAfter.Delta.ShouldEqual(TimeSpan.FromMinutes(1));
     [Fact] void should_allow_protocol_validation_after_the_window() => _recovered.StatusCode.ShouldEqual(_first.StatusCode);
 

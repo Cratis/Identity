@@ -9,4 +9,11 @@ namespace Cratis.Identity.Clients;
 /// <param name="ClientId">The client identifier, which is the HTTPS URL the document was fetched from.</param>
 /// <param name="ClientName">The self-asserted client name. Untrusted presentation metadata.</param>
 /// <param name="RedirectUris">The redirect URIs the document declares.</param>
-internal record ClientIdMetadataDocument(Uri ClientId, string ClientName, IEnumerable<Uri> RedirectUris);
+internal record ClientIdMetadataDocument(Uri ClientId, string ClientName, IEnumerable<Uri> RedirectUris)
+{
+    /// <summary>Gets whether every redirect is an admitted native loopback declaration.</summary>
+    public bool Native { get; init; }
+
+    /// <summary>Gets whether the document explicitly requests refresh-token support.</summary>
+    public bool AllowsRefreshToken { get; init; }
+}

@@ -12,7 +12,7 @@ The **same image serves staging and production**. Run both with `ASPNETCORE_ENVI
 
 ## Image and process
 
-The working image name is `ghcr.io/cratis/id`, isolated to the image workflow so it can be renamed. The workflow builds pull requests without signing in to a registry or pushing. Publication is **off by default**: only a main-branch or `v*` tag push with repository variable `CRATIS_ID_IMAGE_PUBLISH_ENABLED=true` enters the publishing job. Only that job requests `packages: write` and uses `GITHUB_TOKEN`. It publishes a commit-SHA tag and either `latest` on main or the release tag. Deployment should select an immutable digest; publishing an image does not deploy it.
+The working image name is `ghcr.io/cratis/id`, isolated to the image workflow so it can be renamed. The image workflow builds and smokes pull requests without signing in to a registry or pushing. Releases come from the `Publish` workflow: a merged pull request carrying one of `major`, `minor` or `patch` cuts a release, and `no-release` publishes nothing. Image publication is **off by default**: only a release with repository variable `CRATIS_ID_IMAGE_PUBLISH_ENABLED=true` enters the publishing job. Only that job requests `packages: write` and uses `GITHUB_TOKEN`. It publishes the release version, the commit SHA and, for non-prerelease versions, `latest`. Deployment should select an immutable digest; publishing an image does not deploy it.
 
 Build the hosted image from the repository root:
 
@@ -22,7 +22,7 @@ docker build -f Docker/Dockerfile --target cratis-id --build-arg HOST=Identity.C
 
 Both arguments matter: `HOST` selects the project to publish; `--target cratis-id` selects its entrypoint. Without them, the final `reference` target and `Identity.Host` project preserve local compose behavior.
 
-The runtime is .NET 10 ASP.NET Core, chiseled and non-root, listening on HTTP port `8080`. It has no shell or package manager and contains no realm keys, upstream credentials or provisioned databases. Mount secrets read-only with permissions readable by the image's non-root user. No Docker socket, privileged mode or container-managed MongoDB/Chronicle is part of the server contract.
+The runtime is .NET 11 ASP.NET Core, chiseled and non-root, listening on HTTP port `8080`. It has no shell or package manager and contains no realm keys, upstream credentials or provisioned databases. Mount secrets read-only with permissions readable by the image's non-root user. No Docker socket, privileged mode or container-managed MongoDB/Chronicle is part of the server contract.
 
 ## Required configuration
 
@@ -62,7 +62,7 @@ Recommendation: in staging, the default is acceptable only while network policy 
 
 ### Indexed collections
 
-Configuration arrays are addressed by index, and environment variables merge into the shipped `appsettings.json` arrays **by index**. For `Identity:Resources` the shipped order is a contract: index `0` is `https://cratis.direct/v1` (audience `direct-v1`) and index `1` is `https://cratis.direct/mcp` (audience `direct-mcp`). Index `2` is Studio (audience `studio-mcp`). Infrastructure sets `Identity__Resources__<N>__TenantsCallback__Url` and `__Secret`, plus `Identity__Resources__2__Indicators__0` for Studio. Reordering or inserting a shipped entry silently re-targets those secrets, so any further entry must be appended (index `3` onward) and the automation must pair index and secret.
+Configuration arrays are addressed by index, and environment variables merge into the shipped `appsettings.json` arrays **by index**. For `Identity:Resources` the shipped order is a contract: index `0` is `https://app.cratis.direct/v1` (audience `direct-v1`) and index `1` is `https://app.cratis.direct/mcp` (audience `direct-mcp`). Index `2` is Studio (audience `studio-mcp`). Infrastructure sets `Identity__Resources__<N>__TenantsCallback__Url` and `__Secret`, plus `Identity__Resources__2__Indicators__0` for Studio. Reordering or inserting a shipped entry silently re-targets those secrets, so any further entry must be appended (index `3` onward) and the automation must pair index and secret.
 
 `Identity__IntrospectionClients__<N>__ClientId` and `__ClientSecret` are both required for each entry, and client ids must be unique; the shipped list is empty. Use contiguous indexes starting at `0`. Validation enforces only that the secret is present; use a high-entropy value of at least 32 characters, as for callbacks.
 
@@ -132,8 +132,8 @@ The shipped catalog has two Direct entries and the Studio entry:
 
 | Resource indicator | Audience | Scope names |
 | --- | --- | --- |
-| `https://cratis.direct/v1` | `direct-v1` | `direct:read`, `direct:content.write`, `direct:work` |
-| `https://cratis.direct/mcp` | `direct-mcp` | `direct:mcp:read`, `direct:mcp:content.write`, `direct:mcp:work` |
+| `https://app.cratis.direct/v1` | `direct-v1` | `direct:read`, `direct:content.write`, `direct:work` |
+| `https://app.cratis.direct/mcp` | `direct-mcp` | `direct:mcp:read`, `direct:mcp:content.write`, `direct:mcp:work` |
 | Supplied by the environment (see below) | `studio-mcp` | `studio:mcp:read`, `studio:mcp:write` |
 
 Resources have no fixed tenants. **Direct must expose a tenants callback with a shared secret of at least 32 characters, and so must Studio when it is enabled**; authentication to the callback does not replace the product's live membership checks. Direct must configure a callback for both resource entries, even when both use the same product endpoint. Product owners supply callback URLs and secrets. The image does not implement product callbacks.
@@ -197,7 +197,7 @@ To run it locally, on a machine with Docker:
 
 ```bash
 docker build -f Docker/Dockerfile --target cratis-id --build-arg HOST=Identity.CratisId -t cratis-id:ci .
-CI=true CRATIS_ID_IMAGE_SMOKE_ENABLED=true ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs \
+CI=true CRATIS_ID_IMAGE_SMOKE_ENABLED=true ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs \
   -class Cratis.Identity.Integration.for_Host.when_starting_the_cratis_id_image \
   -class Cratis.Identity.Integration.for_Host.when_starting_the_cratis_id_image_without_configuration
 ```
@@ -211,6 +211,6 @@ Publication stays off and the image name above is a working name. Before the fir
 1. Confirms the final public image name and updates the workflow tags.
 2. Confirms the `smoke` job is green on the main commit to publish.
 3. Sets the repository variable `CRATIS_ID_IMAGE_PUBLISH_ENABLED=true`.
-4. Pushes to main or a `v*` tag, then records the published digest for deployment, which must pin it.
+4. Merges a pull request labelled `patch`, `minor` or `major`, then records the published digest for deployment, which must pin it.
 
 A container smoke is not a full protocol or D13 rehearsal. Browser sign-in, tenant selection, consent, refresh, product verifier behavior and restore/rotation exercises need their owning fixtures and operational procedures. Infrastructure manifests, rollout/rollback policy, per-app/self-hosted presets, bootstrap/upgrade tooling and host UI conformance are separate work.

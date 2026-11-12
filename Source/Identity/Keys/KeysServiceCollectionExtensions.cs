@@ -43,6 +43,7 @@ internal static class KeysServiceCollectionExtensions
             }
         }
 
+        var observeOidc = startupOptions.Oidc.IssuanceEnabled && startupOptions.OidcClients.Count > 0;
         services.AddSingleton(sp =>
         {
             var keys = new SecretStoreKeys(
@@ -50,10 +51,12 @@ internal static class KeysServiceCollectionExtensions
                 sp.GetRequiredService<TimeProvider>(),
                 sp.GetRequiredService<ILogger<SecretStoreKeys>>(),
                 deployed,
-                deployed ? null : sp.GetRequiredService<DevelopmentKeyStoreRoot>());
+                deployed ? null : sp.GetRequiredService<DevelopmentKeyStoreRoot>(),
+                observeOidc: observeOidc);
 
             // The first read validates the store, so an invalid one stops the host when the service is first resolved.
             _ = keys.Current;
+            if (observeOidc) OidcSigningKey.Require(keys, sp.GetRequiredService<TimeProvider>().GetUtcNow());
             return keys;
         });
         if (deployed)

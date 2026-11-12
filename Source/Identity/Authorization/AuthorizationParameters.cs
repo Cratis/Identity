@@ -35,8 +35,9 @@ internal static class AuthorizationParameters
     }
 
     /// <summary>
-    /// Gets the parameters to return to after upstream login. A <c language="text">login</c> prompt has been satisfied by the
-    /// login itself, so it is removed; keeping it would send the user back to login forever.
+    /// Gets the parameters to return to after upstream login. The satisfied <c language="text">login</c> prompt
+    /// is removed to avoid a login loop. All other parameters are preserved unchanged.
+    /// The upstream handler carries this return URL in its protected OAuth state.
     /// </summary>
     /// <param name="parameters">The parameters of the authorization request.</param>
     /// <returns>The parameters to return with.</returns>

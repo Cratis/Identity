@@ -191,8 +191,14 @@ internal static class KeyRingLoader
         return date;
     }
 
-    sealed record SecretFile(string File, string Purpose, string Name, string Extension, string Content)
+    sealed record SecretFile(string File, string Content)
     {
+        public string Purpose { get; private init; } = string.Empty;
+
+        public string Name { get; private init; } = string.Empty;
+
+        public string Extension { get; private init; } = string.Empty;
+
         public static SecretFile Parse(string file, string content)
         {
             var parts = file.Split('.');
@@ -200,7 +206,7 @@ internal static class KeyRingLoader
                 parts[1..^1].All(_ => _.Length > 0) &&
                 (parts[0], parts[^1]) is (Signing or Encryption, "crt" or "key") or (DataProtection, "xml");
             return recognized
-                ? new SecretFile(file, parts[0], string.Join('.', parts[1..^1]), parts[^1], content)
+                ? new SecretFile(file, content) { Purpose = parts[0], Name = string.Join('.', parts[1..^1]), Extension = parts[^1] }
                 : throw new InvalidKeyMaterial(file, "the file name is not signing.<name>.crt|key, encryption.<name>.crt|key or data-protection.<name>.xml");
         }
     }

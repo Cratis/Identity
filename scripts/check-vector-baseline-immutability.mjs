@@ -153,7 +153,7 @@ async function checkOverlay(root, baseRef, tags) {
     const sections = versionSections(await readFile(join(root, contract), 'utf8'), contract);
     assert(sections.has(manifest.version), 'Missing overlay contract section');
     const inheritedTag = `vectors/${spec}/v${manifest.inherits.version}`;
-    const anchors = [baseRef ?? 'HEAD', ...tags.filter(value => value === tag || value === inheritedTag)];
+    const anchors = [baseRef || 'HEAD', ...tags.filter(value => value === tag || value === inheritedTag)];
     for (const anchor of anchors) {
         const commit = revision(root, anchor.startsWith('vectors/') ? `refs/tags/${anchor}` : anchor);
         for (const name of ['arc-mcp-authorization-v1', 'arc-scope-catalog-v1', 'identity-access-token-v1', 'v2.1.0']) {

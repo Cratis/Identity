@@ -39,7 +39,7 @@ Start the reference host with the local-development launch profile:
 dotnet run --project Source/Identity.Host --launch-profile "Identity (local development profile)"
 ```
 
-The profile sets `Identity__Development__Enabled=true` in the `Development` environment. Identity listens on `http://localhost:5100`, and the discovery document is at `http://localhost:5100/.well-known/openid-configuration`.
+The profile sets `Identity__Development__Enabled=true` in the `Development` environment. Identity listens on `http://localhost:5100`, and the authorization server metadata is at `http://localhost:5100/.well-known/oauth-authorization-server`. The `/.well-known/openid-configuration` document describes OpenID Connect issuance, which is off by default; read it only after you enable `Identity:Oidc:IssuanceEnabled`.
 
 The flag belongs only in the launch profile or in `appsettings.Development.json`. Setting `Identity:Development:Enabled` in any other environment stops the host at startup with a message that names the setting.
 

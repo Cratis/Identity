@@ -4,11 +4,14 @@
 using System.Net;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Authorization.RateLimiting;
+using Cratis.Identity.Configuration;
 using Cratis.Identity.Device;
 using Cratis.Identity.Hosting;
 using Cratis.Identity.Realm;
+using Cratis.Identity.Sessions;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.AspNetCore.Builder;
 
@@ -34,7 +37,7 @@ public static class IdentityWebApplicationExtensions
     }
 
     /// <summary>
-    /// Maps authorization and token endpoints, and optionally the sign-out form. No middleware, health or root routes are added.
+    /// Maps authorization, token and explicitly configured end-session endpoints, and optionally the sign-out form. No middleware, health or root routes are added.
     /// OpenIddict serves discovery, JWKS, revocation and introspection through authentication middleware.
     /// </summary>
     /// <param name="app">The endpoint route builder.</param>
@@ -51,7 +54,7 @@ public static class IdentityWebApplicationExtensions
     {
         var options = app.ServiceProvider.ResolveIdentityEndpoints(configure);
         var group = app.MapGroup(options.RoutePrefix.Value ?? string.Empty);
-        if (app.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<Cratis.Identity.Configuration.DeviceGrantOptions>>().Value.Enabled)
+        if (app.ServiceProvider.GetRequiredService<IOptions<DeviceGrantOptions>>().Value.Enabled)
         {
             DeviceAuthorizationEndpoint.Map(group);
             DeviceVerificationEndpoint.Map(group);
@@ -61,12 +64,31 @@ public static class IdentityWebApplicationExtensions
             .DisableAntiforgery();
         group.MapPost("/connect/token", (HttpContext context, TokenEndpoint endpoint) => endpoint.Handle(context))
             .DisableAntiforgery();
+        if (options.EndSessionEnabled)
+        {
+            group.MapMethods("/connect/endsession", [HttpMethods.Get, HttpMethods.Post], (HttpContext context, EndSessionEndpoint endpoint) => endpoint.Handle(context))
+                .DisableAntiforgery();
+        }
+
+        MapOidc(app, group, options);
         if (options.MapSignOut)
         {
             MapSignOut(app, $"{options.RoutePrefix}/logout");
         }
 
         return app;
+    }
+
+    static void MapOidc(IEndpointRouteBuilder app, RouteGroupBuilder group, IdentityEndpointOptions endpoints)
+    {
+        var options = app.ServiceProvider.GetRequiredService<IOptions<IdentityOptions>>().Value;
+        app.MapGet("/.well-known/openid-configuration", () => string.IsNullOrWhiteSpace(options.Issuer)
+            ? Results.NotFound()
+            : Results.Json(OidcProviderMetadata.Create(options, endpoints)));
+        if (options.Oidc.IssuanceEnabled)
+        {
+            group.MapMethods("/connect/userinfo", [HttpMethods.Get, HttpMethods.Post], (HttpContext context, UserInfoEndpoint endpoint) => endpoint.Handle(context)).DisableAntiforgery();
+        }
     }
 
     static void MapSignOut(IEndpointRouteBuilder app, string path)

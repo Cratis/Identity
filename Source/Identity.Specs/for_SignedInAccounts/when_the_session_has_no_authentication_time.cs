@@ -28,7 +28,7 @@ public class when_the_session_has_no_authentication_time : Specification
         authentication.AuthenticateAsync(Arg.Any<HttpContext>(), Arg.Any<string>()).Returns(AuthenticateResult.Success(new(principal, "test")));
         await using var services = new ServiceCollection().AddSingleton(authentication).BuildServiceProvider();
         var http = new DefaultHttpContext { RequestServices = services };
-        _result = await new SignedInAccounts(accounts, Options.Create(new UpstreamLoginOptions())).Find(http, new OpenIddictRequest());
+        _result = await new SignedInAccounts(accounts, Options.Create(new UpstreamLoginOptions()), TimeProvider.System).Find(http, new OpenIddictRequest());
     }
 
     [Fact] void should_require_a_new_sign_in() => _result.ShouldBeNull();

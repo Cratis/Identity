@@ -13,12 +13,13 @@ public class when_reading_the_authorization_server_metadata(IdentityHost host) :
     public async ValueTask InitializeAsync()
     {
         var browser = host.CreateBrowser();
-        _metadata = JsonDocument.Parse(await browser.Client.GetStringAsync("/.well-known/oauth-authorization-server")).RootElement.Clone();
-        _jwks = JsonDocument.Parse(await browser.Client.GetStringAsync(_metadata.GetProperty("jwks_uri").GetString())).RootElement.Clone();
+        _metadata = JsonElement.Parse(await browser.Client.GetStringAsync("/.well-known/oauth-authorization-server"));
+        _jwks = JsonElement.Parse(await browser.Client.GetStringAsync(_metadata.GetProperty("jwks_uri").GetString()));
     }
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
+    [Fact] void should_not_advertise_client_metadata_when_disabled() => _metadata.TryGetProperty("client_id_metadata_document_supported", out _).ShouldBeFalse();
     [Fact] void should_name_the_configured_issuer() => _metadata.GetProperty("issuer").GetString().ShouldEqual(IdentityHost.Issuer);
     [Fact] void should_publish_the_authorization_endpoint() => _metadata.GetProperty("authorization_endpoint").GetString().ShouldEqual($"{IdentityHost.Issuer}connect/authorize");
     [Fact] void should_publish_the_token_endpoint() => _metadata.GetProperty("token_endpoint").GetString().ShouldEqual($"{IdentityHost.Issuer}connect/token");

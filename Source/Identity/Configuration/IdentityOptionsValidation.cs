@@ -16,7 +16,7 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
     /// <inheritdoc/>
     public ValidateOptionsResult Validate(string? name, IdentityOptions options)
     {
-        var failures = new List<string>();
+        List<string> failures = [];
         ValidateHost(options, failures);
         ValidateResources(options, failures);
         ValidateDPoP(options.DPoP, environment.IsDevelopment(), failures);
@@ -25,6 +25,7 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
         failures.AddRange(OidcClientOptionsValidation.Validate(options));
         failures.AddRange(TokenRateLimitOptionsValidation.Validate(options.TokenRateLimit));
         ValidateAccounts(options.Accounts, failures);
+        failures.AddRange(IdentityOptionsClientsValidation.Validate(options.Clients.MetadataDocuments));
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
     }
 
@@ -40,6 +41,11 @@ internal class IdentityOptionsValidation(IHostEnvironment environment) : IValida
         if (options.SecretStore.ReloadInterval < TimeSpan.FromSeconds(1) || options.SecretStore.ReloadInterval > TimeSpan.FromMinutes(5))
         {
             failures.Add("The secret store reload interval must be between one second and five minutes.");
+        }
+
+        if (options.Tokens.IdentityTokenLifetime <= TimeSpan.Zero || options.Tokens.IdentityTokenLifetime > TimeSpan.FromHours(1))
+        {
+            failures.Add("Identity:Tokens:IdentityTokenLifetime must be positive and no greater than 01:00:00.");
         }
 
         if (options.Tokens.AccessTokenLifetime <= TimeSpan.Zero || options.Tokens.AccessTokenLifetime > TimeSpan.FromMinutes(10))

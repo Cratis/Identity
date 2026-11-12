@@ -3,12 +3,11 @@
 
 name: CratisId image
 
+# Called from pull-requests.yml; the PR triggers and path filters live there.
 on:
-  pull_request:
-    branches: [main]
+  workflow_call:
   push:
     branches: [main]
-    tags: ['v*']
 
 permissions:
   contents: read
@@ -17,7 +16,7 @@ jobs:
   build:
     name: Build hosted-shared image
     concurrency:
-      group: ${{ github.workflow }}-build-${{ github.ref }}
+      group: cratis-id-image-build-${{ github.ref }}
       cancel-in-progress: true
     runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}
     timeout-minutes: 15
@@ -39,7 +38,7 @@ jobs:
   smoke:
     name: Smoke hosted-shared image
     concurrency:
-      group: ${{ github.workflow }}-smoke-${{ github.ref }}
+      group: cratis-id-image-smoke-${{ github.ref }}
       cancel-in-progress: true
     needs: build
     runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}
@@ -61,6 +60,9 @@ jobs:
           DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
         with:
           global-json-file: global.json
+          dotnet-version: |
+            10.0.x
+            11.0.x
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
@@ -85,44 +87,6 @@ jobs:
           CRATIS_ID_IMAGE_SMOKE_ENABLED: 'true'
           CRATIS_ID_IMAGE_SMOKE_IMAGE: cratis-id:ci
         run: >-
-          ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs
+          ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs
           -class Cratis.Identity.Integration.for_Host.when_starting_the_cratis_id_image
           -class Cratis.Identity.Integration.for_Host.when_starting_the_cratis_id_image_without_configuration
-
-  publish:
-    name: Publish hosted-shared image (opt-in)
-    concurrency:
-      group: ${{ github.workflow }}-publish
-      cancel-in-progress: false
-    needs: build
-    if: >-
-      github.event_name == 'push' &&
-      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) &&
-      vars.CRATIS_ID_IMAGE_PUBLISH_ENABLED == 'true'
-    runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
-      - name: Sign in to GHCR
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and publish
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
-        with:
-          context: .
-          file: Docker/Dockerfile
-          target: cratis-id
-          build-args: HOST=Identity.CratisId
-          push: true
-          tags: |
-            ghcr.io/cratis/id:${{ github.sha }}
-            ghcr.io/cratis/id:${{ github.ref_type == 'tag' && github.ref_name || 'latest' }}

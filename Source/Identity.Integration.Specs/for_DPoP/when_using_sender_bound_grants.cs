@@ -131,12 +131,14 @@ public class when_using_sender_bound_grants(DPoPHost host)
     }
 
     [Fact]
-    public async Task should_advertise_only_es256_when_enabled()
+    public async Task should_advertise_only_es256_on_the_resource_lane_when_enabled()
     {
         using var client = host.CreateClient();
-        using var response = await client.GetAsync("/.well-known/openid-configuration", TestContext.Current.CancellationToken);
+        using var response = await client.GetAsync("/.well-known/oauth-authorization-server", TestContext.Current.CancellationToken);
         var metadata = await Browser.ReadJson(response);
         metadata.GetProperty("dpop_signing_alg_values_supported").EnumerateArray().Select(value => value.GetString()).ShouldContainOnly("ES256");
+        using var identityResponse = await client.GetAsync("/.well-known/openid-configuration", TestContext.Current.CancellationToken);
+        (await Browser.ReadJson(identityResponse)).TryGetProperty("dpop_signing_alg_values_supported", out _).ShouldBeFalse();
     }
 
     static string Confirmation(JsonElement tokens)

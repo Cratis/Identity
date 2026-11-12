@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework />
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
     <!-- AssemblyName must match PackageId: type discovery resolves a referenced project by the library name in deps.json. -->
     <AssemblyName>Cratis.Identity.FenceLog</AssemblyName>
     <RootNamespace>Cratis.Identity.Revocation</RootNamespace>

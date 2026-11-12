@@ -8,4 +8,5 @@ namespace Cratis.Identity.Authorization;
 /// </summary>
 /// <param name="Scopes">The requested scopes.</param>
 /// <param name="ResourceIndicators">The requested RFC 8707 resource indicators.</param>
-internal record GrantRequest(IEnumerable<string> Scopes, IEnumerable<string> ResourceIndicators);
+/// <param name="ClientId">The validated client identifier, when supplied by the authorization endpoint.</param>
+internal record GrantRequest(IEnumerable<string> Scopes, IEnumerable<string> ResourceIndicators, string? ClientId = null);

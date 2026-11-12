@@ -25,7 +25,7 @@ The local profile registers only the MCP audiences. Local REST calls to Direct a
 Configure each product's MCP resource server for the local issuer:
 
 - Issuer: `http://localhost:5100/`
-- Signing keys: the JWKS from the discovery document at `http://localhost:5100/.well-known/openid-configuration`
+- Signing keys: the JWKS from the authorization server metadata at `http://localhost:5100/.well-known/oauth-authorization-server` (use `/.well-known/openid-configuration` only when OpenID Connect issuance is enabled)
 - Audience: `direct-mcp` for Direct, `studio-mcp` for Studio
 
 Leave the REST audience of each product unchanged. Do not set `direct-api` on the MCP resource server.

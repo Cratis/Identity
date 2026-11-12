@@ -14,7 +14,11 @@ internal static class IdentityEndpointConfiguration
     /// <returns>The validated endpoint options.</returns>
     internal static IdentityEndpointOptions AddIdentityEndpoints(this IServiceCollection services, IConfiguration configuration)
     {
-        var options = new IdentityEndpointOptions { RoutePrefix = configuration["Identity:Endpoints:RoutePrefix"] ?? string.Empty };
+        var options = new IdentityEndpointOptions
+        {
+            RoutePrefix = configuration["Identity:Endpoints:RoutePrefix"] ?? string.Empty,
+            EndSessionEnabled = !string.IsNullOrWhiteSpace(configuration["Identity:Issuer"])
+        };
         options.Validate();
         services.AddSingleton(Options.Create(options));
         return options;
