@@ -8,6 +8,8 @@ on:
   workflow_call:
   push:
     branches: [main]
+  schedule:
+    - cron: "43 6 * * *"
 
 permissions:
   contents: read
