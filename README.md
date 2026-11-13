@@ -99,7 +99,7 @@ Send a compact proof in one `DPoP` header, with `typ=dpop+jwt`, `alg=ES256`, a p
 
 Authorization-code redemption and approved device-code polling issue access tokens with object-valued `cnf: { "jkt": "..." }` and `token_type=DPoP`. Refresh entries carry immutable operational family binding; every rotation requires the same key. Missing/wrong proofs, nonce challenges and replay-store outages refuse issuance **before** consuming a refresh entry. An existing unbound family presented with a proof is refused; requiring DPoP later requires reauthentication, not key attachment during refresh. Disabling DPoP does not downgrade existing bound families to Bearer. ID tokens, authorization/device codes and refresh-token payloads do not carry `cnf`.
 
-**This slice is issuer-only. AuthProxy remains Bearer-only and is not a DPoP resource server.** Do not enable DPoP for clients targeting AuthProxy or assume sender binding is enforced at an API. Resource-server validation of `DPoP` authorization, proof `ath`, nonce and replay handling is deferred. See [the profile](Documentation/specs/identity-dpop-v1.md) and [conformance coverage](Documentation/conformance.md).
+**This slice is issuer-only.** In this slice AuthProxy remained Bearer-only; AuthProxy has since added resource-server DPoP enforcement, so check the AuthProxy release you deploy before relying on sender binding at an API. Within Identity, resource-server validation of `DPoP` authorization, proof `ath`, nonce and replay handling is deferred. See [the profile](Documentation/specs/identity-dpop-v1.md) and [conformance coverage](Documentation/conformance.md).
 
 ## Access token contract
 
