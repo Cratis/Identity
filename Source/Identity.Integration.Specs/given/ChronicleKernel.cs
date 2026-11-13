@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Net.Sockets;
+using Docker.DotNet;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 
@@ -13,6 +14,7 @@ namespace Cratis.Identity.Integration.given;
 public sealed class ChronicleKernel : IAsyncDisposable
 {
     const int ClientPort = 35000;
+    const int OutputTailLines = 60;
     readonly IContainer _container;
 
     /// <summary>Initializes a new instance of the <see cref="ChronicleKernel"/> class.</summary>
@@ -39,6 +41,7 @@ public sealed class ChronicleKernel : IAsyncDisposable
     /// <summary>Starts the shared kernel once for its owning host fixture.</summary>
     /// <returns>The startup task.</returns>
     /// <exception cref="TimeoutException">The kernel did not become ready in time.</exception>
+    /// <exception cref="ChronicleKernelExited">The kernel container stopped before it became ready.</exception>
     public async Task Start()
     {
         await _container.StartAsync();
@@ -50,6 +53,7 @@ public sealed class ChronicleKernel : IAsyncDisposable
         using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(5) };
         var uri = new Uri($"https://{_container.Hostname}:{_container.GetMappedPublicPort(ClientPort)}/connect/token");
         var deadline = DateTime.UtcNow.AddMinutes(4);
+        var lastOutcome = "no response";
         while (DateTime.UtcNow < deadline)
         {
             try
@@ -59,18 +63,27 @@ public sealed class ChronicleKernel : IAsyncDisposable
                 {
                     return;
                 }
+
+                lastOutcome = "503 Service Unavailable";
             }
-            catch (HttpRequestException)
+            catch (HttpRequestException ex)
             {
+                // A refused connection can mean the kernel process is gone; waiting out the deadline then only hides why.
+                lastOutcome = $"{ex.GetType().Name}: {ex.Message}";
+                if (await ExitCodeIfStopped() is { } exitCode)
+                {
+                    throw new ChronicleKernelExited(exitCode, $"Last outcome: {lastOutcome}.\n{await OutputTail()}");
+                }
             }
             catch (TaskCanceledException)
             {
+                lastOutcome = "no answer within 5 seconds";
             }
 
             await Task.Delay(TimeSpan.FromSeconds(2));
         }
 
-        throw new TimeoutException("The Chronicle kernel did not become ready.");
+        throw new TimeoutException($"The Chronicle kernel did not become ready within 4 minutes. Last outcome: {lastOutcome}.\n{await OutputTail()}");
     }
 
     /// <summary>Stops the real kernel for outage scenarios; its state is retained for restart.</summary>
@@ -80,10 +93,49 @@ public sealed class ChronicleKernel : IAsyncDisposable
     /// <inheritdoc/>
     public ValueTask DisposeAsync() => _container.DisposeAsync();
 
+    static string Tail(string text) => string.Join('\n', text.Split('\n', StringSplitOptions.RemoveEmptyEntries).TakeLast(OutputTailLines));
+
     static int FreeLoopbackPort()
     {
         using var listener = new TcpListener(IPAddress.Loopback, 0);
         listener.Start();
         return ((IPEndPoint)listener.LocalEndpoint).Port;
+    }
+
+    static bool IsDockerFailure(Exception exception) =>
+        exception is DockerApiException or HttpRequestException or IOException or OperationCanceledException;
+
+    /// <summary>
+    /// Gets the exit code when the container has stopped. Waiting on a running container blocks,
+    /// so a short bound tells running from stopped; an unreachable Docker daemon counts as unknown.
+    /// </summary>
+    /// <returns>The exit code, or <see langword="null"/> while running or unknown.</returns>
+    async Task<long?> ExitCodeIfStopped()
+    {
+        using var probe = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        try
+        {
+            return await _container.GetExitCodeAsync(probe.Token);
+        }
+        catch (Exception ex) when (IsDockerFailure(ex))
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Gets the end of the kernel's output, without letting a Docker failure replace the readiness failure.</summary>
+    /// <returns>The output tail, or why it is unavailable.</returns>
+    async Task<string> OutputTail()
+    {
+        using var bound = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        try
+        {
+            var (stdout, stderr) = await _container.GetLogsAsync(timestampsEnabled: true, ct: bound.Token);
+            return $"Kernel output (last {OutputTailLines} lines):\n{Tail(stdout)}\nKernel errors (last {OutputTailLines} lines):\n{Tail(stderr)}";
+        }
+        catch (Exception ex) when (IsDockerFailure(ex))
+        {
+            return $"Kernel output unavailable: {ex.GetType().Name}: {ex.Message}";
+        }
     }
 }
