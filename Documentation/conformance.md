@@ -60,7 +60,7 @@ Rate keys use purpose-separated SHA-256. Guess and issuance counters use atomic 
 
 ## Opt-in issuer-side DPoP
 
-DPoP is disabled by default. AuthProxy remains Bearer-only; resource-server proofs (`ath`), edge forwarding, organization policy, token exchange and `client_credentials` are deferred. No certification claim is made. The new integration scenarios below were added for CI and were **not run locally**.
+DPoP is disabled by default. In this slice AuthProxy remained Bearer-only (AuthProxy has since added resource-server DPoP enforcement); resource-server proofs (`ath`), edge forwarding, organization policy, token exchange and `client_credentials` are deferred. No certification claim is made. The new integration scenarios below were added for CI and were **not run locally**.
 
 | Requirement | Reference | Behavior | Proof |
 | --- | --- | --- | --- |

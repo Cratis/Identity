@@ -92,7 +92,7 @@ Both nonce domains use ASP.NET Core Data Protection and the deployment's existin
 - **Acceptance window.** A nonce issued at age 329 seconds is accepted and at age 330 seconds is refused; a nonce dated 30 seconds ahead is accepted and 31 seconds ahead is refused. Older nonces stay valid inside this window, so a fresh nonce does not invalidate earlier ones.
 - **Keys.** No separate nonce key exists. Validators share the Data Protection key ring and application discriminator of their own deployment. The distinct purpose strings keep the domains separate even if a ring is shared. Keys MUST be retained through the nonce acceptance window across rotation.
 - **Rotation and retirement.** Routine rotation and emergency retirement follow the Data Protection key ring's own lifecycle. Revoking a ring key invalidates the nonces it protected; clients recover with one extra `use_dpop_nonce` round trip.
-- **Issuing.** A validator issues no nonce while replay-store health or clock alignment is uncertain (§4).
+- **Issuing.** A validator issues no nonce while replay-store health or clock alignment is uncertain (§4). The Identity AS does not yet meet this: it issues the challenge nonce before it consults the replay store.
 
 For resource failures, AuthProxy MUST return HTTP 401 without a caller or downstream dispatch:
 
