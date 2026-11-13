@@ -26,27 +26,7 @@ internal sealed class MongoFenceStore(IMongoDatabase database, TimeProvider time
             return null;
         }
 
-        if (!document.Contains("payload"))
-        {
-            // A cancellation can win before the first operational write. It must survive that write.
-            if (!document.TryGetValue("cancelledReservations", out var cancelled) || cancelled.AsBsonArray.Count == 0)
-            {
-                throw new RevocationPending();
-            }
-
-            return null;
-        }
-
-        var state = JsonSerializer.Deserialize<GrantState>(document["payload"].AsString) ?? throw new RevocationPending();
-        if (!GrantStateValidation.IsKnown(state) || state.GrantId != grantId || state.Version != document["version"].AsInt64 ||
-            (state.Fence is not null) != document["fenced"].AsBoolean ||
-            state.CurrentRefreshTokenId != (document["currentRefreshTokenId"].IsBsonNull ? null : document["currentRefreshTokenId"].AsString) ||
-            state.Outbox.Any(entry => entry.State != OutboxState.Delivered) != document["undelivered"].AsBoolean)
-        {
-            throw new RevocationPending();
-        }
-
-        return state;
+        return document.Contains("payload") ? ToState(grantId, document) : WithoutPayload(document);
     }
 
     /// <inheritdoc/>
@@ -101,35 +81,20 @@ internal sealed class MongoFenceStore(IMongoDatabase database, TimeProvider time
             return RedeemOutcome.Unknown;
         }
 
-        if (current.Fence is not null || current.RecoveryEpoch != await log.RecoveryEpoch(cancellationToken) || await log.Tombstone(grantId, cancellationToken) is not null)
+        if (await IsFenced(current, grantId, cancellationToken))
         {
             return RedeemOutcome.Fenced;
         }
 
-        if (current.CurrentRefreshTokenId != consumedId)
+        if (FenceStoreRules.Refusal(current, consumedId, expectedVersion) is { } refusal)
         {
-            return RedeemOutcome.NotCurrent;
-        }
-
-        if (current.Version != expectedVersion)
-        {
-            return RedeemOutcome.VersionConflict;
+            return refusal;
         }
 
         var next = current with { Version = current.Version + 1, CurrentRefreshTokenId = successorId };
-        if (await Replace(current, next, cancellationToken))
-        {
-            return RedeemOutcome.Installed;
-        }
-
-        var winner = await Read(grantId, cancellationToken);
-        return winner switch
-        {
-            null => RedeemOutcome.Unknown,
-            { Fence: not null } => RedeemOutcome.Fenced,
-            _ when winner.CurrentRefreshTokenId != consumedId => RedeemOutcome.NotCurrent,
-            _ => RedeemOutcome.VersionConflict
-        };
+        return await Replace(current, next, cancellationToken)
+            ? RedeemOutcome.Installed
+            : FenceStoreRules.AfterLostRace(await Read(grantId, cancellationToken), consumedId);
     }
 
     /// <inheritdoc/>
@@ -179,28 +144,16 @@ internal sealed class MongoFenceStore(IMongoDatabase database, TimeProvider time
     {
         try
         {
-            var filter = new BsonDocument { { "_id", reservation.GrantId }, { "fenceId", new BsonDocument("$ne", reservation.Id.ToString("D")) } };
             var result = await _grants.UpdateOneAsync(
-                filter,
-                new BsonDocument("$addToSet", new BsonDocument("cancelledReservations", reservation.Id.ToString("D"))),
+                FenceStoreRules.CancellationFilter(reservation),
+                FenceStoreRules.CancellationUpdate(reservation),
                 new UpdateOptions { IsUpsert = true },
                 cancellationToken);
-            if (!result.IsAcknowledged || (result.MatchedCount != 1 && result.UpsertedId is null))
-            {
-                throw new RevocationPending();
-            }
-
-            return null;
+            return FenceStoreRules.IsCommitted(result) ? null : throw new RevocationPending();
         }
-        catch (MongoWriteException exception) when (exception.WriteError.Category == ServerErrorCategory.DuplicateKey)
+        catch (MongoWriteException exception) when (IsDuplicateKey(exception))
         {
-            var state = await Read(reservation.GrantId, cancellationToken) ?? throw new RevocationPending();
-            if (state.Fence is not { } fence || fence.Id != reservation.Id || fence.Sequence != reservation.Sequence)
-            {
-                throw new RevocationPending();
-            }
-
-            return FenceRecordFactory.Record(state);
+            return await RecordCommittedFence(reservation, cancellationToken);
         }
     }
 
@@ -238,37 +191,45 @@ internal sealed class MongoFenceStore(IMongoDatabase database, TimeProvider time
     /// <exception cref="RevocationPending">The write was not acknowledged.</exception>
     internal async Task<bool> Replace(GrantState? current, GrantState next, CancellationToken cancellationToken, long? replayEpoch = null)
     {
-        var document = new BsonDocument
-        {
-            { "version", next.Version }, { "fenced", next.Fence is not null },
-            { "fenceId", next.Fence is null ? BsonNull.Value : new BsonString(next.Fence.Id.ToString("D")) },
-            { "currentRefreshTokenId", next.CurrentRefreshTokenId is null ? BsonNull.Value : new BsonString(next.CurrentRefreshTokenId) },
-            { "undelivered", next.Outbox.Any(entry => entry.State != OutboxState.Delivered) },
-            { "payload", JsonSerializer.Serialize(next) }
-        };
-        var filter = current is null
-            ? new BsonDocument { { "_id", next.GrantId }, { "payload", new BsonDocument("$exists", false) } }
-            : new BsonDocument { { "_id", current.GrantId }, { "version", current.Version }, { "fenced", current.Fence is not null }, { "currentRefreshTokenId", current.CurrentRefreshTokenId is null ? BsonNull.Value : new BsonString(current.CurrentRefreshTokenId) } };
-        if (next.Fence is { } fence)
-        {
-            filter.Add("cancelledReservations", new BsonDocument("$ne", fence.Id.ToString("D")));
-        }
-
-        if (replayEpoch is not null)
-        {
-            document.Add("replayEpoch", replayEpoch.Value);
-        }
-
         try
         {
             // $set preserves all cancellation markers. Replacing the document could resurrect a delayed writer.
-            var result = await _grants.UpdateOneAsync(filter, new BsonDocument("$set", document), new UpdateOptions { IsUpsert = current is null }, cancellationToken);
-            return result.IsAcknowledged && (result.MatchedCount == 1 || result.UpsertedId is not null);
+            var result = await _grants.UpdateOneAsync(
+                FenceStoreRules.ReplacementFilter(current, next),
+                new BsonDocument("$set", FenceStoreRules.ReplacementDocument(next, replayEpoch)),
+                new UpdateOptions { IsUpsert = current is null },
+                cancellationToken);
+            return FenceStoreRules.IsCommitted(result);
         }
-        catch (MongoWriteException exception) when (exception.WriteError.Category == ServerErrorCategory.DuplicateKey)
+        catch (MongoWriteException exception) when (IsDuplicateKey(exception))
         {
             return false;
         }
+    }
+
+    static bool IsDuplicateKey(MongoWriteException exception) => exception.WriteError.Category == ServerErrorCategory.DuplicateKey;
+
+    /// <summary>A cancellation can win before the first operational write. It must survive that write.</summary>
+    /// <param name="document">The stored document.</param>
+    /// <returns>No state when only cancellation markers exist.</returns>
+    /// <exception cref="RevocationPending">The document carries neither payload nor cancellation.</exception>
+    static GrantState? WithoutPayload(BsonDocument document) => FenceStoreRules.IsCancellationOnly(document) ? null : throw new RevocationPending();
+
+    static GrantState ToState(string grantId, BsonDocument document)
+    {
+        var state = JsonSerializer.Deserialize<GrantState>(document["payload"].AsString) ?? throw new RevocationPending();
+        return FenceStoreRules.IsConsistent(state, grantId, document) ? state : throw new RevocationPending();
+    }
+
+    async Task<bool> IsFenced(GrantState current, string grantId, CancellationToken cancellationToken) =>
+        FenceStoreRules.IsFenced(current) ||
+        FenceStoreRules.IsStaleEpoch(current, await log.RecoveryEpoch(cancellationToken)) ||
+        await log.Tombstone(grantId, cancellationToken) is not null;
+
+    async Task<FenceRecord?> RecordCommittedFence(FenceReservation reservation, CancellationToken cancellationToken)
+    {
+        var state = await Read(reservation.GrantId, cancellationToken) ?? throw new RevocationPending();
+        return FenceStoreRules.IsCommittedBy(state, reservation) ? FenceRecordFactory.Record(state) : throw new RevocationPending();
     }
 
     async Task Progress(string grantId, Func<GrantState, GrantState> update, CancellationToken cancellationToken)
