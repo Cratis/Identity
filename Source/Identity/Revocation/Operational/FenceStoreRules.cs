@@ -104,6 +104,13 @@ internal static class FenceStoreRules
         return filter;
     }
 
+    /// <summary>Whether the state is the permanent denial the reservation was allocated for.</summary>
+    /// <param name="state">The re-read state.</param>
+    /// <param name="reservation">The reservation being cancelled.</param>
+    /// <returns>Whether the fence carries exactly the reservation's identity and sequence.</returns>
+    internal static bool IsCommittedBy(GrantState state, FenceReservation reservation) =>
+        state.Fence is { } fence && fence.Id == reservation.Id && fence.Sequence == reservation.Sequence;
+
     /// <summary>Builds the filter that records a cancellation unless that reservation already committed.</summary>
     /// <param name="reservation">The reservation being cancelled.</param>
     /// <returns>The filter.</returns>
