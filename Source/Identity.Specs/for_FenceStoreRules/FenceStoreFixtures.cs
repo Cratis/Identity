@@ -27,7 +27,7 @@ internal static class FenceStoreFixtures
 
     internal static BsonDocument StoredFenced(GrantState state) => new()
     {
-        { "_id", state.GrantId }, { "version", state.Version }, { "fenced", true }, { "fenceId", state.Fence!.Id.ToString("D") },
+        { "_id", state.GrantId }, { "version", state.Version }, { "fenced", true }, { "fenceId", state.Fence?.Id.ToString("D") },
         { "currentRefreshTokenId", BsonNull.Value }, { "undelivered", true }, { "payload", "{}" }
     };
 }
