@@ -18,7 +18,7 @@ For **every served realm**, create fresh signing keys and replace exposed encryp
 
 ## Chronicle workload credentials
 
-The credential the host uses to reach Chronicle must share no trust root with the people realm. It is issued outside the realm, is not derived from or signed by realm keys or OpenIddict client secrets, and lives at its own secret-store path, so rotating or losing realm secrets neither exposes nor invalidates it, and the reverse. Rotate it separately and revoke it at its issuer. Provisioning is infrastructure work; see the [fence-log runbook](fence-log-restore.md#chronicle-workload-credentials).
+The credential the host uses to reach Chronicle must share no trust root with the people realm. It is issued outside the realm, is not derived from or signed by realm keys or OpenIddict client secrets, and lives at its own secret-store path, so rotating or losing realm secrets (an issuer-key-only exposure) neither exposes nor invalidates it, and the reverse. A compromise of the host process itself includes the credential resident on it, so rotate and revoke it as part of host recovery. Rotate it separately and revoke it at its issuer. Provisioning is infrastructure work; see the [fence-log runbook](fence-log-restore.md#chronicle-workload-credentials).
 
 ## Revocation actions
 
