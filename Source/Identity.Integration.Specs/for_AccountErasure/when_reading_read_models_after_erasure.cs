@@ -32,9 +32,12 @@ public class when_reading_read_models_after_erasure(IdentityHost host) : IAsyncL
         (await harness.Store.EventLog.Append(subject.Value, new AccountEmailChanged(EmailAddress))).IsSuccess.ShouldBeTrue();
         (await harness.Store.EventLog.Append(subject.Value, new UpstreamKeyLinkProposed(Guid.NewGuid(), Guid.NewGuid(), "https://github.com", ProposedSubject))).IsSuccess.ShouldBeTrue();
         var events = await harness.Store.EventLog.GetFromSequenceNumber(EventSequenceNumber.First, subject.Value);
-        var tail = events[^1].Context.SequenceNumber;
-        await harness.Store.Projections.WaitTillReachesEventSequenceNumber<AccountProjection>(tail, TimeSpan.FromSeconds(30));
-        await harness.Store.Reducers.WaitTillReachesEventSequenceNumber<AccountLinkStateReducer>(tail, TimeSpan.FromSeconds(30));
+
+        // The proposal advances only the reducer; the account projection's last input is the email change.
+        var accountTail = events.Single(@event => @event.Content is AccountEmailChanged).Context.SequenceNumber;
+        var linkStateTail = events.Single(@event => @event.Content is UpstreamKeyLinkProposed).Context.SequenceNumber;
+        await harness.Store.Projections.WaitTillReachesEventSequenceNumber<AccountProjection>(accountTail, TimeSpan.FromSeconds(30));
+        await harness.Store.Reducers.WaitTillReachesEventSequenceNumber<AccountLinkStateReducer>(linkStateTail, TimeSpan.FromSeconds(30));
         var reader = new AccountReader(harness.Store.ReadModels);
         await VerifyPersonalDataBeforeErasure(reader, subject);
 
