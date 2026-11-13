@@ -71,7 +71,7 @@ DPoP is disabled by default. AuthProxy remains Bearer-only; resource-server proo
 | `DPOP-PROOF-VALIDATION` | RFC 9449 §4.3 | Validate against the exact configured public endpoint. | `for_DPoP/when_using_sender_bound_grants`; focused unit specs also check bounded ES256 parsing and signatures. |
 | `DPOP-METADATA` | RFC 9449 §5.1 | Advertise ES256 only when enabled. | `for_DPoP/when_using_sender_bound_grants` |
 
-The AS nonce uses the issuer's existing shared Data Protection ring and purpose `Cratis.Identity.Dpop.Nonce.v1`, replacing the draft profile's standalone HMAC secret/encoding. The secret-store loader and contracts are unchanged. The older fixed nonce-encoding fixture describes the draft HMAC format, not Data Protection ciphertext. Focused unit specs cover nonce origin/key/time binding, shared-store failure, immutable family properties and access-only confirmation. Retained ring keys remain usable across rotation; all replicas must share the ring and application discriminator.
+The AS nonce uses the issuer's existing shared Data Protection ring and purpose `Cratis.Identity.Dpop.Nonce.v1`, in place of a standalone secret. The secret-store loader and contracts are unchanged. The `nonce-validation` vector describes the resource-server nonce behavior (missing, expired, wrong key, wrong origin) without real encodings. Focused unit specs cover nonce origin/key/time binding, shared-store failure, immutable family properties and access-only confirmation. Retained ring keys remain usable across rotation; all replicas must share the ring and application discriminator.
 
 ## Opt-in public Client ID Metadata Documents
 

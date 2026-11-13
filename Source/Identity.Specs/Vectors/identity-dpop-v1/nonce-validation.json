@@ -1,0 +1,80 @@
+{
+    "name": "nonce-validation",
+    "description": "Behavioral cases for the resource-server Data Protection nonce (section 5.1), checked by the AuthProxy resource validator. Nonce values are labels, not real encodings. Every failure is a use_dpop_nonce challenge with a fresh nonce; the request is never forwarded and the proof id is not reserved.",
+    "given": {
+        "validator": "authproxy",
+        "validation_domain": "resource",
+        "now": 2000000000,
+        "origin": "https://direct.cratis.io",
+        "proof_jkt": "xx0BcA-wMohw8atYDJOe6peGModklG2wRHBlXHMvl0M",
+        "nonce_labels": "A label names how the nonce was issued: its domain, origin, jkt and issued_at. It is not a real nonce."
+    },
+    "when": { "action": "validate_nonce_cases" },
+    "then": {
+        "cases": [
+            {
+                "name": "valid",
+                "nonce": { "issued_for": { "domain": "resource", "origin": "https://direct.cratis.io", "jkt": "xx0BcA-wMohw8atYDJOe6peGModklG2wRHBlXHMvl0M", "issued_at": 1999999990 } },
+                "outcome": "accept"
+            },
+            {
+                "name": "missing",
+                "description": "No nonce member in the proof.",
+                "nonce": null,
+                "outcome": "reject",
+                "reason": "use_dpop_nonce"
+            },
+            {
+                "name": "expired",
+                "description": "A correctly issued nonce older than the acceptance window.",
+                "nonce": { "issued_for": { "domain": "resource", "origin": "https://direct.cratis.io", "jkt": "xx0BcA-wMohw8atYDJOe6peGModklG2wRHBlXHMvl0M", "issued_at": 1999999600 } },
+                "outcome": "reject",
+                "reason": "use_dpop_nonce"
+            },
+            {
+                "name": "wrong-key",
+                "description": "A valid nonce presented in a proof whose key thumbprint differs from the one it was issued for.",
+                "nonce": { "issued_for": { "domain": "resource", "origin": "https://direct.cratis.io", "jkt": "xx0BcA-wMohw8atYDJOe6peGModklG2wRHBlXHMvl0M", "issued_at": 1999999990 } },
+                "proof_jkt": "y_hww8NZc6B-6dn23NpfIjOz8EM3db4LRCIyomHUKa0",
+                "outcome": "reject",
+                "reason": "use_dpop_nonce"
+            },
+            {
+                "name": "wrong-origin",
+                "description": "A nonce issued for another configured public origin.",
+                "nonce": { "issued_for": { "domain": "resource", "origin": "https://other.cratis.io", "jkt": "xx0BcA-wMohw8atYDJOe6peGModklG2wRHBlXHMvl0M", "issued_at": 1999999990 } },
+                "outcome": "reject",
+                "reason": "use_dpop_nonce"
+            },
+            {
+                "name": "authorization-server-nonce",
+                "description": "An authorization-server nonce presented to the resource validator; the separate purpose strings keep the domains apart.",
+                "nonce": { "issued_for": { "domain": "as", "origin": "https://direct.cratis.io", "jkt": "xx0BcA-wMohw8atYDJOe6peGModklG2wRHBlXHMvl0M", "issued_at": 1999999990 } },
+                "outcome": "reject",
+                "reason": "use_dpop_nonce"
+            },
+            {
+                "name": "last-valid-second",
+                "nonce": { "issued_for": { "domain": "resource", "origin": "https://direct.cratis.io", "jkt": "xx0BcA-wMohw8atYDJOe6peGModklG2wRHBlXHMvl0M", "issued_at": 1999999671 } },
+                "outcome": "accept"
+            },
+            {
+                "name": "first-expired-second",
+                "nonce": { "issued_for": { "domain": "resource", "origin": "https://direct.cratis.io", "jkt": "xx0BcA-wMohw8atYDJOe6peGModklG2wRHBlXHMvl0M", "issued_at": 1999999670 } },
+                "outcome": "reject",
+                "reason": "use_dpop_nonce"
+            },
+            {
+                "name": "future-allowance-edge",
+                "nonce": { "issued_for": { "domain": "resource", "origin": "https://direct.cratis.io", "jkt": "xx0BcA-wMohw8atYDJOe6peGModklG2wRHBlXHMvl0M", "issued_at": 2000000030 } },
+                "outcome": "accept"
+            },
+            {
+                "name": "future-beyond-allowance",
+                "nonce": { "issued_for": { "domain": "resource", "origin": "https://direct.cratis.io", "jkt": "xx0BcA-wMohw8atYDJOe6peGModklG2wRHBlXHMvl0M", "issued_at": 2000000031 } },
+                "outcome": "reject",
+                "reason": "use_dpop_nonce"
+            }
+        ]
+    }
+}
