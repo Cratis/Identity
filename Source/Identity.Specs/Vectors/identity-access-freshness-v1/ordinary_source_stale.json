@@ -1,0 +1,7 @@
+{
+  "name": "ordinary_source_stale",
+  "description": "Policy-dependent reads stop after 60 seconds without trusted source progress.",
+  "given": { "last_trusted_source_progress_t": 0, "watermark_sequence": 120, "projection_sequence": 120, "projection_epoch": 7 },
+  "when": [ { "order": 1, "t": 61, "action": "attempt_ordinary_policy_dependent_read", "expected": "deny_stale_source_progress" } ],
+  "then": { "ordinary_authorization": "deny", "cached_positive_authorization_used": false }
+}

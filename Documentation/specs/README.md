@@ -18,6 +18,7 @@ Specifications define contracts shared by Identity and its consumers. RFC 2119 k
 | identity-credential-record | 1 | Draft | [Credential record and adapter boundary](identity-credential-record-v1.md) |
 | identity-dpop | 1 | Signed off | [DPoP edge profile](identity-dpop-v1.md) |
 | identity-revocation | 1 | Signed off | [Revocation protocol and fence durability](identity-revocation-v1.md) |
+| identity-access-freshness | 1 | Draft | [Access freshness and policy epochs](identity-access-freshness-v1.md) |
 | identity-standards-references | 1 | Signed off | [Verified standards references](identity-standards-references-v1.md) |
 | arc-pat-format | 1 | Signed off | [PAT format](arc-pat-format-v1.md) |
 | arc-scope-catalog | 1 | Signed off | [Scope catalog](arc-scope-catalog-v1.md) |
