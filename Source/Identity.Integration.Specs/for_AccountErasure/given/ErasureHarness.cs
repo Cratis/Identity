@@ -54,13 +54,22 @@ internal sealed class ErasureHarness(IServiceProvider provider)
     /// <returns>The tombstoned account subject.</returns>
     public async Task<AccountSubject> TombstonedAccount()
     {
+        var account = await RegisteredAccount();
+        var timeProvider = provider.GetRequiredService<TimeProvider>();
+        (await Store.EventLog.Append(account.Value, new AccountTombstoneRecorded(timeProvider.GetUtcNow(), FactId.New()))).IsSuccess.ShouldBeTrue();
+        return account;
+    }
+
+    /// <summary>Registers an active account with a personal name.</summary>
+    /// <returns>The account subject.</returns>
+    public async Task<AccountSubject> RegisteredAccount()
+    {
         var adapter = provider.GetRequiredService<EventSourcedAccountAdapter>();
         var timeProvider = provider.GetRequiredService<TimeProvider>();
         var connection = new GitHubConnection(GitHubConnection.FixedConnectionId, timeProvider);
         var user = new GitHubUser(UpstreamUserIds.Next(), "erasure-spec-login", "Erasure Spec Person");
         var account = await adapter.SignIn(connection.From(user, FactId.New()), new(null, user.Name, user.Login), TestContext.Current.CancellationToken);
         (await Store.EventLog.Append(account.Id.Value, new AccountNameChanged(RenamedPersonalName))).IsSuccess.ShouldBeTrue();
-        (await Store.EventLog.Append(account.Id.Value, new AccountTombstoneRecorded(timeProvider.GetUtcNow(), FactId.New()))).IsSuccess.ShouldBeTrue();
         return account.Id;
     }
 
