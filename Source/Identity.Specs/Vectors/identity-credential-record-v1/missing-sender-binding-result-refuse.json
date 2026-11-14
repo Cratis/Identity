@@ -1,0 +1,22 @@
+{
+    "name": "missing-sender-binding-result-refuse",
+    "description": "When no sender-binding result is produced the gateway refuses; a missing result never means unbound.",
+    "given": {
+        "authorization_scheme": "Bearer",
+        "introspection_response": {
+            "active": true,
+            "credential_kind": "oauth-grant",
+            "credential_id": "6f1c2b4e-9d3a-4c58-8a71-2e5b0d7a91c3",
+            "aud": "studio-mcp",
+            "tid": "tenant-fixture",
+            "scope": "studio:read",
+            "cache_epoch": 7
+        },
+        "sender_binding_result": null
+    },
+    "when": { "action": "build_oauth_envelope_at_authproxy" },
+    "then": {
+        "outcome": "refuse",
+        "treated_as_unbound": false
+    }
+}

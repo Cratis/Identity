@@ -1,0 +1,14 @@
+{
+    "name": "revoked-inactive-refuse",
+    "description": "An invalid, expired or revoked token introspects as exactly active false; the gateway refuses and caches no negative result.",
+    "given": {
+        "authorization_scheme": "Bearer",
+        "introspection_response": { "active": false }
+    },
+    "when": { "action": "build_oauth_envelope_at_authproxy" },
+    "then": {
+        "outcome": "refuse",
+        "credential_metadata_disclosed": false,
+        "cache_negative_result": false
+    }
+}

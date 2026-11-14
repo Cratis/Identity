@@ -24,7 +24,7 @@ Consequence: a revoked token is denied at the edge within the cache window, not 
 | AuthProxy introspection, positive cache and `/mcp` fail-closed | Decided, pending delivery | AuthProxy issue 255 |
 | `Authorization` pass-through opt-in for anonymous routes | Decided, pending delivery | AuthProxy issue 283 |
 
-The shipped `Identity:IntrospectionClients` list is empty in `Source/Identity.Host/appsettings.json` and `Source/Identity.CratisId/appsettings.json`. AuthProxy needs an entry there before it can introspect. No caller of `connect/introspect` exists in Direct, Studio, AuthProxy or Arc today.
+The shipped `Identity:IntrospectionClients` list is empty in `Source/Identity.Host/appsettings.json` and `Source/Identity.CratisId/appsettings.json`. AuthProxy needs an entry there before it can introspect; the entry fields and the audience rule are in [Gateway introspection client registration](../specs/identity-credential-record-v1.md#4a-gateway-introspection-client-registration). No caller of `connect/introspect` exists in Direct, Studio, AuthProxy or Arc today.
 
 ## Revocation fence and introspection
 

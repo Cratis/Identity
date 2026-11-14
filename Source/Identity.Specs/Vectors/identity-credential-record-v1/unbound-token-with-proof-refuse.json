@@ -1,0 +1,26 @@
+{
+    "name": "unbound-token-with-proof-refuse",
+    "description": "An unbound token presented with a DPoP scheme and proof is refused; a request-supplied proof cannot create issuer binding.",
+    "given": {
+        "authorization_scheme": "DPoP",
+        "introspection_response": {
+            "active": true,
+            "credential_kind": "oauth-grant",
+            "credential_id": "6f1c2b4e-9d3a-4c58-8a71-2e5b0d7a91c3",
+            "aud": "studio-mcp",
+            "tid": "tenant-fixture",
+            "scope": "studio:read",
+            "cache_epoch": 7
+        },
+        "proof": {
+            "validated": true,
+            "jkt": "xx0BcA-wMohw8atYDJOe6peGModklG2wRHBlXHMvl0M",
+            "jti": "3582ed7c-78cc-44a4-a14a-3e2cd16572bc"
+        }
+    },
+    "when": { "action": "build_oauth_envelope_at_authproxy" },
+    "then": {
+        "outcome": "refuse",
+        "binding_acquired_from_request": false
+    }
+}
