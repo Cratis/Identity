@@ -1,0 +1,16 @@
+{
+    "name": "same-issuer-same-sub-resolves-existing-account",
+    "description": "A replacement connection with the exact same issuer and key resolves the existing confirmed account after authentication.",
+    "given": {
+        "confirmed_link": { "idp": "https://idp.example.test", "idp_sub": "subject-1", "account": "account-a", "state": "confirmed" },
+        "existing_connection_lineage": { "connection": "connection-old", "organisation": "org-ref-1", "directory_authority": "directory-a", "issuer": "https://idp.example.test" },
+        "replacement_connection": { "connection": "connection-new", "organisation": "org-ref-1", "directory_authority": "directory-a", "issuer": "https://idp.example.test", "approved": true },
+        "access_verified_same_organisation_and_directory_authority": true,
+        "issuer_metadata_and_keys_verified": true,
+        "same_trust_anchor_or_verified_rotation_continuity": true,
+        "verified_authentication": { "idp": "https://idp.example.test", "idp_sub": "subject-1", "auth_time": 100 },
+        "uniqueness_and_tombstone_checks": "pass"
+    },
+    "when": { "action": "resolve_authenticated_exact_key" },
+    "then": { "outcome": "existing_account_resolved", "account": "account-a", "new_link_proposal_required": false, "auth_time": 100, "membership_created": false, "product_access_without_live_checks": false }
+}

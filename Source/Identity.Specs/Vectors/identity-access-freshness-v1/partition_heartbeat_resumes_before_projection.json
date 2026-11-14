@@ -1,0 +1,14 @@
+{
+  "name": "partition_heartbeat_resumes_before_projection",
+  "description": "Partition recovery must apply both fence coordinates; a resumed heartbeat alone is insufficient.",
+  "given": { "last_trusted_source_progress_t": 0, "last_trusted_fence_heartbeat_t": 0, "watermark_sequence": 120, "projection_sequence": 120, "projection_epoch": 7, "fence_sequence": 120, "fence_epoch": 7 },
+  "when": [
+    { "order": 1, "t": 1, "action": "partition_access_feeds" },
+    { "order": 2, "t": 61, "action": "attempt_ordinary_policy_dependent_read", "expected": "deny_stale_source_progress" },
+    { "order": 3, "t": 62, "action": "receive_trusted_source_watermark_and_priority_heartbeat", "source_progress_t": 62, "heartbeat_source_t": 62, "watermark_sequence": 121, "fence_sequence": 121, "fence_epoch": 8 },
+    { "order": 4, "t": 63, "action": "attempt_critical_approval_use", "expected": "deny_projection_behind" },
+    { "order": 5, "t": 64, "action": "apply_contiguous_source_facts", "projection_sequence": 121, "projection_epoch": 8 },
+    { "order": 6, "t": 65, "action": "attempt_critical_approval_use", "evaluated_policy_epoch": 8, "expected": "allow_after_checks" }
+  ],
+  "then": { "heartbeat_alone_restores_critical_authorization": false, "critical_authorization": "allow_after_checks", "evaluated_policy_epoch": 8 }
+}

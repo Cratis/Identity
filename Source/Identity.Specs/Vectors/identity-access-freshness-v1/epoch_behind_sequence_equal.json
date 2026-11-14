@@ -1,0 +1,7 @@
+{
+  "name": "epoch_behind_sequence_equal",
+  "description": "An equal sequence with an unapplied required epoch cannot authorize a critical decision.",
+  "given": { "last_trusted_source_progress_t": 0, "last_trusted_fence_heartbeat_t": 0, "watermark_sequence": 121, "projection_sequence": 121, "projection_epoch": 7, "fence_sequence": 121, "fence_epoch": 8 },
+  "when": [ { "order": 1, "t": 1, "action": "attempt_critical_step_up_decision", "expected": "deny_projection_epoch_behind" } ],
+  "then": { "critical_authorization": "deny", "policy_evaluations": 0 }
+}

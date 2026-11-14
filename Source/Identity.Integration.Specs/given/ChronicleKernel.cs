@@ -86,6 +86,10 @@ public sealed class ChronicleKernel : IAsyncDisposable
         throw new TimeoutException($"The Chronicle kernel did not become ready within 4 minutes. Last outcome: {lastOutcome}.\n{await OutputTail()}");
     }
 
+    /// <summary>Gets the end of the kernel's output, without letting a Docker failure replace the caller's own failure.</summary>
+    /// <returns>The output tail, or why it is unavailable.</returns>
+    public Task<string> Output() => OutputTail();
+
     /// <summary>Stops the real kernel for outage scenarios; its state is retained for restart.</summary>
     /// <returns>The stopped container.</returns>
     public Task Stop() => _container.StopAsync();

@@ -1,0 +1,22 @@
+{
+    "name": "other-organisation-connection-claiming-same-issuer-is-refused",
+    "description": "Neither another organisation nor an unverified replacement trust anchor may claim an existing lineage's issuer to resolve its account.",
+    "given": {
+        "realm": "https://identity.example.test",
+        "confirmed_link": { "idp": "https://idp.example.test/entity", "idp_sub": "subject-1", "account": "account-a", "state": "confirmed" },
+        "approved_connection_lineage": { "connection": "connection-a", "organisation": "org-ref-1", "directory_authority": "directory-a", "issuer": "https://idp.example.test/entity", "protocol": "saml", "trust_anchor_verified_for_entity_id": true },
+        "conflicting_registrations": [
+            { "case": "other_organisation", "connection": "connection-hostile-org", "organisation": "org-ref-2", "directory_authority": "directory-b", "claimed_issuer": "https://idp.example.test/entity", "claimed_subject": "subject-1", "access_verified_same_organisation_and_directory_authority": false, "trust_anchor_verified_for_entity_id": true },
+            { "case": "different_unverified_trust_anchor", "connection": "connection-hostile-anchor", "organisation": "org-ref-1", "directory_authority": "directory-a", "claimed_issuer": "https://idp.example.test/entity", "claimed_subject": "subject-1", "access_verified_same_organisation_and_directory_authority": true, "trust_anchor_verified_for_entity_id": false, "verified_rotation_continuity": false }
+        ]
+    },
+    "when": { "action": "for_each_conflicting_registration_attempt_registration_and_key_resolution" },
+    "then": {
+        "per_case": [
+            { "case": "other_organisation", "outcome": "refused", "reason": "issuer_lineage_conflict", "account_resolved": null, "access_granted": false },
+            { "case": "different_unverified_trust_anchor", "outcome": "refused", "reason": "issuer_trust_anchor_unverified", "account_resolved": null, "access_granted": false }
+        ],
+        "existing_link_unchanged": true,
+        "conflicting_registration_approved": false
+    }
+}

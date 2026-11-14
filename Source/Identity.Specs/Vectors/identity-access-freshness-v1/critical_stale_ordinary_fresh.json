@@ -1,0 +1,10 @@
+{
+  "name": "critical_stale_ordinary_fresh",
+  "description": "A stale priority heartbeat denies approval while an ordinary read remains within its bound.",
+  "given": { "last_trusted_source_progress_t": 0, "last_trusted_fence_heartbeat_t": 0, "watermark_sequence": 120, "projection_sequence": 120, "projection_epoch": 7, "fence_sequence": 120, "fence_epoch": 7 },
+  "when": [
+    { "order": 1, "t": 6, "action": "attempt_critical_approval_use", "expected": "deny_stale_fence_heartbeat" },
+    { "order": 2, "t": 6, "action": "attempt_ordinary_policy_dependent_read", "expected": "allow_after_checks" }
+  ],
+  "then": { "critical_authorization": "deny", "ordinary_authorization": "allow_after_checks", "critical_downgraded_to_ordinary": false }
+}

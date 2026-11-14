@@ -1,0 +1,10 @@
+{
+  "name": "delayed_event_does_not_renew_progress",
+  "description": "Receipt of an old or duplicate event does not renew trusted source freshness.",
+  "given": { "last_trusted_source_progress_t": 0, "watermark_sequence": 120, "projection_sequence": 120, "projection_epoch": 7 },
+  "when": [
+    { "order": 1, "t": 59, "action": "receive_delayed_old_event", "event_sequence": 119, "source_progress_t": 0 },
+    { "order": 2, "t": 61, "action": "attempt_ordinary_policy_dependent_read", "expected": "deny_stale_source_progress" }
+  ],
+  "then": { "last_trusted_source_progress_t": 0, "projection_sequence": 120, "ordinary_authorization": "deny", "local_receipt_resets_freshness": false }
+}

@@ -1,0 +1,22 @@
+{
+    "name": "documented-verified-migration-with-fresh-admin-approval",
+    "description": "An approved verified mapping can add a key only with contract linking proofs and atomic checks; it grants no membership.",
+    "given": {
+        "realm": "https://identity.example.test",
+        "account": "account-a",
+        "old_key": { "idp": "https://old-idp.example.test", "idp_sub": "subject-old", "state": "confirmed" },
+        "new_key": { "idp": "https://new-idp.example.test", "idp_sub": "subject-new", "state": "unclaimed" },
+        "procedure_documented": true,
+        "mapping_evidence_verified": true,
+        "same_directory_authority_verified": true,
+        "approval_bound_to_exact_mapping_and_replay_protected": true,
+        "administrator": { "organisation": "org-ref-1", "authorized": true, "reauthentication_within_configured_window": true, "mapped_assurance_satisfies_policy": true },
+        "same_flow_fresh_control_proofs_valid_for_both_sides": true,
+        "atomic_uniqueness_and_tombstone_checks": "pass",
+        "configured_confirmation_hold_satisfied": true,
+        "required_audit_durable": true,
+        "product_membership": false
+    },
+    "when": { "action": "confirm_verified_issuer_migration_link" },
+    "then": { "outcome": "confirmed", "new_key_account": "account-a", "old_key_account": "account-a", "account_subject_changed": false, "history_rewritten": false, "audited": true, "membership_created": false, "product_access_granted": false }
+}

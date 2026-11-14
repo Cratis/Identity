@@ -1,0 +1,12 @@
+{
+    "name": "assurance-mapping-change-is-not-retroactive",
+    "description": "A new mapping does not reinterpret existing authentication or promote a refresh credential.",
+    "given": {
+        "connection": "connection-a",
+        "old_authentication": { "mapping_revision": 1, "auth_time": 100, "acr": "basic", "amr": [] },
+        "new_mapping": { "mapping_revision": 2, "source_label_is_mapped": true, "mapped_result_within_connection_maximum": true },
+        "mapping_changed_at": 200
+    },
+    "when": { "action": "refresh_existing_credential_after_mapping_change", "t": 201 },
+    "then": { "auth_time": 100, "acr": "basic", "amr": [], "historical_mapping_revision": 1, "assurance_elevated": false, "new_authentication_required_for_new_evidence": true, "current_policy_checks_still_required": true }
+}
