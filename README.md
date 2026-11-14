@@ -317,7 +317,7 @@ The CLI sends `client_id=cratis-cli`, `response_type=code`, `code_challenge_meth
 ```shell
 dotnet build Identity.slnx -c Release
 ./Source/Identity.Specs/bin/Release/net11.0/Cratis.Identity.Specs
-./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs   # needs Docker: starts MongoDB 8.0.14 and Chronicle 19.164.1-development
+./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs   # needs Docker: starts MongoDB 8.0.14 and Chronicle 19.144.0-development
 dotnet pack Identity.slnx -c Release --no-build --output Artifacts/NuGet
 (cd Source/JavaScript/Identity && npm ci && npm run build && npm pack --pack-destination ../../../Artifacts/npm)
 ```
