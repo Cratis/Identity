@@ -22,7 +22,7 @@ public class when_max_age_is_requested : Specification
         options.Oidc.IssuanceEnabled = true;
         options.OidcClients.Add(new OidcClientOptions { ClientId = "oidc-web" });
         var handler = new ValidateOidcRequest(Options.Create(options));
-        foreach (var http in MaxAgeRequests.All())
+        foreach (var http in MaxAgeRequests.Invalid())
         {
             var transaction = new OpenIddictServerTransaction
             {
@@ -42,7 +42,7 @@ public class when_max_age_is_requested : Specification
         }
     }
 
-    [Fact] void should_refuse_every_value_before_login_or_consent() => _contexts.TrueForAll(context => context.IsRejected).ShouldBeTrue();
+    [Fact] void should_refuse_every_malformed_value_before_login_or_consent() => _contexts.TrueForAll(context => context.IsRejected).ShouldBeTrue();
     [Fact] void should_report_invalid_request() => _contexts.TrueForAll(context => context.Error == "invalid_request").ShouldBeTrue();
-    [Fact] void should_explain_that_max_age_is_unsupported() => _contexts.TrueForAll(context => context.ErrorDescription == "max_age is not supported").ShouldBeTrue();
+    [Fact] void should_explain_that_max_age_is_invalid() => _contexts.TrueForAll(context => context.ErrorDescription == "max_age is invalid").ShouldBeTrue();
 }

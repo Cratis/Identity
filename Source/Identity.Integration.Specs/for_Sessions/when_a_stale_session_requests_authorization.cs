@@ -18,6 +18,7 @@ public class when_a_stale_session_requests_authorization(IdentityHost host) : Sp
 {
     string _error;
     string _forcedError;
+    string _malformedError;
     bool _reissuedOnError;
     bool _reauthenticated;
     bool _reissuedWithoutMaxAge;
@@ -45,14 +46,17 @@ public class when_a_stale_session_requests_authorization(IdentityHost host) : Sp
         using var forced = await client.GetAsync($"/connect/authorize{QueryString.Create(parameters.Append(new("max_age", "0")))}");
         _forcedError = QueryHelpers.ParseQuery(forced.Headers.Location.Query)["error"].ToString();
         _reauthenticated = SetsSessionCookie(forced, options.Cookie.Name);
+        using var malformed = await client.GetAsync($"/connect/authorize{QueryString.Create(parameters.Append(new("max_age", "abc")))}");
+        _malformedError = QueryHelpers.ParseQuery(malformed.Headers.Location.Query)["error"].ToString();
     }
 
     static bool SetsSessionCookie(HttpResponseMessage response, string cookieName) =>
         response.Headers.TryGetValues("Set-Cookie", out var values) && values.Any(_ => SetCookieHeaderValue.Parse(_).Name == cookieName);
 
-    [Fact] void should_refuse_max_age_as_an_invalid_request_even_when_prompt_is_none() => _error.ShouldEqual("invalid_request");
-    [Fact] void should_not_refresh_the_cookie_when_max_age_is_refused() => _reissuedOnError.ShouldBeFalse();
-    [Fact] void should_refuse_max_age_zero_as_an_invalid_request() => _forcedError.ShouldEqual("invalid_request");
-    [Fact] void should_not_issue_a_session_cookie_when_max_age_zero_is_refused() => _reauthenticated.ShouldBeFalse();
+    [Fact] void should_answer_login_required_when_the_session_is_older_than_max_age_and_prompt_is_none() => _error.ShouldEqual("login_required");
+    [Fact] void should_not_refresh_the_cookie_when_login_is_required() => _reissuedOnError.ShouldBeFalse();
+    [Fact] void should_not_refuse_max_age_zero() => _forcedError.ShouldBeEmpty();
+    [Fact] void should_not_reuse_the_stale_session_when_max_age_zero_is_requested() => _reauthenticated.ShouldBeFalse();
+    [Fact] void should_refuse_a_malformed_max_age_as_an_invalid_request() => _malformedError.ShouldEqual("invalid_request");
     [Fact] void should_not_reauthenticate_a_legacy_request_without_max_age() => _reissuedWithoutMaxAge.ShouldBeFalse();
 }
