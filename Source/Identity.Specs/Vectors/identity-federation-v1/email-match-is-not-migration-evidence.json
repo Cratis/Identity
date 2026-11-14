@@ -1,0 +1,13 @@
+{
+    "name": "email-match-is-not-migration-evidence",
+    "description": "Equal verified email attributes do not equate keys across issuers or authorize migration.",
+    "given": {
+        "old_key": { "idp": "https://old-idp.example.test", "idp_sub": "subject-old", "account": "account-a" },
+        "new_key": { "idp": "https://new-idp.example.test", "idp_sub": "subject-new" },
+        "profile_attributes": { "email_equal": true, "both_emails_verified": true },
+        "verified_key_mapping_evidence": false,
+        "fresh_control_proofs": false
+    },
+    "when": { "action": "attempt_automatic_issuer_migration_by_email" },
+    "then": { "outcome": "refused", "reason": "email_is_not_key_evidence", "account_automatically_relinked": false, "new_key_linked_account": null, "access_granted": false }
+}

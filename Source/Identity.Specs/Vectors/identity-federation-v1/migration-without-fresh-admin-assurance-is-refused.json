@@ -1,0 +1,15 @@
+{
+    "name": "migration-without-fresh-admin-assurance-is-refused",
+    "description": "A documented key mapping and admin role do not suffice when the approval authentication is expired.",
+    "given": {
+        "old_key": { "idp": "https://old-idp.example.test", "idp_sub": "subject-old" },
+        "new_key": { "idp": "https://new-idp.example.test", "idp_sub": "subject-new" },
+        "procedure_documented": true,
+        "mapping_evidence_verified": true,
+        "same_directory_authority_verified": true,
+        "administrator": { "organisation": "org-ref-1", "authorized": true, "reauthentication_within_configured_window": false, "mapped_assurance_satisfies_policy": true },
+        "linking_proofs_valid": true
+    },
+    "when": { "action": "approve_issuer_migration" },
+    "then": { "outcome": "refused", "reason": "fresh_admin_assurance_required", "migration_approved": false, "new_key_linked": false, "access_granted": false }
+}

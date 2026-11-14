@@ -1,0 +1,7 @@
+{
+  "name": "fence_epoch_ahead_of_projection",
+  "description": "A fresh N+1 priority fence cannot authorize against an N policy projection.",
+  "given": { "last_trusted_source_progress_t": 0, "last_trusted_fence_heartbeat_t": 0, "watermark_sequence": 120, "projection_sequence": 120, "projection_epoch": 7, "fence_sequence": 121, "fence_epoch": 8 },
+  "when": [ { "order": 1, "t": 1, "action": "attempt_critical_approval_use", "expected": "deny_projection_behind" } ],
+  "then": { "critical_authorization": "deny", "policy_evaluations": 0, "fresh_heartbeat_overrides_projection": false }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "inclusive_freshness_boundaries",
+  "description": "Exactly 60 and 5 seconds pass age checks; any excess denies the corresponding tier.",
+  "given": { "last_trusted_source_progress_t": 0, "last_trusted_fence_heartbeat_t": 0, "watermark_sequence": 120, "projection_sequence": 120, "projection_epoch": 7, "fence_sequence": 120, "fence_epoch": 7 },
+  "when": [
+    { "order": 1, "t": 5, "action": "attempt_critical_approval_use", "expected": "allow_after_checks" },
+    { "order": 2, "t": 5.001, "action": "attempt_critical_approval_use", "expected": "deny_stale_fence_heartbeat" },
+    { "order": 3, "t": 60, "action": "attempt_ordinary_policy_dependent_read", "expected": "allow_after_checks" },
+    { "order": 4, "t": 60.001, "action": "attempt_ordinary_policy_dependent_read", "expected": "deny_stale_source_progress" }
+  ],
+  "then": { "ordinary_bound_inclusive": true, "critical_bound_inclusive": true, "age_check_alone_authorizes": false }
+}

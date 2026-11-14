@@ -1,0 +1,14 @@
+{
+    "name": "different-issuer-same-sub-does-not-relink",
+    "description": "Replacing a connection with a different issuer does not transfer an equal subject to the existing account.",
+    "given": {
+        "realm": "https://identity.example.test",
+        "confirmed_link": { "idp": "https://old-idp.example.test", "idp_sub": "subject-1", "account": "account-a" },
+        "old_connection": { "connection": "connection-old", "organisation": "org-ref-1", "issuer": "https://old-idp.example.test" },
+        "replacement_connection": { "connection": "connection-new", "organisation": "org-ref-1", "issuer": "https://new-idp.example.test", "approved": true },
+        "verified_authentication": { "idp": "https://new-idp.example.test", "idp_sub": "subject-1", "auth_time": 100 },
+        "existing_account_control_proven": false
+    },
+    "when": { "action": "propose_link_to_existing_account_after_connection_replacement", "target_account": "account-a" },
+    "then": { "outcome": "pending_proof", "account_automatically_relinked": false, "new_key_linked_account": null, "existing_link_account": "account-a", "access_granted": false, "grants_inherited": false }
+}

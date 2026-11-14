@@ -1,0 +1,12 @@
+{
+    "name": "transient-saml-subject-is-refused",
+    "description": "A validated SAML assertion with a transient subject cannot supply an immutable linked key.",
+    "given": {
+        "connection": { "connection": "connection-saml", "issuer": "https://saml-idp.example.test/entity", "protocol": "saml", "approved": true },
+        "assertion_validation": "pass",
+        "subject_kind": "transient",
+        "subject_non_reassignment_guaranteed": false
+    },
+    "when": { "action": "attempt_automatic_link_from_saml_authentication" },
+    "then": { "outcome": "refused", "reason": "persistent_non_reassigned_subject_required", "key_linked": false, "access_granted": false }
+}

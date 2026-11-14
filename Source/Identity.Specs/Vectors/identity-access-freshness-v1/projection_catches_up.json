@@ -1,0 +1,11 @@
+{
+  "name": "projection_catches_up",
+  "description": "Applying both required coordinates enables evaluation under the new policy, not automatic authorization.",
+  "given": { "last_trusted_source_progress_t": 0, "last_trusted_fence_heartbeat_t": 0, "watermark_sequence": 120, "projection_sequence": 120, "projection_epoch": 7, "fence_sequence": 121, "fence_epoch": 8, "credential_policy_epoch": 7, "policy_at_epoch_8": "deny" },
+  "when": [
+    { "order": 1, "t": 1, "action": "attempt_critical_approval_use", "expected": "deny_projection_behind" },
+    { "order": 2, "t": 2, "action": "apply_contiguous_source_facts", "projection_sequence": 121, "projection_epoch": 8 },
+    { "order": 3, "t": 3, "action": "attempt_critical_approval_use", "evaluated_policy_epoch": 8, "expected": "deny_current_policy" }
+  ],
+  "then": { "critical_authorization": "deny", "policy_evaluations": 1, "evaluated_policy_epoch": 8, "old_epoch_carried_forward": false }
+}

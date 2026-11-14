@@ -1,0 +1,16 @@
+{
+    "name": "removing-one-connection-preserves-the-other",
+    "description": "Removing one connection does not revoke an independent credential authenticated through another connection.",
+    "given": {
+        "account": "account-a",
+        "connections": [
+            { "connection": "connection-a", "issuer": "https://idp-a.example.test", "linked_key": "key-a" },
+            { "connection": "connection-b", "issuer": "https://idp-b.example.test", "linked_key": "key-b" }
+        ],
+        "credential_b": { "authentication_connection": "connection-b", "authentication_key": "key-b", "status": "active", "recovery_epoch_current": true, "constraints_verified": true },
+        "live_product_membership_and_roles": "allow",
+        "current_policy_and_scope_checks": "allow"
+    },
+    "when": { "action": "remove_connection_and_then_use_independent_credential", "removed_connection": "connection-a", "credential": "credential_b" },
+    "then": { "connection_b_link_unchanged": true, "credential_b_revoked": false, "credential_b_use": "allow_after_live_checks", "connection_a_authority_rescued_by_b": false, "membership_created": false }
+}
