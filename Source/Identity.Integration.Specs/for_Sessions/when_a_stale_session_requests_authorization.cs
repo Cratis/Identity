@@ -21,6 +21,7 @@ public class when_a_stale_session_requests_authorization(IdentityHost host) : Sp
     string _malformedError;
     bool _reissuedOnError;
     bool _reauthenticated;
+    bool _continuationKeepsMaxAge;
     bool _reissuedWithoutMaxAge;
 
     async Task Because()
@@ -46,12 +47,15 @@ public class when_a_stale_session_requests_authorization(IdentityHost host) : Sp
         using var forced = await client.GetAsync($"/connect/authorize{QueryString.Create(parameters.Append(new("max_age", "0")))}");
         _forcedError = ErrorOf(forced, client.BaseAddress);
         _reauthenticated = SetsSessionCookie(forced, options.Cookie.Name);
+        _continuationKeepsMaxAge = QueryHelpers.ParseQuery(new Uri(client.BaseAddress, forced.Headers.Location).Query).ContainsKey("max_age");
         using var malformed = await client.GetAsync($"/connect/authorize{QueryString.Create(parameters.Append(new("max_age", "abc")))}");
         _malformedError = ErrorOf(malformed, client.BaseAddress);
     }
 
     static string ErrorOf(HttpResponseMessage response, Uri baseAddress) =>
-        QueryHelpers.ParseQuery(new Uri(baseAddress, response.Headers.Location).Query)["error"].ToString();
+        QueryHelpers.ParseQuery(new Uri(baseAddress, response.Headers.Location).Query).TryGetValue("error", out var error)
+            ? error.ToString()
+            : string.Empty;
 
     static bool SetsSessionCookie(HttpResponseMessage response, string cookieName) =>
         response.Headers.TryGetValues("Set-Cookie", out var values) && values.Any(_ => SetCookieHeaderValue.Parse(_).Name == cookieName);
@@ -59,7 +63,8 @@ public class when_a_stale_session_requests_authorization(IdentityHost host) : Sp
     [Fact] void should_answer_login_required_when_the_session_is_older_than_max_age_and_prompt_is_none() => _error.ShouldEqual("login_required");
     [Fact] void should_not_refresh_the_cookie_when_login_is_required() => _reissuedOnError.ShouldBeFalse();
     [Fact] void should_not_refuse_max_age_zero() => _forcedError.ShouldBeEmpty();
-    [Fact] void should_not_reuse_the_stale_session_when_max_age_zero_is_requested() => _reauthenticated.ShouldBeFalse();
+    [Fact] void should_sign_in_again_through_upstream_when_max_age_zero_is_requested() => _reauthenticated.ShouldBeTrue();
+    [Fact] void should_drop_max_age_from_the_continuation_after_signing_in_again() => _continuationKeepsMaxAge.ShouldBeFalse();
     [Fact] void should_refuse_a_malformed_max_age_as_an_invalid_request() => _malformedError.ShouldEqual("invalid_request");
     [Fact] void should_not_reauthenticate_a_legacy_request_without_max_age() => _reissuedWithoutMaxAge.ShouldBeFalse();
 }
