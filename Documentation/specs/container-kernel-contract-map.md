@@ -238,7 +238,7 @@ HTTP status assertion. For parameterized methods it includes every data row.
 | `for_TokenRateLimiting/when_the_token_endpoint_is_flooded` | All | Original invalid-client result before limit; generic 429 before authentication; full-window retry; protocol validation resumes afterward. |
 | `for_McpAcceptance/when_one_sign_in_authorizes_both_products` | All | One upstream sign-in permits both resources but produces separate refresh grants. |
 | `for_McpAcceptance/when_product_tokens_cross_resource_boundaries` | All | Each token accepted at own resource, refused at the other. |
-| `for_McpAcceptance/when_a_grant_is_revoked` | All | Retained conditional gap: both real product/edge paths must refuse revoked grants within thirty seconds. |
+| `for_McpAcceptance/when_a_grant_is_revoked` | All | Acceptance stand-in refuses each product's revoked grant once the thirty-second window passes; real product/edge enforcement is not covered here. |
 | `for_McpAcceptance/when_an_mcp_tool_has_no_server_owned_ceiling` | All | Retained conditional gap: tool without a server-owned scope ceiling must be refused even with a valid token. |
 
 ## Platform candidates: retain until equivalent upstream coverage is named
@@ -305,7 +305,7 @@ Nightly runs do not manufacture a nonexistent push `before` revision.
 
 The two image facts intentionally skip in the ordinary integration lane and run
 with the opt-in in the image lane. One product obligation remains
-conditional and are **not claimed as covered by nightly success**:
+conditional and is **not claimed as covered by nightly success**:
 
 - `for_McpAcceptance/when_an_mcp_tool_has_no_server_owned_ceiling`: local stubs
   have no product dispatcher/tool policy.
