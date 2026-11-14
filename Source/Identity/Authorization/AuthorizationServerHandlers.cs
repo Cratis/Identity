@@ -31,6 +31,7 @@ internal static class AuthorizationServerHandlers
             .AddEventHandler(RejectFencedGrants.SignInDescriptor)
             .AddEventHandler(RevokeGrantOnRefreshTokenReuse.Descriptor)
             .AddEventHandler(RedeemRefreshTokenOnce.Descriptor)
+            .AddEventHandler(CaptureAuthenticatingLink.Descriptor)
             .AddEventHandler(RevokeGrantOnRefreshTokenRevocation.Descriptor);
     }
 

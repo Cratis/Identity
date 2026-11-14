@@ -37,6 +37,7 @@ internal static class OidcIdentity
         identity.SetClaim(GrantMarker, "true");
         identity.SetClaim(Claims.Nonce, nonce);
         identity.SetClaim(SessionIdClaim, authentication.SessionId);
+        AuthenticatingLink.Stamp(identity, authentication.LinkId);
         identity.AddClaim(new Claim(Claims.AuthenticationTime, authentication.AuthTime.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64));
         Apply(identity, authentication.Account, clientId);
         return identity;

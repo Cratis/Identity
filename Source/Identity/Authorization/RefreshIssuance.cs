@@ -17,6 +17,9 @@ internal sealed class RefreshIssuance
     /// <summary>Gets the preallocated, atomically installed successor.</summary>
     internal string? SuccessorId => Admission?.CurrentRefreshTokenId;
 
+    /// <summary>Gets or sets the link a new grant authenticated through, recorded when its first refresh token is inserted.</summary>
+    internal Guid? StartLink { get; set; }
+
     /// <summary>Records successful admission for this response only.</summary>
     /// <param name="state">The known live family state used by the successful CAS.</param>
     /// <param name="successorId">The successor installed by that CAS.</param>

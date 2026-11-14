@@ -88,7 +88,10 @@ internal sealed class SharedFenceStore : IFenceStore
         throw new RevocationPending();
     }
 
-    public Task<GrantState> RecordFamilyStart(string grantId, string tokenId, string subject, DateTimeOffset startedAt, DateTimeOffset absoluteExpiresAt, CancellationToken cancellationToken)
+    public Task<GrantState> RecordFamilyStart(string grantId, string tokenId, string subject, DateTimeOffset startedAt, DateTimeOffset absoluteExpiresAt, CancellationToken cancellationToken) =>
+        RecordFamilyStart(grantId, tokenId, subject, startedAt, absoluteExpiresAt, null, cancellationToken);
+
+    public Task<GrantState> RecordFamilyStart(string grantId, string tokenId, string subject, DateTimeOffset startedAt, DateTimeOffset absoluteExpiresAt, Guid? link, CancellationToken cancellationToken)
     {
         lock (_gate)
         {
@@ -97,7 +100,7 @@ internal sealed class SharedFenceStore : IFenceStore
                 return Task.FromResult(state);
             }
 
-            state = new(grantId, 1, tokenId, null, [OutboxEntry.Create(FactKind.FamilyStarted, grantId, subject, startedAt, absoluteExpiresAt)]);
+            state = new(grantId, 1, tokenId, null, [OutboxEntry.Create(FactKind.FamilyStarted, grantId, subject, startedAt, absoluteExpiresAt)], 0, link);
             _states[grantId] = state;
             return Task.FromResult(state);
         }

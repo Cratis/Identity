@@ -25,6 +25,8 @@ namespace Cratis.Identity.RevocationSpecs.given;
 
 public class a_contended_refresh : for_RedeemRefreshTokenOnce.given.a_refresh_token_request
 {
+    protected static readonly Guid AuthenticatingLinkId = Guid.Parse("44444444-4444-4444-8444-444444444444");
+
     private protected SharedFenceStore _authority;
     private protected GrantRevocation _grants;
     private protected ReadRefreshGrant _read;
@@ -38,7 +40,7 @@ public class a_contended_refresh : for_RedeemRefreshTokenOnce.given.a_refresh_to
     async Task Establish()
     {
         _authority = new SharedFenceStore();
-        await _authority.RecordFamilyStart(AuthorizationId, TokenId, FenceDoubles.Subject, _time.GetUtcNow(), _time.GetUtcNow().AddDays(30), CancellationToken.None);
+        await _authority.RecordFamilyStart(AuthorizationId, TokenId, FenceDoubles.Subject, _time.GetUtcNow(), _time.GetUtcNow().AddDays(30), AuthenticatingLinkId, CancellationToken.None);
         _grants = new(_tokens, _authorizations, _authority, FenceDoubles.Confirmation(_authority));
         _read = new(_authority, _tokens, _authorizations, _time);
         _handler = new(_tokens, _grants, _time, _authority, _read, _issuance);
@@ -65,7 +67,7 @@ public class a_contended_refresh : for_RedeemRefreshTokenOnce.given.a_refresh_to
     /// <returns>The endpoint's <see cref="IResult"/>.</returns>
     protected async Task<IResult> ReachTokenEndpoint(string? authTime, IReadOnlyDictionary<string, bool> audiences)
     {
-        var account = new Account(new(FenceDoubles.Subject), "Member", null, "42", "member", AccountStatus.Active, []);
+        var account = new Account(new(FenceDoubles.Subject), "Member", null, "42", "member", AccountStatus.Active, [new LinkedUpstreamKey(AuthenticatingLinkId, new ConnectionId(Guid.NewGuid()), "https://login.example", "42", "member", DateTimeOffset.UnixEpoch)]);
         var principal = _validation.Principal.Clone()
             .SetClaim(Claims.Subject, FenceDoubles.Subject)
             .SetClaim(IdentityClaims.TenantId, "tenant")

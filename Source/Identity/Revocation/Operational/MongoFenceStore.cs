@@ -53,7 +53,7 @@ internal sealed class MongoFenceStore(IMongoDatabase database, TimeProvider time
     }
 
     /// <inheritdoc/>
-    public async Task<GrantState> RecordFamilyStart(string grantId, string tokenId, string subject, DateTimeOffset startedAt, DateTimeOffset absoluteExpiresAt, CancellationToken cancellationToken)
+    public async Task<GrantState> RecordFamilyStart(string grantId, string tokenId, string subject, DateTimeOffset startedAt, DateTimeOffset absoluteExpiresAt, Guid? link, CancellationToken cancellationToken)
     {
         var current = await Read(grantId, cancellationToken);
         if (current is not null)
@@ -68,7 +68,7 @@ internal sealed class MongoFenceStore(IMongoDatabase database, TimeProvider time
 
         var epoch = await log.RecoveryEpoch(cancellationToken);
         var entry = OutboxEntry.Create(FactKind.FamilyStarted, grantId, subject, startedAt, absoluteExpiresAt);
-        var state = new GrantState(grantId, 1, tokenId, null, [entry], epoch);
+        var state = new GrantState(grantId, 1, tokenId, null, [entry], epoch, link);
         return await Replace(null, state, cancellationToken) ? state : await Read(grantId, cancellationToken) ?? throw new RevocationPending();
     }
 

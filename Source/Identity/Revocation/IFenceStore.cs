@@ -26,9 +26,21 @@ internal interface IFenceStore
     /// <param name="subject">The account.</param>
     /// <param name="startedAt">The admission time.</param>
     /// <param name="absoluteExpiresAt">The original absolute expiry.</param>
+    /// <param name="link">The account link the grant was authenticated through, or null when unknown.</param>
     /// <param name="cancellationToken">Cancellation.</param>
     /// <returns>The authoritative winner, including a concurrent fence.</returns>
-    Task<GrantState> RecordFamilyStart(string grantId, string tokenId, string subject, DateTimeOffset startedAt, DateTimeOffset absoluteExpiresAt, CancellationToken cancellationToken);
+    Task<GrantState> RecordFamilyStart(string grantId, string tokenId, string subject, DateTimeOffset startedAt, DateTimeOffset absoluteExpiresAt, Guid? link, CancellationToken cancellationToken);
+
+    /// <summary>Admits the initial family without an authenticating link; such a family is never admitted for refresh.</summary>
+    /// <param name="grantId">The authorization.</param>
+    /// <param name="tokenId">The initial entry.</param>
+    /// <param name="subject">The account.</param>
+    /// <param name="startedAt">The admission time.</param>
+    /// <param name="absoluteExpiresAt">The original absolute expiry.</param>
+    /// <param name="cancellationToken">Cancellation.</param>
+    /// <returns>The authoritative winner, including a concurrent fence.</returns>
+    Task<GrantState> RecordFamilyStart(string grantId, string tokenId, string subject, DateTimeOffset startedAt, DateTimeOffset absoluteExpiresAt, CancellationToken cancellationToken) =>
+        RecordFamilyStart(grantId, tokenId, subject, startedAt, absoluteExpiresAt, null, cancellationToken);
 
     /// <summary>Consumes and installs against the same revision as revoke.</summary>
     /// <param name="grantId">The authorization.</param>
