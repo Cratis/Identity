@@ -22,7 +22,7 @@ public sealed class ChronicleKernel : IAsyncDisposable
     {
         // A fixed host port keeps the endpoint stable across the outage specs' stop/start; a Docker-assigned port changes on restart.
         var hostPort = FreeLoopbackPort();
-        _container = new ContainerBuilder(Environment.GetEnvironmentVariable("IDENTITY_CHRONICLE_IMAGE") ?? "cratis/chronicle:19.160.0-development")
+        _container = new ContainerBuilder(Environment.GetEnvironmentVariable("IDENTITY_CHRONICLE_IMAGE") ?? "cratis/chronicle:19.144.0-development")
             .WithPortBinding(hostPort, ClientPort)
             .WithCreateParameterModifier(parameters =>
             {
