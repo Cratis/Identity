@@ -22,7 +22,7 @@ public class when_revocation_precedes_a_stale_redemption(IdentityHost host) : IA
         var second = new MongoFenceStore(operational, TimeProvider.System, log);
         var grant = Guid.NewGuid().ToString("D");
         var subject = Guid.NewGuid().ToString("D");
-        var read = await first.RecordFamilyStart(grant, "presented-entry", subject, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(30), CancellationToken.None);
+        var read = await first.RecordFamilyStart(new FamilyStart(grant, "presented-entry", subject, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(30)), CancellationToken.None);
         _first = await second.Commit(grant, subject, RevocationReason.RefreshTokenReused, CancellationToken.None);
         _outcome = await first.RedeemAndInstall(grant, "presented-entry", "successor-entry", read.Version, CancellationToken.None);
         _retry = await new MongoFenceStore(operational, TimeProvider.System, log).Commit(grant, subject, RevocationReason.RefreshTokenReused, CancellationToken.None);
