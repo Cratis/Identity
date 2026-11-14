@@ -27,7 +27,7 @@ public class a_browser_session : Specification
         _validator = new(_sessions, _accounts);
         _account = a_refresh_admission.AccountWithLinks(Link);
         _principal = SessionPrincipal.For(_account, "GitHub", DateTimeOffset.UnixEpoch, Link);
-        _sessionId = SessionPrincipal.SessionId(_principal)!;
+        _sessionId = SessionPrincipal.SessionId(_principal);
         _accounts.FindActive(Arg.Any<AccountSubject>(), Arg.Any<CancellationToken>()).Returns(_account);
     }
 

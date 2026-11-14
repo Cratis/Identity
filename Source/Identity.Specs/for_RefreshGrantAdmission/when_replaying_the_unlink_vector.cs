@@ -25,20 +25,20 @@ public class when_replaying_the_unlink_vector : given.a_refresh_admission
         {
             var link = Guid.NewGuid();
             links[$"{key.GetProperty("idp").GetString()}|{key.GetProperty("idp_sub").GetString()}"] = link;
-            return new(link, new ConnectionId(Guid.NewGuid()), key.GetProperty("idp").GetString()!, key.GetProperty("idp_sub").GetString()!, key.GetProperty("latest_observed_login").GetString(), DateTimeOffset.UnixEpoch);
+            return new(link, new ConnectionId(Guid.NewGuid()), key.GetProperty("idp").GetString(), key.GetProperty("idp_sub").GetString(), key.GetProperty("latest_observed_login").GetString(), DateTimeOffset.UnixEpoch);
         }
 
         _ = accountJson.GetProperty("unlinked_keys").EnumerateArray().Select(Key).ToList();
         var linked = accountJson.GetProperty("linked_keys").EnumerateArray().Select(Key).ToArray();
-        var account = new Account(new(accountJson.GetProperty("subject").GetString()!), "Member", null, "42", "member", AccountStatus.Active, linked);
+        var account = new Account(new(accountJson.GetProperty("subject").GetString()), "Member", null, "42", "member", AccountStatus.Active, linked);
 
         _admitted = [];
         _expected = [];
         foreach (var grant in given.GetProperty("grants").EnumerateArray())
         {
-            var id = grant.GetProperty("grant").GetString()!;
+            var id = grant.GetProperty("grant").GetString();
             var via = grant.GetProperty("authenticated_via");
-            _expected[id] = _vector.GetProperty("then").GetProperty(id).GetProperty("outcome").GetString()!;
+            _expected[id] = _vector.GetProperty("then").GetProperty(id).GetProperty("outcome").GetString();
             var principal = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity());
             principal.SetAuthorizationId(id);
             StateOf(id, links[$"{via.GetProperty("idp").GetString()}|{via.GetProperty("idp_sub").GetString()}"]);
