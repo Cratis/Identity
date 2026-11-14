@@ -25,8 +25,15 @@ internal static class MaxAgeRequest
         var occurrences = Occurrences(request.Query);
         if (HttpMethods.IsPost(request.Method) && request.HasFormContentType)
         {
-            var form = await request.ReadFormAsync(request.HttpContext.RequestAborted);
-            occurrences = [.. occurrences, .. Occurrences(form)];
+            try
+            {
+                var form = await request.ReadFormAsync(request.HttpContext.RequestAborted);
+                occurrences = [.. occurrences, .. Occurrences(form)];
+            }
+            catch (InvalidDataException)
+            {
+                return MaxAgeState.Invalid;
+            }
         }
 
         if (occurrences.Count == 0) return MaxAgeState.Absent;
@@ -40,5 +47,7 @@ internal static class MaxAgeRequest
 
     static bool IsValid(KeyValuePair<string, string?> occurrence) =>
         string.Equals(occurrence.Key, Parameters.MaxAge, StringComparison.Ordinal)
+        && !string.IsNullOrEmpty(occurrence.Value)
+        && occurrence.Value.All(char.IsAsciiDigit)
         && long.TryParse(occurrence.Value, NumberStyles.None, CultureInfo.InvariantCulture, out _);
 }
