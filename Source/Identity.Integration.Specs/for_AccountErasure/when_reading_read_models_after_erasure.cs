@@ -14,7 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Cratis.Identity.Integration.for_AccountErasure;
 
-[Collection(IdentityCollection.Name)]
+[Collection(AccountErasureReplayCollection.Name)]
 public class when_reading_read_models_after_erasure(IdentityHost host) : IAsyncLifetime
 {
     const string EmailAddress = "erasure@example.test";
@@ -47,7 +47,16 @@ public class when_reading_read_models_after_erasure(IdentityHost host) : IAsyncL
 
         var projectionReplay = await harness.Store.Projections.Replay<AccountProjection>();
         projectionReplay.ShouldNotEqual(JobId.NotSet);
-        await harness.Store.Jobs.WaitTillJobProgressCompleted(projectionReplay, TimeSpan.FromSeconds(60));
+
+        // Successful replay jobs can disappear before polling observes their completed progress.
+        var replayJob = await harness.Store.Jobs.WaitTillJobCompletesOrIsDeleted(projectionReplay, TimeSpan.FromSeconds(60));
+        if (replayJob is not null)
+        {
+            replayJob.Status.ShouldEqual(JobStatus.CompletedSuccessfully);
+        }
+
+        await harness.Store.Projections.WaitTillActive<AccountProjection>(TimeSpan.FromSeconds(30));
+        await harness.Store.Projections.WaitTillReachesEventSequenceNumber<AccountProjection>(accountTail, TimeSpan.FromSeconds(30));
         await ReadAndRejectPlaintext(reader, subject);
     }
 
