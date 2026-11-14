@@ -35,6 +35,8 @@ on:
       - "global.json"
       - "Directory.*.props"
       - "Directory.*.targets"
+      # A change to how releases are cut releases too, so a fix to this workflow takes effect with its own merge.
+      - ".github/workflows/publish.yml"
 
 permissions:
   contents: read
@@ -46,6 +48,9 @@ jobs:
     permissions:
       issues: write
       contents: write
+      # The release action looks up the merged pull request for the pushed commit; without this the lookup
+      # returns 403, the action decides no-pull-request and nothing is released.
+      pull-requests: read
     runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}
     timeout-minutes: 30
     outputs:
@@ -126,9 +131,13 @@ jobs:
   verify-published:
     # A merge that publishes nothing is the failure mode that silently costs a release: the release job
     # succeeds, every publish job is skipped for want of should-publish, and the run reports green. Fail for the
-    # reasons that mean something went wrong; publishing nothing is correct for no-release, direct pushes and
-    # re-runs.
-    if: always() && needs.release.result == 'success' && contains(fromJSON('["no-label", "error"]'), needs.release.outputs.reason)
+    # reasons that mean something went wrong; publishing nothing is correct for no-release and re-runs. A push to
+    # main that finds no pull request also fails: changes reach main through pull requests, so it means the
+    # lookup failed (for example for want of permission) and a release was silently skipped.
+    if: >-
+      always() && needs.release.result == 'success' && (
+        contains(fromJSON('["no-label", "error"]'), needs.release.outputs.reason) ||
+        (github.event_name == 'push' && needs.release.outputs.reason == 'no-pull-request'))
     runs-on: ${{ vars.RUNNER_GATE || 'cratis-arc-small' }}
     timeout-minutes: 5
     needs: [release]
@@ -137,5 +146,9 @@ jobs:
         env:
           REASON: ${{ needs.release.outputs.reason }}
         run: |
-          echo "::error::Nothing was published and no release was cut (reason: ${REASON}). Add exactly one of major, minor or patch to the merged pull request and re-run this workflow."
+          if [ "${REASON}" = "no-pull-request" ]; then
+            echo "::error::Nothing was published and no release was cut: no merged pull request was found for this commit. Check the release job's pull-requests permission and the release step log, then re-run this workflow."
+          else
+            echo "::error::Nothing was published and no release was cut (reason: ${REASON}). Add exactly one of major, minor or patch to the merged pull request and re-run this workflow."
+          fi
           exit 1
