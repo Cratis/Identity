@@ -133,6 +133,10 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
         }
     }
 
+    /// <summary>Gets the end of the real kernel's output, for diagnostics when an observed state never arrives.</summary>
+    /// <returns>The kernel output tail.</returns>
+    public Task<string> KernelOutput() => _chronicle.Output();
+
     /// <summary>Stops the real kernel for a bounded outage scenario.</summary>
     /// <returns>The stopped kernel.</returns>
     public Task StopChronicle() => _chronicle.Stop();
