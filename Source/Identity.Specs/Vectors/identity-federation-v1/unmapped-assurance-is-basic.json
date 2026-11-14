@@ -1,0 +1,10 @@
+{
+    "name": "unmapped-assurance-is-basic",
+    "description": "An upstream assurance label absent from this connection's approved table cannot elevate assurance.",
+    "given": {
+        "connection": { "connection": "connection-a", "issuer": "https://idp.example.test", "assurance_mapping_revision": 1, "assurance_mappings": [] },
+        "verified_authentication": { "idp": "https://idp.example.test", "idp_sub": "subject-1", "auth_time": 100, "upstream_acr": "synthetic-strong-label", "upstream_amr": ["synthetic-method"] }
+    },
+    "when": { "action": "map_authentication_assurance" },
+    "then": { "acr": "basic", "amr": [], "assurance_elevated": false, "upstream_labels_copied_through": false, "auth_time": 100 }
+}

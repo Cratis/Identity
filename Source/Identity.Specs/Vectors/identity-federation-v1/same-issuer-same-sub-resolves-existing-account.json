@@ -1,0 +1,12 @@
+{
+    "name": "same-issuer-same-sub-resolves-existing-account",
+    "description": "A replacement connection with the exact same issuer and key resolves the existing confirmed account after authentication.",
+    "given": {
+        "confirmed_link": { "idp": "https://idp.example.test", "idp_sub": "subject-1", "account": "account-a", "state": "confirmed" },
+        "replacement_connection": { "connection": "connection-new", "issuer": "https://idp.example.test", "approved": true },
+        "verified_authentication": { "idp": "https://idp.example.test", "idp_sub": "subject-1", "auth_time": 100 },
+        "uniqueness_and_tombstone_checks": "pass"
+    },
+    "when": { "action": "resolve_authenticated_exact_key" },
+    "then": { "outcome": "existing_account_resolved", "account": "account-a", "new_link_proposal_required": false, "auth_time": 100, "membership_created": false, "product_access_without_live_checks": false }
+}

@@ -1,0 +1,12 @@
+{
+    "name": "unlinked-key-remains-reserved",
+    "description": "Even an exact key on a same-issuer replacement cannot automatically revive an unlinked reservation.",
+    "given": {
+        "key": { "idp": "https://idp.example.test", "idp_sub": "subject-1", "state": "unlinked_reserved", "reserved_account": "account-a" },
+        "replacement_connection": { "connection": "connection-new", "issuer": "https://idp.example.test", "approved": true },
+        "verified_authentication": { "idp": "https://idp.example.test", "idp_sub": "subject-1", "auth_time": 100 },
+        "explicit_reviewed_reserved_key_operation": false
+    },
+    "when": { "action": "attempt_automatic_relink", "target_account": "account-a" },
+    "then": { "outcome": "refused", "reason": "reserved_key_requires_reviewed_operation", "reserved_account": "account-a", "link_revived": false, "access_granted": false }
+}
