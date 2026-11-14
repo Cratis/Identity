@@ -1,0 +1,21 @@
+{
+    "name": "cid-mismatch-refuse",
+    "description": "An access-token cid that differs from the introspection credential_id is refused; the advisory cid never overrides introspection.",
+    "given": {
+        "authorization_scheme": "Bearer",
+        "token_cid": "0b8e5d2a-41f7-4a6c-9c3e-7d1a52f8e640",
+        "introspection_response": {
+            "active": true,
+            "credential_kind": "oauth-grant",
+            "credential_id": "6f1c2b4e-9d3a-4c58-8a71-2e5b0d7a91c3",
+            "aud": "studio-mcp",
+            "tid": "tenant-fixture",
+            "scope": "studio:read",
+            "cache_epoch": 7
+        }
+    },
+    "when": { "action": "build_oauth_envelope_at_authproxy" },
+    "then": {
+        "outcome": "refuse"
+    }
+}

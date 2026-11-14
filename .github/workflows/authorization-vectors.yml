@@ -5,6 +5,9 @@ name: Package authorization vectors
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'vectors/identity-contract-vectors/v*'
 
 permissions:
   contents: read
@@ -15,7 +18,8 @@ concurrency:
 
 jobs:
   package:
-    name: Package reviewed vector artifact
+    name: Package reviewed vector artifacts
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ${{ vars.RUNNER_GATE || 'cratis-arc-small' }}
     timeout-minutes: 5
     steps:
@@ -30,22 +34,79 @@ jobs:
         with:
           node-version: '22.14.0'
       - name: Check vector baseline immutability
-        run: node scripts/check-vector-baseline-immutability.mjs
+        run: |
+          node scripts/check-vector-baseline-immutability.mjs
+          node scripts/package-contract-vectors.mjs check
       - name: Check deterministic archive format and baseline protection
-        run: node --test scripts/package-authorization-vectors.test.mjs scripts/check-vector-baseline-immutability.test.mjs
+        run: node --test scripts/package-authorization-vectors.test.mjs scripts/check-vector-baseline-immutability.test.mjs scripts/package-contract-vectors.test.mjs
       - name: Package vectors and checksum
-        run: node scripts/package-authorization-vectors.mjs .ai-work/identity-134/artifacts
+        run: |
+          node scripts/package-authorization-vectors.mjs "$RUNNER_TEMP/vector-artifacts"
+          node scripts/package-contract-vectors.mjs package "$RUNNER_TEMP/vector-artifacts"
       - name: Verify checksum and archive
-        working-directory: .ai-work/identity-134/artifacts
+        working-directory: ${{ runner.temp }}/vector-artifacts
         run: |
           sha256sum --check ./*.sha256
           for archive in ./*.tar.gz; do tar -tzf "$archive"; done
       - name: Upload for release-owner review
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: arc-mcp-authorization-v1-vectors
+          name: contract-vectors
           path: |
-            .ai-work/identity-134/artifacts/*.tar.gz
-            .ai-work/identity-134/artifacts/*.sha256
+            ${{ runner.temp }}/vector-artifacts/*.tar.gz
+            ${{ runner.temp }}/vector-artifacts/*.sha256
           if-no-files-found: error
           retention-days: 30
+
+  release-assets:
+    name: Attach the vector bundle to its release
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'vectors/identity-contract-vectors/v')
+    runs-on: ${{ vars.RUNNER_GATE || 'cratis-arc-small' }}
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Checkout tagged commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22.14.0'
+      - name: Refuse to touch an existing release
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            echo "::error::A release for $GITHUB_REF_NAME already exists; released vector artifacts are immutable. Publish a new version instead."
+            exit 1
+          fi
+      - name: Check bundle against the tree and released tags
+        run: |
+          node scripts/package-contract-vectors.mjs check
+          node --test scripts/package-contract-vectors.test.mjs
+      - name: Package the bundle from the tag
+        run: node scripts/package-contract-vectors.mjs package "$RUNNER_TEMP/vector-release"
+      - name: Verify checksum and archive
+        working-directory: ${{ runner.temp }}/vector-release
+        run: |
+          sha256sum --check ./*.sha256
+          tar -tzf ./*.tar.gz > /dev/null
+      - name: Extract the changelog section
+        run: |
+          version="${GITHUB_REF_NAME##*/v}"
+          awk -v heading="## $version" '$0 == heading { found = 1; next } /^## / { found = 0 } found' Source/Identity.Specs/Vectors/bundle/CHANGELOG.md > "$RUNNER_TEMP/vector-release/notes.md"
+          test -s "$RUNNER_TEMP/vector-release/notes.md"
+      - name: Create the release with the bundle and checksum
+        working-directory: ${{ runner.temp }}/vector-release
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --latest=false \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file notes.md \
+            ./*.tar.gz ./*.sha256

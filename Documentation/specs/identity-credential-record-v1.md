@@ -87,6 +87,24 @@ An active legacy token without an operational authorization can lack `credential
 
 **Current implementation.** `IntrospectionCredentialClaims` adds `credential_id`, `credential_kind`, token `tid`, scopes and `cache_epoch` after OpenIddict validation and checks the independently observed recovery epoch before and after attachment. Built-in metadata supplies audience and other token metadata. A well-formed token `cnf` passes through OpenIddict; malformed confirmation fails before the credential metadata handler. Identity does not currently issue DPoP-bound tokens. The active-shape requirements above do not imply that this handler itself enforces every required field or compares advisory `cid`; consumer enforcement remains a gap to verify in the adapters. See [resource token validation](../security/resource-token-validation.md).
 
+## 4a. Gateway introspection client registration
+
+The gateway (AuthProxy) authenticates to `connect/introspect` as an introspection client declared in Identity configuration under `Identity:IntrospectionClients`. Each entry has two members, `ClientId` and `ClientSecret` (`IntrospectionClientOptions`). Identity registers each entry as a confidential client whose only permission is the introspection endpoint (`ClientDescriptors`); it cannot request tokens or use any other endpoint.
+
+```json
+{
+  "Identity": {
+    "IntrospectionClients": [
+      { "ClientId": "authproxy", "ClientSecret": "<from secret store>" }
+    ]
+  }
+}
+```
+
+- The value above is a placeholder. The secret MUST come from deployment secret configuration and MUST NOT be committed; the shipped `appsettings.json` files keep `"IntrospectionClients": []`, so no gateway can introspect until a deployment adds an entry.
+- Active credential metadata is attached only when the introspecting client id is in the validated token's audience (`IntrospectionCredentialClaims`, specified by `when_the_caller_is_not_in_the_token_audience`). The gateway's `ClientId` therefore MUST equal the audience/resource identifier of every route it introspects for. A caller outside the audience receives no `credential_id`, `credential_kind`, `tid` or `cache_epoch`, which the gateway MUST treat as a refusal under section 3.
+- Register one client per gateway deployment. Rotate the secret by replacing the entry's `ClientSecret` in deployment configuration.
+
 ## 5. Sender-binding result and ownership
 
 The adapter MUST produce exactly one verified logical result:
@@ -150,6 +168,8 @@ A local issuer MUST have a distinct fixed issuer and distinct signing keys and b
 
 ## 10. Conformance cases
 
+Machine-readable data vectors for these cases live in `Source/Identity.Specs/Vectors/identity-credential-record-v1/`. The Identity specs check only their shape; they do not replay them against a gateway.
+
 These cases describe required outcomes, not an implemented or passing conformance suite. All other required checks are assumed to pass in an acceptance case.
 
 | Case | Expected result |
@@ -190,5 +210,15 @@ Review by woksin and the Identity/AuthProxy owners (including L101) is required.
 4. Confirm independent current recovery-epoch distribution, positive-cache invalidation and fail-closed edge integration. Identity emits `cache_epoch`; this document does not establish a completed consumer implementation or a new revocation protocol.
 5. Confirm DPoP issuance and gateway adapter delivery and the unchanged v2 result mapping. Current confirmation pass-through is not proof validation or bound-token issuance.
 6. Register the canonical resource URIs and scope/catalog mappings for `studio-mcp` and `direct-mcp`, deliver metadata/challenges, and verify deployed rejection of the Development-only issuer. The exact URIs and the no-passthrough adapter design are not supplied by this Draft.
-7. Decide whether to add machine-readable Draft vectors under `Source/Identity.Specs/Vectors/identity-credential-record-v1/` and assign executable conformance coverage across Identity, AuthProxy and products. Draft vectors are omitted: the conventions require aligned names when vectors exist, not a directory for every Draft. The prose cases above are not runtime evidence.
+7. Machine-readable Draft vectors now exist under `Source/Identity.Specs/Vectors/identity-credential-record-v1/` (active, revoked, legacy, bound with valid proof, bound without proof, unbound with proof, plus `cid` mismatch, unknown kind and missing sender-binding result). They are data only, not runtime evidence: the bound cases describe gateway behavior for a hypothetical bound token because Identity issues none yet. Executable replay is still to be assigned to AuthProxy [#294](https://github.com/Cratis/AuthProxy/issues/294) and [#257](https://github.com/Cratis/AuthProxy/issues/257) and to products. The prose cases above are not runtime evidence either.
 8. Record required reviews and maintainer/owner sign-off in [Identity #14](https://github.com/Cratis/Identity/issues/14) before changing Draft status. This document supersedes no signed-off contract.
+
+## 12. Implementers and pinned vector version
+
+This table is informational and not part of the normative contract. "Pinned vector version" names the vector artifact an implementer consumes: the `identity-contract-vectors` bundle (see [Vector artifact](README.md#vector-artifact)) or a per-spec artifact. A row says what an implementer runs, not that it passes; data vectors do not imply a passing conformance suite. "To be confirmed" means the implementer repository has not confirmed the fact here.
+
+| Implementer | Runs | Pinned vector version | Not applicable (reason) |
+|---|---|---|---|
+| Identity | Shape check only: `Source/Identity.Specs/for_CredentialRecordVectors/when_reading_the_credential_record_vectors.cs` | This repository's tree; bundle 1.0.0 once tagged | Not replayed against a gateway by Identity |
+| Arc | To be confirmed by the implementer repository | To be confirmed by the implementer repository | To be confirmed by the implementer repository |
+| AuthProxy | Executable replay is still to be assigned (section 11) | To be confirmed by the implementer repository | To be confirmed by the implementer repository |
