@@ -40,7 +40,7 @@ public class when_replaying_the_account_projection_without_erasure(ErasureReplay
 
     [Fact] void should_have_read_the_account_before_the_replay() => _before.ShouldNotBeNull();
     [Fact] void should_read_the_account_after_the_replay() => _after.ShouldNotBeNull();
-    [Fact] void should_keep_the_name() => _after!.Name.Value.ShouldEqual(ErasureHarness.RenamedPersonalName);
-    [Fact] void should_keep_the_email() => _after!.Email.Value.ShouldEqual(EmailAddress);
-    [Fact] void should_keep_the_account_active() => _after!.Status.ShouldEqual(AccountStatus.Active);
+    [Fact] void should_keep_the_name() => _after.Name.Value.ShouldEqual(ErasureHarness.RenamedPersonalName);
+    [Fact] void should_keep_the_email() => _after.Email.Value.ShouldEqual(EmailAddress);
+    [Fact] void should_keep_the_account_active() => _after.Status.ShouldEqual(AccountStatus.Active);
 }
