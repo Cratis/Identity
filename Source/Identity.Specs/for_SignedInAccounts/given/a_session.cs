@@ -27,7 +27,7 @@ public class a_session : Specification
     void Establish()
     {
         var time = new FixedTimeProvider(DateTimeOffset.FromUnixTimeSeconds(1_700_000_000));
-        var account = new Account(new("7d9d5c9e-0000-4000-8000-000000000001"), "Member", null, "42", "member", AccountStatus.Active, []);
+        var account = new Account(new("7d9d5c9e-0000-4000-8000-000000000001"), "Member", null, AccountStatus.Active, []);
         _accounts = Substitute.For<IAccountReader>();
         _accounts.FindActive(Arg.Any<AccountSubject>(), Arg.Any<CancellationToken>()).Returns(account);
         var principal = SessionPrincipal.For(account, "test", time.Now);

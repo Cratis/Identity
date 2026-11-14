@@ -4,6 +4,7 @@
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.Resources;
+using Cratis.Identity.Upstream;
 using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.Tenants;
@@ -19,11 +20,11 @@ internal class ConfiguredTenantDirectory(IOptionsMonitor<IdentityOptions> option
     /// <inheritdoc/>
     public Task<TenantLookup> SelectableTenants(Account account, ResourceServer resource, CancellationToken cancellationToken = default)
     {
-        var gitHubId = account.GitHubId.Value;
+        var gitHubId = account.LinkFor(GitHubConnection.Issuer)?.IdpSub.Value;
         var tenants = options.CurrentValue.Resources
             .Where(_ => string.Equals(_.Audience, resource.Audience, StringComparison.Ordinal))
             .SelectMany(_ => _.Tenants)
-            .Where(_ => _.AllowAllAccounts || _.Members.Contains(gitHubId, StringComparer.Ordinal))
+            .Where(_ => _.AllowAllAccounts || (gitHubId is not null && _.Members.Contains(gitHubId, StringComparer.Ordinal)))
             .Select(_ => new SelectableTenant(_.Id, string.IsNullOrWhiteSpace(_.Name) ? _.Id : _.Name))
             .ToArray();
 

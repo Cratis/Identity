@@ -97,7 +97,7 @@ internal sealed class DeviceVerificationEndpoint(SignedInAccounts accounts, IAnt
         if (action == "review")
         {
             var name = await applications.GetDisplayNameAsync(client, context.RequestAborted) ?? clientId!;
-            return DeviceGrantPages.Review(new(name, grant, DeviceGrantUserCode.Normalize(form[Parameters.UserCode], options.Value.DeviceGrant.UserCodeLength, options.Value.DeviceGrant.UserCodeCharset)!, approval.Create(binding), selectable, antiforgery.GetAndStoreTokens(context), IssuerHost(context), clientId, account.GitHubLogin.Value, path));
+            return DeviceGrantPages.Review(new(name, grant, DeviceGrantUserCode.Normalize(form[Parameters.UserCode], options.Value.DeviceGrant.UserCodeLength, options.Value.DeviceGrant.UserCodeCharset)!, approval.Create(binding), selectable, antiforgery.GetAndStoreTokens(context), IssuerHost(context), clientId, account.LinkFor(GitHubConnection.Issuer)?.Login.Value ?? account.Name.Value, path));
         }
 
         if (!IsDecisionAction(action) || !approval.Matches(form["proof"], binding)) return DeviceGrantPages.Unavailable();

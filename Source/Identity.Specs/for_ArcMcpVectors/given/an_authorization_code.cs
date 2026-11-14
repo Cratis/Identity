@@ -33,7 +33,7 @@ public class an_authorization_code : an_authorization_server
     protected override void ConfigureServices()
     {
         var services = Builder.Services;
-        var account = new Account(new("7d9d5c9e-0000-4000-8000-000000000001"), "Synthetic Member", null, "42", "synthetic-member", AccountStatus.Active, []);
+        var account = Identity.given.GitHubAccounts.Create(new("7d9d5c9e-0000-4000-8000-000000000001"), "Synthetic Member", null, "42", "synthetic-member");
         var accounts = Substitute.For<IAccountReader>();
         accounts.FindActive(Arg.Any<AccountSubject>(), Arg.Any<CancellationToken>()).Returns(account);
         var tenants = Substitute.For<ITenantDirectory>();

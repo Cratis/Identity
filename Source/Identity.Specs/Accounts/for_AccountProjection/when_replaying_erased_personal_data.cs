@@ -32,8 +32,6 @@ public class when_replaying_erased_personal_data : Specification
 
     [Fact] void should_release_an_empty_name() => _account.Name.Value.ShouldEqual(string.Empty);
     [Fact] void should_release_an_empty_email() => _account.Email.Value.ShouldEqual(string.Empty);
-    [Fact] void should_release_an_empty_upstream_subject() => _account.GitHubId.Value.ShouldEqual(string.Empty);
-    [Fact] void should_release_an_empty_login() => _account.GitHubLogin.Value.ShouldEqual(string.Empty);
     [Fact] void should_keep_the_link_to_make_the_personal_field_checks_nonvacuous() => _account.LinkedUpstreamKeys.ShouldContainSingleItem();
     [Fact] void should_release_an_empty_link_subject() => _account.LinkedUpstreamKeys.Single().IdpSub.Value.ShouldEqual(string.Empty);
     [Fact] void should_release_an_empty_link_login() => _account.LinkedUpstreamKeys.Single().Login.Value.ShouldEqual(string.Empty);

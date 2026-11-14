@@ -22,7 +22,7 @@ public class when_revalidating_eligibility : Deciding.given.an_activation
         var tenants = Substitute.For<ITenantDirectory>();
         var applications = Substitute.For<IOpenIddictApplicationManager>();
         var application = new object();
-        var active = new Account(binding.Account, "Spec Account", null, "1234", "spec-account", AccountStatus.Active, []);
+        var active = Identity.given.GitHubAccounts.Create(binding.Account, "Spec Account", null, "1234", "spec-account");
         var resource = new ResourceServer(binding.Resource, "resource", [binding.Resource], [new("read", "Read")]);
         accounts.FindActive(binding.Account, Arg.Any<CancellationToken>()).Returns(Task.FromResult<Account?>(active));
         grants.Evaluate(Arg.Any<GrantRequest>()).Returns(new Grantable(new(resource, ["openid", "read"])));

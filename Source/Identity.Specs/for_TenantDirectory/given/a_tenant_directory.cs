@@ -1,7 +1,6 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Cratis.Identity.Accounts;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.for_ProductTenantsCallback.given;
 using Cratis.Identity.given;
@@ -32,6 +31,6 @@ public class a_tenant_directory : Specification
         factory.CreateClient(TenantsCallbackHttpClient.Name).Returns(new HttpClient(handler));
         var monitor = options.AsMonitor();
         var directory = new TenantDirectory(monitor, environment, new ProductTenantsCallback(factory, NullLogger<ProductTenantsCallback>.Instance), new ConfiguredTenantDirectory(monitor));
-        result = await directory.SelectableTenants(new Account(new("7d9d5c9e-0000-4000-8000-000000000001"), "Member", null, "42", "member", AccountStatus.Active, []), new ResourceServer(Configurations.DirectAudience, "Direct", [], []));
+        result = await directory.SelectableTenants(GitHubAccounts.Create(new("7d9d5c9e-0000-4000-8000-000000000001"), "Member", null, "42", "member"), new ResourceServer(Configurations.DirectAudience, "Direct", [], []));
     }
 }

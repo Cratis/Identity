@@ -24,8 +24,6 @@ public class when_reading_read_models_after_erasure : IClassFixture<ReadModelsAf
     [Fact] void should_read_both_the_existing_and_replayed_link_state() => _scenario.States.Count.ShouldEqual(2);
     [Fact] void should_release_empty_names() => _scenario.Accounts.All(account => account.Name.Value.Length == 0).ShouldBeTrue();
     [Fact] void should_release_empty_emails() => _scenario.Accounts.All(account => account.Email.Value.Length == 0).ShouldBeTrue();
-    [Fact] void should_release_empty_upstream_subjects() => _scenario.Accounts.All(account => account.GitHubId.Value.Length == 0).ShouldBeTrue();
-    [Fact] void should_release_empty_logins() => _scenario.Accounts.All(account => account.GitHubLogin.Value.Length == 0).ShouldBeTrue();
     [Fact] void should_release_empty_link_subjects() => _scenario.Accounts.All(account => account.LinkedUpstreamKeys.Single().IdpSub.Value.Length == 0).ShouldBeTrue();
     [Fact] void should_release_empty_link_logins() => _scenario.Accounts.All(account => account.LinkedUpstreamKeys.Single().Login.Value.Length == 0).ShouldBeTrue();
     [Fact] void should_keep_the_terminal_status() => _scenario.Accounts.All(account => account.Status == AccountStatus.Tombstoned).ShouldBeTrue();

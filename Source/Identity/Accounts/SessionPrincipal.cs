@@ -4,6 +4,7 @@
 using System.Globalization;
 using System.Security.Claims;
 using Cratis.Identity.Contracts;
+using Cratis.Identity.Upstream;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Cratis.Identity.Accounts;
@@ -28,9 +29,17 @@ internal static class SessionPrincipal
         identity.AddClaim(new Claim("sid", Guid.NewGuid().ToString("N")));
         AuthenticatingLink.Stamp(identity, link);
         identity.AddClaim(new Claim(Claims.Name, account.Name.Value));
-        identity.AddClaim(new Claim(IdentityClaims.GitHubId, account.GitHubId.Value));
-        identity.AddClaim(new Claim(IdentityClaims.GitHubLogin, account.GitHubLogin.Value));
-        identity.AddClaim(new Claim(Claims.PreferredUsername, account.GitHubLogin.Value));
+        if (account.LinkFor(GitHubConnection.Issuer) is { } gitHub)
+        {
+            identity.AddClaim(new Claim(IdentityClaims.GitHubId, gitHub.IdpSub.Value));
+            identity.AddClaim(new Claim(IdentityClaims.GitHubLogin, gitHub.Login.Value));
+        }
+
+        if (account.DisplayLogin() is { } login)
+        {
+            identity.AddClaim(new Claim(Claims.PreferredUsername, login.Value));
+        }
+
         identity.AddClaim(new Claim(Claims.AuthenticationTime, authTime.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64));
         return new ClaimsPrincipal(identity);
     }

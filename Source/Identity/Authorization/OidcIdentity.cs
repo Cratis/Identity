@@ -74,7 +74,7 @@ internal static class OidcIdentity
     {
         var hasProfile = identity.HasScope(Scopes.Profile);
         identity.SetClaim(Claims.Name, hasProfile ? account.Name.Value : null);
-        identity.SetClaim(Claims.PreferredUsername, hasProfile ? account.GitHubLogin.Value : null);
+        identity.SetClaim(Claims.PreferredUsername, hasProfile ? account.DisplayLogin()?.Value : null);
     }
 
     static IEnumerable<string> DestinationsFor(string type, bool hasProfile) => type switch

@@ -40,6 +40,6 @@ public class when_logging_refusals : given.a_token_exchange_request
     [Fact] void should_never_log_the_subject_token() => _logger.Messages.ShouldNotContain(_ => _.Contains(SecretToken));
     [Fact] void should_never_log_the_external_subject() => _logger.Messages.ShouldNotContain(_ => _.Contains(ExternalSubject));
     [Fact] void should_never_log_the_account_name() => _logger.Messages.ShouldNotContain(_ => _.Contains(_account.Name.Value));
-    [Fact] void should_never_log_the_github_login() => _logger.Messages.ShouldNotContain(_ => _.Contains(_account.GitHubLogin.Value));
-    [Fact] void should_never_log_the_github_id() => _logger.Messages.ShouldNotContain(_ => _.Contains(_account.GitHubId.Value));
+    [Fact] void should_never_log_the_github_login() => _logger.Messages.ShouldNotContain(_ => _.Contains(_account.DisplayLogin().Value));
+    [Fact] void should_never_log_the_github_id() => _logger.Messages.ShouldNotContain(_ => _.Contains(_account.LinkedUpstreamKeys.Single().IdpSub.Value));
 }
