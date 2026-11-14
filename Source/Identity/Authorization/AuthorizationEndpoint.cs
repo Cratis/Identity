@@ -47,7 +47,7 @@ internal class AuthorizationEndpoint(
     public async Task<IResult> Handle(HttpContext context)
     {
         var request = context.GetOpenIddictServerRequest() ?? throw new OpenIddictRequestMissing(context.Request.Path);
-        if (await MaxAgeRequest.IsPresent(context.Request)) return OAuthResults.Error(Errors.InvalidRequest, "max_age is not supported");
+        if (await MaxAgeRequest.Evaluate(context.Request) == MaxAgeState.Invalid) return OAuthResults.Error(Errors.InvalidRequest, "max_age is invalid");
         if (request.HasPromptValue(PromptValues.None) && request.GetPromptValues().Length > 1) return OAuthResults.Error(Errors.InvalidRequest, "prompt none cannot be combined with other values");
 
         // The GitHub callback returns here after an upstream cancel or failure. OpenIddict has revalidated
