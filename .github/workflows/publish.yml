@@ -132,8 +132,9 @@ jobs:
     # A merge that publishes nothing is the failure mode that silently costs a release: the release job
     # succeeds, every publish job is skipped for want of should-publish, and the run reports green. Fail for the
     # reasons that mean something went wrong; publishing nothing is correct for no-release and re-runs. A push to
-    # main that finds no pull request also fails: changes reach main through pull requests, so it means the
-    # lookup failed (for example for want of permission) and a release was silently skipped.
+    # main that finds no pull request also fails: releases come from merged pull requests, so it means either the
+    # lookup failed (for example for want of permission) or a change reached main without one. To release a
+    # direct push on purpose, dispatch this workflow with an explicit version; re-running it will not help.
     if: >-
       always() && needs.release.result == 'success' && (
         contains(fromJSON('["no-label", "error"]'), needs.release.outputs.reason) ||
