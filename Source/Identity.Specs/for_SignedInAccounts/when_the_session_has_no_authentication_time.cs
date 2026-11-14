@@ -20,7 +20,7 @@ public class when_the_session_has_no_authentication_time : Specification
 
     async Task Because()
     {
-        var account = new Account(new(AccountId), "Member", null, "42", "member", AccountStatus.Active, []);
+        var account = given.GitHubAccounts.Create(new(AccountId), "Member", null, "42", "member");
         var accounts = Substitute.For<IAccountReader>();
         accounts.FindActive(Arg.Any<AccountSubject>(), Arg.Any<CancellationToken>()).Returns(account);
         var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(OpenIddictConstants.Claims.Subject, AccountId)], "test"));

@@ -12,5 +12,5 @@ public class an_identity_grant : Specification
     protected static readonly DateTimeOffset AuthTime = DateTimeOffset.FromUnixTimeSeconds(1_700_000_000);
     private protected Account _account;
 
-    void Establish() => _account = new Account(new("7d9d5c9e-0000-4000-8000-000000000001"), "Example Member", null, "123456", "example-member", AccountStatus.Active, []);
+    void Establish() => _account = Identity.given.GitHubAccounts.Create(new("7d9d5c9e-0000-4000-8000-000000000001"), "Example Member", null, "123456", "example-member");
 }

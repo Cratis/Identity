@@ -120,10 +120,11 @@ internal static class AccessTokenIdentity
         var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
         identity.SetScopes(scopes.Where(_ => !string.Equals(_, Scopes.OfflineAccess, StringComparison.Ordinal)));
         identity.SetResources(resource.Audience);
+        var gitHub = account.LinkFor(GitHubConnection.Issuer);
         identity
             .SetClaim(Claims.Subject, account.Id.Value)
             .SetClaim(Claims.Name, account.Name.Value)
-            .SetClaim(Claims.PreferredUsername, resource.ReceivesUpstreamIdentity && string.Equals(externalIssuer, GitHubConnection.Issuer, StringComparison.Ordinal) ? account.GitHubLogin.Value : null)
+            .SetClaim(Claims.PreferredUsername, resource.ReceivesUpstreamIdentity && string.Equals(externalIssuer, GitHubConnection.Issuer, StringComparison.Ordinal) ? gitHub?.Login.Value : null)
             .SetClaim(IdentityClaims.Idp, externalIssuer)
             .SetClaim(IdentityClaims.IdpSub, resource.ReceivesUpstreamIdentity ? externalSubject : null)
             .SetClaim(Claims.AuthenticationContextReference, BasicAssurance)
@@ -160,14 +161,15 @@ internal static class AccessTokenIdentity
         // Only registered upstream-identity consumers get the upstream subject, GitHub claims and preferred_username; everything else fails closed.
         // Deviation from identity-contract-v1.md:148 (name MUST NOT appear in access tokens): resource proxies use it as the identity name;
         // tracked for the v1.1 amendment (#111).
+        var gitHub = receivesUpstreamIdentity ? account.LinkFor(GitHubConnection.Issuer) : null;
         identity
             .SetClaim(Claims.Subject, account.Id.Value)
             .SetClaim(Claims.Name, account.Name.Value)
-            .SetClaim(Claims.PreferredUsername, receivesUpstreamIdentity ? account.GitHubLogin.Value : null)
+            .SetClaim(Claims.PreferredUsername, receivesUpstreamIdentity ? account.DisplayLogin()?.Value : null)
             .SetClaim(IdentityClaims.Idp, GitHubConnection.Issuer)
-            .SetClaim(IdentityClaims.IdpSub, receivesUpstreamIdentity ? account.GitHubId.Value : null)
-            .SetClaim(IdentityClaims.GitHubId, receivesUpstreamIdentity ? account.GitHubId.Value : null)
-            .SetClaim(IdentityClaims.GitHubLogin, receivesUpstreamIdentity ? account.GitHubLogin.Value : null)
+            .SetClaim(IdentityClaims.IdpSub, gitHub?.IdpSub.Value)
+            .SetClaim(IdentityClaims.GitHubId, gitHub?.IdpSub.Value)
+            .SetClaim(IdentityClaims.GitHubLogin, gitHub?.Login.Value)
             .SetClaim(Claims.AuthenticationContextReference, BasicAssurance)
             .SetClaim(Claims.AuthorizedParty, clientId)
             .SetClaim(CredentialId.ClaimType, CredentialId.For(identity.GetAuthorizationId()));

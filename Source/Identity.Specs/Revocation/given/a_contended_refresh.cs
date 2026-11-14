@@ -65,7 +65,7 @@ public class a_contended_refresh : for_RedeemRefreshTokenOnce.given.a_refresh_to
     /// <returns>The endpoint's <see cref="IResult"/>.</returns>
     protected async Task<IResult> ReachTokenEndpoint(string? authTime, IReadOnlyDictionary<string, bool> audiences)
     {
-        var account = new Account(new(FenceDoubles.Subject), "Member", null, "42", "member", AccountStatus.Active, []);
+        var account = GitHubAccounts.Create(new(FenceDoubles.Subject), "Member", null, "42", "member");
         var principal = _validation.Principal.Clone()
             .SetClaim(Claims.Subject, FenceDoubles.Subject)
             .SetClaim(IdentityClaims.TenantId, "tenant")

@@ -65,7 +65,7 @@ public class a_verification_request : Specification
         _accounts = Substitute.For<IAccountReader>();
         _options = new();
         _options.DeviceGrant.Enabled = true;
-        _account = new(new("7d9d5c9e-0000-4000-8000-000000000001"), "Member", null, "42", "member", AccountStatus.Active, []);
+        _account = GitHubAccounts.Create(new("7d9d5c9e-0000-4000-8000-000000000001"), "Member", null, "42", "member");
         _grant = new(new Resources.ResourceCatalog(Configurations.TwoResourceServers().AsOptions()).FindByAudience(Configurations.DirectAudience), ["direct:read"]);
         _principal = new ClaimsPrincipal(new ClaimsIdentity("test")).SetTokenId("user-token")
             .SetClaim(OpenIddictConstants.Claims.Private.DeviceCodeId, "device-token")

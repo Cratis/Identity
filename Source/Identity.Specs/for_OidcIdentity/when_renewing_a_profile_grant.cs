@@ -16,7 +16,7 @@ public class when_renewing_a_profile_grant : given.an_identity_grant
     {
         var original = OidcIdentity.Create(new(_account, AuthTime, SessionId), ClientId, new IdentityOnlyGrant(["openid", "profile", "offline_access"]), "example-nonce");
         original.SetAuthorizationId("example-authorization");
-        _identity = OidcIdentity.Renew(new ClaimsPrincipal(original), _account with { Name = "Updated Member", GitHubLogin = "updated-member" }, ClientId);
+        _identity = OidcIdentity.Renew(new ClaimsPrincipal(original), Identity.given.GitHubAccounts.Create(_account.Id, "Updated Member", _account.Email, "123456", "updated-member"), ClientId);
     }
 
     [Fact] void should_keep_the_original_authentication_time() => _identity.GetClaim(Claims.AuthenticationTime).ShouldEqual("1700000000");

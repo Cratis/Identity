@@ -25,7 +25,7 @@ public class when_logging_a_successful_sign_in : Specification
     {
         _logger = new();
         _accounts = Substitute.For<IAccountSignIn>();
-        _account = new(AccountSubject.New(), "Synthetic User", null, GitHubId, GitHubLogin, AccountStatus.Active, []);
+        _account = Identity.given.GitHubAccounts.Create(AccountSubject.New(), "Synthetic User", null, GitHubId, GitHubLogin);
         _accounts.SignIn(Arg.Any<VerifiedAuthentication>(), Arg.Any<ObservedProfile>(), Arg.Any<CancellationToken>()).Returns(_account);
     }
 

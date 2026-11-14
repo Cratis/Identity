@@ -37,7 +37,7 @@ public class when_scanning_the_event_log_for_secrets : Accounts.SigningIn.given.
             _command = new(call.Arg<VerifiedAuthentication>().OperationId);
             await Decide();
             foreach (var @event in _events) await log.Append(_subject.Value, @event);
-            return new Account(_subject, "Person", "profile@example.test", "42", "synthetic-login", AccountStatus.Active, []);
+            return Identity.given.GitHubAccounts.Create(_subject, "Person", "profile@example.test", "42", "synthetic-login");
         });
         await given.UpstreamTicket.SignIn(accounts, _clock);
 

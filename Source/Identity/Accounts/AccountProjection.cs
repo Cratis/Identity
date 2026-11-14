@@ -21,8 +21,6 @@ internal class AccountProjection : IProjectionFor<Account>
         .From<AccountTombstoneRecorded>(from => from
             .Set(model => model.Status).ToValue(AccountStatus.Tombstoned)
             .Set(model => model.IsTombstoned).ToValue(true))
-        .From<UpstreamKeySubjectRecorded>(from => from.Set(model => model.GitHubId).To(@event => @event.IdpSub))
-        .From<UpstreamKeyDisplayIdentifierObserved>(from => from.Set(model => model.GitHubLogin).To(@event => @event.Login))
         .Children(model => model.LinkedUpstreamKeys, children => children
             .IdentifiedBy(key => key.LinkId)
             .From<UpstreamKeyLinkRecorded>(from => from.UsingKey(@event => @event.LinkId))

@@ -31,7 +31,7 @@ public class when_authentication_age_is_requested : Specification
     {
         var time = new FixedTimeProvider(DateTimeOffset.FromUnixTimeSeconds(1_700_000_000));
         _authTime = time.Now.AddMinutes(-5);
-        var account = new Account(new("7d9d5c9e-0000-4000-8000-000000000001"), "Member", null, "42", "member", AccountStatus.Active, []);
+        var account = GitHubAccounts.Create(new("7d9d5c9e-0000-4000-8000-000000000001"), "Member", null, "42", "member");
         var accounts = Substitute.For<IAccountReader>();
         accounts.FindActive(Arg.Any<AccountSubject>(), Arg.Any<CancellationToken>()).Returns(account);
         var principal = SessionPrincipal.For(account, "test", _authTime);

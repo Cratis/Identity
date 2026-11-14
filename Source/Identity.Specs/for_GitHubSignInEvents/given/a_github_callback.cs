@@ -22,7 +22,7 @@ public class a_github_callback : Specification
 
     protected async Task CreateTicket([StringSyntax(StringSyntaxAttribute.Json)] string response)
     {
-        _account = new(AccountSubject.New(), "Synthetic User", null, "42", "synthetic-login", AccountStatus.Active, []);
+        _account = Identity.given.GitHubAccounts.Create(AccountSubject.New(), "Synthetic User", null, "42", "synthetic-login");
         var signIn = Substitute.For<IAccountSignIn>();
         signIn.SignIn(Arg.Any<VerifiedAuthentication>(), Arg.Do<ObservedProfile>(profile => _profile = profile), Arg.Any<CancellationToken>()).Returns(_account);
         using var http = new HttpClient(new ProfileHandler(response));
