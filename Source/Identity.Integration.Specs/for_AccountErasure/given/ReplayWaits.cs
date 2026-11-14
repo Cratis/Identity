@@ -5,15 +5,14 @@ using Cratis.Chronicle;
 using Cratis.Chronicle.Events;
 using Cratis.Chronicle.Jobs;
 using Cratis.Chronicle.Observation;
-using Cratis.Chronicle.Projections;
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Protocol;
 
 namespace Cratis.Identity.Integration.for_AccountErasure.given;
 
 /// <summary>
-/// Replays the account projection and waits on Chronicle's own signals (the replay job, then the observer position),
-/// never on the clock. A wait that does not finish throws with the observed state and the kernel output, so a CI
+/// Replays the account projection and polls Chronicle's own signals (the replay job and the observer position).
+/// A wait that does not finish throws with the last observed state and the kernel output, so a CI
 /// failure names its cause instead of a bare timeout.
 /// </summary>
 internal static class ReplayWaits
@@ -35,36 +34,44 @@ internal static class ReplayWaits
     /// <exception cref="InvalidOperationException">The replay finished unsuccessfully; the message carries the diagnostics.</exception>
     public static async Task ReplayAccountProjection(IEventStore store, EventSequenceNumber tail, Func<Task<string>> kernelOutput)
     {
+        var progress = new ObserverProgress(store);
         var jobId = await store.Projections.Replay<AccountProjection>();
         if (jobId == JobId.NotSet)
         {
-            throw new InvalidOperationException(await Describe(store, "The kernel did not accept the replay (no job id).", kernelOutput));
+            throw new InvalidOperationException(await Describe("The kernel did not accept the replay (no job id).", $"Account projection position: {await progress.Position(typeof(Account))}", kernelOutput));
         }
 
-        Job? job;
+        using var timeout = new CancellationTokenSource(Bound);
+        var snapshot = "Replay state has not been read.";
         try
         {
-            job = await store.Jobs.WaitTillJobCompletesOrIsDeleted(jobId, Bound);
-            await store.Projections.WaitTillReachesEventSequenceNumber<AccountProjection>(tail, Bound);
-        }
-        catch (TimeoutException ex)
-        {
-            throw new TimeoutException(await Describe(store, $"The replay job {jobId} did not finish within {Bound}: {ex.Message}", kernelOutput), ex);
-        }
+            while (true)
+            {
+                var job = await store.Jobs.GetJob(jobId).WaitAsync(timeout.Token);
+                var position = await progress.Position(typeof(Account)).WaitAsync(timeout.Token);
+                snapshot = $"The replay job {jobId} ended with status {job?.Status.ToString() ?? "removed"}.\nAccount projection position: {position}";
+                if (IsSettled(job, position, tail))
+                {
+                    return;
+                }
 
+                await Task.Delay(TimeSpan.FromMilliseconds(100), timeout.Token);
+            }
+        }
+        catch (Exception ex) when (ex is TimeoutException or OperationCanceledException)
+        {
+            throw new TimeoutException(await Describe($"The replay job {jobId} did not finish within {Bound}: {ex.Message}", snapshot, kernelOutput), ex);
+        }
+    }
+
+    static bool IsSettled(Job? job, ObserverPosition position, EventSequenceNumber tail)
+    {
         // A removed job (null) finished; a retained one must say it succeeded.
-        var position = await new ObserverProgress(store).Position(typeof(Account));
         var succeeded = job is null || job.Status == JobStatus.CompletedSuccessfully;
         var settled = position is { HasFailedPartitions: false, IsReplaying: false, RunningState: ObserverRunningState.Active };
-        if (!succeeded || !settled)
-        {
-            throw new InvalidOperationException(await Describe(store, $"The replay job {jobId} ended with status {job?.Status.ToString() ?? "removed"}.", kernelOutput));
-        }
+        return succeeded && settled && position.LastHandled >= tail;
     }
 
-    static async Task<string> Describe(IEventStore store, string problem, Func<Task<string>> kernelOutput)
-    {
-        var position = await new ObserverProgress(store).Position(typeof(Account));
-        return $"{problem}\nAccount projection position: {position}\n{await kernelOutput()}";
-    }
+    static async Task<string> Describe(string problem, string snapshot, Func<Task<string>> kernelOutput) =>
+        $"{problem}\n{snapshot}\n{await kernelOutput()}";
 }

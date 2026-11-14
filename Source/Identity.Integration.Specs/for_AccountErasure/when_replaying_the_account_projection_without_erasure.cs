@@ -14,8 +14,7 @@ namespace Cratis.Identity.Integration.for_AccountErasure;
 /// replay is unusable in this environment (client and kernel skew), not because of key destruction.
 /// </summary>
 /// <param name="host">The host with its own kernel.</param>
-[Collection(ErasureReplayCollection.Name)]
-public class when_replaying_the_account_projection_without_erasure(ErasureReplayHost host) : IAsyncLifetime
+public class when_replaying_the_account_projection_without_erasure(ErasureReplayHost host) : IClassFixture<ErasureReplayHost>, IAsyncLifetime
 {
     const string EmailAddress = "baseline@example.test";
     Account? _before;
