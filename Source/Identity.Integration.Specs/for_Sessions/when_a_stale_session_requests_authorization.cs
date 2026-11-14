@@ -41,14 +41,17 @@ public class when_a_stale_session_requests_authorization(IdentityHost host) : Sp
         using var unbounded = await client.GetAsync($"/connect/authorize{QueryString.Create(parameters)}");
         _reissuedWithoutMaxAge = SetsSessionCookie(unbounded, options.Cookie.Name);
         using var silent = await client.GetAsync($"/connect/authorize{QueryString.Create(parameters.Concat([new("max_age", "60"), new("prompt", "none")]))}");
-        _error = QueryHelpers.ParseQuery(silent.Headers.Location.Query)["error"].ToString();
+        _error = ErrorOf(silent, client.BaseAddress);
         _reissuedOnError = SetsSessionCookie(silent, options.Cookie.Name);
         using var forced = await client.GetAsync($"/connect/authorize{QueryString.Create(parameters.Append(new("max_age", "0")))}");
-        _forcedError = QueryHelpers.ParseQuery(forced.Headers.Location.Query)["error"].ToString();
+        _forcedError = ErrorOf(forced, client.BaseAddress);
         _reauthenticated = SetsSessionCookie(forced, options.Cookie.Name);
         using var malformed = await client.GetAsync($"/connect/authorize{QueryString.Create(parameters.Append(new("max_age", "abc")))}");
-        _malformedError = QueryHelpers.ParseQuery(malformed.Headers.Location.Query)["error"].ToString();
+        _malformedError = ErrorOf(malformed, client.BaseAddress);
     }
+
+    static string ErrorOf(HttpResponseMessage response, Uri baseAddress) =>
+        QueryHelpers.ParseQuery(new Uri(baseAddress, response.Headers.Location).Query)["error"].ToString();
 
     static bool SetsSessionCookie(HttpResponseMessage response, string cookieName) =>
         response.Headers.TryGetValues("Set-Cookie", out var values) && values.Any(_ => SetCookieHeaderValue.Parse(_).Name == cookieName);
