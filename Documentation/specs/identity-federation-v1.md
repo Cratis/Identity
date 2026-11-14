@@ -30,7 +30,12 @@ Organisation administration MUST NOT create tenant membership. Authentication th
 
 ## 2. Connection to linked key
 
-Access MUST approve a connection's authority and protocol before it can supply authentication evidence. Identity MUST validate the authentication through that registered connection before extracting a key; an unverified issuer, assertion, forwarded header or caller-supplied provider label MUST NOT select an account.
+Access MUST approve a connection's authority and protocol before it can supply authentication evidence. A connection MUST supply evidence for an issuer only when both conditions hold:
+
+- Exactly one approved connection lineage in the realm holds that issuer, or Access has verified that a replacement belongs to the same organisation and directory authority as the existing lineage. A connection from another organisation MUST NOT claim an existing lineage's issuer.
+- Verification keys and metadata come from the issuer itself (OIDC discovery or JWKS at the exact `iss`), or, for SAML, the signing trust anchor is verified to belong to that exact entityID. A connection administrator's choice of metadata, keys or entityID alone MUST NOT establish this binding. Verified key rotation is allowed; identical certificates are not required when trust-anchor continuity has been verified.
+
+Conflicting registrations MUST be refused or quarantined and MUST NOT supply authentication evidence, resolve an account or grant access. Identity MUST validate the authentication through the registered connection and its verified issuer/trust-anchor binding before extracting a key; an unverified issuer, assertion, forwarded header or caller-supplied provider label MUST NOT select an account. The event-catalogue extension for recording lineage and continuity evidence is outstanding in §7.
 
 | Protocol | `idp` | `idp_sub` |
 |---|---|---|
@@ -46,7 +51,7 @@ Lookup MUST use a keyed digest of the exact upstream pair outside event-source i
 
 ## 3. Per-connection assurance
 
-Access MUST own a closed typed table of approved source/target `acr`/`amr` mappings for each connection, with a mapping revision and an approved maximum assurance. Authentication MUST use only validated evidence from that connection and its applicable mapping revision. Arbitrary upstream claims, self-asserted method labels and another connection's mapping MUST NOT elevate assurance. A result MUST NOT exceed the connection's approved maximum.
+Access MUST own a closed typed table of approved source/target `acr`/`amr` mappings for each connection, with a mapping revision. Authentication MUST use only validated evidence from that connection and its applicable mapping revision. Arbitrary upstream claims, self-asserted method labels and another connection's mapping MUST NOT elevate assurance. Recording a separately approved maximum assurance requires the event-catalogue extension in §7; no existing Access fact records that maximum. Until that extension exists, a result MUST be bounded by the approved mapping table, or `basic` when no valid mapping applies. Once recorded, the connection's approved maximum MUST additionally bound every result.
 
 Unknown, absent or unmapped evidence MUST yield `acr=basic`, never elevated assurance. Unknown methods MUST NOT be invented or copied into Identity `amr`; omit them or use a verified empty collection as allowed by the caller contract. Mapped method evidence MUST remain distinguishable from an upstream label. Level vocabulary beyond `basic` remains open in the token profile; this draft defines no new level names.
 
@@ -56,7 +61,7 @@ Unknown, absent or unmapped evidence MUST yield `acr=basic`, never elevated assu
 
 ### 4.1 Same issuer
 
-Replacing a connection with another approved connection for the **same exact issuer** MAY resolve an already confirmed exact key to its existing account after normal verified authentication. No new link proposal is needed merely because ConnectionId changes: the key has not changed. This MUST NOT transfer the key to a different account, skip atomic uniqueness or revive an unlinked/reserved key. The new connection's assurance mapping applies to the new authentication; connection continuity is not assurance continuity.
+Replacing a connection with another approved connection for the **same exact issuer** MAY resolve an already confirmed exact key to its existing account only after normal verified authentication and satisfaction of §2's issuer-lineage, same-organisation/directory-authority replacement and trust-anchor binding requirements. Equal issuer strings alone MUST NOT establish continuity. No new link proposal is needed merely because ConnectionId changes: the key has not changed. This MUST NOT transfer the key to a different account, skip atomic uniqueness or revive an unlinked/reserved key. The new connection's assurance mapping applies to the new authentication; connection continuity is not assurance continuity.
 
 ### 4.2 Different issuer
 
@@ -92,5 +97,7 @@ These are **data only**. They add no C# tests or project configuration and demon
 
 - Obtain #14 sign-off. Confirm the documented migration procedure, its realm-configured freshness window and evidence-verification/audit responsibilities; this draft does not claim they are deployed.
 - Specify a versioned event-catalogue extension for issuer-migration approval and audit evidence references, including privacy, authority, idempotency and lifecycle. Existing `EnterpriseConnectionRegistered`, `ConnectionAssuranceMappingChanged`, `UpstreamKeyLinked` and `UpstreamKeyUnlinked` MUST NOT be repurposed as approval or a proof waiver. No new event ids are invented here.
+- Specify a versioned Access event-catalogue extension recording issuer reservations/approved connection lineages and verified same-organisation, directory-authority and issuer trust-anchor continuity, including verified key rotation. Use non-secret evidence references, not raw proofs or certificate blobs. Existing connection registration alone MUST NOT be treated as continuity verification; conflicting registrations remain refused or quarantined under §2. No new event ids are assigned here.
+- Specify an Access event-catalogue extension or amendment recording each connection's approved maximum assurance; neither `EnterpriseConnectionRegistered` nor `ConnectionAssuranceMappingChanged` currently carries it. Until that extension exists, results MUST be bounded by the approved mapping table, or `basic` when no valid mapping applies (§3).
 - Define the explicit reviewed operation/catalogue extension for any reserved-key relink if needed; until then it MUST deny. No signed-off contract or event file is edited by this draft.
 - Complete the assurance vocabulary beyond `basic` and connection maximum/mapping validation without pass-through or retrospective elevation. Runtime validation and the portability proof remain separate implementation/release work.
