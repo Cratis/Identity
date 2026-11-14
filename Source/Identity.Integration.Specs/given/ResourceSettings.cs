@@ -19,6 +19,16 @@ public static class ResourceSettings
     public const string IntrospectionClientSecret = "mcp-introspection-secret-for-specs";
 
     /// <summary>
+    /// The confidential resource server client that introspects Studio MCP-audience access tokens.
+    /// </summary>
+    public const string StudioIntrospectionClientId = "studio-mcp";
+
+    /// <summary>
+    /// The test-only secret for the Studio MCP introspection client.
+    /// </summary>
+    public const string StudioIntrospectionClientSecret = "studio-mcp-introspection-secret-for-specs";
+
+    /// <summary>
     /// Creates tenant fixtures for both Direct resources and appends the Studio and Stage resources.
     /// </summary>
     /// <param name="memberTenant">The first selectable Direct tenant.</param>
@@ -29,6 +39,8 @@ public static class ResourceSettings
     {
         ["Identity:IntrospectionClients:0:ClientId"] = IntrospectionClientId,
         ["Identity:IntrospectionClients:0:ClientSecret"] = IntrospectionClientSecret,
+        ["Identity:IntrospectionClients:1:ClientId"] = StudioIntrospectionClientId,
+        ["Identity:IntrospectionClients:1:ClientSecret"] = StudioIntrospectionClientSecret,
         ["Identity:Resources:0:Tenants:0:Id"] = memberTenant,
         ["Identity:Resources:0:Tenants:0:Name"] = "Cratis",
         ["Identity:Resources:0:Tenants:0:Members:0"] = memberId,
