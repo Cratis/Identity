@@ -212,3 +212,13 @@ Review by woksin and the Identity/AuthProxy owners (including L101) is required.
 6. Register the canonical resource URIs and scope/catalog mappings for `studio-mcp` and `direct-mcp`, deliver metadata/challenges, and verify deployed rejection of the Development-only issuer. The exact URIs and the no-passthrough adapter design are not supplied by this Draft.
 7. Machine-readable Draft vectors now exist under `Source/Identity.Specs/Vectors/identity-credential-record-v1/` (active, revoked, legacy, bound with valid proof, bound without proof, unbound with proof, plus `cid` mismatch, unknown kind and missing sender-binding result). They are data only, not runtime evidence: the bound cases describe gateway behavior for a hypothetical bound token because Identity issues none yet. Executable replay is still to be assigned to AuthProxy [#294](https://github.com/Cratis/AuthProxy/issues/294) and [#257](https://github.com/Cratis/AuthProxy/issues/257) and to products. The prose cases above are not runtime evidence either.
 8. Record required reviews and maintainer/owner sign-off in [Identity #14](https://github.com/Cratis/Identity/issues/14) before changing Draft status. This document supersedes no signed-off contract.
+
+## 12. Implementers and pinned vector version
+
+This table is informational and not part of the normative contract. "Pinned vector version" names the vector artifact an implementer consumes: the `identity-contract-vectors` bundle (see [Vector artifact](README.md#vector-artifact)) or a per-spec artifact. A row says what an implementer runs, not that it passes; data vectors do not imply a passing conformance suite. "To be confirmed" means the implementer repository has not confirmed the fact here.
+
+| Implementer | Runs | Pinned vector version | Not applicable (reason) |
+|---|---|---|---|
+| Identity | Shape check only: `Source/Identity.Specs/for_CredentialRecordVectors/when_reading_the_credential_record_vectors.cs` | This repository's tree; bundle 1.0.0 once tagged | Not replayed against a gateway by Identity |
+| Arc | To be confirmed by the implementer repository | To be confirmed by the implementer repository | To be confirmed by the implementer repository |
+| AuthProxy | Executable replay is still to be assigned (section 11) | To be confirmed by the implementer repository | To be confirmed by the implementer repository |

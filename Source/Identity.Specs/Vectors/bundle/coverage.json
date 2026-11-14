@@ -1,0 +1,119 @@
+{
+  "arc-delegation-v1": {
+    "identityExecutable": false,
+    "readers": [],
+    "notApplicable": [
+      { "file": "*", "implementer": "Identity", "reason": "Data vectors only; arc-delegation-v1.md states they are not executed runtime conformance tests and Identity has no executable reader." }
+    ]
+  },
+  "arc-forwarded-identity-v2": {
+    "identityExecutable": false,
+    "readers": [],
+    "notApplicable": [
+      { "file": "*", "implementer": "Identity", "reason": "Identity does not verify forwarded identity envelopes; the vectors are exported from Arc's generator and are data only (arc-forwarded-identity-v2.md, Specification vectors)." }
+    ]
+  },
+  "arc-mcp-authorization-v1": {
+    "identityExecutable": true,
+    "readers": [
+      "Source/Identity.Specs/for_ArcMcpVectors/given/an_authorization_server.cs",
+      "Source/Identity.Specs/for_VectorArtifacts/given/an_artifact.cs"
+    ],
+    "notApplicable": []
+  },
+  "arc-mcp-authorization-v1-overlay-2.1.0": {
+    "identityExecutable": true,
+    "readers": [
+      "Source/Identity.Specs/for_ArcMcpVectors/when_enforcing_resource_and_pkce_with_v2_1_0.cs",
+      "Source/Identity.Specs/for_ArcMcpVectors/when_redeeming_an_authorization_grant_with_v2_1_0.cs",
+      "Source/Identity.Specs/for_VectorArtifacts/when_applying_the_scope_catalog_versions.cs"
+    ],
+    "notApplicable": []
+  },
+  "arc-pat-format-v1": {
+    "identityExecutable": false,
+    "readers": [],
+    "notApplicable": [
+      { "file": "*", "implementer": "Identity", "reason": "Data vectors only; arc-pat-format-v1.md states they do not demonstrate runtime conformance and Identity has no executable reader." }
+    ]
+  },
+  "arc-scope-catalog-v1": {
+    "identityExecutable": true,
+    "readers": [
+      "Source/Identity.Specs/for_VectorArtifacts/when_applying_the_scope_catalog_versions.cs"
+    ],
+    "notApplicable": []
+  },
+  "arc-verified-caller-v1": {
+    "identityExecutable": false,
+    "readers": [],
+    "notApplicable": [
+      { "file": "*", "implementer": "Identity", "reason": "Data vectors only; arc-verified-caller-v1.md states they are not executed runtime conformance tests and Identity has no executable reader." }
+    ]
+  },
+  "identity-access-freshness-v1": {
+    "identityExecutable": false,
+    "readers": [],
+    "notApplicable": [
+      { "file": "*", "implementer": "Identity", "reason": "Data only and not implemented or passing executable conformance tests (identity-access-freshness-v1.md); Identity has no executable reader." }
+    ]
+  },
+  "identity-access-token-v1": {
+    "identityExecutable": false,
+    "readers": [],
+    "notApplicable": [
+      { "file": "*", "implementer": "Identity", "reason": "Data only, not executable specs (identity-access-token-v1.md); Identity has no executable reader yet." }
+    ]
+  },
+  "identity-contract-v1": {
+    "identityExecutable": true,
+    "readers": [
+      "Source/Identity.Specs/Accounts/given/a_contract_vector.cs"
+    ],
+    "notApplicable": []
+  },
+  "identity-credential-record-v1": {
+    "identityExecutable": true,
+    "readers": [
+      "Source/Identity.Specs/for_CredentialRecordVectors/when_reading_the_credential_record_vectors.cs"
+    ],
+    "notApplicable": [
+      { "file": "*", "implementer": "Identity", "reason": "Identity specs check only the shape of these vectors and do not replay them against a gateway (identity-credential-record-v1.md)." }
+    ]
+  },
+  "identity-dpop-v1": {
+    "identityExecutable": true,
+    "readers": [
+      "Source/Identity.Specs/for_DPoPProofValidator/when_replaying_the_as_header_vectors.cs"
+    ],
+    "notApplicable": []
+  },
+  "identity-events-v1": {
+    "identityExecutable": true,
+    "readers": [
+      "Source/Identity.Specs/for_EventContentRules/when_applying_locked_vectors.cs"
+    ],
+    "notApplicable": []
+  },
+  "identity-federation-v1": {
+    "identityExecutable": false,
+    "readers": [],
+    "notApplicable": [
+      { "file": "*", "implementer": "Identity", "reason": "Draft data vectors with no executable reader in Identity." }
+    ]
+  },
+  "identity-revocation-v1": {
+    "identityExecutable": false,
+    "readers": [],
+    "notApplicable": [
+      { "file": "*", "implementer": "Identity", "reason": "Data only, not implemented or passing executable specs (identity-revocation-v1.md); Identity has no executable reader." }
+    ]
+  },
+  "identity-tenant-model-v1": {
+    "identityExecutable": false,
+    "readers": [],
+    "notApplicable": [
+      { "file": "*", "implementer": "Identity", "reason": "Data vectors with no executable reader in Identity." }
+    ]
+  }
+}

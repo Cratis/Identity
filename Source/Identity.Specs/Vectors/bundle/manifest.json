@@ -1,0 +1,1685 @@
+{
+  "schema": 1,
+  "bundle": "identity-contract-vectors",
+  "version": "1.0.0",
+  "fileCount": 363,
+  "folders": [
+    {
+      "name": "arc-delegation-v1",
+      "fileCount": 1
+    },
+    {
+      "name": "arc-forwarded-identity-v2",
+      "fileCount": 220
+    },
+    {
+      "name": "arc-mcp-authorization-v1-overlay-2.1.0",
+      "fileCount": 5
+    },
+    {
+      "name": "arc-mcp-authorization-v1",
+      "fileCount": 5
+    },
+    {
+      "name": "arc-pat-format-v1",
+      "fileCount": 1
+    },
+    {
+      "name": "arc-scope-catalog-v1",
+      "fileCount": 1
+    },
+    {
+      "name": "arc-verified-caller-v1",
+      "fileCount": 1
+    },
+    {
+      "name": "identity-access-freshness-v1",
+      "fileCount": 10
+    },
+    {
+      "name": "identity-access-token-v1",
+      "fileCount": 26
+    },
+    {
+      "name": "identity-contract-v1",
+      "fileCount": 15
+    },
+    {
+      "name": "identity-credential-record-v1",
+      "fileCount": 9
+    },
+    {
+      "name": "identity-dpop-v1",
+      "fileCount": 25
+    },
+    {
+      "name": "identity-events-v1",
+      "fileCount": 2
+    },
+    {
+      "name": "identity-federation-v1",
+      "fileCount": 11
+    },
+    {
+      "name": "identity-revocation-v1",
+      "fileCount": 25
+    },
+    {
+      "name": "identity-tenant-model-v1",
+      "fileCount": 6
+    }
+  ],
+  "files": [
+    {
+      "path": "arc-delegation-v1/lineage-and-budgets.json",
+      "sha256": "9b9e00ac09970bed14695cd0cbf9ee9068bc372c00da091a20949588246e9f33"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/absent-to-empty-is-covered-change.json",
+      "sha256": "c2ea3eeb201877d7d83c41ee8d1cefb3cb77c410eb7916f70b9b864be1d7790d"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/assurance-auth-time-fraction-refused.json",
+      "sha256": "2e78f1d14db50f6797c54b61abbb351458872a6e28509964d780182025219a77"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/assurance-auth-time-integer-numericdate.json",
+      "sha256": "7ff2653b22a3932e66bf65392b9432e4f482e82bc2a8f3781cf05d8e3ca491b1"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/aud-invalid-case.json",
+      "sha256": "bb16c8d51b079157be36e65205c603651ab40d8c7859782d68026739e1b1718c"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/aud-is-not-resource-indicator.json",
+      "sha256": "15f8f319af3276f47e89d0304eb5dae2af23cbc84e91996a2bb02ccd898985dd"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/bearer-scheme-case-is-not-token-data.json",
+      "sha256": "2b741cf622faaa1f89ab87072271baf8ec885581b5bc4eaf6193edb3fed7fb01"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/bearer-token-whitespace-is-not-normalized.json",
+      "sha256": "6eff385bf8374b578e968fe134cc08396f15049853d2d2e19f2561222077f443"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/bound-bearer-without-verifier-result.json",
+      "sha256": "215f426e59412a927429388e5f408c44c3b342cb897133a08ada2109e2c17e07"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/bound-oauth-bearer-account-issuer-mismatch.json",
+      "sha256": "6eeab27e38b747f05e1f9e552eda7ae4fba7f323b88b90fd791190d1352184be"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/bound-oauth-bearer-account-subject-mismatch.json",
+      "sha256": "0b0bf7d1fd86b6030a597931964223ecf60b78c981729f617b926abdbfa76e68"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/bound-oauth-bearer-verification-refused.json",
+      "sha256": "2050ca07def5437642e3bd350ccff39cc74949f9b7a978ab0abccd0b4f99b1df"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/bound-pat-account-issuer-mismatch.json",
+      "sha256": "7fcfbd70429c6907954a48e98165efb4251f41a29a661a0ed72c70ff8418dd26"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/bound-pat-account-subject-mismatch.json",
+      "sha256": "84e723bae7cd690629f20dbf570a82708f44e60d32d8caad76cf3cfdc6635b54"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/browser-session-missing-x-cratis-acr.json",
+      "sha256": "db9afcf93b2b1bf8df0963d644f1b359017de86d546eba3372423dcf75cfd3e5"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/browser-session-missing-x-cratis-auth-time.json",
+      "sha256": "336f6ae4e8ff92530bd2a56563ed60aef45d501916a1b29c569709c0418a71ba"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/browser-session-missing-x-cratis-credential-id.json",
+      "sha256": "b1528e7b7ad7a09d82de9d21fce3ee9cfd1a78c536e9df7a9a45fb817363d3e9"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/browser-session-missing-x-cratis-idp.json",
+      "sha256": "bcccd82e7ff1cffa06fd8c945ee2c2249b3af0781b98c34d4c40fb23bf35cc9b"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/browser-session-missing-x-cratis-issuer.json",
+      "sha256": "cfac9866943e9be0d0455f26e86464950fe5834cf074159986451dc4b1d1e218"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/browser-session-missing-x-cratis-sender-binding.json",
+      "sha256": "33b784d7cd5aa5cad04f9d98268ddc29ea1c13e206f5c6f6eebb7bb412bee16c"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/browser-session-missing-x-cratis-subject.json",
+      "sha256": "9c79f224535c0f94c3e912ab226654b5a4a7eacfd84c186d4741f634a8fca767"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/canonical-bytes-over-limit.json",
+      "sha256": "77bc2406944b51164fd732cdf07818e9b023698b1b26ad6b626387176cbf1426"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/covered-header-control.json",
+      "sha256": "e36fdfe208d31db5bd8d107485dfad31b8bc654167fa67a4cb313d9c255e5585"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/covered-header-invalid-name.json",
+      "sha256": "a3c9c7d17d6718199582457f0f53c885485eb1fbb6f34eb2cbb9ab171bdf22ba"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/covered-header-nonascii.json",
+      "sha256": "de0185480eb6588f1707bfa2925ec0dff10533a9911d5f5e21eea7c84f430443"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/covered-header-unicode-name.json",
+      "sha256": "2c1a4649fe887a71e39515eb13bb4741f3fa053e6cec2ee4dfe9097c7a698ca0"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/credential-kind-browser-session.json",
+      "sha256": "8db064ae521e5a07ab5cc166aa01146272fb2d730e3f9a0b0d60f6da6e893b5c"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/credential-kind-machine-principal.json",
+      "sha256": "4f037cf5235f60887036359f6eda574f5070b7e40128cbd0beb696688105538d"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/credential-kind-oauth-grant.json",
+      "sha256": "40768747f8d008606cd5c3c2de12d1cff4f25b300929a3bdff688e13d543b642"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/credential-kind-on-behalf-session.json",
+      "sha256": "0b862be26182e0644c9b38a91af21d322f01c449dd7b0efb36b87cdc50b52623"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/credential-kind-pat.json",
+      "sha256": "ee3a00a99f25e68a995821a544ef50510938e63fa2ff11a283a289c2ff389a8b"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/credential-kind-workload.json",
+      "sha256": "45df0eabee2a9c90c1bfa1ab3073b0444af40bc33822eddd6d4154b05cec06b6"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/duplicate-authorization-header.json",
+      "sha256": "06188bedae0817a933114eab4cdf2b1996b201ad75ffcb28a8721d81a5c97c7d"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/duplicate-envelope-host-values.json",
+      "sha256": "d64c23d3367abd1b0d99968fe83f6b3805b323154f7f0237084d40e719e729e9"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/empty-required-principal-name.json",
+      "sha256": "be76509625006417c6cd3922fc923a6913e2ba2f9a3e581a4f7f15499e239d2a"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/empty-x-cratis-acr.json",
+      "sha256": "4a17de2f9895e9e0efc5243fe932cb96c6b500bc070a1970300d8bce422110ff"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/empty-x-cratis-act.json",
+      "sha256": "24d342d206400fc4d4ca7ba8808f7fb13279c61fbdef68b78c4ab42bcc89b236"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/empty-x-cratis-amr.json",
+      "sha256": "e4dd340e8fbd9474b9f1f3d442c87fffe2c37701dfcca3f445e4b12d531caf2a"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/empty-x-cratis-auth-time.json",
+      "sha256": "8e9e9f116aee356fd50fcb7848cfea08980c939742a3786a4ae828290edded7f"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/empty-x-cratis-credential-id.json",
+      "sha256": "4bce6cea84754de4e1006b949f76d9392b0ecddcf17c8edeee6caa8fa781d579"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/empty-x-cratis-credential-kind.json",
+      "sha256": "9b9ecf89bc9c9fe1f214a9e9a9970ede1c5401d776649a335e8c5963651f49c7"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/empty-x-cratis-grant-id.json",
+      "sha256": "0e8ef0eb5f0a92fefdbf9b22d1713a4df1e70ff5044526888e6d4478e0f62f44"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/empty-x-cratis-idp.json",
+      "sha256": "825052aab62db8511d7080d60835c9ca296a05c4d144f6c3d3409524e11d6485"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/empty-x-cratis-issuer.json",
+      "sha256": "f1af510803c9debf3a6bf214cc2e5f634cae9fa12d98c5a8389bed78a5077cf1"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/empty-x-cratis-policy-epoch.json",
+      "sha256": "f4fd28e2d9b3747f3a00683dec839effc056f06c51c5b9addeebc86e2a11daa2"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/empty-x-cratis-sender-binding.json",
+      "sha256": "d2bb9b3eb010f288e4fc11e36b2c7c22fdcdb304ffa6c9d2efcd4e2653c0fffb"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/empty-x-cratis-subject.json",
+      "sha256": "43c59a40bcf0e8a4a8f98508feea1ec733bc2eafa00436ac91d309a7256ae7c9"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/envelope-leading-ows.json",
+      "sha256": "71f56d00ec4044a58bdd1824374e32c12e992eced4ae784dca0646a38303b5c5"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/envelope-over-limit.json",
+      "sha256": "a33316a88a0582cc29de3a02b3d071c6a8f04eff38624737ac6c9f15bb4e5a19"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/expired-envelope-even-after-store-cleanup.json",
+      "sha256": "7a8db31040fc7ce00f918ebab1e838478d438898efa2c22d92c78951a904fefc"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/extra-segment.json",
+      "sha256": "8c3a3a1886127a6845a19a37ddad34ba035ee3eed57fceb6ff67cb55b38554e7"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/fleet-first-reservation.json",
+      "sha256": "9b62562b29d42b3474b137db5c8188990a087128151fe9504a964eb2041b2061"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/fleet-replay-other-replica-after-restart.json",
+      "sha256": "d28b90d7842ea985c9cc62fadc8afb3fc52c0cc4148e5ca48b3b54ac85c4b741"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/forwarded-bearer-without-hash.json",
+      "sha256": "539894fbee6581e3a529c1af3824679287601d337204d63696887a2137239f48"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/hash-without-forwarded-bearer.json",
+      "sha256": "b2ef49422646e71f9b15b58841927a9f5a43d3d37f93c7dbb51b7acebefe2af8"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/header-duplicate-case-variant.json",
+      "sha256": "2fa51bb8bc55438a7ca81a3701f6c08ca6d09bf72493059243b261a0465f9128"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/header-name-case-and-order-normalized.json",
+      "sha256": "2ca9bcb4a61ba4b122b080a70161eea35664f5d7c6e3b3e04f62c72e2a216bb5"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/invalid-rfc8187-subject.json",
+      "sha256": "2f18a683885862b19ac167ec043535512b2406e4bbfcb0eac2835a578a6db7ab"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/invalid-signature-does-not-reserve.json",
+      "sha256": "e4317e710b35fdffe51b79e2a83780f17067a3aa61e58f24706a3b2a78caf5ac"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/kid-empty.json",
+      "sha256": "fc13963099dfdb3f288ae61c6dc6891ab44d454c21b6f875fb1c07eb979160b9"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/kid-invalid-character.json",
+      "sha256": "1cb6cbe821fa6877922b34f9ccb6409b76d46c133858768ad6d4b301d672aca4"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/kid-too-long.json",
+      "sha256": "5c6e246ca263fd5c039eee75a5934e7c918bde1def5e48f85735d8a2a816ba4e"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/known-kid-wrong-key-material.json",
+      "sha256": "b05045e143d90ddd4c18bcdba1562a0373c36531774507bbafe3c59f986e5292"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/lower-risk-first-use.json",
+      "sha256": "78a9250b119f9695335747649be2b62e1dd6b4ee3c522bd2c6bfba472a296779"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/lower-risk-no-store-required.json",
+      "sha256": "69b1322f9acaf5dc3d07b58e9094738c78a4530951ece4af4d08edd4e1d50595"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/lower-risk-repeat-allowed.json",
+      "sha256": "18b62cd733853cd25cc2a799d3a9851c83ee8670785ee98029b3ca8676855d5d"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/machine-principal-missing-x-cratis-credential-id.json",
+      "sha256": "b662f367ec1cd689a0114818cf72c0f42d11d6ab74dd4ab539542f0d052542b4"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/machine-principal-missing-x-cratis-sender-binding.json",
+      "sha256": "57d3bff6198c9f7591db67166a546a198856d5bddd50b8e8ae468815302f4c08"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/malleability-first-low-s.json",
+      "sha256": "2b1fc66de6db95fd2090e9cfdd95353f012eb3b802182daa03e5665dd74d57b0"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/malleability-high-s-is-same-nonce-replay.json",
+      "sha256": "1e9c3afda3931f1777808cefd4136efa7fddda9c21e612b13b6d124373bc21f7"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/matching-forwarded-bearer.json",
+      "sha256": "b997c61da426739573565a9d8d1be532e2ae54ec7a5397d85275e26ac5f78208"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/metadata-access-token-is-not-credential-kind.json",
+      "sha256": "48e431fbd3b44c941a6e38c6484eeaddeedd85deec483dce44de65d24db8dcd1"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/metadata-act-missing-issuer.json",
+      "sha256": "a57d6f358317c0a6cbe700114d3e061f6bba6defe03855a2bf58f9fe929ee3de"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/metadata-act-not-object.json",
+      "sha256": "7c8d9d70de8a84c33ed401f671f4ca44b02b17475234025719056f8bd2182169"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/metadata-amr-not-array.json",
+      "sha256": "33daa5ee1e2bcedfd246eb91437ed60c988eb55d51189c9190bd833c102dac16"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/metadata-auth-time-leading-zero.json",
+      "sha256": "6a9fbd1b8ef49eb98d6d34dfccde035e0e7c9e46432f9dc01e4b7b3ea8ad8fba"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/metadata-credential-kind-case.json",
+      "sha256": "655a4100b8eeec62a51c9c306280ca8125a1a471b10dfed6825db0295bb38bb4"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/metadata-negative-policy-epoch.json",
+      "sha256": "dabccbe27f341727e6676392c99209ec3d68ecda91a96fdbdeaba40b2b0dc53c"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/metadata-policy-epoch-overflow.json",
+      "sha256": "b15d1c77d04563c95794cdb3cb166f8bcca97efa47ce6bc36278522adfa10882"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/metadata-sender-binding-flag-not-evidence.json",
+      "sha256": "52b99c18027c0816a1a52c125313e08e699197dbfda2bf12a4d62d26c0601988"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/metadata-sender-binding-invalid-thumbprint.json",
+      "sha256": "1383195058178333f1f621204ca99968799786ada51765360930262ba743878d"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/metadata-sender-binding-missing-proof-jti.json",
+      "sha256": "2e8353eb97516487b465cf04e4431cf2aa842c12c488fd8e15d32397f0235c9c"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/metadata-untrusted-realm-issuer.json",
+      "sha256": "bf5d3dc0d0303d681ff76bde267157160e1b0787343aef7f801ab7917f89b7eb"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/method-lowercase.json",
+      "sha256": "9ad87b1e430ee27f2225052f1efe724f29767988ae3bf30a37bab4fb296f5f4c"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/mismatched-forwarded-bearer.json",
+      "sha256": "6820f409b629d42f8de16bb94a0ad1347aee624d149526c25fb5325c9ba68894"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/missing-envelope.json",
+      "sha256": "3c010ae7eed143736c72370b6b377d56f3252c296699545b3325d15785b4049a"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/missing-required-principal-name.json",
+      "sha256": "af5b01c72ebe24658461d2f8fb8e8a715b0789df5d6e8908a9d40cb54ee1ceb8"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/missing-segment.json",
+      "sha256": "5d591dc8ad9e327ef2e84161477d928652cae51f0327b001de84b63ba79b46a0"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/missing-x-cratis-acr.json",
+      "sha256": "9cac76490d98f73bf106754a8d490a72b851d1835b840cee933f6034325fd931"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/missing-x-cratis-auth-time.json",
+      "sha256": "58bc129c3ca968aeff4afbd2eba8fff2761ffea2bbe8de86ad4d9309b220205b"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/missing-x-cratis-credential-id.json",
+      "sha256": "053a163b9f2e535c0752df26e852d25647a6537a3f34f1c757a9bf4021614988"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/missing-x-cratis-credential-kind.json",
+      "sha256": "f46da266a62b12fb3d227b6f683a7ce433e44ae17c1a54db853c684648f8f40c"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/missing-x-cratis-grant-id.json",
+      "sha256": "20b453ae23996de3110938867f58d16b12cd61cd03a9eef33af273138cd86ab0"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/missing-x-cratis-idp.json",
+      "sha256": "12c568f3723c9b39a5b84546144a182d8651d08e5c5082f22a4ccd3f9694272d"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/missing-x-cratis-issuer.json",
+      "sha256": "47e0262b635e4cfca32737c1cf2592730b47cf0acf4e2274acfcb42b0bb55c0c"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/missing-x-cratis-sender-binding.json",
+      "sha256": "7bad365ea46eab299912977f9eee86745176d2f8ef8868f0df615a0921868a96"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/missing-x-cratis-subject.json",
+      "sha256": "4961c34d52fd25287f7e3b20e3d5be078719bd8afd3e12a0dc02390d62531739"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/non-bearer-authorization.json",
+      "sha256": "e5f19b53b24cf39aa57b6fa411a32378df6be25d44090dc5061b7e90432bd46c"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/non-uuid-person-subject-rejected.json",
+      "sha256": "5a8498bf04e8ccaf17276a95db90c6168d81c6b1f71191acd54ba23024068b19"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/nonce-non-base64url.json",
+      "sha256": "976a51f52ce7a4481a86e7c137c31ee7acc9252e5ff1ef3a5108bcc6e6388f64"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/nonce-noncanonical-unused-bits.json",
+      "sha256": "ffb35525c51effa6ee9dd42fd550e216378940afa515e114773bdcecca7ea86d"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/nonce-padding.json",
+      "sha256": "1cd5e6c8760bf5956e84193cbafcf7db0f54dd4e419210185013078684ff9f09"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/nonce-too-long.json",
+      "sha256": "124493311714904cfe457a902a29c4607107186891fe71f10d0c7423625a5165"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/nonce-too-short.json",
+      "sha256": "a2a2f0a05516cf22608b7a2a3a4873271b60ce8f3875288db0a915a5ddf9d839"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/oauth-bearer-caller-from-oauth-verifier.json",
+      "sha256": "7f06abde74c701cc69cc8ee1862adce8ad2478f80ca004a17db3c8af5ed5936d"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/oauth-grant-missing-x-cratis-acr.json",
+      "sha256": "01aa5cbee4e437db930195aa3b9dbd701c42e8025d283bdb04690b800bc785e1"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/oauth-grant-missing-x-cratis-auth-time.json",
+      "sha256": "fa5d99dfa4583d3d2c9ef14dd124dd5469b941dce4389ae180f559e45ea3a6c6"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/oauth-grant-missing-x-cratis-credential-id.json",
+      "sha256": "fc0ebcab0e18d912d5da7bc7c6d1b0697203bb738afa2f811f28ea03ac0a2d6d"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/oauth-grant-missing-x-cratis-idp.json",
+      "sha256": "cf90aca779dbf8faec53281cce1300462f43298b696304f64c345024c4acd338"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/oauth-grant-missing-x-cratis-issuer.json",
+      "sha256": "e913bae2b4d6db8e96761698f96ba57283686343f1b46d4c51fc39a00cdf210f"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/oauth-grant-missing-x-cratis-sender-binding.json",
+      "sha256": "19072a8f75e08d745a7e7b27ac02fc61022b48a020e16364b80eee2720ca7f68"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/oauth-grant-missing-x-cratis-subject.json",
+      "sha256": "ae0647fe74c00dacc3ba07c1f3cd90af25e94278c5cc68c9146fca6d848f2746"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/on-behalf-session-missing-x-cratis-acr.json",
+      "sha256": "b0fd89b3479eac7dd7fd67b3defbe5cbb3e421e330863404130a6e4d1724e678"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/on-behalf-session-missing-x-cratis-act.json",
+      "sha256": "f781e9b3820cf8cdbff19a97380ae4b0781e26a4ec8094724c5d779205888d8c"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/on-behalf-session-missing-x-cratis-auth-time.json",
+      "sha256": "58726839f30a15472787dd3788d8414be9302a8eca7c4ac9dc1376bcab6d28ca"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/on-behalf-session-missing-x-cratis-credential-id.json",
+      "sha256": "2989936bc5cf3b7a24b81686397897d18c81568648c9b91c50284a0dc3f291dc"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/on-behalf-session-missing-x-cratis-grant-id.json",
+      "sha256": "8e52a5dca7589daba2e03b240c427579fe5b20fd3dc01e168b683351bcf7ee06"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/on-behalf-session-missing-x-cratis-idp.json",
+      "sha256": "23b9062f29b56ef8b3f8722754fdfebfd12cd282a7ad8adcb4790462765b5734"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/on-behalf-session-missing-x-cratis-issuer.json",
+      "sha256": "c0c56694396115382b6be6cfe2eaf26e3d500f8a9731922d378a353cbc207fc1"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/on-behalf-session-missing-x-cratis-sender-binding.json",
+      "sha256": "3a7b85aaf63413c59129d374f92596b5026485f85c1869e029a7dbc4e6427d3f"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/on-behalf-session-missing-x-cratis-subject.json",
+      "sha256": "4912334d82e072cc987db1279f7c59e4b05b768181f02a4eea8ced5612563e64"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/optional-v2-evidence-absent.json",
+      "sha256": "1a95c0bf7bff0733e4b991a10613acbbe14cabcbad92cbd4ba5d5e4fa65ff2b5"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/outer-sp-and-htab-trimmed.json",
+      "sha256": "e2838b1eab5ed679ddca41edfab7a9adbaea34313ed03ac4e52361ec3a4188be"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/pat-bearer-caller-from-local-pat-verifier.json",
+      "sha256": "54ed68050ab2bbd1bd095efe38c246650eeee12404ee111312c570e57a3cdebb"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/pat-envelope-cannot-select-oauth-verifier.json",
+      "sha256": "2e5a6fa9b57e72bdc761de80d520caec0a35db638edad81bd0a4fc1e704ac382"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/pat-envelope-local-verification-refused.json",
+      "sha256": "0a2f42b23adb9aa10c49d962301db89bada7648e070cb6bc989ad2f18bb51b1e"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/pat-missing-x-cratis-acr.json",
+      "sha256": "80c922b78036c5eb6ce33fd818b6d6289373e2d73fae2e3425554c09bda29015"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/pat-missing-x-cratis-auth-time.json",
+      "sha256": "b54ed8c9320453328711346684e4310b523b4d0483212353f5f7da5e8f98ca75"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/pat-missing-x-cratis-credential-id.json",
+      "sha256": "549ec38e80b814872b3d983253da8efdd3b203bdfb8c6fa4205f1bd25b61ec5b"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/pat-missing-x-cratis-idp.json",
+      "sha256": "30393bd1da88824d241a792b3f771041bde507502ab3e64aa05485276113caa6"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/pat-missing-x-cratis-issuer.json",
+      "sha256": "299b3767518e86f86b6f9b0599099ad840b982d78209ad8413227e68720d5981"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/pat-missing-x-cratis-sender-binding.json",
+      "sha256": "af6e16428469e2d5d84aae6bc19b6c2f02a330a85d2a5a7b1a6d19223399e504"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/pat-missing-x-cratis-subject.json",
+      "sha256": "32747ec0dd4345e13a9a1d4752ef3709c28ff52722c025b9cff1b3c6c9717dce"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/pat-namespace-bearer-with-browser-session-envelope.json",
+      "sha256": "6445ede638378a53da7e3004e0895347347ecfeee83b220482630d0d2816b512"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/pat-namespace-bearer-with-oauth-grant-envelope.json",
+      "sha256": "d4192f873a37c769f54c937912af516ed9539b4920d9f133423438a68b03baba"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/pat-namespace-case-insensitive-before-format.json",
+      "sha256": "e75ad731e13576360d47f50b865d55aa81e71b5e54072adf23bc9a1d67cf54a5"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/path-absolute-form.json",
+      "sha256": "c74333de30152e12044b9d8454074f3496db73223e52b852e7a1f934c266d3cc"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/path-decoded-slash-does-not-match.json",
+      "sha256": "40b279ea0d7c8a7bd216d908c0a7137b34adaa7bffcdbd5c8106c779f718724e"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/path-dot-resolution-does-not-match.json",
+      "sha256": "d5980909f3a93393c90e6d23c0ad32ceed45fd95743ba4661d2bc6cb16a95bc9"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/path-double-escape-does-not-match.json",
+      "sha256": "7dcc8b8b1de5891ae5259f49774d7493943fe956ac59e10d0faee8506d325678"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/path-escape-hex-case-normalized.json",
+      "sha256": "2fe6b3413378da9a2b635efe4288b6e7a7c1db30270edc4b2a699b352337cb99"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/path-fragment.json",
+      "sha256": "932b5001e0556a9ae653535c859307e5f5c115def8be5cdea86890cfd62d517a"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/path-invalid-escape.json",
+      "sha256": "8f9c9f076bfa28c8ed7535538c3ac9819fffcfb1442953e4db536f9a93148e83"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/path-nonascii.json",
+      "sha256": "b4b253a94a8189f9674b02953bb8ffb07aba992623dc2a8772e376d65b2b5fde"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/query-change-outside-envelope.json",
+      "sha256": "597365b4f4aa0f5bc4b85f74df3f35e987b503ca412e5c35f6e4defffd6dc55d"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/replay-retained-through-last-valid-second.json",
+      "sha256": "7b5d20209dfdc24d459594906c11745fbcd9151fcfa47c3f459e5c8e393a9033"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/sensitive-store-full.json",
+      "sha256": "999d55d2d41da3885ab275777353c3c2e5fae8c063e8828cc8235980fc250745"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/sensitive-store-unavailable.json",
+      "sha256": "7480e40756dd29307cfb07ccd8b10ff8ac715f9eaa86da82135c8cc21fc90e54"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/signature-der-rejected.json",
+      "sha256": "9a9ba452bdeb726740131bfdd500561139f2dd8a752f6b348e284be25a564477"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/signature-noncanonical-unused-bits.json",
+      "sha256": "15d6c667fe74c5e00deae3cc35f194827ce34aaedb39477167bf64dd7c0944ec"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/signature-padding.json",
+      "sha256": "5b0fe4058f802753f3a8b8b2ff7ce6b148b06721cc813bd51741f3de7c91aa48"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/signature-too-long.json",
+      "sha256": "1b685d8ee6c10d5e5f7c79517316c4729ae0b5647c6d74cc38602f2d3228b402"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/signature-too-short.json",
+      "sha256": "171ac3a0b1f11644e78870187787ca547255460f4a58cdda1536944fc89b793f"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/signature-zero-scalars.json",
+      "sha256": "470415c5163c8ef93fa66f49e3117ad78e447b58da8b3cfda3b23c2e2c0a2024"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/signed-account-key-subject-mismatch.json",
+      "sha256": "9a3cfa1ef69e8a6fdbce6e3d0e1360aa452631e4912093ff18d76047380954fb"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/signed-invalid-forwarded-token-hash.json",
+      "sha256": "79289bf5b17fbf9dd59d6f86ec75efd58391ba0e2c030055b939bea53e6d8564"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/signed-malformed-principal.json",
+      "sha256": "e3fee1afdaf54edb4ff7e21c2dd0ac9c5177423af42cac768e8900a82fba8423"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/signed-null-roles.json",
+      "sha256": "8a781a679587c77f88ce43fc0f4fd54e6e5261877fed1f6bc2d20c1d213fbedb"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/signed-subject-mismatch.json",
+      "sha256": "2aa7120f57c9ee5ba350e1e1a2ab943a200b86a955f7695d530a4c777b31510a"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/signed-subject-uppercase.json",
+      "sha256": "914cf5f670e2acab1952a106f3aeb5f034cf3b51e27a799ce852439d18aebb33"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-known-kid-same-public-key.json",
+      "sha256": "3ae693e2966bb7c3fd913d3394b2117b802b0bfb6c37ea357a49a8915d1cb477"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-method.json",
+      "sha256": "b3700b684353541908c0031b8a5840fcf99b2292ad06bdca408a99475032f479"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-nonce.json",
+      "sha256": "8a9b1ef852264a27d98123e3c2a8ba96eba84c050be4e3a92e1b8451fc4d209e"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-path.json",
+      "sha256": "8832c44bd3f7103caba978de225892c4df9f627858dacb61a5edac87bb75a9e5"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-service-id.json",
+      "sha256": "5231d7d5026958fc15ceb66280418a8fedcc0b1e9ffc6a77181c24ecbb1082af"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-signature.json",
+      "sha256": "ae88eda024e93ff459f533be163feb97b7a8b58bfbea16744c104918727d4c9e"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-tenant-id.json",
+      "sha256": "ea9a2c29f2d37188411aebddaa978c11f70409c47d2021cff76f67372a828269"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-timestamp-still-fresh.json",
+      "sha256": "2488a1ba07b49b63e06113428e51b13ddf00037c7bdfaa80f24b00600a0f775d"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-acr.json",
+      "sha256": "e807656c655ad079f6e39a01ff8d248077a2fda3efcb1e5117b32dfad3417ab8"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-act.json",
+      "sha256": "a9445b0cc9ea617ec8373d81e20bca08c77d7c75274d1b6ec2ae6efd8d8e6e09"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-amr.json",
+      "sha256": "07dc420a52fe0b186719574984864121ecc71a1a2383a55031a9f472f7690835"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-auth-time.json",
+      "sha256": "98a5bc5a7798e7b296132b1a45dc72a268f793ce6f7fe0387f471866e0c8b077"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-credential-id.json",
+      "sha256": "7d1d93adf886f625d3e19e56f59ff5c584099665fdd3d37070cc4d69bc6f2198"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-credential-kind.json",
+      "sha256": "f11d2e88c9ed3201f35fd1898160b8c5f6cc6502c2f06d6fc56c54043f436bc4"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-forwarded-token-sha256.json",
+      "sha256": "98dd2e17ddf13c76460fca82ea76169456ef0a158a7153371603cc502cf70813"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-grant-id.json",
+      "sha256": "4cd2e367cc4243a3c99aa67f22da0f07987fcce8e417ebff212225d0ba1a1e6f"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-idp.json",
+      "sha256": "89018b4f312b75a889b35d3456bdfc62d305f7f8fda0ac5b97b4fa7653a4a8aa"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-issuer.json",
+      "sha256": "870e2f05637ff41528883b3b1fdf3e268f698ba5d8e376085275430f15416d49"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-microservice.json",
+      "sha256": "4423f0f19784430301ab121d44b03e71ddb07fc8a26a7810c8c95b0214868945"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-on-behalf-actor.json",
+      "sha256": "b7230c0122dcf31d4276f63984723e98f56ca5338d17855ae6810ee2eaf46cda"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-on-behalf-assertion.json",
+      "sha256": "ee1ba60471e4913185ba27eb91bf5500331ce1ca664e744235d4b266c7efa6c4"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-on-behalf-context.json",
+      "sha256": "c2f497933c3ce878c293c5341edab26fa4d1dd3acf3eeea110d50242f417e046"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-policy-epoch.json",
+      "sha256": "13e39ac451e20a2deb55d90f8fe871d8cd3f99ab109dfd65b13528618bd5ae86"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-sender-binding.json",
+      "sha256": "7a82292f372a99ef9071685c9726a60781c1fa96c286832341a4dfd4932d52da"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-subject.json",
+      "sha256": "74e0a867e1689381a45db01c204d63ae9a60da0903bd1d3c2f536f1e17485b72"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-tenant-id.json",
+      "sha256": "21863bdd0b636d0bf30a680ab1e809712aacd7707816840c978962abbf70ab30"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-token-client-id.json",
+      "sha256": "a99c7dec697a2f80816083471337b004d99a63f803517257c21deef7a350bad5"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-cratis-token-scope.json",
+      "sha256": "d09824b2b72cfa5cdeb5bbad9a43234dad196b979fc007406b043f35e41c6bdd"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-example-tenant.json",
+      "sha256": "f65063ed5380f42c24cbae64e803ab17cbe1b2deb573e2fb0772a34590bac8ee"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-ms-client-principal-extension.json",
+      "sha256": "c1ff4e6e7ce8f83b1583cbbfd45979b1b330e55524012996080a262181407880"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-ms-client-principal-id.json",
+      "sha256": "d1128e5994be6c93ca49c693686c2e30d0518b4a32ab04141efb169e91e17fac"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-ms-client-principal-name.json",
+      "sha256": "05283e84b1b40060d7ee99445605f72672fb0a60737d4a00a42d74ee8de2bcc6"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/tamper-x-ms-client-principal.json",
+      "sha256": "0b23d4767fe6cc17c2ffef928bf21cb4e9744c516a13ee66186a4ba12aff51e9"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/timestamp-ahead-boundary-inclusive.json",
+      "sha256": "f1be55c329b2ddbdb214e9cbdea81e19456b1383a212dfe98073f3e31aaf9f6f"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/timestamp-format-+1700000000.json",
+      "sha256": "22395dca29f3daa88c5968f4a6e71cc03b11c7ec209302583412b0bfb252f034"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/timestamp-format--1.json",
+      "sha256": "7ace3b13d077ccad60843abe2dd70725919c790e76036f5fcaa4fb791d499549"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/timestamp-format-01700000000.json",
+      "sha256": "65ca642823eafcdbea2cea5036a400a97cd1e1d5cc90e9b87aec6881a3fd4ec3"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/timestamp-format-1e9.json",
+      "sha256": "e1bbf783faed1b0e0e88369e729a2a720827a85594d30898fe8f1b2bf8ba8d9c"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/timestamp-format-9223372036854775808.json",
+      "sha256": "04a3759ecf2877bb0ab3046e36b2a0b50ea5dec7a215f8a537e31778fb0cb05f"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/timestamp-old-boundary-inclusive.json",
+      "sha256": "a6b07a4797f8d29538bdebf80bb746bbc87c4f64b0d6b59431c4306e3dc441ff"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/timestamp-stale.json",
+      "sha256": "d91266f234fae975e454ab8074905cb46ae8a833949bebc43a3042bb0c189425"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/timestamp-too-far-ahead.json",
+      "sha256": "0a7a08df92684ba339c330e7ab505410603e6c790f2567e4fc95ab647b4638a2"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/too-many-covered-headers.json",
+      "sha256": "70b906a2b840cc2f5c87e32d81e3c86e005648691abe97405e145c154c285675"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/unauthenticated-hop.json",
+      "sha256": "93bd084924f4766681d3d3da95d7e63a91e1a33efa769475469ad13daa82fc94"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/uncovered-header-change.json",
+      "sha256": "38d70030a889284226ed56a82d74db8a8b27237864db54de56d1ebed5bed4c81"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/unknown-kid.json",
+      "sha256": "270046df2c720737353632f6a0f2548f2fef8c39f8bf9d867b89b061c4375aa9"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/unknown-version.json",
+      "sha256": "c13fe3cead6ee8c60cd94bc035916131756fd1ae11890a961dddd3e99faea398"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/v1-at-v2-only-backend.json",
+      "sha256": "d1797ad71e1a1fc910513378243bf7a2db6dee70c6c36b327eed2b91959362c8"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/v1-optional-absent.json",
+      "sha256": "c3d765351a3720dcfcde946bccb2bed9191eb9380c0a7660bfa86dad3fa8ec9f"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/v1-optional-present-empty.json",
+      "sha256": "745901dc431128526f10b24c9a737ff52accc61e0707d6935ee9e1322853ed23"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/valid-after-invalid-signature.json",
+      "sha256": "ee7b20b50aa03e3e2339dee38d5fcdf7302b6eeac191e6908ce2ab2227445911"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/valid-high-s.json",
+      "sha256": "1ad924748b2a09bea3ae9a54f7d07ad787e3f2b823c46fc0bb0d6d668b84964c"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/valid-key-rotation-overlap.json",
+      "sha256": "2a1ccf50a9f02004b1d41139f34ea90ee331da7c29864d7c082048f3f3337da2"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/valid-kid-64-characters.json",
+      "sha256": "443f680b84c5ce6aafe75d1f30c4e8da70c172f9780b5636c4aab866ae2873db"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/valid-low-s.json",
+      "sha256": "e2f94c80d375960906c079a0c0ca49a86b3035b919eff0d472dcf92b35838850"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/valid-rfc8187-uuid-subject-binding.json",
+      "sha256": "5e4eb879238ef85693fedebbce71673e2067772ba68b991b645fef328b45657a"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/valid-v2.json",
+      "sha256": "e3fef917918ffc2cde00c67c1d94a8cc6e7782a68d0f1f1e2b7bf8f4073ca8da"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/workload-cannot-fabricate-person-context.json",
+      "sha256": "7c7551eadc62c33d3fbea1372b3c7d6fa121631b09b8612948168b3dcc48e91b"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/workload-missing-x-cratis-credential-id.json",
+      "sha256": "671de5ba3bdcddb9561fc616888850a1ae5a6c8b688ddcc519589d860a57c0a8"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/workload-missing-x-cratis-sender-binding.json",
+      "sha256": "3405b72e8126c68c288885b1e15f2b5182defd9528353fa25569fc43e9b37190"
+    },
+    {
+      "path": "arc-forwarded-identity-v2/wrong-aud.json",
+      "sha256": "1b822f55db720df180e6045aaf63e6f3f896d39721f96a36b21462e2d31fe052"
+    },
+    {
+      "path": "arc-mcp-authorization-v1-overlay-2.1.0/CHANGELOG.md",
+      "sha256": "920f11b264adc73387144a2be149eb5d8aea32e89d23d19239107666d20b8b27"
+    },
+    {
+      "path": "arc-mcp-authorization-v1-overlay-2.1.0/arc-mcp-authorization-v1/profiles-and-discovery.json",
+      "sha256": "d4a5491c6e06f90d960fe64fa6153bffcd70f7796a7a4c8d7bd721d50fa94837"
+    },
+    {
+      "path": "arc-mcp-authorization-v1-overlay-2.1.0/arc-scope-catalog-v1/catalog-and-policy.json",
+      "sha256": "85b141c2f73f3c1aeab19cf7749970b1473e04fee28979a0517deaba994686b7"
+    },
+    {
+      "path": "arc-mcp-authorization-v1-overlay-2.1.0/baselines/v2.1.0.json",
+      "sha256": "9203116e316505a5eac20722e141ae15ef1aee3c994586748cd71eca993e08bc"
+    },
+    {
+      "path": "arc-mcp-authorization-v1-overlay-2.1.0/manifest.json",
+      "sha256": "557016bfb8f2e0a9dbc9390ca97cefde6454d4e4f6407510ffb994c0c609f944"
+    },
+    {
+      "path": "arc-mcp-authorization-v1/CHANGELOG.md",
+      "sha256": "325362203e7b186bb8615ace4e5463cbdbdc4367051203047635a2cb3d4c49a7"
+    },
+    {
+      "path": "arc-mcp-authorization-v1/baselines/v1.0.0.json",
+      "sha256": "989ec437b7b2e4190f39672f7e138428ef99908deedc5285028d38af6078c237"
+    },
+    {
+      "path": "arc-mcp-authorization-v1/baselines/v2.0.0.json",
+      "sha256": "8eeb63e943f42636f18c572147b64a4fa14fb493338b24ad349708340da13dec"
+    },
+    {
+      "path": "arc-mcp-authorization-v1/manifest.json",
+      "sha256": "01ac5bdc24aa782df7f47c81a17c5d18cac9ee15601d63d9c8103da076483c79"
+    },
+    {
+      "path": "arc-mcp-authorization-v1/profiles-and-discovery.json",
+      "sha256": "66d49418691ce5486f613d50de84e6429247fd3acac0295f49e6a7c93c52e08b"
+    },
+    {
+      "path": "arc-pat-format-v1/dispatch-and-policy.json",
+      "sha256": "7e3ca6f1271554105eb0bb4b4a6ad5c45aa4db86d392fb7241d4ccdcab79190d"
+    },
+    {
+      "path": "arc-scope-catalog-v1/catalog-and-policy.json",
+      "sha256": "17a811b07cf994057d027091df0ec9df2d0817d42b1dea390cf59cc8c1aac38a"
+    },
+    {
+      "path": "arc-verified-caller-v1/principals-and-workload.json",
+      "sha256": "96e8756e338a3f40865f922ab60e16db46bb2fc50b0364cb941545bf6a050667"
+    },
+    {
+      "path": "identity-access-freshness-v1/credential_policy_and_recovery_epochs.json",
+      "sha256": "18fb809f7bf07b22a901f768cb17c0d7a54ecd05baf5757f8eafd42711307eb6"
+    },
+    {
+      "path": "identity-access-freshness-v1/critical_stale_ordinary_fresh.json",
+      "sha256": "5eb8712cdabf9b20cde3a967c882246ace9d5aadb56e35868543555978e39ff3"
+    },
+    {
+      "path": "identity-access-freshness-v1/delayed_event_does_not_renew_progress.json",
+      "sha256": "0a6097053e02a47732271181dd39220b3459b883f907582efd0a4b68f103fbbc"
+    },
+    {
+      "path": "identity-access-freshness-v1/epoch_behind_sequence_equal.json",
+      "sha256": "bd6ecb670a31787358fc1f566c245a31821df463b682638dcb9b1940b26da494"
+    },
+    {
+      "path": "identity-access-freshness-v1/fence_epoch_ahead_of_projection.json",
+      "sha256": "170776650ff0b577915eb10b4d6e2e9a754fd750661450229cd203a644f74f4d"
+    },
+    {
+      "path": "identity-access-freshness-v1/inclusive_freshness_boundaries.json",
+      "sha256": "048b531c7be635562dea1ec9fccb3edf4e1a673dc7566fe4f7a533bdad92d07a"
+    },
+    {
+      "path": "identity-access-freshness-v1/ordinary_source_stale.json",
+      "sha256": "1f11bde3b9accf258a5be879b0d347fc249019dbdaff339911ca6ea7c9ae2eae"
+    },
+    {
+      "path": "identity-access-freshness-v1/partition_heartbeat_resumes_before_projection.json",
+      "sha256": "ccd44e73ee5e233397f7ffa4d196e3f0f4bb178943c8c4df975d153c5a974815"
+    },
+    {
+      "path": "identity-access-freshness-v1/projection_catches_up.json",
+      "sha256": "e6b7ad974e217dae17162b01f53f73fc1080e92e0970c9779d29bb9079848c3d"
+    },
+    {
+      "path": "identity-access-freshness-v1/sequence_behind_epoch_equal.json",
+      "sha256": "1b0576c2765948aed1f12f0ad31134abebbdb9c527b13f3fc6df6908c5a0f5f2"
+    },
+    {
+      "path": "identity-access-token-v1/alg-hs256.json",
+      "sha256": "90bdebbf3f212f2e7936e274474e41f4b9cd19e93c6042f4ea21731dcf722b0f"
+    },
+    {
+      "path": "identity-access-token-v1/alg-none.json",
+      "sha256": "718803fa53d225c552ae15bc3163a475d01f3e0478690910def816b6a0563571"
+    },
+    {
+      "path": "identity-access-token-v1/application-at-jwt.json",
+      "sha256": "3aa135fddefd07e0678fa9bf2949ed115580a7663a19d86a232830c84c32ac77"
+    },
+    {
+      "path": "identity-access-token-v1/catalog-audience-issuance.json",
+      "sha256": "e1a4ab7b63c20e6f0b0a04f0c6625e4449d25c6a67e2f95f41a07c0619bbf951"
+    },
+    {
+      "path": "identity-access-token-v1/client-id-audience.json",
+      "sha256": "ce440e7028b1080bcd8c00fd38a7694be5527aafa5e41cbb5ba701790813412c"
+    },
+    {
+      "path": "identity-access-token-v1/encrypted-jwe.json",
+      "sha256": "cb02c357ddd20a64af60c074611066838ecbd78c6791f32540aff24de611d795"
+    },
+    {
+      "path": "identity-access-token-v1/expired-beyond-skew.json",
+      "sha256": "60a9d09f99e33aea01bbf3b7442d1c3146a819d0d6de61ab1cb057c560d0173a"
+    },
+    {
+      "path": "identity-access-token-v1/generic-jwt-typ.json",
+      "sha256": "95dbf759c99258f715c005801ea1c06514efced3b396afadc5085b7a75e6bf86"
+    },
+    {
+      "path": "identity-access-token-v1/id-token-as-access-token.json",
+      "sha256": "1d6f029db8936a43296a62a0511ce1d403116c2b29c1bf681a7e4ff7556b29fc"
+    },
+    {
+      "path": "identity-access-token-v1/invalid-signature.json",
+      "sha256": "472577d355ec7a4c8bc4d501f3f6ef4ec5a036ba6dc78a16c2bf62d39fea80b0"
+    },
+    {
+      "path": "identity-access-token-v1/issuance-omits-oi-claims.json",
+      "sha256": "c4841bd2d4a0a37aadceaab56c655590ff4f9a4d24616f83f8cb2a941c592fb7"
+    },
+    {
+      "path": "identity-access-token-v1/malformed-subject.json",
+      "sha256": "23f459a8ee54c33d998ad6eb2990a7be37d6cc40d26b77e2be011deb860a51c2"
+    },
+    {
+      "path": "identity-access-token-v1/missing-client-id.json",
+      "sha256": "3c9476f43f8aebc419eca22ac8ddb7e315d4e820a021e68ca7a6a9132e03d0af"
+    },
+    {
+      "path": "identity-access-token-v1/missing-jti.json",
+      "sha256": "2fd35d0e69d0e9c8e3c53bab3412f442ca157a88185f7ee9150d01360774d378"
+    },
+    {
+      "path": "identity-access-token-v1/missing-kid.json",
+      "sha256": "a8ad3293926b0b6ddc1c8008eda5a6bfc295e4648ca586a40eb4b347cecef691"
+    },
+    {
+      "path": "identity-access-token-v1/missing-typ.json",
+      "sha256": "58dcb93bb2247e53319319972756a6389ea5dec0502a4cb08625db40508ff77e"
+    },
+    {
+      "path": "identity-access-token-v1/oi-claim-rejected.json",
+      "sha256": "10ac33584fd437ef8cce8d2847e2d1474efe03cb05449bf5de4aa14c6922feb0"
+    },
+    {
+      "path": "identity-access-token-v1/resource-uri-as-audience.json",
+      "sha256": "9650d46ea719659e6a70b087b7527ea639d589b5e63d56f66dcf1b4dcbf8f8c0"
+    },
+    {
+      "path": "identity-access-token-v1/two-audiences.json",
+      "sha256": "d183274db1defa349f5076b0b3992c5d869f4b2e9ae1de584f6eb524c3c31856"
+    },
+    {
+      "path": "identity-access-token-v1/unknown-kid.json",
+      "sha256": "104b3f247b39ccde241aa853d268d647751e9ed9a195befdd17fe94159cdbddb"
+    },
+    {
+      "path": "identity-access-token-v1/unknown-resource.json",
+      "sha256": "a8c7fa7f746d5db382787d268fd05fe9a597f63f3da938ce39cc0fe99fd3d3ba"
+    },
+    {
+      "path": "identity-access-token-v1/valid-token.json",
+      "sha256": "e3fe3e547332eefdf32a5f7cf1f41aaf026b6d344f5923c64068ca98f899b5d3"
+    },
+    {
+      "path": "identity-access-token-v1/within-skew.json",
+      "sha256": "2e15be862aa1b966549495209243bc54b8fce429b3b72ec29e96b37a4e99fcc8"
+    },
+    {
+      "path": "identity-access-token-v1/wrong-audience.json",
+      "sha256": "112d4dfb279550a41231a7585d0a5168d2e8cb3d971b35f5a90eecd0304af5a5"
+    },
+    {
+      "path": "identity-access-token-v1/wrong-issuer.json",
+      "sha256": "545166671bd2713e709e67fd95aeaa21b2ea415c7e68700dff833f75be0feefa"
+    },
+    {
+      "path": "identity-access-token-v1/wrong-signing-key.json",
+      "sha256": "27eafa37deaede68bf4c28206045c3af73aae0e306523508e4b77d119216f6e3"
+    },
+    {
+      "path": "identity-contract-v1/already-linked-key.json",
+      "sha256": "50905725c3530c9d02909d15335a983084c46db9d55340cb2765b0e6954cce3a"
+    },
+    {
+      "path": "identity-contract-v1/deleted-subject-reuse-refused.json",
+      "sha256": "215947708a7e338e9541772fba1f844ca8c5fec325ce6fbe54de7bd60784f7b7"
+    },
+    {
+      "path": "identity-contract-v1/email-change.json",
+      "sha256": "38fa25bf225b635db24bd579905ab10986ea0b6504e57d1cc31f77234376d78d"
+    },
+    {
+      "path": "identity-contract-v1/email-link-refused.json",
+      "sha256": "84fb916ce58b13eba74e9478e28a5874da8ceb5ea4457da932e019327db7fb31"
+    },
+    {
+      "path": "identity-contract-v1/github-login-rename.json",
+      "sha256": "601fa894967550e3ab52f7cf76d868d0d1c94ac371371bbf176def00d94d1efd"
+    },
+    {
+      "path": "identity-contract-v1/malformed-subject-rejected.json",
+      "sha256": "521a2e7c2396239b5380b45ae9c0b4f78ab64b064e138934448163be8a7d03d8"
+    },
+    {
+      "path": "identity-contract-v1/migration-ambiguous-quarantined.json",
+      "sha256": "41bf44754f52fbcea367afb04a598fc1b48a6ba32ae9920a3da45861c757f03d"
+    },
+    {
+      "path": "identity-contract-v1/migration-exact-github-id-links.json",
+      "sha256": "873d78bf223ba92d7a2745ee0cc0c6a30f49b29fda56d410d52074e06a07b10b"
+    },
+    {
+      "path": "identity-contract-v1/preferred-username-not-a-key.json",
+      "sha256": "f08db20c3abdab970e76b6a5c36360b238be8f4e2b802d8948068f44b4fcb3d8"
+    },
+    {
+      "path": "identity-contract-v1/preferred-username-refresh.json",
+      "sha256": "c96de3515b0bbe02f40e74f13896b8369417cb11c6ee831519245f3fc4a32bb0"
+    },
+    {
+      "path": "identity-contract-v1/realm-configured-hold-enforced.json",
+      "sha256": "7ae17dd31764592e5b5554ad6442dc3da27ec7980ffd04a9138603ba6edc9699"
+    },
+    {
+      "path": "identity-contract-v1/same-subject-different-issuers.json",
+      "sha256": "f00879221b1f4fb9bb012f17aa9f7515c75d9a426ef00f017e7c9f8c1666925b"
+    },
+    {
+      "path": "identity-contract-v1/tenant-alias-collision-refused.json",
+      "sha256": "2405294708224a318278f65c3844b883b1eec3b788cec2e31fa804d0657569b6"
+    },
+    {
+      "path": "identity-contract-v1/tenant-alias-reuse-refused.json",
+      "sha256": "375579a0bbe54ad5067574a011e37e6ef8379a757780ff4a4e7fdace171d8393"
+    },
+    {
+      "path": "identity-contract-v1/unlink-revokes-authenticating-grants.json",
+      "sha256": "68592791e36433e84aab21dcb98e89a0d8eb022dd1f3ec253f78c1bcd24a4d04"
+    },
+    {
+      "path": "identity-credential-record-v1/active-unbound-accept.json",
+      "sha256": "2337d6d2432336021076915f1d0d76bae0ba08140981a72579341b6b7d784c9f"
+    },
+    {
+      "path": "identity-credential-record-v1/bound-with-valid-proof-accept.json",
+      "sha256": "546d4137990146bc5c6641d6185d74a30e721a72182c58ff1fd15c47fe04b614"
+    },
+    {
+      "path": "identity-credential-record-v1/bound-without-proof-refuse.json",
+      "sha256": "2aa63862ead029c754378d3cea481808de3467bb8b120695dd74a45b0e3ccd35"
+    },
+    {
+      "path": "identity-credential-record-v1/cid-mismatch-refuse.json",
+      "sha256": "8b9d66db383d24ab6f588a9c55caf09ddadf3f58c2187b42e2db4e72500d355c"
+    },
+    {
+      "path": "identity-credential-record-v1/legacy-no-credential-id-refuse.json",
+      "sha256": "f035110ac8dcf036008645b7c4aa542daa53599cdd19972ab539ee377e8b1640"
+    },
+    {
+      "path": "identity-credential-record-v1/missing-sender-binding-result-refuse.json",
+      "sha256": "5a2dc08c3b9e2f5b769a65e3f648c5459dcc3ae7c3eeccb30384036b3deaf249"
+    },
+    {
+      "path": "identity-credential-record-v1/revoked-inactive-refuse.json",
+      "sha256": "c815c3b144860d5b1383e96194708183739262ee25ca7d3daed9b1d8d896ac11"
+    },
+    {
+      "path": "identity-credential-record-v1/unbound-token-with-proof-refuse.json",
+      "sha256": "8d067826828956de818c0e3cd2414796f4fdb74ab9d91b9041072ccb98737608"
+    },
+    {
+      "path": "identity-credential-record-v1/unknown-credential-kind-refuse.json",
+      "sha256": "b87791a07a82acabfd2bd452acae576ab2909a4fbab6b5c6bbbac07173e16498"
+    },
+    {
+      "path": "identity-dpop-v1/alg-hs256.json",
+      "sha256": "d3f8dcb35cca5e95fcb4caccb2234d6ad5902ec105e690013c9663a7a3118b15"
+    },
+    {
+      "path": "identity-dpop-v1/alg-none.json",
+      "sha256": "20ee0554e2c1c1540cf6eae82588bb6b90398dcf4c27491bc6448c60ce29d7c2"
+    },
+    {
+      "path": "identity-dpop-v1/bound-token-as-bearer.json",
+      "sha256": "63630c0471b976653cc778b7c14a4e26aa754331fcd2c98d2661ef1679e48ae4"
+    },
+    {
+      "path": "identity-dpop-v1/client-credentials-unbound-refused.json",
+      "sha256": "eac7dcdcb69bb797ba47469c484b5bad5f082663aa7bcf20a40253ca374855dc"
+    },
+    {
+      "path": "identity-dpop-v1/exchange-without-proof-refused.json",
+      "sha256": "08e5bb1febc5a3ae7f816db5710f573215947b370a6d49b643e15baf8e3c5e8f"
+    },
+    {
+      "path": "identity-dpop-v1/exchanged-token-sent-as-bearer-rejected.json",
+      "sha256": "153bcdc414c5cfb561f285da7a25040156aed9e94f55c0f5dda51d3d41ea0f97"
+    },
+    {
+      "path": "identity-dpop-v1/fast-replica-accept-slow-replica-replay-rejected.json",
+      "sha256": "51cc18064fd06624d6b394a534885ed6ff40cb30ad874dc8721323dc555c59cb"
+    },
+    {
+      "path": "identity-dpop-v1/htu-with-query.json",
+      "sha256": "063f2023031661dc05c645531d40eec5f4f61a604bf887b23ff9ae5cffb4a29d"
+    },
+    {
+      "path": "identity-dpop-v1/iat-outside-window.json",
+      "sha256": "a4d958dfb6e0713a46442778a62ea44a82255ad67d64434f168e59ffda64ca7c"
+    },
+    {
+      "path": "identity-dpop-v1/invalid-signature.json",
+      "sha256": "ad41e30af3d2301caab7bddf192f80ff67080935cc97a960ddb6b1e9f925e35f"
+    },
+    {
+      "path": "identity-dpop-v1/jti-cache-unavailable.json",
+      "sha256": "a77f577d9ca4d0585071283223754eb458ada1f9c5530599648445a10439059e"
+    },
+    {
+      "path": "identity-dpop-v1/jwk-private-material.json",
+      "sha256": "e01c8617fe33216634af6334cbbb328de01cd51028365096b0f7e2dd7398b508"
+    },
+    {
+      "path": "identity-dpop-v1/jwk-thumbprint-mismatch.json",
+      "sha256": "0049d06ca5cf4dedc1ea80bca9c2a9880c3ce02dbcf6929532b60f45c5748306"
+    },
+    {
+      "path": "identity-dpop-v1/missing-proof.json",
+      "sha256": "07ab096e03f45c94663d29fa46fa59213b68cb94775fbfd5a2742c4e8825f2a6"
+    },
+    {
+      "path": "identity-dpop-v1/missing-required-nonce.json",
+      "sha256": "1496ed595a98fd2902f9d7ba09b671aa887949cca29d83b8f9cdceaea4bc759d"
+    },
+    {
+      "path": "identity-dpop-v1/nonce-validation.json",
+      "sha256": "5862ff37788dce4c5accb99deda50e24a970c16451a33bbda8eb14f7fa11220c"
+    },
+    {
+      "path": "identity-dpop-v1/optional-mcp-unbound.json",
+      "sha256": "786ebf232172ccd5168a28cda4db10ba0a30918bbdbb9ae67827ba7bd48240d0"
+    },
+    {
+      "path": "identity-dpop-v1/org-requires-dpop-client-unsupported.json",
+      "sha256": "b9d08b2db7d05881c4b810e5da1f66911ca18832abdca1babc96eec1b4e6ecf8"
+    },
+    {
+      "path": "identity-dpop-v1/reused-jti-another-replica.json",
+      "sha256": "922a92ce749b8fb45e0e12f0b473085c258d4ea32dd8a2057dc05a5da8115d14"
+    },
+    {
+      "path": "identity-dpop-v1/stale-nonce.json",
+      "sha256": "92e09b988f7cb4f1d12bf9ab69821a512dced20dd5095c3a2d80e68d3f0a5cad"
+    },
+    {
+      "path": "identity-dpop-v1/unbound-token-as-dpop.json",
+      "sha256": "76f23d88aaa55072993abc39fb88e74b3b693bd56f4ed51c77727051546eb398"
+    },
+    {
+      "path": "identity-dpop-v1/valid-bound-request.json",
+      "sha256": "3f3570af14870e69148ed2d4f03a8f29ff940d00d3f1f19f844f3e5729525eaa"
+    },
+    {
+      "path": "identity-dpop-v1/wrong-ath.json",
+      "sha256": "f06794310c697fded6543c45bba9eac406545b7d7b4e160e0d1afe9d7cd3b005"
+    },
+    {
+      "path": "identity-dpop-v1/wrong-htm.json",
+      "sha256": "f37e1d053d8b0761ec526e1439ea843562da2d25aa0f25f74e1085e8022bd9d3"
+    },
+    {
+      "path": "identity-dpop-v1/wrong-htu-internal-host.json",
+      "sha256": "0fed35f284b8cd3bf27aaddcd8c568a8a7350345f03717733792419f4fc24657"
+    },
+    {
+      "path": "identity-events-v1/forbidden-content.json",
+      "sha256": "0702cb63de4f1849860e4d488f658c148770885c69274001721dfe5d7f773261"
+    },
+    {
+      "path": "identity-events-v1/pii-markings.json",
+      "sha256": "c4dc5204fabad62c37159d1a4008c3e278ef48b9abb11ceeb3763ca4419c2e98"
+    },
+    {
+      "path": "identity-federation-v1/assurance-mapping-change-is-not-retroactive.json",
+      "sha256": "06b486179bc8fa5a580e7650c7fa52452e60e704b4423d45e5e807d2162e9694"
+    },
+    {
+      "path": "identity-federation-v1/different-issuer-same-sub-does-not-relink.json",
+      "sha256": "c1a7cce18a07417ad600f09c817d1dbc858814a7bba1969c9db0d6f9dc767a78"
+    },
+    {
+      "path": "identity-federation-v1/documented-verified-migration-with-fresh-admin-approval.json",
+      "sha256": "67b02a103ad9a95261c66e69914f7ee57c7b1bc066cd343c804aaf187bc7e015"
+    },
+    {
+      "path": "identity-federation-v1/email-match-is-not-migration-evidence.json",
+      "sha256": "292afe873cf3867be3c58cc2ed29cbd3a78bad51cb252a87fa58d36cc40a94c1"
+    },
+    {
+      "path": "identity-federation-v1/migration-without-fresh-admin-assurance-is-refused.json",
+      "sha256": "628cad4eb86954338c4b6812e40b6be2b922d0c8a7ab45344787e3ac4453de26"
+    },
+    {
+      "path": "identity-federation-v1/other-organisation-connection-claiming-same-issuer-is-refused.json",
+      "sha256": "9fb1cc6dfaea4749a9b9a1f83b5e000584773fc8279ef2f21a9eb4563166a961"
+    },
+    {
+      "path": "identity-federation-v1/removing-one-connection-preserves-the-other.json",
+      "sha256": "294cb74a85add51f07c997981a5dd33e33bc8c140498fa7b0c324421c50f2e89"
+    },
+    {
+      "path": "identity-federation-v1/same-issuer-same-sub-resolves-existing-account.json",
+      "sha256": "91935ceaaefdd93f272219e8790ed0663c22c2a77a8efcef8f856de001bad472"
+    },
+    {
+      "path": "identity-federation-v1/transient-saml-subject-is-refused.json",
+      "sha256": "591967fc964b72f981e0e53d108bed90d6ee74511d2fc5099af866d2cab35433"
+    },
+    {
+      "path": "identity-federation-v1/unlinked-key-remains-reserved.json",
+      "sha256": "a4acc3392ebc6103fd0dde94603de42fbcc86bdbdb71db0a68b4b1d7daea5ba3"
+    },
+    {
+      "path": "identity-federation-v1/unmapped-assurance-is-basic.json",
+      "sha256": "a851debfc446a2825a963afef250e997137026c485a8aa7f59a9c33ab8baa340"
+    },
+    {
+      "path": "identity-revocation-v1/access_feed_stale.json",
+      "sha256": "ad5ad04597456d3729b1ed3429d03c337ffde74a36f2164149f04ef3beff0fbf"
+    },
+    {
+      "path": "identity-revocation-v1/crash_after_ack.json",
+      "sha256": "6f32772bb74b3dd32c58604ffc20a69b1a396774dd3cde9c3a16249c1c78022a"
+    },
+    {
+      "path": "identity-revocation-v1/crash_before_ack.json",
+      "sha256": "554b6b750b55afbb4db68d07ec20d0344cf58b2920f14a2efd7a54cb0288b2d4"
+    },
+    {
+      "path": "identity-revocation-v1/delegation_parent_revoked.json",
+      "sha256": "720c152549d8d7e3b198cfe9bf451429a2d654829248870094137ea1580a4974"
+    },
+    {
+      "path": "identity-revocation-v1/double_refresh_reuse.json",
+      "sha256": "09e9a4b677f92cffe3f452ffef1e4e64f5b3ea00b88cf252b46ac1a109aecd04"
+    },
+    {
+      "path": "identity-revocation-v1/incomplete_log_coverage.json",
+      "sha256": "486fab17dc5c18b60aece55c3e329520c8610a9a9d58bbf1ed7ad2691de1088e"
+    },
+    {
+      "path": "identity-revocation-v1/operational_commit_before_log_failure.json",
+      "sha256": "a7418e680ff552c5cd22c74dd10ff156c4e24ad6168b0e9c9adb012e5adba8bc"
+    },
+    {
+      "path": "identity-revocation-v1/outbox_duplicate_append.json",
+      "sha256": "bed172a10105265c3253f0beabb6255bf28aa17d2a3681fe3252d67ef7de2931"
+    },
+    {
+      "path": "identity-revocation-v1/pat_other_replica.json",
+      "sha256": "8826e9601a7b40e3769b55d05332e74c43b7af5d5374dd1faf4ab121658054c4"
+    },
+    {
+      "path": "identity-revocation-v1/policy_epoch_vs_recovery_epoch.json",
+      "sha256": "fc40c98a3af53d5187c07401875cabbef766c222dfd40555ec80e36d086b559c"
+    },
+    {
+      "path": "identity-revocation-v1/priority_epoch_ahead_of_projection.json",
+      "sha256": "402ad838b10c681583adc35337833f0eee5a789579e8ae6835e0b9dca80837f3"
+    },
+    {
+      "path": "identity-revocation-v1/readiness_waits_for_fence_replay.json",
+      "sha256": "e5b37419881afcdd3fbc7d94891d923aca9e0a476248fd05d151ff12e9c8dfd1"
+    },
+    {
+      "path": "identity-revocation-v1/refresh_loses_to_revoke.json",
+      "sha256": "6cb1c299d2e9a35454d6904e1a4be6eafb6ccc6df6dde3e6db225f71073202e2"
+    },
+    {
+      "path": "identity-revocation-v1/refresh_wins_before_revoke.json",
+      "sha256": "90ba77227d12a8d3a5318163654c77b7fd5b83b8d66584c97b953da1e26835a1"
+    },
+    {
+      "path": "identity-revocation-v1/restore-operational-store-consumed-approval.json",
+      "sha256": "f2c317475d2291467ce65407ad7f339ec6c92852ed0394181bd13e62a4a6ee72"
+    },
+    {
+      "path": "identity-revocation-v1/restore-operational-store-consumed-refresh.json",
+      "sha256": "ebe499973ba58142e461f8c88465cacf569ba1d8a051c6e8cc1b52f6db9f4db8"
+    },
+    {
+      "path": "identity-revocation-v1/restore_both_stores.json",
+      "sha256": "cb89143023ce1305b9a2c26b4c6e8650fb090068ee295b736c3fa75a39947503"
+    },
+    {
+      "path": "identity-revocation-v1/restore_chronicle.json",
+      "sha256": "e0d2480c33adb218310a556c6c68fd8d8a4341acaa49a9ecfd5751151138831d"
+    },
+    {
+      "path": "identity-revocation-v1/restore_client_secret_rotation.json",
+      "sha256": "3ae5f978be857e2445f757c6ca6f901bf33a6d00d2a84e565c37582d7969d23b"
+    },
+    {
+      "path": "identity-revocation-v1/restore_delegation_budget.json",
+      "sha256": "f472c287690fb0572ffe79475590188a5ab30524e986c32c868f05041268d4d9"
+    },
+    {
+      "path": "identity-revocation-v1/restore_lost_account_disable.json",
+      "sha256": "82c71e8571046f6e1ce524b7dc443d83494c2637e4762746c1d02d9e83673776"
+    },
+    {
+      "path": "identity-revocation-v1/restore_operational_store.json",
+      "sha256": "82f52c0921d719fdd33cc3c88dd1bdd90bda0d9804993b9bbfad884cb3a43abc"
+    },
+    {
+      "path": "identity-revocation-v1/restore_pat_after_fence_tail.json",
+      "sha256": "54fda8aa7b3e8501410fc33cd9e6cf17d234a04799a7e8f67e3cee06a31b19c7"
+    },
+    {
+      "path": "identity-revocation-v1/restore_runner_rotation.json",
+      "sha256": "1f63053b21143f506d4266623057ac744c151c43a5a493b61e20af32a3889e93"
+    },
+    {
+      "path": "identity-revocation-v1/unknown_membership.json",
+      "sha256": "4976fbaecf87315a575cd7dd714559105f5ecb76a2916137252c4c22ad7aec2d"
+    },
+    {
+      "path": "identity-tenant-model-v1/cross-tenant-credential-refused-before-namespace.json",
+      "sha256": "f2ec95f598abe803a86e177da46456b201185cffd666678fd01f46ed9451c882"
+    },
+    {
+      "path": "identity-tenant-model-v1/member-of-both-tenants-no-cross-tenant-access.json",
+      "sha256": "7ade623e33d501d094fd9c47b10c4a8e8dd699c80874d82bddff3adf56aa9ea0"
+    },
+    {
+      "path": "identity-tenant-model-v1/membership-removed-after-selection-refused.json",
+      "sha256": "a4a0f5cd9ad513ec5533d14e329458f3d9a2ba20b5012875a8b206ddc32ecc59"
+    },
+    {
+      "path": "identity-tenant-model-v1/organisation-admin-is-not-membership.json",
+      "sha256": "549a1077bcf95d7612fa1f6816ddb22057ef09ae3003debd56a7dd2ff11f79dd"
+    },
+    {
+      "path": "identity-tenant-model-v1/resource-or-environment-mismatch-refused.json",
+      "sha256": "7ec9a52ade00f788346641ad69c9aec40fd0e1e6d06d992bc68819369aa31b4d"
+    },
+    {
+      "path": "identity-tenant-model-v1/tenant-switch-reruns-selection.json",
+      "sha256": "b3d177d3b5036ebf04075326ec0aa849852b86d8153dc65a26928f05e3c5aeaf"
+    }
+  ],
+  "coverage": {
+    "arc-delegation-v1": {
+      "identityExecutable": false,
+      "readers": [],
+      "notApplicable": [
+        {
+          "file": "*",
+          "implementer": "Identity",
+          "reason": "Data vectors only; arc-delegation-v1.md states they are not executed runtime conformance tests and Identity has no executable reader."
+        }
+      ]
+    },
+    "arc-forwarded-identity-v2": {
+      "identityExecutable": false,
+      "readers": [],
+      "notApplicable": [
+        {
+          "file": "*",
+          "implementer": "Identity",
+          "reason": "Identity does not verify forwarded identity envelopes; the vectors are exported from Arc's generator and are data only (arc-forwarded-identity-v2.md, Specification vectors)."
+        }
+      ]
+    },
+    "arc-mcp-authorization-v1": {
+      "identityExecutable": true,
+      "readers": [
+        "Source/Identity.Specs/for_ArcMcpVectors/given/an_authorization_server.cs",
+        "Source/Identity.Specs/for_VectorArtifacts/given/an_artifact.cs"
+      ],
+      "notApplicable": []
+    },
+    "arc-mcp-authorization-v1-overlay-2.1.0": {
+      "identityExecutable": true,
+      "readers": [
+        "Source/Identity.Specs/for_ArcMcpVectors/when_enforcing_resource_and_pkce_with_v2_1_0.cs",
+        "Source/Identity.Specs/for_ArcMcpVectors/when_redeeming_an_authorization_grant_with_v2_1_0.cs",
+        "Source/Identity.Specs/for_VectorArtifacts/when_applying_the_scope_catalog_versions.cs"
+      ],
+      "notApplicable": []
+    },
+    "arc-pat-format-v1": {
+      "identityExecutable": false,
+      "readers": [],
+      "notApplicable": [
+        {
+          "file": "*",
+          "implementer": "Identity",
+          "reason": "Data vectors only; arc-pat-format-v1.md states they do not demonstrate runtime conformance and Identity has no executable reader."
+        }
+      ]
+    },
+    "arc-scope-catalog-v1": {
+      "identityExecutable": true,
+      "readers": [
+        "Source/Identity.Specs/for_VectorArtifacts/when_applying_the_scope_catalog_versions.cs"
+      ],
+      "notApplicable": []
+    },
+    "arc-verified-caller-v1": {
+      "identityExecutable": false,
+      "readers": [],
+      "notApplicable": [
+        {
+          "file": "*",
+          "implementer": "Identity",
+          "reason": "Data vectors only; arc-verified-caller-v1.md states they are not executed runtime conformance tests and Identity has no executable reader."
+        }
+      ]
+    },
+    "identity-access-freshness-v1": {
+      "identityExecutable": false,
+      "readers": [],
+      "notApplicable": [
+        {
+          "file": "*",
+          "implementer": "Identity",
+          "reason": "Data only and not implemented or passing executable conformance tests (identity-access-freshness-v1.md); Identity has no executable reader."
+        }
+      ]
+    },
+    "identity-access-token-v1": {
+      "identityExecutable": false,
+      "readers": [],
+      "notApplicable": [
+        {
+          "file": "*",
+          "implementer": "Identity",
+          "reason": "Data only, not executable specs (identity-access-token-v1.md); Identity has no executable reader yet."
+        }
+      ]
+    },
+    "identity-contract-v1": {
+      "identityExecutable": true,
+      "readers": [
+        "Source/Identity.Specs/Accounts/given/a_contract_vector.cs"
+      ],
+      "notApplicable": []
+    },
+    "identity-credential-record-v1": {
+      "identityExecutable": true,
+      "readers": [
+        "Source/Identity.Specs/for_CredentialRecordVectors/when_reading_the_credential_record_vectors.cs"
+      ],
+      "notApplicable": [
+        {
+          "file": "*",
+          "implementer": "Identity",
+          "reason": "Identity specs check only the shape of these vectors and do not replay them against a gateway (identity-credential-record-v1.md)."
+        }
+      ]
+    },
+    "identity-dpop-v1": {
+      "identityExecutable": true,
+      "readers": [
+        "Source/Identity.Specs/for_DPoPProofValidator/when_replaying_the_as_header_vectors.cs"
+      ],
+      "notApplicable": []
+    },
+    "identity-events-v1": {
+      "identityExecutable": true,
+      "readers": [
+        "Source/Identity.Specs/for_EventContentRules/when_applying_locked_vectors.cs"
+      ],
+      "notApplicable": []
+    },
+    "identity-federation-v1": {
+      "identityExecutable": false,
+      "readers": [],
+      "notApplicable": [
+        {
+          "file": "*",
+          "implementer": "Identity",
+          "reason": "Draft data vectors with no executable reader in Identity."
+        }
+      ]
+    },
+    "identity-revocation-v1": {
+      "identityExecutable": false,
+      "readers": [],
+      "notApplicable": [
+        {
+          "file": "*",
+          "implementer": "Identity",
+          "reason": "Data only, not implemented or passing executable specs (identity-revocation-v1.md); Identity has no executable reader."
+        }
+      ]
+    },
+    "identity-tenant-model-v1": {
+      "identityExecutable": false,
+      "readers": [],
+      "notApplicable": [
+        {
+          "file": "*",
+          "implementer": "Identity",
+          "reason": "Data vectors with no executable reader in Identity."
+        }
+      ]
+    }
+  }
+}

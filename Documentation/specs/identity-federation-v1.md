@@ -101,3 +101,13 @@ These are **data only**. They add no C# tests or project configuration and demon
 - Specify an Access event-catalogue extension or amendment recording each connection's approved maximum assurance; neither `EnterpriseConnectionRegistered` nor `ConnectionAssuranceMappingChanged` currently carries it. Until that extension exists, results MUST be bounded by the approved mapping table, or `basic` when no valid mapping applies (§3).
 - Define the explicit reviewed operation/catalogue extension for any reserved-key relink if needed; until then it MUST deny. No signed-off contract or event file is edited by this draft.
 - Complete the assurance vocabulary beyond `basic` and connection maximum/mapping validation without pass-through or retrospective elevation. Runtime validation and the portability proof remain separate implementation/release work.
+
+## 8. Implementers and pinned vector version
+
+This table is informational and not part of the normative contract. "Pinned vector version" names the vector artifact an implementer consumes: the `identity-contract-vectors` bundle (see [Vector artifact](README.md#vector-artifact)) or a per-spec artifact. A row says what an implementer runs, not that it passes; data vectors do not imply a passing conformance suite. "To be confirmed" means the implementer repository has not confirmed the fact here.
+
+| Implementer | Runs | Pinned vector version | Not applicable (reason) |
+|---|---|---|---|
+| Identity | Data only; no executable reader | This repository's tree; bundle 1.0.0 once tagged | Not run by Identity: no executable reader |
+| Arc | To be confirmed by the implementer repository | To be confirmed by the implementer repository | To be confirmed by the implementer repository |
+| AuthProxy | To be confirmed by the implementer repository | To be confirmed by the implementer repository | To be confirmed by the implementer repository |
