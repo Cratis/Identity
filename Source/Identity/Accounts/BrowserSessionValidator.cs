@@ -31,17 +31,20 @@ internal class BrowserSessionValidator(IBrowserSessionStore sessions, IAccountRe
         try
         {
             var session = await sessions.Find(sessionId, cancellationToken);
-            if (session is null || session.RevokedAt is not null || session.LinkId != link || session.Subject != subject!.Value)
-            {
-                return false;
-            }
-
-            var account = await accounts.FindActive(subject, cancellationToken);
-            return account is not null && AuthenticatingLink.IsCurrent(account, session.LinkId);
+            return Stands(session, link.Value, subject!) && await IsLinked(subject!, session!.LinkId, cancellationToken);
         }
         catch (Exception)
         {
             return false;
         }
+    }
+
+    static bool Stands(BrowserSession? session, Guid link, AccountSubject subject) =>
+        session is { RevokedAt: null } && session.LinkId == link && session.Subject == subject.Value;
+
+    async Task<bool> IsLinked(AccountSubject subject, Guid link, CancellationToken cancellationToken)
+    {
+        var account = await accounts.FindActive(subject, cancellationToken);
+        return account is not null && AuthenticatingLink.IsCurrent(account, link);
     }
 }

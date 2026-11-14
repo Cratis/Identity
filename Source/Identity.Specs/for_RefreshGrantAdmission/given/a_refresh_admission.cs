@@ -49,7 +49,7 @@ public class a_refresh_admission : Specification
     internal void StateOf(string grantId, Guid? link)
     {
         var state = new RevocationSpecs.SharedFenceStore()
-            .RecordFamilyStart(grantId, "entry", "7d9d5c9e-0000-4000-8000-000000000001", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), link, CancellationToken.None)
+            .RecordFamilyStart(new FamilyStart(grantId, "entry", "7d9d5c9e-0000-4000-8000-000000000001", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), link), CancellationToken.None)
             .GetAwaiter()
             .GetResult();
         _fences.Read(grantId, Arg.Any<CancellationToken>()).Returns(state);

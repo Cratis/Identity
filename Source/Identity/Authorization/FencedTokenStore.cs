@@ -62,7 +62,7 @@ internal sealed class FencedTokenStore(IOpenIddictMongoDbContext context, IOptio
         {
             // Allocate before recording the family: its initial admitted entry must be the actual inserted ID.
             token.Id = token.Id == ObjectId.Empty ? ObjectId.GenerateNewId() : token.Id;
-            state = await fences.RecordFamilyStart(grantId, token.Id.ToString(), token.Subject!, new(created, TimeSpan.Zero), new(expires, TimeSpan.Zero), issuance.StartLink, cancellationToken);
+            state = await fences.RecordFamilyStart(new FamilyStart(grantId, token.Id.ToString(), token.Subject!, new(created, TimeSpan.Zero), new(expires, TimeSpan.Zero), issuance.StartLink), cancellationToken);
         }
 
         if (state.Fence is not null || state.CurrentRefreshTokenId != token.Id.ToString())

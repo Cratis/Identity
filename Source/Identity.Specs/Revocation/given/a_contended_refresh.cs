@@ -40,7 +40,7 @@ public class a_contended_refresh : for_RedeemRefreshTokenOnce.given.a_refresh_to
     async Task Establish()
     {
         _authority = new SharedFenceStore();
-        await _authority.RecordFamilyStart(AuthorizationId, TokenId, FenceDoubles.Subject, _time.GetUtcNow(), _time.GetUtcNow().AddDays(30), AuthenticatingLinkId, CancellationToken.None);
+        await _authority.RecordFamilyStart(new FamilyStart(AuthorizationId, TokenId, FenceDoubles.Subject, _time.GetUtcNow(), _time.GetUtcNow().AddDays(30), AuthenticatingLinkId), CancellationToken.None);
         _grants = new(_tokens, _authorizations, _authority, FenceDoubles.Confirmation(_authority));
         _read = new(_authority, _tokens, _authorizations, _time);
         _handler = new(_tokens, _grants, _time, _authority, _read, _issuance);
