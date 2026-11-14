@@ -38,9 +38,9 @@ not weaken either contract and is not permission to remove the assertion.
   then a real Chronicle kernel. It hosts Identity in-process; upstream sign-in and
   tenant callbacks are stubs, not live providers.
 - [`ChronicleKernel`](../../Source/Identity.Integration.Specs/given/ChronicleKernel.cs)
-  selects `IDENTITY_CHRONICLE_IMAGE`, defaulting to `cratis/chronicle:19.144.0-development`.
+  selects `IDENTITY_CHRONICLE_IMAGE`, defaulting to `cratis/chronicle:19.164.1-development`.
   [`Directory.Packages.props`](../../Directory.Packages.props) pins the Chronicle
-  client to `19.144.0`, Arc to `22.185.0` and OpenIddict to `7.8.0`.
+  client to `19.164.1`, Arc to `22.185.0` and OpenIddict to `7.8.0`.
   The pin is a version-tag contract, not an image-digest guarantee. Changing a pin
   or overriding the image requires retaining the registration checks below.
 - Development, OIDC, DPoP, metadata-client, exchange and key-rotation hosts extend

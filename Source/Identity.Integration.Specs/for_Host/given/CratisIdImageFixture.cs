@@ -39,7 +39,7 @@ public sealed class CratisIdImageFixture : IAsyncDisposable
     {
         _operational = new MongoDbBuilder(MongoImage).WithReplicaSet().WithNetwork(_network).WithNetworkAliases(OperationalAlias).Build();
         _fence = new MongoDbBuilder(MongoImage).WithReplicaSet().WithNetwork(_network).WithNetworkAliases(FenceAlias).Build();
-        _chronicle = new ContainerBuilder(Environment.GetEnvironmentVariable("IDENTITY_CHRONICLE_IMAGE") ?? "cratis/chronicle:19.144.0-development")
+        _chronicle = new ContainerBuilder(Environment.GetEnvironmentVariable("IDENTITY_CHRONICLE_IMAGE") ?? "cratis/chronicle:19.164.1-development")
             .WithNetwork(_network)
             .WithNetworkAliases(ChronicleAlias)
             .WithWaitStrategy(Wait.ForUnixContainer().UntilInternalTcpPortIsAvailable(ChroniclePort, wait => wait.WithTimeout(TimeSpan.FromMinutes(2))))
