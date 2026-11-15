@@ -46,89 +46,111 @@ internal class ProductTenantsCallback(IHttpClientFactory clients, ILogger<Produc
             }
 
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
-            if (response.StatusCode != HttpStatusCode.OK)
-            {
-                return Unavailable(response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden
-                    ? TenantsUnavailableReason.Refused
-                    : TenantsUnavailableReason.Unreachable);
-            }
-
-            if (!string.Equals(response.Content.Headers.ContentType?.MediaType, "application/json", StringComparison.OrdinalIgnoreCase) ||
-                response.Content.Headers.ContentLength > MaximumBodyBytes)
-            {
-                return Unavailable(TenantsUnavailableReason.Malformed);
-            }
-
-            await using var stream = await response.Content.ReadAsStreamAsync(deadline.Token);
-            var bytes = new byte[MaximumBodyBytes + 1];
-            var length = 0;
-            while (length < bytes.Length)
-            {
-                var read = await stream.ReadAsync(bytes.AsMemory(length), deadline.Token);
-                if (read == 0)
-                {
-                    break;
-                }
-
-                length += read;
-            }
-
-            if (length > MaximumBodyBytes)
-            {
-                return Unavailable(TenantsUnavailableReason.Malformed);
-            }
-
-            using var document = JsonDocument.Parse(bytes.AsMemory(0, length), new JsonDocumentOptions { MaxDepth = 8 });
-            IEnumerable<SelectableTenant>? tenants;
-            try
-            {
-                var body = document.RootElement;
-                if (body.ValueKind != JsonValueKind.Object || !body.TryGetProperty("subject", out var subject) ||
-                    subject.ValueKind != JsonValueKind.String)
-                {
-                    return Unavailable(TenantsUnavailableReason.Malformed);
-                }
-
-                var subjectId = subject.GetString();
-                if (!string.Equals(subjectId, account.Id, StringComparison.Ordinal))
-                {
-                    return Unavailable(TenantsUnavailableReason.WrongSubject);
-                }
-
-                tenants = TenantsCallbackResponse.Read(body);
-            }
-            catch (InvalidOperationException)
-            {
-                // JSON strings containing unpaired surrogates cannot be decoded.
-                return Unavailable(TenantsUnavailableReason.Malformed);
-            }
-
-            deadline.Token.ThrowIfCancellationRequested();
-            return tenants is null ? Unavailable(TenantsUnavailableReason.Malformed) : new TenantsListed(tenants);
+            return await ReadResponse(response, account, resource, deadline.Token);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            return Unavailable(TenantsUnavailableReason.TimedOut);
+            return Unavailable(resource, account, TenantsUnavailableReason.TimedOut);
         }
         catch (HttpRequestException)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Unavailable(TenantsUnavailableReason.Unreachable);
+            return Unavailable(resource, account, TenantsUnavailableReason.Unreachable);
         }
         catch (IOException)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Unavailable(TenantsUnavailableReason.Unreachable);
+            return Unavailable(resource, account, TenantsUnavailableReason.Unreachable);
         }
         catch (JsonException)
         {
-            return Unavailable(TenantsUnavailableReason.Malformed);
+            return Unavailable(resource, account, TenantsUnavailableReason.Malformed);
+        }
+    }
+
+    static async Task<ReadOnlyMemory<byte>> ReadBody(Stream stream, CancellationToken cancellationToken)
+    {
+        var bytes = new byte[MaximumBodyBytes + 1];
+        var length = 0;
+        while (length < bytes.Length)
+        {
+            var read = await stream.ReadAsync(bytes.AsMemory(length), cancellationToken);
+            if (read == 0)
+            {
+                break;
+            }
+
+            length += read;
         }
 
-        TenantsUnavailable Unavailable(TenantsUnavailableReason reason)
+        return bytes.AsMemory(0, length);
+    }
+
+    static bool TryGetSubject(JsonElement body, out JsonElement subject)
+    {
+        subject = default;
+        return body.ValueKind == JsonValueKind.Object && body.TryGetProperty("subject", out subject) &&
+            subject.ValueKind == JsonValueKind.String;
+    }
+
+    async Task<TenantLookup> ReadResponse(HttpResponseMessage response, Account account, ResourceServer resource, CancellationToken cancellationToken)
+    {
+        if (response.StatusCode != HttpStatusCode.OK)
         {
-            logger.Unavailable(resource.Audience, account.Id, reason);
-            return new TenantsUnavailable(reason);
+            var reason = response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden
+                ? TenantsUnavailableReason.Refused
+                : TenantsUnavailableReason.Unreachable;
+            return Unavailable(resource, account, reason);
         }
+
+        if (!string.Equals(response.Content.Headers.ContentType?.MediaType, "application/json", StringComparison.OrdinalIgnoreCase) ||
+            response.Content.Headers.ContentLength > MaximumBodyBytes)
+        {
+            return Unavailable(resource, account, TenantsUnavailableReason.Malformed);
+        }
+
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        var bytes = await ReadBody(stream, cancellationToken);
+        if (bytes.Length > MaximumBodyBytes)
+        {
+            return Unavailable(resource, account, TenantsUnavailableReason.Malformed);
+        }
+
+        using var document = JsonDocument.Parse(bytes, new JsonDocumentOptions { MaxDepth = 8 });
+        return ReadTenants(document.RootElement, account, resource, cancellationToken);
+    }
+
+    TenantLookup ReadTenants(JsonElement body, Account account, ResourceServer resource, CancellationToken cancellationToken)
+    {
+        IEnumerable<SelectableTenant>? tenants;
+        try
+        {
+            if (!TryGetSubject(body, out var subject))
+            {
+                return Unavailable(resource, account, TenantsUnavailableReason.Malformed);
+            }
+
+            var subjectId = subject.GetString();
+            if (!string.Equals(subjectId, account.Id, StringComparison.Ordinal))
+            {
+                return Unavailable(resource, account, TenantsUnavailableReason.WrongSubject);
+            }
+
+            tenants = TenantsCallbackResponse.Read(body);
+        }
+        catch (InvalidOperationException)
+        {
+            // JSON strings containing unpaired surrogates cannot be decoded.
+            return Unavailable(resource, account, TenantsUnavailableReason.Malformed);
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        return tenants is null ? Unavailable(resource, account, TenantsUnavailableReason.Malformed) : new TenantsListed(tenants);
+    }
+
+    TenantsUnavailable Unavailable(ResourceServer resource, Account account, TenantsUnavailableReason reason)
+    {
+        logger.Unavailable(resource.Audience, account.Id, reason);
+        return new TenantsUnavailable(reason);
     }
 }
