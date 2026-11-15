@@ -3,6 +3,7 @@
 
 using System.Security.Claims;
 using Cratis.Identity.Contracts.Accounts;
+using Cratis.Identity.Realm;
 
 namespace Cratis.Identity.Accounts;
 
@@ -11,9 +12,8 @@ namespace Cratis.Identity.Accounts;
 /// link, without a standing record, or whose link is no longer one of the account's links is refused, and so is any
 /// failure to find out.
 /// </summary>
-/// <param name="sessions">The <see cref="IBrowserSessionStore"/>.</param>
-/// <param name="accounts">The <see cref="IAccountReader"/>.</param>
-internal class BrowserSessionValidator(IBrowserSessionStore sessions, IAccountReader accounts)
+/// <param name="scopes">The factory for realm-bound session and account readers.</param>
+internal class BrowserSessionValidator(IServiceScopeFactory scopes)
 {
     /// <summary>Checks a session cookie principal.</summary>
     /// <param name="principal">The principal read from the cookie.</param>
@@ -30,8 +30,11 @@ internal class BrowserSessionValidator(IBrowserSessionStore sessions, IAccountRe
 
         try
         {
+            using var realm = IdentityRealmScope.Begin();
+            await using var child = scopes.CreateAsyncScope();
+            var sessions = child.ServiceProvider.GetRequiredService<IBrowserSessionStore>();
             var session = await sessions.Find(sessionId, cancellationToken);
-            return Stands(session, link.Value, subject!) && await IsLinked(subject!, session!.LinkId, cancellationToken);
+            return Stands(session, link.Value, subject!) && await IsLinked(child.ServiceProvider.GetRequiredService<IAccountReader>(), subject!, session!.LinkId, cancellationToken);
         }
         catch (Exception)
         {
@@ -42,7 +45,7 @@ internal class BrowserSessionValidator(IBrowserSessionStore sessions, IAccountRe
     static bool Stands(BrowserSession? session, Guid link, AccountSubject subject) =>
         session is { RevokedAt: null } && session.LinkId == link && session.Subject == subject.Value;
 
-    async Task<bool> IsLinked(AccountSubject subject, Guid link, CancellationToken cancellationToken)
+    static async Task<bool> IsLinked(IAccountReader accounts, AccountSubject subject, Guid link, CancellationToken cancellationToken)
     {
         var account = await accounts.FindActive(subject, cancellationToken);
         return account is not null && AuthenticatingLink.IsCurrent(account, link);
