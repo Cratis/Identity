@@ -186,6 +186,16 @@ public partial class Browser(HttpClient client)
         PostForm("/connect/revocation", [new("client_id", ClientId), new("token", token), new("token_type_hint", tokenTypeHint)]);
 
     /// <summary>
+    /// Revokes a token as a named public client.
+    /// </summary>
+    /// <param name="clientId">The client that owns the token.</param>
+    /// <param name="token">The token.</param>
+    /// <param name="tokenTypeHint">The token type hint.</param>
+    /// <returns>The status code and JSON body.</returns>
+    public Task<(HttpStatusCode Status, JsonElement Body)> RevokeAs(string clientId, string token, string tokenTypeHint = "refresh_token") =>
+        PostForm("/connect/revocation", [new("client_id", clientId), new("token", token), new("token_type_hint", tokenTypeHint)]);
+
+    /// <summary>
     /// Introspects a token as the resource server.
     /// </summary>
     /// <param name="token">The token.</param>

@@ -11,18 +11,21 @@ using Microsoft.IdentityModel.Tokens;
 namespace Cratis.Identity.Integration.for_McpAcceptance.given;
 
 /// <summary>
-/// An in-process RFC 9728 resource boundary with real signature, issuer, audience and lifetime validation.
-/// This is not a product tool host or an AuthProxy revocation-cache implementation.
+/// An in-process RFC 9728 resource boundary with real signature, issuer, audience and lifetime validation,
+/// followed by introspection against Identity. It is an acceptance stand-in for the edge's documented behavior
+/// (see <see cref="IntrospectingTokenCheck"/>), not a product tool host and not the AuthProxy implementation.
 /// </summary>
 public sealed class McpResourceValidator : IAsyncDisposable
 {
     readonly WebApplication _application;
     readonly TokenValidationParameters _validation;
     readonly string _metadataUri;
+    readonly IntrospectingTokenCheck _check;
 
-    McpResourceValidator(WebApplication application, McpProduct product, Uri issuer)
+    McpResourceValidator(WebApplication application, McpProduct product, Uri issuer, IntrospectingTokenCheck check)
     {
         _application = application;
+        _check = check;
         _metadataUri = new Uri(new Uri(product.Indicator), "/.well-known/oauth-protected-resource/mcp").AbsoluteUri;
         _validation = new TokenValidationParameters
         {
@@ -53,13 +56,15 @@ public sealed class McpResourceValidator : IAsyncDisposable
     /// </summary>
     /// <param name="product">The independently configured resource.</param>
     /// <param name="issuer">The trusted realm issuer.</param>
+    /// <param name="introspection">A client authorized to call Identity's introspection endpoint for this product.</param>
+    /// <param name="time">The clock for the positive cache.</param>
     /// <returns>The running resource boundary.</returns>
-    public static async Task<McpResourceValidator> Start(McpProduct product, Uri issuer)
+    public static async Task<McpResourceValidator> Start(McpProduct product, Uri issuer, HttpClient introspection, TimeProvider time)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
         var application = builder.Build();
-        var resource = new McpResourceValidator(application, product, issuer);
+        var resource = new McpResourceValidator(application, product, issuer, new IntrospectingTokenCheck(introspection, time));
         await application.StartAsync();
         resource.Client = application.GetTestClient();
         resource.Client.BaseAddress = new Uri(product.Indicator);
@@ -110,7 +115,7 @@ public sealed class McpResourceValidator : IAsyncDisposable
             !string.IsNullOrEmpty(header.Parameter))
         {
             var result = await new JsonWebTokenHandler().ValidateTokenAsync(header.Parameter, _validation);
-            if (result.IsValid)
+            if (result.IsValid && await _check.IsActive(header.Parameter))
             {
                 return Results.Ok();
             }
