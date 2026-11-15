@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Accounts.Operational;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.ConsentFlow.Operational;
 using Cratis.Identity.Operational;
@@ -29,6 +30,7 @@ internal class StorageIndexes(IMongoDatabase database, IOptionsMonitor<OpenIddic
     {
         var options = openIddict.CurrentValue;
         await MongoConsentRequestStore.EnsureIndexes(database, cancellationToken);
+        await MongoBrowserSessionStore.EnsureIndexes(database, cancellationToken);
         await EnsureGrantFences(cancellationToken);
         await EnsureSubjectTokenReplays(cancellationToken);
 

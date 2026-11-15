@@ -2,12 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Globalization;
+using System.Security.Claims;
 using System.Text.Encodings.Web;
-using Cratis.Identity.Accounts;
 using Cratis.Identity.Authorization;
-using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -20,14 +20,12 @@ namespace Cratis.Identity.Integration.given;
 /// <param name="options">The options monitor.</param>
 /// <param name="logger">The logger factory.</param>
 /// <param name="encoder">The URL encoder.</param>
-/// <param name="accounts">The native verified sign-in adapter.</param>
-/// <param name="timeProvider">The trusted test clock.</param>
+/// <param name="signIn">The production GitHub sign-in events.</param>
 internal class FakeUpstream(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
     UrlEncoder encoder,
-    EventSourcedAccountAdapter accounts,
-    TimeProvider timeProvider) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+    GitHubSignInEvents signIn) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     public const string Scheme = "fake-github";
     public const string UserHeader = "x-spec-github-user";
@@ -41,10 +39,26 @@ internal class FakeUpstream(
     protected override async Task HandleChallengeAsync(AuthenticationProperties properties)
     {
         var user = Request.Headers[UserHeader].ToString().Split(':');
-        var observation = new GitHubUser(long.Parse(user[0], CultureInfo.InvariantCulture), user[1], user[1]);
-        var authentication = new GitHubConnection(GitHubConnection.FixedConnectionId, timeProvider).From(observation, FactId.New());
-        var account = await accounts.SignIn(authentication, new(null, observation.Name, observation.Login), CancellationToken.None);
-        await Context.SignInAsync(IdentitySchemes.Session, SessionPrincipal.For(account, Scheme, authentication.AuthTime), new AuthenticationProperties());
+        using var backchannel = new HttpClient(new UserResponse(long.Parse(user[0], CultureInfo.InvariantCulture), user[1]));
+        using var tokens = JsonDocument.Parse("{}");
+        using var tokenResponse = OAuthTokenResponse.Success(tokens);
+        var ticket = new OAuthCreatingTicketContext(
+            new ClaimsPrincipal(new ClaimsIdentity()),
+            new AuthenticationProperties(),
+            Context,
+            new AuthenticationScheme(IdentitySchemes.GitHub, IdentitySchemes.GitHub, typeof(OAuthHandler<OAuthOptions>)),
+            new OAuthOptions { UserInformationEndpoint = "https://api.github.com/user" },
+            backchannel,
+            tokenResponse,
+            tokens.RootElement);
+        await signIn.CreatingTicket(ticket);
+        await Context.SignInAsync(IdentitySchemes.Session, ticket.Principal, ticket.Properties);
         Response.Redirect(properties.RedirectUri);
+    }
+
+    sealed class UserResponse(long id, string login) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new { id, login, name = login }) });
     }
 }

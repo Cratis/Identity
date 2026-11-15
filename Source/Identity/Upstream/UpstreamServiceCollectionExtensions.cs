@@ -1,8 +1,11 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Accounts;
+using Cratis.Identity.Accounts.Operational;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Configuration;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.Upstream;
@@ -16,6 +19,8 @@ internal static class UpstreamServiceCollectionExtensions
     internal static void AddSessionAndUpstreamLogin(this IServiceCollection services, IHostEnvironment environment)
     {
         services.AddScoped<SignedInAccounts>();
+        services.AddSingleton<IBrowserSessionStore, MongoBrowserSessionStore>();
+        services.AddScoped<BrowserSessionValidator>();
         services.AddOptions<UpstreamLoginOptions>();
         services.AddAntiforgery(options =>
         {
@@ -41,6 +46,15 @@ internal static class UpstreamServiceCollectionExtensions
                 options.Cookie.SameSite = SameSiteMode.Lax;
                 options.Cookie.SecurePolicy = environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
                 options.SlidingExpiration = false;
+                options.Events.OnValidatePrincipal = async context =>
+                {
+                    var validator = context.HttpContext.RequestServices.GetRequiredService<BrowserSessionValidator>();
+                    if (context.Principal is null || !await validator.IsValid(context.Principal, context.HttpContext.RequestAborted))
+                    {
+                        context.RejectPrincipal();
+                        await context.HttpContext.SignOutAsync(IdentitySchemes.Session);
+                    }
+                };
                 options.Events.OnRedirectToLogin = context =>
                 {
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;

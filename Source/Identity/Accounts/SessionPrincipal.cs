@@ -19,12 +19,14 @@ internal static class SessionPrincipal
     /// <param name="account">The signed-in <see cref="Account"/>.</param>
     /// <param name="upstreamScheme">The upstream scheme the account signed in through.</param>
     /// <param name="authTime">When the upstream authentication of this session was verified.</param>
+    /// <param name="link">The account link the sign-in authenticated through; a session without one is refused on use.</param>
     /// <returns>The session <see cref="ClaimsPrincipal"/>.</returns>
-    public static ClaimsPrincipal For(Account account, string upstreamScheme, DateTimeOffset authTime)
+    public static ClaimsPrincipal For(Account account, string upstreamScheme, DateTimeOffset authTime, Guid? link = null)
     {
         var identity = new ClaimsIdentity(upstreamScheme, Claims.Name, Claims.Role);
         identity.AddClaim(new Claim(Claims.Subject, account.Id.Value));
         identity.AddClaim(new Claim("sid", Guid.NewGuid().ToString("N")));
+        AuthenticatingLink.Stamp(identity, link);
         identity.AddClaim(new Claim(Claims.Name, account.Name.Value));
         identity.AddClaim(new Claim(IdentityClaims.GitHubId, account.GitHubId.Value));
         identity.AddClaim(new Claim(IdentityClaims.GitHubLogin, account.GitHubLogin.Value));

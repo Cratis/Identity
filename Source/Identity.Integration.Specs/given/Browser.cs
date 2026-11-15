@@ -18,6 +18,7 @@ public partial class Browser(HttpClient client)
 {
     public const string ClientId = "cratis-cli";
     public const string RedirectUri = "http://127.0.0.1:53123/callback";
+    const int MaximumRedirects = 20;
 
     /// <summary>
     /// Gets the underlying client.
@@ -59,18 +60,35 @@ public partial class Browser(HttpClient client)
     /// </summary>
     /// <param name="request">The first request.</param>
     /// <returns>The final response: a page, an error, or a redirect leaving Identity.</returns>
+    /// <exception cref="InvalidOperationException">The redirect limit was exceeded.</exception>
     public async Task<HttpResponseMessage> Send(HttpRequestMessage request)
     {
         var response = await client.SendAsync(request);
-        while (response.StatusCode is HttpStatusCode.Redirect or HttpStatusCode.Found or HttpStatusCode.SeeOther &&
-               response.Headers.Location is { } location &&
-               (!location.IsAbsoluteUri || location.Host == client.BaseAddress.Host))
+        var chain = new List<string> { request.RequestUri.ToString() };
+        while (RedirectOnIdentity(response) is { } location)
         {
+            chain.Add(location.ToString());
             response.Dispose();
+            if (chain.Count > MaximumRedirects + 1)
+            {
+                throw new InvalidOperationException($"Identity exceeded {MaximumRedirects} redirects: {string.Join(" -> ", chain)}");
+            }
+
             response = await client.GetAsync(location);
         }
 
         return response;
+    }
+
+    Uri? RedirectOnIdentity(HttpResponseMessage response)
+    {
+        if (response.StatusCode is not (HttpStatusCode.Redirect or HttpStatusCode.Found or HttpStatusCode.SeeOther))
+        {
+            return null;
+        }
+
+        var location = response.Headers.Location;
+        return location is { IsAbsoluteUri: false } || location?.Host == client.BaseAddress.Host ? location : null;
     }
 
     /// <summary>

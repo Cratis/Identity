@@ -76,7 +76,7 @@ internal class ResourceAuthorization(ITenantDirectory tenants, ConsentPages cons
         }
 
         logger.ConsentGranted(account.Id, clientId, grant.Resource.Audience, tenant.Id, string.Join(' ', grant.Scopes));
-        return OAuthResults.Issue(AccessTokenIdentity.Create(account, clientId, grant, tenant, signedIn.AuthTime));
+        return OAuthResults.Issue(AccessTokenIdentity.Create(account, clientId, grant, tenant, signedIn.AuthTime, signedIn.LinkId));
     }
 
     async Task<Consent> ConsentFor(HttpContext context, Account account, Grant grant, IEnumerable<SelectableTenant> selectable)

@@ -21,7 +21,8 @@ namespace Cratis.Identity.Upstream;
 /// <param name="logger">The <see cref="ILogger"/>.</param>
 /// <param name="timeProvider">The trusted clock.</param>
 /// <param name="endpoints">The registered Identity endpoint paths.</param>
-internal class GitHubSignInEvents(IAccountSignIn accounts, ILogger<GitHubSignInEvents> logger, TimeProvider timeProvider, IOptions<IdentityEndpointOptions>? endpoints = null) : OAuthEvents
+/// <param name="sessions">The server-side browser session record, when registered.</param>
+internal class GitHubSignInEvents(IAccountSignIn accounts, ILogger<GitHubSignInEvents> logger, TimeProvider timeProvider, IOptions<IdentityEndpointOptions>? endpoints = null, IBrowserSessionStore? sessions = null) : OAuthEvents
 {
     /// <inheritdoc/>
     public override Task AccessDenied(AccessDeniedContext context)
@@ -62,11 +63,19 @@ internal class GitHubSignInEvents(IAccountSignIn accounts, ILogger<GitHubSignInE
         var authentication = new GitHubConnection(GitHubConnection.FixedConnectionId, timeProvider).From(user, FactId.New());
         var account = await accounts.SignIn(authentication, new(user.Email, user.Name, user.Login), context.HttpContext.RequestAborted);
         logger.SignedIn(account.Id);
-        context.Principal = SessionPrincipal.For(account, IdentitySchemes.GitHub, authentication.AuthTime);
+        var link = AuthenticatingLink.Find(account, authentication);
+        context.Principal = SessionPrincipal.For(account, IdentitySchemes.GitHub, authentication.AuthTime, link);
+        if (link is { } linkId)
+        {
+            await RecordSession(new BrowserSession(SessionPrincipal.SessionId(context.Principal)!, account.Id.Value, linkId, authentication.AuthTime), context.HttpContext.RequestAborted);
+        }
     }
 
     static bool TemporaryFailure(Exception? failure) => (failure is AccountOperationRefused && string.Equals(failure.Message, "temporarily_unavailable", StringComparison.Ordinal)) ||
         (failure?.InnerException is { } inner && TemporaryFailure(inner));
+
+    Task RecordSession(BrowserSession session, CancellationToken cancellationToken) =>
+        sessions?.Record(session, cancellationToken) ?? Task.CompletedTask;
 
     async Task Fail(HttpContext context, AuthenticationProperties? properties, string reason = "access_denied")
     {

@@ -12,5 +12,6 @@ namespace Cratis.Identity.Revocation;
 /// <param name="Fence">The permanent denial, when present.</param>
 /// <param name="Outbox">The immutable delivery intents and their current delivery states.</param>
 /// <param name="RecoveryEpoch">The independently held epoch at family creation.</param>
+/// <param name="LinkId">The account link the grant was authenticated through; absent on grants written before it was recorded, which are never admitted for refresh.</param>
 [SuppressMessage("Design", "CA1819:Properties should not return arrays", Justification = "The persisted document shape of already-written grant state is a compatibility constraint.")]
-public sealed record GrantState(string GrantId, long Version, string? CurrentRefreshTokenId, GrantFence? Fence, OutboxEntry[] Outbox, long RecoveryEpoch = 0);
+public sealed record GrantState(string GrantId, long Version, string? CurrentRefreshTokenId, GrantFence? Fence, OutboxEntry[] Outbox, long RecoveryEpoch = 0, Guid? LinkId = null);

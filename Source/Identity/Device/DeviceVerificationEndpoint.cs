@@ -114,7 +114,7 @@ internal sealed class DeviceVerificationEndpoint(SignedInAccounts accounts, IAnt
         var tenant = selectable.FirstOrDefault(_ => string.Equals(_.Id, form["tenant"], StringComparison.Ordinal));
         if (tenant is null) return DeviceGrantPages.Unavailable();
         context.GetOpenIddictServerRequest()!.ClientId = clientId;
-        var identity = AccessTokenIdentity.Create(account, clientId, grant, tenant, signedIn.AuthTime);
+        var identity = AccessTokenIdentity.Create(account, clientId, grant, tenant, signedIn.AuthTime, signedIn.LinkId);
         identity.SetPresenters(clientId);
         identity.SetClaim(Claims.Private.DeviceCodeId, principal.GetClaim(Claims.Private.DeviceCodeId));
         principal = new ClaimsPrincipal(identity);
