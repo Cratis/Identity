@@ -8,7 +8,7 @@ using OpenIddict.Abstractions;
 namespace Cratis.Identity.Authorization.ConnectedApps;
 
 /// <summary>Checks ownership against operational authority, never against the connected-apps list.</summary>
-public sealed class ConnectedAppRevocation
+internal sealed class ConnectedAppRevocation
 {
     readonly IOpenIddictAuthorizationManager _authorizations;
     readonly GrantRevocation _revocation;

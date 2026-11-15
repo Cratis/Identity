@@ -16,7 +16,7 @@ namespace Cratis.Identity.Authorization.ConnectedApps;
 /// <param name="Scopes">The approved scope names.</param>
 /// <param name="GrantedAt">When the authorization was created.</param>
 [ReadModel]
-public record ConnectedApp(string AuthorizationId, string ClientId, string DisplayName, IReadOnlyList<string> Scopes, DateTimeOffset GrantedAt)
+internal record ConnectedApp(string AuthorizationId, string ClientId, string DisplayName, IReadOnlyList<string> Scopes, DateTimeOffset GrantedAt)
 {
     /// <summary>Lists at most 1000 active grants for the authenticated account, newest first.</summary>
     /// <param name="http">The realm-bound request.</param>

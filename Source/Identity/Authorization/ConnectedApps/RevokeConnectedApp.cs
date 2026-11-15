@@ -13,7 +13,7 @@ namespace Cratis.Identity.Authorization.ConnectedApps;
 /// <param name="AuthorizationId">The server-generated authorization identifier.</param>
 [Command]
 [Authorize]
-public record RevokeConnectedApp(string AuthorizationId)
+internal record RevokeConnectedApp(string AuthorizationId)
 {
     /// <summary>Commits and confirms the grant fence before reporting success.</summary>
     /// <param name="http">The realm-bound request.</param>

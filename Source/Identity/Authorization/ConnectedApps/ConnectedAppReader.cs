@@ -7,7 +7,7 @@ using OpenIddict.Abstractions;
 namespace Cratis.Identity.Authorization.ConnectedApps;
 
 /// <summary>Reads display metadata from the realm's operational authorization and application managers.</summary>
-public sealed class ConnectedAppReader
+internal sealed class ConnectedAppReader
 {
     const int Limit = 1000;
     readonly IOpenIddictAuthorizationManager _authorizations;
