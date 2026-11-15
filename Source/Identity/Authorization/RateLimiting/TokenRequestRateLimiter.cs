@@ -71,8 +71,7 @@ internal sealed partial class TokenRequestRateLimiter(TimeProvider time, IOption
             }
 
             if (retry == TimeSpan.Zero) return new(true, 0);
-            var trackedClient = clientId is not null && _clients.ContainsKey((source, clientId.Value)) ? clientId.Value : null;
-            LogRefusal(reason, trackedClient, now, settings.Window);
+            LogRefusal(reason, TrackedClient(clientId, source), now, settings.Window);
             return new(false, Math.Max(1, (int)Math.Ceiling(retry.TotalSeconds)));
         }
     }
@@ -88,6 +87,9 @@ internal sealed partial class TokenRequestRateLimiter(TimeProvider time, IOption
 
     [LoggerMessage(LogLevel.Warning, "Token endpoint rate limited: {Reason}; client {Client}; suppressed {Suppressed}")]
     private static partial void RateLimited(ILogger logger, string reason, string client, long suppressed);
+
+    string? TrackedClient(ClientId? clientId, string source) =>
+        clientId is not null && _clients.ContainsKey((source, clientId.Value)) ? clientId.Value : null;
 
     SourceBudget GetSource(string source, int capacity)
     {

@@ -53,7 +53,7 @@ internal sealed class ConsentActivation(
         for (var attempt = 0; attempt < 8; attempt++)
         {
             var request = await store.Read(id, cancellationToken);
-            if (request is null || request.Binding != binding || !gate.Accepts(request.RecoveryEpoch)) return null;
+            if (RejectsDecision(request, binding)) return null;
             if (request.State != ConsentRequestState.Pending) return request;
             var state = DecisionState(request, approve);
             if (await Move(request, state, cancellationToken)) return await store.Read(id, cancellationToken);
@@ -96,6 +96,9 @@ internal sealed class ConsentActivation(
 
     static bool CanClaim([NotNullWhen(true)] ConsentRequest? request, ConsentBinding binding) =>
         request is { State: ConsentRequestState.Active, CodeClaimed: false, AuthorizationId: not null } && request.Binding == binding;
+
+    bool RejectsDecision([NotNullWhen(false)] ConsentRequest? request, ConsentBinding binding) =>
+        request is null || request.Binding != binding || !gate.Accepts(request.RecoveryEpoch);
 
     ConsentRequestState DecisionState(ConsentRequest request, bool approve) => timeProvider.GetUtcNow() >= request.Deadline
         ? ConsentRequestState.Abandoned
@@ -166,10 +169,10 @@ internal sealed class ConsentActivation(
 
     async Task<bool> Eligible(ConsentRequest request, CancellationToken cancellationToken)
     {
-        if (!gate.Accepts(request.RecoveryEpoch) || timeProvider.GetUtcNow() >= request.Deadline) return false;
+        if (!WithinActivationWindow(request)) return false;
         try
         {
-            return await fence.IsClear(request, cancellationToken) && gate.Accepts(request.RecoveryEpoch) && timeProvider.GetUtcNow() < request.Deadline;
+            return await fence.IsClear(request, cancellationToken) && WithinActivationWindow(request);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -180,6 +183,9 @@ internal sealed class ConsentActivation(
             return false;
         }
     }
+
+    bool WithinActivationWindow(ConsentRequest request) =>
+        gate.Accepts(request.RecoveryEpoch) && timeProvider.GetUtcNow() < request.Deadline;
 
     Task<bool> Move(ConsentRequest request, ConsentRequestState state, CancellationToken cancellationToken)
     {
