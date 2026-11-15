@@ -26,6 +26,7 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+          persist-credentials: false
 
       # Keep NuGet packages on the runner's scratch volume beside the checkout, not on the node's small
       # ephemeral storage, where the kubelet evicts the runner under disk pressure.
@@ -76,7 +77,8 @@ jobs:
           case "$SCHEMA_EVENT" in
             pull_request)
               git check-ref-format "refs/heads/$SCHEMA_PR_BASE"
-              git fetch --no-tags origin "refs/heads/$SCHEMA_PR_BASE:refs/remotes/origin/$SCHEMA_PR_BASE"
+              # The full-history checkout already holds the base branch; the checkout keeps no
+              # credentials, so a fetch here would fail against this private repository.
               base_ref="origin/$SCHEMA_PR_BASE"
               ;;
             push)
@@ -90,7 +92,8 @@ jobs:
               fi
               base_ref="$SCHEMA_PREVIOUS_SHA"
               if ! git cat-file -e "$base_ref^{commit}"; then
-                git fetch --no-tags origin "$base_ref"
+                echo "::error::The previous commit is not in the full-history checkout (was the branch force-pushed?)."
+                exit 1
               fi
               ;;
             schedule)
@@ -131,13 +134,18 @@ jobs:
       - name: Pack NuGet
         run: dotnet pack Identity.slnx --configuration Release --no-build --output Artifacts/NuGet -p:Version=0.0.0-ci.${{ github.run_number }}
 
-      - name: Pack npm
-        working-directory: Source/JavaScript/Identity
+      - name: Build and pack npm workspaces
+        working-directory: Source/JavaScript
         run: |
-          npm ci
-          npm run build
-          mkdir -p ../../../Artifacts/npm
-          npm pack --pack-destination ../../../Artifacts/npm
+          corepack enable
+          yarn install --immutable
+          yarn workspace @cratis/identity build
+          yarn workspace @cratis/identity.react compile
+          yarn workspace @cratis/identity.react lint
+          yarn workspace @cratis/identity.react test
+          mkdir -p ../../Artifacts/npm
+          yarn workspace @cratis/identity pack --out ../../../Artifacts/npm/cratis-identity.tgz
+          yarn workspace @cratis/identity.react pack --out ../../../Artifacts/npm/cratis-identity.react.tgz
 
       - name: Upload packages
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

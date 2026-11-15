@@ -159,6 +159,6 @@ After validating the token and introspection caller and proving recovery, Identi
 | `credential_id` | The same non-secret grant UUID as `cid`; omitted with `credential_kind` if no authorization exists |
 | `tid`, `aud`, `scope` | Validated token/grant values only, never request parameters; missing tenant/audience values are not invented |
 | `cache_epoch` | Current nonnegative recovery epoch; consumers invalidate cached verification on change |
-| `cnf` | **Second step: pass-through only**, not DPoP enforcement. A well-formed confirmation comes only from the validated token. Identity does not issue it until DPoP lands; bearer replies omit it. Malformed confirmation errors in OpenIddict before ids are attached, rather than being silently omitted. |
+| `cnf` | **Second step: pass-through only**, not DPoP enforcement. A well-formed confirmation comes only from the validated token. Identity issues it only when opt-in DPoP issuance (`Identity:DPoP:Enabled`, off by default) binds the token; default Bearer replies omit it. Malformed confirmation errors in OpenIddict before ids are attached, rather than being silently omitted. |
 
 Invalid, expired, or revoked tokens remain exactly `{ "active": false }`. Errors and unproven recovery disclose no credential metadata. These fields do not carry product user/tenant keys, roles, or permissions: the product-owned resolver and live authorization checks remain required. Raw tokens must never be logged or used as audit identifiers.

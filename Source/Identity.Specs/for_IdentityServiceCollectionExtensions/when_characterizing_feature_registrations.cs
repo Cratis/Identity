@@ -17,6 +17,7 @@ public class when_characterizing_feature_registrations : given.registered_featur
     /// LinkCeremony, ILinkCeremony and AccountLinking. The initial baseline edit was analyzer-required method chaining.
     /// D3's AddClients(configuration) adds ClientSecretDigester, ClientRegistrationReads, ClientSecretOptions binding,
     /// two validators and startup validation. Only those descriptors and repeated entries were added during the merge.
+    /// Connected-app readers and revocation services are always available, independently of device grants and DPoP.
     /// </summary>
     static string[] ExpectedEnabled => ReadBaseline("enabled");
     static string[] ExpectedDisabled => ReadBaseline("disabled");
@@ -54,9 +55,19 @@ public class when_characterizing_feature_registrations : given.registered_featur
         using var stream = typeof(when_characterizing_feature_registrations).Assembly.GetManifestResourceStream(
             $"Cratis.Identity.for_IdentityServiceCollectionExtensions.Baselines.device-{variant}.txt");
         using var reader = new StreamReader(stream);
-        return given.FrameworkRegistrationSnapshot.IdentityRegistrations(reader.ReadToEnd()
+        var baseline = given.FrameworkRegistrationSnapshot.IdentityRegistrations(reader.ReadToEnd()
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(line => !line.StartsWith("//", StringComparison.Ordinal))
             .ToArray());
+        string[] connectedApps =
+        [
+            "descriptor|Cratis.Identity.Authorization.ConnectedApps.ConnectedAppReader|Scoped|factory",
+            "descriptor|Cratis.Identity.Authorization.ConnectedApps.ConnectedAppRevocation|Scoped|factory"
+        ];
+        return baseline.TakeWhile(entry => entry.StartsWith("descriptor|", StringComparison.Ordinal))
+            .Concat(connectedApps)
+            .Order(StringComparer.Ordinal)
+            .Concat(baseline.SkipWhile(entry => entry.StartsWith("descriptor|", StringComparison.Ordinal)))
+            .ToArray();
     }
 }
