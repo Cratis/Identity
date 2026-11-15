@@ -80,33 +80,38 @@ internal class ExternalIssuerKeys(IHttpClientFactory httpClients, TimeProvider t
         await state.Gate.WaitAsync(cancellationToken);
         try
         {
-            var cached = state.Cached;
-            if (IsFresh(cached) && HasKey(cached!, keyId))
-            {
-                return cached!.Keys;
-            }
-
-            var now = time.GetUtcNow();
-            if (state.LastAttempt is { } last && now - last < _refreshInterval)
-            {
-                // Single-flight and rate-limited: a forged or unknown kid cannot make us hammer the issuer.
-                return IsFresh(cached) ? cached!.Keys : UsableStale(cached);
-            }
-
-            state.LastAttempt = now;
-            var fetched = await Fetch(issuer, cancellationToken);
-            if (fetched is null)
-            {
-                return IsFresh(cached) ? cached!.Keys : UsableStale(cached);
-            }
-
-            state.Cached = new CachedKeys(fetched, now);
-            return fetched;
+            return await Refresh(state, issuer, keyId, cancellationToken);
         }
         finally
         {
             state.Gate.Release();
         }
+    }
+
+    async Task<IReadOnlyCollection<SecurityKey>?> Refresh(IssuerKeys state, ExternalIssuerOptions issuer, string? keyId, CancellationToken cancellationToken)
+    {
+        var cached = state.Cached;
+        if (IsFresh(cached) && HasKey(cached!, keyId))
+        {
+            return cached!.Keys;
+        }
+
+        var now = time.GetUtcNow();
+        if (state.LastAttempt is { } last && now - last < _refreshInterval)
+        {
+            // Single-flight and rate-limited: a forged or unknown kid cannot make us hammer the issuer.
+            return IsFresh(cached) ? cached!.Keys : UsableStale(cached);
+        }
+
+        state.LastAttempt = now;
+        var fetched = await Fetch(issuer, cancellationToken);
+        if (fetched is null)
+        {
+            return IsFresh(cached) ? cached!.Keys : UsableStale(cached);
+        }
+
+        state.Cached = new CachedKeys(fetched, now);
+        return fetched;
     }
 
     bool IsFresh(CachedKeys? cached) => cached is not null && time.GetUtcNow() - cached.FetchedAt < _cacheLifetime;
