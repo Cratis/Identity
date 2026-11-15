@@ -1,10 +1,10 @@
 # Protocol conformance
 
-Identity is an OAuth authorization server for resource access, **not** an OpenID Connect sign-in provider. The executable catalogue lives in `Source/Identity.Integration.Specs/Conformance/Requirements.cs`. It traces our supported profile to RFC 9700 (OAuth security BCP), RFC 8252 (native apps), RFC 7636 (PKCE), RFC 8707 (resource indicators), RFC 9068 (JWT access tokens), RFC 8414 (AS metadata), RFC 9728 (protected-resource metadata), RFC 9207 (issuer response), RFC 7009 (revocation), RFC 7662 (introspection), and the applicable RFC 6749/7517/7518 requirements. This is a focused regression contract, not a claim of complete RFC certification.
+Identity is an OAuth authorization server for resource access. By default it is **not** an OpenID Connect sign-in provider; a restricted OIDC issuer profile ships opt-in behind `Identity:Oidc:IssuanceEnabled` (see [Opt-in OIDC issuer profile](#opt-in-oidc-issuer-profile)). The executable catalogue lives in `Source/Identity.Integration.Specs/Conformance/Requirements.cs`. It traces our supported profile to RFC 9700 (OAuth security BCP), RFC 8252 (native apps), RFC 7636 (PKCE), RFC 8707 (resource indicators), RFC 9068 (JWT access tokens), RFC 8414 (AS metadata), RFC 9728 (protected-resource metadata), RFC 9207 (issuer response), RFC 7009 (revocation), RFC 7662 (introspection), and the applicable RFC 6749/7517/7518 requirements. This is a focused regression contract, not a claim of complete RFC certification.
 
 ## Catalogue
 
-Spec paths below are relative to `Source/Identity.Integration.Specs/`; names omit `.cs`. **22 pass obligations, 1 expected failure (23 total).** “Pass” means a runnable proof is present and expected to pass, not that it was executed locally. Integration and conformance execute **only in CI**. `RequirementAttribute` emits both `Requirement=<ID>` and `Category=Conformance` xUnit v3 traits, so existing proofs are reused rather than copied. The full unit + integration + conformance CI run remains the acceptance check.
+Spec paths below are relative to `Source/Identity.Integration.Specs/`; names omit `.cs`. **The baseline table below lists 23 pass obligations.** The full catalogue in `Requirements.cs` has 48: the baseline plus the device authorization, DPoP, CIMD and OIDC profiles in the sections below. The expected-failure list is empty. “Pass” means a runnable proof is present and expected to pass, not that it was executed locally. Integration and conformance execute **only in CI**. `RequirementAttribute` emits both `Requirement=<ID>` and `Category=Conformance` xUnit v3 traits, so existing proofs are reused rather than copied. The full unit + integration + conformance CI run remains the acceptance check.
 
 Levels describe the supported profile. Exact single-audience selection and IP-literal loopback redirects include stricter issuer policy; the cited RFCs explain their basis. Key overlap is an operational SHOULD policy, not a claim that RFC 8414 mandates a particular overlap duration.
 
@@ -87,6 +87,22 @@ The [supported CIMD subset](client-id-metadata-documents.md) is pinned to draft 
 
 The executable catalogue remains `Conformance/Requirements.cs`; it has no checked-in `conformance.v1.json` mirror. The existing catalogue coverage checks require every new ID to map to discovered facts and reject unknown tags. Network/byte/parser bounds, address pinning, cache/admission floods, sanitization and real-manager freshness are additionally covered by non-integration specs. These are focused profile checks, not complete draft certification.
 
+## Opt-in OIDC issuer profile
+
+OIDC issuance is disabled by default and is enabled with `Identity:Oidc:IssuanceEnabled=true` for registered confidential clients only (see [OpenID Connect sign-in](../README.md#openid-connect-sign-in) and the [OIDC ID-token contract](specs/identity-oidc-v1.md)). Proofs live in `for_Oidc/`. They are compiled locally and execute only in CI. This is the restricted code-flow profile below, not complete OpenID Connect certification.
+
+| Requirement | Reference | Obligation | Proof |
+| --- | --- | --- | --- |
+| `OIDC-OPENID-SCOPE` | OIDC Core §3.1.2.1 | Issue identity-only grants only to registered OIDC clients requesting `openid`. | `for_Oidc/when_a_confidential_client_receives_an_id_token` |
+| `OIDC-ID-TOKEN-CLAIMS` | OIDC Core §2, §3.1.3.7 | Bind signed ID-token claims to the canonical account, client, authentication and nonce. | `for_Oidc/when_reading_the_id_token_claims` |
+| `OIDC-NONCE` | OIDC Core §3.1.2.1, §3.1.3.6 | Require a nonce before login and echo it in the initial ID token. | `for_Oidc/when_nonce_is_required_and_echoed` |
+| `OIDC-ID-TOKEN-SIGNED` | OIDC Core §3.1.3.7 | Sign JWT ID tokens with the published RS256 realm key. | `for_Oidc/when_verifying_the_id_token_signature` |
+| `OIDC-ID-TOKEN-NOT-ACCESS` | RFC 9068 §2.1 | Refuse ID tokens as resource, UserInfo or introspection credentials. | `for_Oidc/when_an_id_token_is_used_as_an_access_token` |
+| `OIDC-USERINFO` | OIDC Core §5.3 | Require a validated identity-only bearer and return bounded current-account claims. | `for_Oidc/when_requesting_userinfo` |
+| `OIDC-USERINFO-SUB-MATCH` | OIDC Core §5.3.2 | Match UserInfo `sub` to the ID token and honor the granted `profile` scope. | `for_Oidc/when_matching_userinfo_to_an_openid_only_token` |
+| `OIDC-CLIENT-AUTH` | OIDC Core §9; RFC 6749 §2.3 | Authenticate confidential clients before redeeming their authorization codes. | `for_Oidc/when_authenticating_the_confidential_client` |
+| `OIDC-DISCOVERY` | OIDC Discovery §3, §4 | Publish only the enabled code-only provider profile from the configured issuer. | `for_Oidc/when_discovering_the_provider` |
+
 ## Running and upgrading
 
 Local gate (never run the integration executable locally):
@@ -106,7 +122,7 @@ CI separates these steps without duplicating tagged proofs:
 ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs -trait "Category=Conformance"
 ```
 
-OpenIddict is centrally pinned to **7.7.1** in `Directory.Packages.props`; this change does not bump it. Dependabot checks NuGet monthly, allows only `OpenIddict*`, groups those updates and opens at most one PR. There is no automatic merge/publish path.
+OpenIddict is centrally pinned to **7.8.0** in `Directory.Packages.props`. Dependabot checks NuGet monthly, allows only `OpenIddict*`, groups those updates and opens at most one PR. There is no automatic merge/publish path.
 
 **Ownership:** Identity module maintainers own OpenIddict upgrades. The dependency PR author performs the checklist; a reviewing Identity maintainer owns the protocol/security decision and confirms the complete CI result before accepting it. Dependabot and the candidate probe propose evidence, not approval.
 
@@ -118,7 +134,7 @@ Before accepting an upgrade:
 4. Update the two central OpenIddict pins together in the actual dependency PR (normally the grouped Dependabot PR). Run the local gate; require green Build and specs CI, including ordinary integration and conformance. The candidate probe alone does not replace that complete gate.
 5. Update this catalogue if supported behavior intentionally changes. Name its normative reference, proof and any explicitly owned non-MUST gap in review.
 
-Scope deliberately excludes OIDC provider behavior, logout protocols, resource-server DPoP, JAR/PAR, upstream login changes and production key management. Changes to those profiles need their own reviewed requirements.
+Scope deliberately excludes OIDC provider behavior beyond the opt-in issuer profile above, logout protocols, resource-server DPoP, JAR/PAR, upstream login changes and production key management. Changes to those profiles need their own reviewed requirements.
 
 ## Client compatibility
 
