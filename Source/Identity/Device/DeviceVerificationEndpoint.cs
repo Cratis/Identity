@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Cratis.Identity.Accounts;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.Tenants;
@@ -52,6 +53,8 @@ internal sealed class DeviceVerificationEndpoint(SignedInAccounts accounts, IAnt
 
     static bool IsDecisionAction(string action) => string.Equals(action, "approve", StringComparison.Ordinal) || string.Equals(action, "deny", StringComparison.Ordinal);
 
+    static string GitHubLabel(Account account) => account.LinkFor(GitHubConnection.Issuer)?.Login.Value ?? account.Name.Value;
+
     string IssuerHost(HttpContext context) => string.IsNullOrEmpty(options.Value.Issuer) ? context.Request.Host.Host : new Uri(options.Value.Issuer).Host;
 
     async Task<IResult> Handle(HttpContext context)
@@ -97,7 +100,7 @@ internal sealed class DeviceVerificationEndpoint(SignedInAccounts accounts, IAnt
         if (action == "review")
         {
             var name = await applications.GetDisplayNameAsync(client, context.RequestAborted) ?? clientId!;
-            return DeviceGrantPages.Review(new(name, grant, DeviceGrantUserCode.Normalize(form[Parameters.UserCode], options.Value.DeviceGrant.UserCodeLength, options.Value.DeviceGrant.UserCodeCharset)!, approval.Create(binding), selectable, antiforgery.GetAndStoreTokens(context), IssuerHost(context), clientId, account.LinkFor(GitHubConnection.Issuer)?.Login.Value ?? account.Name.Value, path));
+            return DeviceGrantPages.Review(new(name, grant, DeviceGrantUserCode.Normalize(form[Parameters.UserCode], options.Value.DeviceGrant.UserCodeLength, options.Value.DeviceGrant.UserCodeCharset)!, approval.Create(binding), selectable, antiforgery.GetAndStoreTokens(context), IssuerHost(context), clientId, GitHubLabel(account), path));
         }
 
         if (!IsDecisionAction(action) || !approval.Matches(form["proof"], binding)) return DeviceGrantPages.Unavailable();

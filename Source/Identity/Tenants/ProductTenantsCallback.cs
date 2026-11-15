@@ -41,16 +41,7 @@ internal class ProductTenantsCallback(IHttpClientFactory clients, ILogger<Produc
         try
         {
             using var client = clients.CreateClient(TenantsCallbackHttpClient.Name);
-            using var request = new HttpRequestMessage(HttpMethod.Post, options.Url)
-            {
-                Content = JsonContent.Create(new TenantsCallbackRequest(resource.Audience, account.Id.Value, gitHub.IdpSub.Value))
-            };
-            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            if (!string.IsNullOrEmpty(options.Secret))
-            {
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", options.Secret);
-            }
-
+            using var request = BuildRequest(options, new TenantsCallbackRequest(resource.Audience, account.Id.Value, gitHub.IdpSub.Value));
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
             if (response.StatusCode != HttpStatusCode.OK)
             {
@@ -66,25 +57,13 @@ internal class ProductTenantsCallback(IHttpClientFactory clients, ILogger<Produc
             }
 
             await using var stream = await response.Content.ReadAsStreamAsync(deadline.Token);
-            var bytes = new byte[MaximumBodyBytes + 1];
-            var length = 0;
-            while (length < bytes.Length)
-            {
-                var read = await stream.ReadAsync(bytes.AsMemory(length), deadline.Token);
-                if (read == 0)
-                {
-                    break;
-                }
-
-                length += read;
-            }
-
-            if (length > MaximumBodyBytes)
+            var bytes = await ReadBounded(stream, deadline.Token);
+            if (bytes.Length > MaximumBodyBytes)
             {
                 return Unavailable(TenantsUnavailableReason.Malformed);
             }
 
-            using var document = JsonDocument.Parse(bytes.AsMemory(0, length), new JsonDocumentOptions { MaxDepth = 8 });
+            using var document = JsonDocument.Parse(bytes, new JsonDocumentOptions { MaxDepth = 8 });
             IEnumerable<SelectableTenant>? tenants;
             try
             {
@@ -136,5 +115,35 @@ internal class ProductTenantsCallback(IHttpClientFactory clients, ILogger<Produc
             logger.Unavailable(resource.Audience, account.Id, reason);
             return new TenantsUnavailable(reason);
         }
+    }
+
+    static HttpRequestMessage BuildRequest(TenantsCallbackOptions options, TenantsCallbackRequest body)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, options.Url) { Content = JsonContent.Create(body) };
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        if (!string.IsNullOrEmpty(options.Secret))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", options.Secret);
+        }
+
+        return request;
+    }
+
+    static async Task<ReadOnlyMemory<byte>> ReadBounded(Stream stream, CancellationToken cancellationToken)
+    {
+        var bytes = new byte[MaximumBodyBytes + 1];
+        var length = 0;
+        while (length < bytes.Length)
+        {
+            var read = await stream.ReadAsync(bytes.AsMemory(length), cancellationToken);
+            if (read == 0)
+            {
+                break;
+            }
+
+            length += read;
+        }
+
+        return bytes.AsMemory(0, length);
     }
 }
