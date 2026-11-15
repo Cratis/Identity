@@ -29,6 +29,10 @@
         ".": {
             "types": "./dist/index.d.ts",
             "default": "./dist/index.js"
+        },
+        "./Authorization/ConnectedApps": {
+            "types": "./dist/Authorization/ConnectedApps/index.d.ts",
+            "default": "./dist/Authorization/ConnectedApps/index.js"
         }
     },
     "scripts": {

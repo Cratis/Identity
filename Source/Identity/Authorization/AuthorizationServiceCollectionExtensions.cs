@@ -1,12 +1,15 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Identity.Authorization.ConnectedApps;
 using Cratis.Identity.Authorization.RateLimiting;
 using Cratis.Identity.Authorization.TokenExchange;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.Hosting;
 using Cratis.Identity.Operational;
+using Cratis.Identity.Revocation;
 using Microsoft.Extensions.Options;
+using OpenIddict.Abstractions;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Cratis.Identity.Authorization;
@@ -61,5 +64,12 @@ internal static class AuthorizationServiceCollectionExtensions
         services.AddScoped<ReadRefreshGrant>();
         services.AddScoped<RefreshIssuance>();
         services.AddScoped<GrantRevocation>();
+        services.AddScoped(serviceProvider => new ConnectedAppReader(
+            serviceProvider.GetRequiredService<IOpenIddictAuthorizationManager>(),
+            serviceProvider.GetRequiredService<IOpenIddictApplicationManager>(),
+            serviceProvider.GetRequiredService<IFenceStore>()));
+        services.AddScoped(serviceProvider => new ConnectedAppRevocation(
+            serviceProvider.GetRequiredService<IOpenIddictAuthorizationManager>(),
+            serviceProvider.GetRequiredService<GrantRevocation>()));
     }
 }

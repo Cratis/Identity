@@ -137,6 +137,16 @@ jobs:
           mkdir -p ../../../Artifacts/npm
           npm pack --pack-destination ../../../Artifacts/npm
 
+      - name: Build and pack optional React UI
+        working-directory: Source/JavaScript/Identity.React
+        run: |
+          corepack enable
+          yarn install --immutable
+          yarn compile
+          yarn lint
+          yarn test
+          yarn pack --out ../../../Artifacts/npm/cratis-identity.react.tgz
+
       - name: Upload packages
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
