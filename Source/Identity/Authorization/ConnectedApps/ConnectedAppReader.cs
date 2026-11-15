@@ -25,25 +25,32 @@ internal sealed class ConnectedAppReader
         _fences = fences;
     }
 
-    /// <summary>Returns display metadata only, propagating operational and fence-read failures.</summary>
+    /// <summary>Scans active grants and describes only the newest candidates, propagating operational and fence-read failures.</summary>
     /// <param name="subject">The validated session account subject.</param>
     /// <param name="cancellationToken">Request cancellation.</param>
-    /// <returns>Up to 1000 active connected apps.</returns>
+    /// <returns>Up to 1000 active connected apps ordered by grant time descending, then authorization ID ordinal.</returns>
     internal async Task<IEnumerable<ConnectedApp>> Read(string subject, CancellationToken cancellationToken)
     {
-        List<ConnectedApp> apps = [];
+        List<(object Authorization, string Id, DateTimeOffset GrantedAt)> candidates = [];
         await foreach (var authorization in _authorizations.FindBySubjectAsync(subject, cancellationToken))
         {
             if (!await _authorizations.HasStatusAsync(authorization, OpenIddictConstants.Statuses.Valid, cancellationToken)) continue;
             var id = await _authorizations.GetIdAsync(authorization, cancellationToken);
             if (string.IsNullOrEmpty(id) || (await _fences.Read(id, cancellationToken))?.Fence is not null) continue;
-            var app = await Describe(authorization, id, cancellationToken);
-            if (app is not null) apps.Add(app);
+            var createdAt = await _authorizations.GetCreationDateAsync(authorization, cancellationToken);
+            candidates.Add((authorization, id, createdAt ?? DateTimeOffset.MinValue));
         }
-        return apps.OrderByDescending(app => app.GrantedAt).ThenBy(app => app.AuthorizationId, StringComparer.Ordinal).Take(Limit).ToArray();
+        List<ConnectedApp> apps = [];
+        foreach (var candidate in candidates.OrderByDescending(candidate => candidate.GrantedAt).ThenBy(candidate => candidate.Id, StringComparer.Ordinal))
+        {
+            var app = await Describe(candidate.Authorization, candidate.Id, candidate.GrantedAt, cancellationToken);
+            if (app is not null) apps.Add(app);
+            if (apps.Count == Limit) break;
+        }
+        return apps.ToArray();
     }
 
-    async Task<ConnectedApp?> Describe(object authorization, string id, CancellationToken cancellationToken)
+    async Task<ConnectedApp?> Describe(object authorization, string id, DateTimeOffset grantedAt, CancellationToken cancellationToken)
     {
         var applicationId = await _authorizations.GetApplicationIdAsync(authorization, cancellationToken);
         var application = string.IsNullOrEmpty(applicationId) ? null : await _applications.FindByIdAsync(applicationId, cancellationToken);
@@ -52,7 +59,6 @@ internal sealed class ConnectedAppReader
         if (string.IsNullOrEmpty(clientId)) return null;
         var displayName = await _applications.GetDisplayNameAsync(application, cancellationToken);
         var scopes = await _authorizations.GetScopesAsync(authorization, cancellationToken);
-        var createdAt = await _authorizations.GetCreationDateAsync(authorization, cancellationToken);
-        return new(id, clientId, string.IsNullOrWhiteSpace(displayName) ? clientId : displayName, scopes.ToArray(), createdAt ?? DateTimeOffset.MinValue);
+        return new(id, clientId, string.IsNullOrWhiteSpace(displayName) ? clientId : displayName, scopes.ToArray(), grantedAt);
     }
 }
