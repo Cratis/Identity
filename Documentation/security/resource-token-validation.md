@@ -18,8 +18,8 @@ Consequence: a revoked token is denied at the edge within the cache window, not 
 | Part | Status | Evidence |
 |---|---|---|
 | Identity `connect/introspect` endpoint, authenticated callers only | Delivered | `Source/Identity/Clients/ClientDescriptors.cs`; spec `Source/Identity.Integration.Specs/for_Introspection/when_a_client_introspects_an_access_token.cs` |
-| Introspection reports an access token inactive after its grant is revoked | Delivered on the train branch `train/identity-20261107-20`, not `main` | Spec `Source/Identity.Integration.Specs/for_Revocation/when_the_cli_revokes_its_refresh_token.cs` (`should_revoke_the_access_token_of_the_grant_for_introspection`) |
-| Revocation fence stores that gate token validation | Delivered on the train branch, not `main` | `Source/Identity/Authorization/RejectFencedGrants.cs`, `FencedTokenStore.cs`, `Source/Identity/Revocation/` |
+| Introspection reports an access token inactive after its grant is revoked | Delivered | Spec `Source/Identity.Integration.Specs/for_Revocation/when_the_cli_revokes_its_refresh_token.cs` (`should_revoke_the_access_token_of_the_grant_for_introspection`) |
+| Revocation fence stores that gate token validation | Delivered | `Source/Identity/Authorization/RejectFencedGrants.cs`, `FencedTokenStore.cs`, `Source/Identity/Revocation/` |
 | Local JWT validation at AuthProxy bearer routes | Delivered | AuthProxy `Source/AuthProxy/BearerRoutes/BearerTokenValidator.cs` |
 | Acceptance stand-in for the edge: local JWT validation, then introspection with a positive cache of at most 30 seconds, no negative cache and fail-closed `/mcp`; revoke-then-denied for both products against the development host | Delivered (integration specs run in CI only) | `Source/Identity.Integration.Specs/for_McpAcceptance/` (`when_a_grant_is_revoked`, `when_a_token_is_not_active`, `when_introspection_is_unavailable`). It models the edge; it does not show that AuthProxy or a product implements this |
 | AuthProxy introspection, positive cache and `/mcp` fail-closed | Decided, pending delivery | AuthProxy issue 255 |
@@ -29,7 +29,7 @@ The shipped `Identity:IntrospectionClients` list is empty in `Source/Identity.Ho
 
 ## Revocation fence and introspection
 
-Revoking a grant marks its authorization revoked, and the fence stores on the train branch consult that authoritative state before token-entry validation, so introspection of a revoked grant's access token returns `active: false`. The code shows this for a refresh-token revoke followed by introspection of the grant's access token. Identity branches `identity-41-revocation-fence` and `identity-42-revocation-recovery` extend the fence log, outbox and recovery epoch. Introspection now exposes the recovery epoch as `cache_epoch`; consumers must discard cached verification results when it changes. No cross-repository consumer implementation is claimed here.
+Revoking a grant marks its authorization revoked, and the fence stores consult that authoritative state before token-entry validation, so introspection of a revoked grant's access token returns `active: false`. The code shows this for a refresh-token revoke followed by introspection of the grant's access token. The fence log, revocation outbox and recovery epoch are in `Source/Identity/Revocation/`. This describes the source, not a production rollout. Introspection now exposes the recovery epoch as `cache_epoch`; consumers must discard cached verification results when it changes. No cross-repository consumer implementation is claimed here.
 
 ## Authoritative introspection metadata
 
@@ -46,9 +46,9 @@ The advisory JWT `cid` uses the same UUID as `credential_id` and is stable throu
 
 Invalid, expired, and revoked tokens remain exactly `{ "active": false }`, without ids or a cache epoch. Authentication/authorization errors and unproven recovery do not expose credential metadata. These fields grant no product authority: a product-owned resolver still maps issuer, subject, and `tid` to its user/tenant keys, roles, and permissions. Never log or audit token values.
 
-### Second step: confirmation pass-through, not DPoP
+### Second step: confirmation pass-through
 
-OpenIddict passes through a well-formed `cnf` object from the validated token only. Identity does not currently issue DPoP-bound tokens, so bearer introspection has no `cnf`; this does not implement or claim proof validation. Malformed `cnf` errors in OpenIddict before credential metadata is attached (fail-closed, no ids), rather than being silently omitted. No request thumbprint is used.
+OpenIddict passes through a well-formed `cnf` object from the validated token only. By default Identity issues Bearer tokens without `cnf`, so default introspection has no `cnf`. Issuer-side DPoP is opt-in (`Identity:DPoP:Enabled`, see [Sender-bound token issuance](../../README.md#sender-bound-token-issuance-opt-in)); when it is enabled, bound access tokens carry `cnf.jkt` and introspection passes it through. Introspection does not implement or claim proof validation, and resource-server enforcement of DPoP is not claimed here. Malformed `cnf` errors in OpenIddict before credential metadata is attached (fail-closed, no ids), rather than being silently omitted. No request thumbprint is used.
 
 ## Failure modes
 

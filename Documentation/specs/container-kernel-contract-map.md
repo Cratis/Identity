@@ -40,7 +40,8 @@ not weaken either contract and is not permission to remove the assertion.
 - [`ChronicleKernel`](../../Source/Identity.Integration.Specs/given/ChronicleKernel.cs)
   selects `IDENTITY_CHRONICLE_IMAGE`, defaulting to `cratis/chronicle:19.144.0-development`.
   [`Directory.Packages.props`](../../Directory.Packages.props) pins the Chronicle
-  client to `19.144.0`, Arc to `22.185.0` and OpenIddict to `7.8.0`.
+  client packages to `19.160.0`, Arc to `22.185.0` and OpenIddict to `7.8.0`.
+  The kernel image tag is selected independently of the client package pin.
   The pin is a version-tag contract, not an image-digest guarantee. Changing a pin
   or overriding the image requires retaining the registration checks below.
 - Development, OIDC, DPoP, metadata-client, exchange and key-rotation hosts extend
