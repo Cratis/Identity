@@ -77,7 +77,8 @@ jobs:
           case "$SCHEMA_EVENT" in
             pull_request)
               git check-ref-format "refs/heads/$SCHEMA_PR_BASE"
-              git fetch --no-tags origin "refs/heads/$SCHEMA_PR_BASE:refs/remotes/origin/$SCHEMA_PR_BASE"
+              # The full-history checkout already holds the base branch; the checkout keeps no
+              # credentials, so a fetch here would fail against this private repository.
               base_ref="origin/$SCHEMA_PR_BASE"
               ;;
             push)
@@ -91,7 +92,8 @@ jobs:
               fi
               base_ref="$SCHEMA_PREVIOUS_SHA"
               if ! git cat-file -e "$base_ref^{commit}"; then
-                git fetch --no-tags origin "$base_ref"
+                echo "::error::The previous commit is not in the full-history checkout (was the branch force-pushed?)."
+                exit 1
               fi
               ;;
             schedule)
