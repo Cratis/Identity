@@ -21,10 +21,11 @@ Consequence: a revoked token is denied at the edge within the cache window, not 
 | Introspection reports an access token inactive after its grant is revoked | Delivered on the train branch `train/identity-20261107-20`, not `main` | Spec `Source/Identity.Integration.Specs/for_Revocation/when_the_cli_revokes_its_refresh_token.cs` (`should_revoke_the_access_token_of_the_grant_for_introspection`) |
 | Revocation fence stores that gate token validation | Delivered on the train branch, not `main` | `Source/Identity/Authorization/RejectFencedGrants.cs`, `FencedTokenStore.cs`, `Source/Identity/Revocation/` |
 | Local JWT validation at AuthProxy bearer routes | Delivered | AuthProxy `Source/AuthProxy/BearerRoutes/BearerTokenValidator.cs` |
+| Acceptance stand-in for the edge: local JWT validation, then introspection with a positive cache of at most 30 seconds, no negative cache and fail-closed `/mcp`; revoke-then-denied for both products against the development host | Delivered (integration specs run in CI only) | `Source/Identity.Integration.Specs/for_McpAcceptance/` (`when_a_grant_is_revoked`, `when_a_token_is_not_active`, `when_introspection_is_unavailable`). It models the edge; it does not show that AuthProxy or a product implements this |
 | AuthProxy introspection, positive cache and `/mcp` fail-closed | Decided, pending delivery | AuthProxy issue 255 |
 | `Authorization` pass-through opt-in for anonymous routes | Decided, pending delivery | AuthProxy issue 283 |
 
-The shipped `Identity:IntrospectionClients` list is empty in `Source/Identity.Host/appsettings.json` and `Source/Identity.CratisId/appsettings.json`. AuthProxy needs an entry there before it can introspect. No caller of `connect/introspect` exists in Direct, Studio, AuthProxy or Arc today.
+The shipped `Identity:IntrospectionClients` list is empty in `Source/Identity.Host/appsettings.json` and `Source/Identity.CratisId/appsettings.json`. AuthProxy needs an entry there before it can introspect; the entry fields and the audience rule are in [Gateway introspection client registration](../specs/identity-credential-record-v1.md#4a-gateway-introspection-client-registration). No caller of `connect/introspect` exists in Direct, Studio, AuthProxy or Arc today.
 
 ## Revocation fence and introspection
 

@@ -26,4 +26,20 @@ public interface IMcpAcceptanceHarness
     /// </summary>
     /// <param name="browser">The browser that completed the first authorization.</param>
     void PreventFurtherSignIns(Browser browser);
+
+    /// <summary>
+    /// Creates a client authorized as the product's introspection client.
+    /// </summary>
+    /// <param name="product">The product whose resource server introspects.</param>
+    /// <param name="handler">A handler placed in front of Identity's introspection endpoint.</param>
+    /// <returns>The authorized client.</returns>
+    HttpClient CreateIntrospectionClient(McpProduct product, DelegatingHandler handler);
+
+    /// <summary>
+    /// Revokes a grant by revoking its refresh token as the registered client.
+    /// </summary>
+    /// <param name="browser">The Identity transport.</param>
+    /// <param name="refreshToken">The grant's refresh token.</param>
+    /// <returns>The revocation endpoint's status code.</returns>
+    Task<HttpStatusCode> Revoke(Browser browser, string refreshToken);
 }

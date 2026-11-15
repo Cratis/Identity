@@ -23,6 +23,7 @@ public class when_inspecting_mongodb_usage : Specification
     [Fact] void should_keep_mongodb_out_of_domain_signatures() => _violations.ShouldBeEmpty();
 
     static bool Allowed(Type type) => _legacyAllowList.Contains(type) ||
+        type.Namespace == "Cratis.Identity.Accounts.Operational" ||
         type.Namespace == "Cratis.Identity.ConsentFlow.Operational" ||
         type.Namespace == "Cratis.Identity.Device.Operational" ||
         type.Namespace == "Cratis.Identity.DPoP.Operational" ||

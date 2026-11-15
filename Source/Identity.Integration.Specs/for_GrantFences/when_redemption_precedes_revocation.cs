@@ -21,7 +21,7 @@ public class when_redemption_precedes_revocation(IdentityHost host) : IAsyncLife
         var second = new MongoFenceStore(operational, TimeProvider.System, log);
         var grant = Guid.NewGuid().ToString("D");
         var subject = Guid.NewGuid().ToString("D");
-        var read = await first.RecordFamilyStart(grant, "presented-entry", subject, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(30), CancellationToken.None);
+        var read = await first.RecordFamilyStart(new FamilyStart(grant, "presented-entry", subject, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(30)), CancellationToken.None);
         _installed = await first.RedeemAndInstall(grant, "presented-entry", "successor-entry", read.Version, CancellationToken.None);
         await second.Commit(grant, subject, RevocationReason.Revoked, CancellationToken.None);
         _state = await first.Read(grant, CancellationToken.None);

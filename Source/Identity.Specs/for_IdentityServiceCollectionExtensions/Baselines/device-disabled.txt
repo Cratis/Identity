@@ -13,8 +13,10 @@ descriptor|Cratis.Chronicle.IEventStore|Singleton|instance
 descriptor|Cratis.Chronicle.ReadModels.IDecisionReads|Scoped|factory
 descriptor|Cratis.Chronicle.ReadModels.IReadModels|Singleton|instance
 descriptor|Cratis.Identity.Accounts.AccountReader|Scoped|Cratis.Identity.Accounts.AccountReader
+descriptor|Cratis.Identity.Accounts.BrowserSessionValidator|Scoped|Cratis.Identity.Accounts.BrowserSessionValidator
 descriptor|Cratis.Identity.Accounts.EventSourcedAccountAdapter|Scoped|Cratis.Identity.Accounts.EventSourcedAccountAdapter
 descriptor|Cratis.Identity.Accounts.IAccountReader|Scoped|factory
+descriptor|Cratis.Identity.Accounts.IBrowserSessionStore|Singleton|Cratis.Identity.Accounts.Operational.MongoBrowserSessionStore
 descriptor|Cratis.Identity.Accounts.Linking.AccountLinking|Scoped|Cratis.Identity.Accounts.Linking.AccountLinking
 descriptor|Cratis.Identity.Accounts.Linking.ILinkCeremony|Scoped|factory
 descriptor|Cratis.Identity.Accounts.Linking.LinkCeremony|Scoped|Cratis.Identity.Accounts.Linking.LinkCeremony
@@ -23,6 +25,7 @@ descriptor|Cratis.Identity.Accounts.Lookup.IUpstreamLookupKeys|Singleton|Cratis.
 descriptor|Cratis.Identity.Accounts.Lookup.UpstreamKeyDigester|Singleton|Cratis.Identity.Accounts.Lookup.UpstreamKeyDigester
 descriptor|Cratis.Identity.Accounts.Lookup.UpstreamLookups|Scoped|Cratis.Identity.Accounts.Lookup.UpstreamLookups
 descriptor|Cratis.Identity.Authorization.AuthorizationEndpoint|Scoped|Cratis.Identity.Authorization.AuthorizationEndpoint
+descriptor|Cratis.Identity.Authorization.CaptureAuthenticatingLink|Scoped|Cratis.Identity.Authorization.CaptureAuthenticatingLink
 descriptor|Cratis.Identity.Authorization.ConsentPages|Scoped|Cratis.Identity.Authorization.ConsentPages
 descriptor|Cratis.Identity.Authorization.GrantRevocation|Scoped|Cratis.Identity.Authorization.GrantRevocation
 descriptor|Cratis.Identity.Authorization.IGrantPolicy|Singleton|Cratis.Identity.Authorization.GrantPolicy
@@ -200,6 +203,7 @@ descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.A
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreOptions, OpenIddict.Server.AspNetCore, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreOptions, OpenIddict.Server.AspNetCore, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreConfiguration
+descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
@@ -822,6 +826,7 @@ repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.Ope
 repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreConfiguration
+repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.OpenIddictServerOptions, OpenIddict.Server, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance

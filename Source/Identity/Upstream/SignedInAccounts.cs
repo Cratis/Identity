@@ -46,7 +46,7 @@ internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginO
         }
 
         var account = await accounts.FindActive(subject!, context.RequestAborted);
-        return account is null ? null : new SignedInAccount(account, authTime.Value, SessionPrincipal.SessionId(session.Principal));
+        return account is null ? null : new SignedInAccount(account, authTime.Value, SessionPrincipal.SessionId(session.Principal), AuthenticatingLink.Of(session.Principal));
     }
 
     /// <summary>

@@ -12,5 +12,5 @@ public class when_a_missing_grant_cannot_be_proven_live : for_RedeemRefreshToken
     async Task Because() => await _handler.HandleAsync(_context);
     [Fact] void should_deny_unknown_family_state() => _context.Error.ShouldEqual(Errors.InvalidGrant);
     [Fact] void should_not_install_a_successor() => _issuance.SuccessorId.ShouldBeNull();
-    [Fact] void should_not_create_permission_from_absence() => _fences.DidNotReceive().RecordFamilyStart(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<DateTimeOffset>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
+    [Fact] void should_not_create_permission_from_absence() => _fences.DidNotReceive().RecordFamilyStart(Arg.Any<FamilyStart>(), Arg.Any<CancellationToken>());
 }

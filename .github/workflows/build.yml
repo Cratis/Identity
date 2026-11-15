@@ -52,10 +52,12 @@ jobs:
       - name: Check vector baseline immutability
         env:
           BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
-        run: node scripts/check-vector-baseline-immutability.mjs
+        run: |
+          node scripts/check-vector-baseline-immutability.mjs
+          node scripts/package-contract-vectors.mjs check
 
       - name: Vector tooling tests
-        run: node --test scripts/package-authorization-vectors.test.mjs scripts/check-vector-baseline-immutability.test.mjs
+        run: node --test scripts/package-authorization-vectors.test.mjs scripts/check-vector-baseline-immutability.test.mjs scripts/package-contract-vectors.test.mjs
 
       - name: Build (Release, zero warnings)
         run: dotnet build Identity.slnx --configuration Release -warnaserror -p:CratisProxiesOutputPath=

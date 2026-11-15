@@ -62,14 +62,16 @@ internal static class AccessTokenIdentity
     /// <param name="grant">The <see cref="Grant"/>.</param>
     /// <param name="tenant">The <see cref="SelectableTenant"/> the user selected.</param>
     /// <param name="authTime">When the upstream authentication of the signed-in session was verified.</param>
+    /// <param name="link">The account link the session authenticated through; a grant without one is refused on refresh.</param>
     /// <returns>The <see cref="ClaimsIdentity"/> to sign in with.</returns>
-    public static ClaimsIdentity Create(Account account, string clientId, Grant grant, SelectableTenant tenant, DateTimeOffset authTime)
+    public static ClaimsIdentity Create(Account account, string clientId, Grant grant, SelectableTenant tenant, DateTimeOffset authTime, Guid? link = null)
     {
         var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
         identity.SetClaim(IdentityClaims.TenantId, tenant.Id);
         identity.SetScopes(grant.Scopes);
         identity.SetResources(grant.Resource.Audience);
         SetAuthTime(identity, authTime.ToUnixTimeSeconds());
+        AuthenticatingLink.Stamp(identity, link);
         Apply(identity, account, clientId, grant.Resource.ReceivesUpstreamIdentity);
         return identity;
     }

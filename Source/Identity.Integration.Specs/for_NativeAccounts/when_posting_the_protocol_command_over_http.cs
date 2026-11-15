@@ -1,16 +1,10 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Security.Claims;
 using Cratis.Chronicle;
 using Cratis.Chronicle.Events;
-using Cratis.Identity.Authorization;
 using Cratis.Identity.Contracts.Accounts;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.Integration.for_NativeAccounts;
 
@@ -28,14 +22,15 @@ public class when_posting_the_protocol_command_over_http(IdentityHost host)
     [InlineData(true, true, "tenant-beta")]
     public async Task should_refuse_before_native_handlers_without_appending_events(bool authenticated, bool validate, string tenant)
     {
-        using var client = host.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var browser = host.CreateBrowser();
+        using var client = browser.Client;
         client.DefaultRequestHeaders.Add("x-cratis-tenant-id", tenant);
         if (authenticated)
         {
-            var options = host.Services.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>().Get(IdentitySchemes.Session);
-            var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim("sub", AccountSubject.New().Value)], IdentitySchemes.Session));
-            var ticket = new AuthenticationTicket(principal, IdentitySchemes.Session);
-            client.DefaultRequestHeaders.Add("Cookie", $"{options.Cookie.Name}={options.TicketDataFormat.Protect(ticket)}");
+            using var consent = await browser.Authorize(Browser.CliAuthorization(Browser.Pkce().Challenge));
+            consent.StatusCode.ShouldEqual(HttpStatusCode.OK);
+            using var mine = await client.GetAsync("/api/accounts/mine", TestContext.Current.CancellationToken);
+            mine.StatusCode.ShouldEqual(HttpStatusCode.OK);
         }
 
         await using var scope = host.Services.CreateAsyncScope();

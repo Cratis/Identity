@@ -54,6 +54,10 @@ Offline access JWT validation retains the accepted **630-second residual window*
 
 `GrantBoundRevocationFence` is conservative infrastructure for the dormant consent flow, not a new endpoint. A clear grant alone cannot prove session liveness or restore safety. Without authoritative session/recovery evidence it denies activation. It is not wired over the existing consent defaults; live consent integration remains separate.
 
+## Authenticating link
+
+Each grant family records the account link it authenticated through, and each browser session does the same in the `browser_sessions` collection. Refresh admission and the session cookie check that the link is still current. The check is lazy and fail-closed: an unlinked, missing or unreadable link refuses the use and fences the family. Eager fencing when a link is removed belongs to #41. Grants and cookies created before this change carry no link and are refused, so users sign in again; #110 owns migration.
+
 ## Internal event identities
 
 These generation-one events use Chronicle's default event type id, the short CLR type name ([identity-events v1.2 amendment](../../../Documentation/specs/identity-events-v1.2-amendment.md)). Operational entry identities and submitted token values never enter their schemas. Grant/family event-source UUIDs use a domain-separated deterministic mapping of the operational authorization identifier. There is no Public reactor or publication until the revocation gate permits it.

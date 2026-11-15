@@ -82,3 +82,13 @@ The corpus covers N+1 fences ahead of policy, each lagging coordinate independen
 - Measure source-to-consumer progress and heartbeat age, including clock uncertainty, across Identity, AuthProxy and Arc; demonstrate the 60-second and 5-second targets without local-receipt resets.
 - Specify and execute partition/recovery tests: stop each feed, delay/replay events, pause/rebuild a projection, resume heartbeats before projection catch-up, and advance fences at the authorization boundary. Prove refusal until both coordinates are applied and live membership is known.
 - Obtain #14 sign-off for this draft after the evidence required by #69. No runtime conformance or release readiness is claimed here. Consumer work remains [Cratis/Arc#3708](https://github.com/Cratis/Arc/issues/3708) and [Cratis/AuthProxy#255](https://github.com/Cratis/AuthProxy/issues/255).
+
+## 9. Implementers and pinned vector version
+
+This table is informational and not part of the normative contract. "Pinned vector version" names the vector artifact an implementer consumes: the `identity-contract-vectors` bundle (see [Vector artifact](README.md#vector-artifact)) or a per-spec artifact. A row says what an implementer runs, not that it passes; data vectors do not imply a passing conformance suite. "To be confirmed" means the implementer repository has not confirmed the fact here.
+
+| Implementer | Runs | Pinned vector version | Not applicable (reason) |
+|---|---|---|---|
+| Identity | Data only; no executable reader | This repository's tree; bundle 1.0.0 once tagged | Not run by Identity: data only, not implemented or passing conformance tests |
+| Arc | To be confirmed by the implementer repository | To be confirmed by the implementer repository | To be confirmed by the implementer repository |
+| AuthProxy | To be confirmed by the implementer repository | To be confirmed by the implementer repository | To be confirmed by the implementer repository |

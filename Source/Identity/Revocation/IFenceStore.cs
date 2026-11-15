@@ -21,6 +21,12 @@ internal interface IFenceStore
     Task<GrantFence> Commit(string grantId, string subject, RevocationReason reason, CancellationToken cancellationToken);
 
     /// <summary>Admits the initial family and its outbox intent atomically; never overwrites an existing family.</summary>
+    /// <param name="start">The family admission, including the authenticating link.</param>
+    /// <param name="cancellationToken">Cancellation.</param>
+    /// <returns>The authoritative winner, including a concurrent fence.</returns>
+    Task<GrantState> RecordFamilyStart(FamilyStart start, CancellationToken cancellationToken);
+
+    /// <summary>Admits the initial family without an authenticating link; such a family is never admitted for refresh.</summary>
     /// <param name="grantId">The authorization.</param>
     /// <param name="tokenId">The initial entry.</param>
     /// <param name="subject">The account.</param>
@@ -28,7 +34,8 @@ internal interface IFenceStore
     /// <param name="absoluteExpiresAt">The original absolute expiry.</param>
     /// <param name="cancellationToken">Cancellation.</param>
     /// <returns>The authoritative winner, including a concurrent fence.</returns>
-    Task<GrantState> RecordFamilyStart(string grantId, string tokenId, string subject, DateTimeOffset startedAt, DateTimeOffset absoluteExpiresAt, CancellationToken cancellationToken);
+    Task<GrantState> RecordFamilyStart(string grantId, string tokenId, string subject, DateTimeOffset startedAt, DateTimeOffset absoluteExpiresAt, CancellationToken cancellationToken) =>
+        RecordFamilyStart(new FamilyStart(grantId, tokenId, subject, startedAt, absoluteExpiresAt), cancellationToken);
 
     /// <summary>Consumes and installs against the same revision as revoke.</summary>
     /// <param name="grantId">The authorization.</param>
