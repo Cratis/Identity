@@ -28,12 +28,7 @@ internal sealed class ClientIdMetadataDocumentFetcher(HttpClient http, MetadataD
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             request.Headers.UserAgent.ParseAdd("Cratis-Identity");
             using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
-            var refusal = ValidateHeaders(response);
-            if (refusal != MetadataRefusal.None) return MetadataDocumentResult.Refused(refusal);
-            var bytes = await ReadBounded(response.Content, deadline.Token);
-            if (bytes is null) return MetadataDocumentResult.Refused(MetadataRefusal.Size);
-            var result = parser.Parse(clientId.Value, bytes);
-            return result with { Lifetime = Freshness(response) };
+            return await ReadResponse(clientId, response, deadline.Token);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
@@ -63,6 +58,16 @@ internal sealed class ClientIdMetadataDocumentFetcher(HttpClient http, MetadataD
         return response.Content.Headers.ContentLength > options.MaxDocumentBytes ? MetadataRefusal.Size : MetadataRefusal.None;
     }
 
+    async Task<MetadataDocumentResult> ReadResponse(ClientId clientId, HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        var refusal = ValidateHeaders(response);
+        if (refusal != MetadataRefusal.None) return MetadataDocumentResult.Refused(refusal);
+        var bytes = await ReadBounded(response.Content, cancellationToken);
+        if (bytes is null) return MetadataDocumentResult.Refused(MetadataRefusal.Size);
+        var result = parser.Parse(clientId.Value, bytes);
+        return result with { Lifetime = Freshness(response) };
+    }
+
     async Task<byte[]?> ReadBounded(HttpContent content, CancellationToken cancellationToken)
     {
         await using var stream = await content.ReadAsStreamAsync(cancellationToken);
@@ -82,8 +87,11 @@ internal sealed class ClientIdMetadataDocumentFetcher(HttpClient http, MetadataD
         if (PreventsReuse(response.Headers)) return TimeSpan.Zero;
         var lifetime = OriginLifetime(response) - (response.Headers.Age ?? TimeSpan.Zero);
         if (lifetime <= TimeSpan.Zero) return TimeSpan.Zero;
-        return lifetime < options.MinCacheTtl ? options.MinCacheTtl : lifetime < options.MaxCacheTtl ? lifetime : options.MaxCacheTtl;
+        return ClampLifetime(lifetime);
     }
+
+    TimeSpan ClampLifetime(TimeSpan lifetime) =>
+        lifetime < options.MinCacheTtl ? options.MinCacheTtl : lifetime < options.MaxCacheTtl ? lifetime : options.MaxCacheTtl;
 
     TimeSpan OriginLifetime(HttpResponseMessage response)
     {
