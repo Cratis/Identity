@@ -14,13 +14,22 @@ public abstract class a_signed_in_mcp_client(IMcpAcceptanceHarness harness) : Sp
     protected McpResourceValidator Studio;
     protected JsonElement DirectTokens;
     protected JsonElement StudioTokens;
+    protected ManualTimeProvider Time = new();
+    protected ControlledIntrospection DirectIntrospection = new();
+    protected ControlledIntrospection StudioIntrospection = new();
     Browser _browser;
+
+    protected string DirectAccessToken => DirectTokens.GetProperty("access_token").GetString()!;
+    protected string StudioAccessToken => StudioTokens.GetProperty("access_token").GetString()!;
+
+    protected Task<HttpStatusCode> RevokeDirect() => harness.Revoke(_browser, DirectTokens.GetProperty("refresh_token").GetString());
+    protected Task<HttpStatusCode> RevokeStudio() => harness.Revoke(_browser, StudioTokens.GetProperty("refresh_token").GetString());
 
     async Task Establish()
     {
         var browser = _browser = harness.CreateBrowser();
-        Direct = await McpResourceValidator.Start(harness.Direct, harness.Issuer);
-        Studio = await McpResourceValidator.Start(harness.Studio, harness.Issuer);
+        Direct = await McpResourceValidator.Start(harness.Direct, harness.Issuer, harness.CreateIntrospectionClient(harness.Direct, DirectIntrospection), Time);
+        Studio = await McpResourceValidator.Start(harness.Studio, harness.Issuer, harness.CreateIntrospectionClient(harness.Studio, StudioIntrospection), Time);
         var directAuthorization = await Direct.Discover(browser, harness.Direct);
         var studioAuthorization = await Studio.Discover(browser, harness.Studio);
         DirectTokens = await McpSignIn.Authorize(browser, harness, harness.Direct, directAuthorization);

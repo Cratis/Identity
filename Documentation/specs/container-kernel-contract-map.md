@@ -178,7 +178,9 @@ HTTP status assertion. For parameterized methods it includes every data row.
 | `for_Revocation/when_a_revoked_token_is_introspected_again` | All | Active-before/inactive-after lifecycle; denial source outage never yields active. |
 | `for_Revocation/when_chronicle_is_unavailable` | All | Revocation acknowledgement and online refresh denial do not require Chronicle. |
 | `for_Revocation/when_projection_progress_is_held` | All | Revocation and denial work without projection progress; projection is never denial authority. |
-| `for_Revocation/when_a_revoked_token_calls_a_resource_server_mcp_route` | All | Real edge revocation enforcement; retained conditional gap, not evidence of an executed edge check. |
+| `for_McpAcceptance/when_a_grant_is_revoked` | All | Acceptance stand-in for the edge introspects with a positive cache of at most 30 seconds; a revoked grant is refused on `/mcp` per product once the window passes. |
+| `for_McpAcceptance/when_a_token_is_not_active` | All | Active answers are cached inside the window; refusals are never cached. |
+| `for_McpAcceptance/when_introspection_is_unavailable` | All | Unreachable, error, non-JSON or incomplete introspection answers refuse the token (fail closed). |
 | `for_TokenStorage/when_a_refresh_token_entry_expired_in_the_store` | All | Expired entry is `invalid_grant`, but expiry alone does not revoke the live grant as reuse. |
 | `for_TokenStorage/when_an_authorization_code_entry_expired_in_the_store` | All | Expired stored authorization code is `invalid_grant`. |
 | `for_TokenStorage/when_reading_the_token_indexes` | All | Expiration-date TTL index uses zero delay; retention configuration is Identity-owned. |
@@ -236,7 +238,7 @@ HTTP status assertion. For parameterized methods it includes every data row.
 | `for_TokenRateLimiting/when_the_token_endpoint_is_flooded` | All | Original invalid-client result before limit; generic 429 before authentication; full-window retry; protocol validation resumes afterward. |
 | `for_McpAcceptance/when_one_sign_in_authorizes_both_products` | All | One upstream sign-in permits both resources but produces separate refresh grants. |
 | `for_McpAcceptance/when_product_tokens_cross_resource_boundaries` | All | Each token accepted at own resource, refused at the other. |
-| `for_McpAcceptance/when_a_grant_is_revoked` | All | Retained conditional gap: both real product/edge paths must refuse revoked grants within thirty seconds. |
+| `for_McpAcceptance/when_a_grant_is_revoked` | All | Acceptance stand-in refuses each product's revoked grant once the thirty-second window passes; real product/edge enforcement is not covered here. |
 | `for_McpAcceptance/when_an_mcp_tool_has_no_server_owned_ceiling` | All | Retained conditional gap: tool without a server-owned scope ceiling must be refused even with a valid token. |
 
 ## Platform candidates: retain until equivalent upstream coverage is named
@@ -302,13 +304,9 @@ Nightly runs do not manufacture a nonexistent push `before` revision.
 ### Explicit execution gaps
 
 The two image facts intentionally skip in the ordinary integration lane and run
-with the opt-in in the image lane. Three product/edge obligations remain
-conditional and are **not claimed as covered by nightly success**:
+with the opt-in in the image lane. One product obligation remains
+conditional and is **not claimed as covered by nightly success**:
 
-- `for_Revocation/when_a_revoked_token_calls_a_resource_server_mcp_route`: real edge
-  introspection/cache enforcement is blocked on the existing AuthProxy dependency.
-- `for_McpAcceptance/when_a_grant_is_revoked`: local JWT-only resource stubs do not
-  prove the real products' revocation-cache bound.
 - `for_McpAcceptance/when_an_mcp_tool_has_no_server_owned_ceiling`: local stubs
   have no product dispatcher/tool policy.
 

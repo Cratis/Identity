@@ -1,0 +1,22 @@
+{
+    "name": "bound-without-proof-refuse",
+    "description": "Describes gateway behavior for a hypothetical DPoP-bound token (Identity issues none yet): presented as plain Bearer with no proof it is refused and never downgraded to unbound.",
+    "given": {
+        "authorization_scheme": "Bearer",
+        "introspection_response": {
+            "active": true,
+            "credential_kind": "oauth-grant",
+            "credential_id": "6f1c2b4e-9d3a-4c58-8a71-2e5b0d7a91c3",
+            "aud": "direct-mcp",
+            "tid": "tenant-fixture",
+            "scope": "direct:read",
+            "cnf": { "jkt": "xx0BcA-wMohw8atYDJOe6peGModklG2wRHBlXHMvl0M" },
+            "cache_epoch": 7
+        }
+    },
+    "when": { "action": "build_oauth_envelope_at_authproxy" },
+    "then": {
+        "outcome": "refuse",
+        "downgraded_to_unbound": false
+    }
+}
