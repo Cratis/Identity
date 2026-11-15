@@ -85,6 +85,14 @@ internal sealed partial class TokenRequestRateLimiter(TimeProvider time, IOption
         return counter;
     }
 
+    static DateTimeOffset SourceExpiry(SourceBudget budget)
+    {
+        var expiry = budget.Requests.Expires;
+        if (budget.ClientOverflow.Expires > expiry) expiry = budget.ClientOverflow.Expires;
+        if (budget.ExchangeOverflow.Expires > expiry) expiry = budget.ExchangeOverflow.Expires;
+        return expiry;
+    }
+
     [LoggerMessage(LogLevel.Warning, "Token endpoint rate limited: {Reason}; client {Client}; suppressed {Suppressed}")]
     private static partial void RateLimited(ILogger logger, string reason, string client, long suppressed);
 
@@ -108,7 +116,7 @@ internal sealed partial class TokenRequestRateLimiter(TimeProvider time, IOption
             counter.Count = 0;
         }
 
-        if (counter.Expires < _nextSweep) _nextSweep = counter.Expires;
+        ConsiderNextSweep(counter.Expires);
         if (counter.Count >= limit) return counter.Expires - now;
         counter.Count++;
         return TimeSpan.Zero;
@@ -122,11 +130,9 @@ internal sealed partial class TokenRequestRateLimiter(TimeProvider time, IOption
         {
             // A retained source owns its fallback counters. Do not discard a live fallback
             // when its (possibly older) source window expires.
-            var expiry = entry.Value.Requests.Expires;
-            if (entry.Value.ClientOverflow.Expires > expiry) expiry = entry.Value.ClientOverflow.Expires;
-            if (entry.Value.ExchangeOverflow.Expires > expiry) expiry = entry.Value.ExchangeOverflow.Expires;
+            var expiry = SourceExpiry(entry.Value);
             if (expiry <= now) _sources.Remove(entry.Key);
-            else if (expiry < _nextSweep) _nextSweep = expiry;
+            else ConsiderNextSweep(expiry);
         }
 
         SweepCounters(_clients, now);
@@ -138,8 +144,13 @@ internal sealed partial class TokenRequestRateLimiter(TimeProvider time, IOption
         foreach (var entry in counters)
         {
             if (entry.Value.Expires <= now) counters.Remove(entry.Key);
-            else if (entry.Value.Expires < _nextSweep) _nextSweep = entry.Value.Expires;
+            else ConsiderNextSweep(entry.Value.Expires);
         }
+    }
+
+    void ConsiderNextSweep(DateTimeOffset expiry)
+    {
+        if (expiry < _nextSweep) _nextSweep = expiry;
     }
 
     void LogRefusal(Partition reason, string? clientId, DateTimeOffset now, TimeSpan window)
