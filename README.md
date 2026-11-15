@@ -320,7 +320,7 @@ dotnet build Identity.slnx -c Release
 ./Source/Identity.Specs/bin/Release/net11.0/Cratis.Identity.Specs
 ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs   # needs Docker: starts MongoDB 8.0.14 and Chronicle 19.144.0-development
 dotnet pack Identity.slnx -c Release --no-build --output Artifacts/NuGet
-(cd Source/JavaScript/Identity && npm ci && npm run build && npm pack --pack-destination ../../../Artifacts/npm)
+(cd Source/JavaScript && corepack enable && yarn install --immutable && yarn workspace @cratis/identity build && yarn workspace @cratis/identity.react compile && yarn workspace @cratis/identity.react test)
 ```
 
 The integration specs host the real pipeline (Arc, Chronicle, OpenIddict, MongoDB, consent, antiforgery, token endpoint). They replace GitHub's network login with a fake upstream that supplies verified observations to the same native command adapter. A test-local progress gate can hold projection acknowledgments without replacing the kernel, command pipeline or filtered target reader. The Chronicle development container defaults to the `cratis/chronicle:19.144.0-development` kernel image (override with `IDENTITY_CHRONICLE_IMAGE`). That tag is chosen independently of the Chronicle client package pin in `Directory.Packages.props` (currently `19.160.0`). The container exposes only a dynamically assigned loopback port.
