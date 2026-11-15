@@ -26,6 +26,7 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+          persist-credentials: false
 
       # Keep NuGet packages on the runner's scratch volume beside the checkout, not on the node's small
       # ephemeral storage, where the kubelet evicts the runner under disk pressure.
@@ -131,23 +132,18 @@ jobs:
       - name: Pack NuGet
         run: dotnet pack Identity.slnx --configuration Release --no-build --output Artifacts/NuGet -p:Version=0.0.0-ci.${{ github.run_number }}
 
-      - name: Pack npm
-        working-directory: Source/JavaScript/Identity
-        run: |
-          npm ci
-          npm run build
-          mkdir -p ../../../Artifacts/npm
-          npm pack --pack-destination ../../../Artifacts/npm
-
-      - name: Build and pack optional React UI
-        working-directory: Source/JavaScript/Identity.React
+      - name: Build and pack npm workspaces
+        working-directory: Source/JavaScript
         run: |
           corepack enable
           yarn install --immutable
-          yarn compile
-          yarn lint
-          yarn test
-          yarn pack --out ../../../Artifacts/npm/cratis-identity.react.tgz
+          yarn workspace @cratis/identity build
+          yarn workspace @cratis/identity.react compile
+          yarn workspace @cratis/identity.react lint
+          yarn workspace @cratis/identity.react test
+          mkdir -p ../../Artifacts/npm
+          yarn workspace @cratis/identity pack --out ../../../Artifacts/npm/cratis-identity.tgz
+          yarn workspace @cratis/identity.react pack --out ../../../Artifacts/npm/cratis-identity.react.tgz
 
       - name: Upload packages
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

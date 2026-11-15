@@ -34,13 +34,14 @@ For a host-owned view, use `useConnectedApps()` and bind the returned `apps`, lo
 
 ## Develop
 
-With the framework-neutral sibling package built:
+Run from `Source/JavaScript`, the Yarn workspace root:
 
 ```sh
 corepack yarn install --immutable
-corepack yarn compile
-corepack yarn lint
-corepack yarn test
+corepack yarn workspace @cratis/identity build
+corepack yarn workspace @cratis/identity.react compile
+corepack yarn workspace @cratis/identity.react lint
+corepack yarn workspace @cratis/identity.react test
 ```
 
-The package pins Yarn through `packageManager` and uses a committed lockfile. Build output externalizes React and all Cratis peers.
+The workspace pins Yarn through `packageManager` and uses one committed lockfile. The React package depends on the local Identity workspace. Build output externalizes React and all Cratis packages.
