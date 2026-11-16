@@ -3,7 +3,7 @@
 
 namespace Cratis.Identity.Revocation;
 
-/// <summary>The replaceable durable log boundary; backup independence is outside this boundary.</summary>
+/// <summary>The replaceable durable log boundary; backup independence is handled separately, not by this log.</summary>
 internal interface IFenceLog
 {
     /// <summary>Appends once, or verifies identical prior content; conflicts must throw.</summary>
