@@ -6,7 +6,7 @@ using Cratis.Chronicle.Events.Constraints;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>Internal source of AccountRegistered. See the #26 catalogue.</summary>
+/// <summary>Internal source of AccountRegistered.</summary>
 /// <param name="RegisteredAt">The registration time.</param>
 /// <param name="FactId">The retry-stable fact identity; not present in the Public payload.</param>
 [EventType, Unique]

@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>A link was removed; its key remains reserved. See the #26 identity-events-v1 catalogue.</summary>
+/// <summary>A link was removed; its key remains reserved.</summary>
 /// <param name="LinkId">The confirmed link.</param>
 /// <param name="KeyHash">The reserved keyed pseudonym.</param>
 /// <param name="ReasonId">The reason reference.</param>

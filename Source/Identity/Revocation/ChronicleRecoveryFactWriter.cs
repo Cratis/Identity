@@ -8,7 +8,7 @@ using Cratis.Identity.Revocation.Events;
 
 namespace Cratis.Identity.Revocation;
 
-/// <summary>Uses the same draft #18 append contract as restriction delivery.</summary>
+/// <summary>Uses the same draft append contract as restriction delivery.</summary>
 /// <param name="eventStore">The configured Chronicle event store.</param>
 internal sealed class ChronicleRecoveryFactWriter(IEventStore eventStore) : IRecoveryFactWriter
 {

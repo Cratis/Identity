@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>A link entered quarantine (Internal). See the #26 identity-events-v1 catalogue.</summary>
+/// <summary>A link entered quarantine (Internal).</summary>
 /// <param name="LinkProposalId">The proposal.</param>
 /// <param name="ReasonId">The reason reference.</param>
 /// <param name="EvidenceId">The evidence reference.</param>

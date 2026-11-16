@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>An explicit link intent was accepted, without access (Internal). See the #26 identity-events-v1 catalogue.</summary>
+/// <summary>An explicit link intent was accepted, without access (Internal).</summary>
 /// <param name="LinkProposalId">The proposal.</param>
 /// <param name="ConnectionId">The connection.</param>
 /// <param name="IdpIssuer">The exact upstream authority.</param>

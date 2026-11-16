@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>A real failed erasure workflow transition; no error payload. See the #26 identity-events-v1 catalogue.</summary>
+/// <summary>A real failed erasure workflow transition; no error payload.</summary>
 /// <param name="ErasureId">The request reference.</param>
 /// <param name="StageId">The stage that failed.</param>
 /// <param name="ReasonId">The allowlisted failure reason.</param>

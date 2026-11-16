@@ -10,6 +10,6 @@ namespace Cratis.Identity.Accounts.Erasing;
 internal class DenyAllErasureAuthorization : IErasureAuthorization
 {
     /// <inheritdoc/>
-    // TODO(#51): decide who may request erasure (the person only, or an admin on legal request, SLA, tombstoned/disabled accounts).
+    // TODO: decide who may request erasure (the person only, or an admin on legal request, SLA, tombstoned/disabled accounts).
     public Task<bool> IsAllowed(ClaimsPrincipal requester, AccountSubject account) => Task.FromResult(false);
 }

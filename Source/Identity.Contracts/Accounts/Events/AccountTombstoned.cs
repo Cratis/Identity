@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>The subject was permanently reserved. See the #26 identity-events-v1 catalogue.</summary>
+/// <summary>The subject was permanently reserved.</summary>
 /// <param name="TombstonedAt">The tombstone time.</param>
 [EventType, Public]
 public record AccountTombstoned(DateTimeOffset TombstonedAt);

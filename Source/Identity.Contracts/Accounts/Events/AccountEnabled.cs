@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>The account was enabled without restoring grants. See the #26 identity-events-v1 catalogue.</summary>
+/// <summary>The account was enabled without restoring grants.</summary>
 /// <param name="AccountEpoch">The account epoch.</param>
 /// <param name="EnabledAt">The enable time.</param>
 [EventType, Public]

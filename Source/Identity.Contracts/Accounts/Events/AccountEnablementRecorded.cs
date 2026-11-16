@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>Internal source of AccountEnabled. See the #26 catalogue.</summary>
+/// <summary>Internal source of AccountEnabled.</summary>
 /// <param name="AccountEpoch">The epoch.</param>
 /// <param name="EnabledAt">The enable time.</param>
 /// <param name="FactId">The retry-stable fact identity; not present in the Public payload.</param>

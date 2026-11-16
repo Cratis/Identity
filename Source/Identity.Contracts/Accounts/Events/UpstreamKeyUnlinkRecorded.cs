@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>Internal source of UpstreamKeyUnlinked; does not release the reservation. See the #26 catalogue.</summary>
+/// <summary>Internal source of UpstreamKeyUnlinked; does not release the reservation.</summary>
 /// <param name="LinkId">The link.</param>
 /// <param name="KeyHash">The reserved pseudonym.</param>
 /// <param name="ReasonId">The reason reference.</param>

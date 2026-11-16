@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>An authorized resolver cleared a quarantine (Internal). See the #26 identity-events-v1 catalogue.</summary>
+/// <summary>An authorized resolver cleared a quarantine (Internal).</summary>
 /// <param name="LinkProposalId">The proposal.</param>
 /// <param name="ResolutionId">The resolution reference.</param>
 /// <param name="EvidenceId">The evidence reference.</param>

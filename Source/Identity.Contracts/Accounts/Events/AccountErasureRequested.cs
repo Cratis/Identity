@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>An accepted erasure request, not a retry signal. See the #26 identity-events-v1 catalogue.</summary>
+/// <summary>An accepted erasure request, not a retry signal.</summary>
 /// <param name="ErasureId">The accepted request reference.</param>
 /// <param name="RequestedAt">The acceptance time.</param>
 [EventType]

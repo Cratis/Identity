@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>A verified key was linked atomically. See the #26 identity-events-v1 catalogue.</summary>
+/// <summary>A verified key was linked atomically.</summary>
 /// <remarks>Raw IdpSub belongs exclusively to the Internal UpstreamKeySubjectRecorded companion.</remarks>
 /// <param name="LinkId">The confirmed link.</param>
 /// <param name="ConnectionId">The connection.</param>

@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>The account's profile email changed (Internal). See the #26 identity-events-v1 catalogue.</summary>
+/// <summary>The account's profile email changed (Internal).</summary>
 /// <param name="Email">The protected profile email.</param>
 [EventType]
 public record AccountEmailChanged(Email Email);

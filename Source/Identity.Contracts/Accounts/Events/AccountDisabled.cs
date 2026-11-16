@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>The account was disabled behind a durable fence. See the #26 identity-events-v1 catalogue.</summary>
+/// <summary>The account was disabled behind a durable fence.</summary>
 /// <param name="ReasonId">The reason reference.</param>
 /// <param name="AccountEpoch">The new epoch.</param>
 /// <param name="FenceId">The fence reference.</param>

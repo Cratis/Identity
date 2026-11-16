@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>Internal source of AccountErased. See the #26 catalogue.</summary>
+/// <summary>Internal source of AccountErased.</summary>
 /// <param name="ErasureId">The request reference.</param>
 /// <param name="CompletedAt">The completion time.</param>
 /// <param name="BoundaryVersion">The approved completion boundary version.</param>

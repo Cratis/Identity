@@ -28,7 +28,7 @@ internal class RefreshGrantAdmission(IFenceStore fences)
             if (!Admits(state, request)) return false;
             if (!NeedsLinkCheck(state, request) || AuthenticatingLink.IsCurrent(account, state?.LinkId)) return true;
 
-            // The link is unlinked or was never recorded: the family can never refresh again. The unlink-time fence is #41; this is the lazy enforcement on use.
+            // The link is unlinked or was never recorded: the family can never refresh again. This is the lazy enforcement on use, in addition to the unlink-time fence.
             await fences.Commit(authorizationId, account.Id.Value, RevocationReason.Revoked, cancellationToken);
             return false;
         }

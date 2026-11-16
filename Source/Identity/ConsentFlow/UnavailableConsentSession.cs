@@ -3,7 +3,7 @@
 
 namespace Cratis.Identity.ConsentFlow;
 
-/// <summary>Fail-closed until #99/S6 owns and wires the real session claim and fencing.</summary>
+/// <summary>Fail-closed until the consent flow owns and wires the real session claim and fencing.</summary>
 internal sealed class UnavailableConsentSession : ICurrentConsentSession
 {
     /// <inheritdoc/>
