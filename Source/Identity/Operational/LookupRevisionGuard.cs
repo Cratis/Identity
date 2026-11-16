@@ -37,6 +37,14 @@ internal class LookupRevisionGuard(IMongoCollection<LookupRevision> collection, 
             stored = await collection.Find(row => row.Id == LookupRevision.SingletonId).SingleOrDefaultAsync(cancellationToken);
         }
 
+        await VerifyStoredRevision(stored, key, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    async Task VerifyStoredRevision(LookupRevision? stored, UpstreamLookupKey key, CancellationToken cancellationToken)
+    {
         if (stored is null || stored.Revision != key.Revision || stored.Check != key.Check)
         {
             throw new LookupKeyRevisionMismatch();
@@ -48,7 +56,4 @@ internal class LookupRevisionGuard(IMongoCollection<LookupRevision> collection, 
             new FindOneAndUpdateOptions<LookupRevision> { ReturnDocument = ReturnDocument.After },
             cancellationToken) ?? throw new LookupKeyRevisionMismatch();
     }
-
-    /// <inheritdoc/>
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }
