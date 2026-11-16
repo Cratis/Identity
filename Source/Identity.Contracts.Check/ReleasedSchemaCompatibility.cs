@@ -23,13 +23,20 @@ internal static class ReleasedSchemaCompatibility
 
     static void CheckRows(IReadOnlyList<EventSchema> released, IReadOnlyList<EventSchema> current, List<Violation> result)
     {
-        foreach (var row in released)
-        {
-            var (matches, legacy) = Matches(row, current);
-            var path = $"{row.TypeId}/{row.Generation}";
-            if (matches.Length == 0) result.Add(new(path, "released_schema_removed"));
-            else if (matches.Length != 1 || !SameRow(row, matches[0], legacy)) result.Add(new(path, "released_schema_changed"));
-        }
+        foreach (var row in released) CheckRow(row, current, result);
+        CheckDuplicateRows(released, result);
+    }
+
+    static void CheckRow(EventSchema row, IReadOnlyList<EventSchema> current, List<Violation> result)
+    {
+        var (matches, legacy) = Matches(row, current);
+        var path = $"{row.TypeId}/{row.Generation}";
+        if (matches.Length == 0) result.Add(new(path, "released_schema_removed"));
+        else if (matches.Length != 1 || !SameRow(row, matches[0], legacy)) result.Add(new(path, "released_schema_changed"));
+    }
+
+    static void CheckDuplicateRows(IReadOnlyList<EventSchema> released, List<Violation> result)
+    {
         foreach (var group in released.GroupBy(row => (row.TypeId, row.Generation)).Where(group => group.Count() != 1))
             result.Add(new($"{group.Key.TypeId}/{group.Key.Generation}", "released_schema_duplicate"));
     }
@@ -62,9 +69,12 @@ internal static class ReleasedSchemaCompatibility
     }
 
     static bool SameRow(EventSchema released, EventSchema current, bool legacy) => legacy
-        ? released with { Fields = current.Fields, TypeId = current.TypeId, Fixture = current.Fixture } == current &&
-            current.Fixture == $"fixtures/{current.TypeId}/{current.Generation}.json" && SchemaField.Equivalent(released.Fields, current.Fields)
+        ? SameLegacyRow(released, current)
         : released with { Fields = current.Fields } == current && SchemaField.Equivalent(released.Fields, current.Fields);
+
+    static bool SameLegacyRow(EventSchema released, EventSchema current) =>
+        released with { Fields = current.Fields, TypeId = current.TypeId, Fixture = current.Fixture } == current &&
+        current.Fixture == $"fixtures/{current.TypeId}/{current.Generation}.json" && SchemaField.Equivalent(released.Fields, current.Fields);
 
     static void CheckFixtures(
         IReadOnlyDictionary<string, byte[]> released,
@@ -72,11 +82,17 @@ internal static class ReleasedSchemaCompatibility
         IReadOnlyDictionary<string, string> legacyPaths,
         List<Violation> result)
     {
-        foreach (var fixture in released)
-        {
-            var path = legacyPaths.GetValueOrDefault(fixture.Key, fixture.Key);
-            if (!current.TryGetValue(path, out var bytes)) result.Add(new(fixture.Key, "released_fixture_removed"));
-            else if (!fixture.Value.AsSpan().SequenceEqual(bytes)) result.Add(new(fixture.Key, "released_fixture_changed"));
-        }
+        foreach (var fixture in released) CheckFixture(fixture, current, legacyPaths, result);
+    }
+
+    static void CheckFixture(
+        KeyValuePair<string, byte[]> fixture,
+        IReadOnlyDictionary<string, byte[]> current,
+        IReadOnlyDictionary<string, string> legacyPaths,
+        List<Violation> result)
+    {
+        var path = legacyPaths.GetValueOrDefault(fixture.Key, fixture.Key);
+        if (!current.TryGetValue(path, out var bytes)) result.Add(new(fixture.Key, "released_fixture_removed"));
+        else if (!fixture.Value.AsSpan().SequenceEqual(bytes)) result.Add(new(fixture.Key, "released_fixture_changed"));
     }
 }

@@ -95,27 +95,13 @@ internal static class ReflectionShapeBuilder
     static MemberShape Member(string name, string wireName, Type type, bool pii, bool nullable, HashSet<Type> ancestors)
     {
         var actual = Nullable.GetUnderlyingType(type) ?? type;
-        Type? concept = null;
-        for (var candidate = actual; candidate is not null; candidate = candidate.BaseType)
-        {
-            if (candidate.IsGenericType && candidate.GetGenericTypeDefinition() == typeof(ConceptAs<>))
-            {
-                concept = actual;
-                actual = candidate.GetGenericArguments()[0];
-                break;
-            }
-        }
+        var concept = UnwrapConcept(ref actual);
         var forbidden = Forbidden(actual);
         var open = Open(actual);
-        var element = actual.IsArray ? actual.GetElementType() : actual.GetInterfaces().Append(actual)
-            .FirstOrDefault(candidate => candidate.IsGenericType && candidate.GetGenericTypeDefinition() == typeof(IEnumerable<>))?.GetGenericArguments()[0];
-        IReadOnlyList<MemberShape> children = [];
-        if (!forbidden && !open && !Scalar(actual))
-        {
-            children = element is not null
-                ? [Member("[]", "[]", element, pii, false, ancestors)]
-                : Members(actual, ancestors).ToArray();
-        }
+        var element = ElementType(actual);
+        var children = CanHaveChildren(actual, forbidden, open)
+            ? MemberChildren(actual, element, pii, ancestors)
+            : [];
         if (concept is not null)
         {
             children = children.Concat(Members(concept, ancestors).Where(member => member.ClrName != "Value")).ToArray();
@@ -133,24 +119,67 @@ internal static class ReflectionShapeBuilder
             children);
     }
 
-    static bool Scalar(Type type) => type.IsPrimitive || type.IsEnum || type == typeof(string) || type == typeof(Guid) || type == typeof(decimal) ||
-        type == typeof(DateTime) || type == typeof(DateTimeOffset) || type == typeof(DateOnly) || type == typeof(TimeOnly) || type == typeof(TimeSpan);
+    static Type? UnwrapConcept(ref Type actual)
+    {
+        for (var candidate = actual; candidate is not null; candidate = candidate.BaseType)
+        {
+            if (candidate.IsGenericType && candidate.GetGenericTypeDefinition() == typeof(ConceptAs<>))
+            {
+                var concept = actual;
+                actual = candidate.GetGenericArguments()[0];
+                return concept;
+            }
+        }
+        return null;
+    }
 
-    static bool Open(Type type) => type == typeof(object) || type == typeof(JsonElement) || type == typeof(JsonDocument) ||
-        type.Namespace?.StartsWith("System.Text.Json.Nodes", StringComparison.Ordinal) == true ||
-        HasBaseType(type, "Newtonsoft.Json.Linq.JToken") || type.IsDefined(typeof(JsonPolymorphicAttribute)) || type.IsDefined(typeof(JsonDerivedTypeAttribute)) ||
-        ((type.IsInterface || type.IsAbstract) && !typeof(IEnumerable).IsAssignableFrom(type)) || typeof(IDictionary).IsAssignableFrom(type) ||
-        type.GetInterfaces().Append(type).Any(candidate => candidate.IsGenericType &&
-            (candidate.GetGenericTypeDefinition() == typeof(IDictionary<,>) || candidate.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>))) ||
-        (typeof(IEnumerable).IsAssignableFrom(type) && type != typeof(string) && !type.IsArray &&
-            !type.GetInterfaces().Append(type).Any(candidate => candidate.IsGenericType && candidate.GetGenericTypeDefinition() == typeof(IEnumerable<>)));
+    static Type? ElementType(Type type) => type.IsArray ? type.GetElementType() : type.GetInterfaces().Append(type)
+        .FirstOrDefault(IsTypedEnumerable)?.GetGenericArguments()[0];
 
-    static bool Forbidden(Type type) => type == typeof(byte[]) || type == typeof(Memory<byte>) || type == typeof(ReadOnlyMemory<byte>) ||
-        type == typeof(ArraySegment<byte>) || type == typeof(Span<byte>) || type == typeof(ReadOnlySpan<byte>) || type == typeof(System.Security.SecureString) ||
+    static bool IsTypedEnumerable(Type type) => type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>);
+
+    static bool CanHaveChildren(Type type, bool forbidden, bool open) => !forbidden && !open && !Scalar(type);
+
+    static MemberShape[] MemberChildren(Type type, Type? element, bool pii, HashSet<Type> ancestors) => element is not null
+        ? [Member("[]", "[]", element, pii, false, ancestors)]
+        : Members(type, ancestors).ToArray();
+
+    static bool Scalar(Type type) => type.IsPrimitive || type.IsEnum || ScalarValue(type) || TemporalValue(type);
+
+    static bool ScalarValue(Type type) => type == typeof(string) || type == typeof(Guid) || type == typeof(decimal);
+
+    static bool TemporalValue(Type type) => type == typeof(DateTime) || type == typeof(DateTimeOffset) || type == typeof(DateOnly) ||
+        type == typeof(TimeOnly) || type == typeof(TimeSpan);
+
+    static bool Open(Type type) => JsonValue(type) || Polymorphic(type) || Dictionary(type) || UntypedEnumerable(type);
+
+    static bool JsonValue(Type type) => type == typeof(object) || type == typeof(JsonElement) || type == typeof(JsonDocument) ||
+        type.Namespace?.StartsWith("System.Text.Json.Nodes", StringComparison.Ordinal) == true || HasBaseType(type, "Newtonsoft.Json.Linq.JToken");
+
+    static bool Polymorphic(Type type) => type.IsDefined(typeof(JsonPolymorphicAttribute)) || type.IsDefined(typeof(JsonDerivedTypeAttribute)) ||
+        ((type.IsInterface || type.IsAbstract) && !typeof(IEnumerable).IsAssignableFrom(type));
+
+    static bool Dictionary(Type type) => typeof(IDictionary).IsAssignableFrom(type) || type.GetInterfaces().Append(type).Any(IsDictionaryInterface);
+
+    static bool IsDictionaryInterface(Type type) => type.IsGenericType &&
+        (type.GetGenericTypeDefinition() == typeof(IDictionary<,>) || type.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>));
+
+    static bool UntypedEnumerable(Type type) => typeof(IEnumerable).IsAssignableFrom(type) && type != typeof(string) && !type.IsArray &&
+        !type.GetInterfaces().Append(type).Any(IsTypedEnumerable);
+
+    static bool Forbidden(Type type) => ByteBuffer(type) || SecurityIdentity(type) || CryptographicMaterial(type) || TokenOrCertificate(type);
+
+    static bool ByteBuffer(Type type) => type == typeof(byte[]) || type == typeof(Memory<byte>) || type == typeof(ReadOnlyMemory<byte>) ||
+        type == typeof(ArraySegment<byte>) || type == typeof(Span<byte>) || type == typeof(ReadOnlySpan<byte>);
+
+    static bool SecurityIdentity(Type type) => type == typeof(System.Security.SecureString) ||
         typeof(System.Security.Claims.ClaimsPrincipal).IsAssignableFrom(type) || typeof(System.Security.Claims.ClaimsIdentity).IsAssignableFrom(type) ||
-        typeof(System.Net.NetworkCredential).IsAssignableFrom(type) || typeof(Stream).IsAssignableFrom(type) || typeof(AsymmetricAlgorithm).IsAssignableFrom(type) ||
-        typeof(SymmetricAlgorithm).IsAssignableFrom(type) || type == typeof(RSAParameters) || type == typeof(ECParameters) ||
-        type.Namespace?.StartsWith("System.Security.Cryptography.X509Certificates", StringComparison.Ordinal) == true ||
+        typeof(System.Net.NetworkCredential).IsAssignableFrom(type);
+
+    static bool CryptographicMaterial(Type type) => typeof(Stream).IsAssignableFrom(type) || typeof(AsymmetricAlgorithm).IsAssignableFrom(type) ||
+        typeof(SymmetricAlgorithm).IsAssignableFrom(type) || type == typeof(RSAParameters) || type == typeof(ECParameters);
+
+    static bool TokenOrCertificate(Type type) => type.Namespace?.StartsWith("System.Security.Cryptography.X509Certificates", StringComparison.Ordinal) == true ||
         type.Namespace?.StartsWith("Microsoft.IdentityModel.Tokens", StringComparison.Ordinal) == true ||
         HasBaseType(type, "System.IdentityModel.Tokens.Jwt.JwtSecurityToken") || HasBaseType(type, "Microsoft.IdentityModel.JsonWebTokens.JsonWebToken");
 
