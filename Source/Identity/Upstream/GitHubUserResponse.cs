@@ -20,22 +20,36 @@ internal static class GitHubUserResponse
     public static GitHubUser? Read(JsonElement user)
     {
         if (user.ValueKind != JsonValueKind.Object ||
-            !user.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.Number || !id.TryGetInt64(out var gitHubId) || gitHubId <= 0 ||
-            !user.TryGetProperty("login", out var login) || login.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(login.GetString()))
+            InvalidId(user, out var gitHubId) ||
+            InvalidLogin(user, out var login))
         {
             return null;
         }
 
-        var name = user.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(n.GetString())
-            ? n.GetString()!
-            : login.GetString()!;
-
-        var email = user.TryGetProperty("email", out var emailProperty) && emailProperty.ValueKind == JsonValueKind.String
-            ? emailProperty.GetString()
-            : null;
+        var name = ReadName(user, login);
+        var email = ReadEmail(user);
         return new GitHubUser(gitHubId, login.GetString()!, name)
         {
             Email = string.IsNullOrWhiteSpace(email) ? null : new Email(email)
         };
     }
+
+    static bool InvalidId(JsonElement user, out long gitHubId)
+    {
+        gitHubId = 0;
+        return !user.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.Number || !id.TryGetInt64(out gitHubId) || gitHubId <= 0;
+    }
+
+    static bool InvalidLogin(JsonElement user, out JsonElement login) =>
+        !user.TryGetProperty("login", out login) || login.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(login.GetString());
+
+    static string ReadName(JsonElement user, JsonElement login) =>
+        user.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(n.GetString())
+            ? n.GetString()!
+            : login.GetString()!;
+
+    static string? ReadEmail(JsonElement user) =>
+        user.TryGetProperty("email", out var emailProperty) && emailProperty.ValueKind == JsonValueKind.String
+            ? emailProperty.GetString()
+            : null;
 }
