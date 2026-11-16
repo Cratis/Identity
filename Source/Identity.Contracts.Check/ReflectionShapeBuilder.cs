@@ -99,7 +99,7 @@ internal static class ReflectionShapeBuilder
         var forbidden = Forbidden(actual);
         var open = Open(actual);
         var element = ElementType(actual);
-        IReadOnlyList<MemberShape> children = CanHaveChildren(actual, forbidden, open)
+        var children = CanHaveChildren(actual, forbidden, open)
             ? MemberChildren(actual, element, pii, ancestors)
             : [];
         if (concept is not null)
@@ -140,7 +140,7 @@ internal static class ReflectionShapeBuilder
 
     static bool CanHaveChildren(Type type, bool forbidden, bool open) => !forbidden && !open && !Scalar(type);
 
-    static IReadOnlyList<MemberShape> MemberChildren(Type type, Type? element, bool pii, HashSet<Type> ancestors) => element is not null
+    static MemberShape[] MemberChildren(Type type, Type? element, bool pii, HashSet<Type> ancestors) => element is not null
         ? [Member("[]", "[]", element, pii, false, ancestors)]
         : Members(type, ancestors).ToArray();
 
