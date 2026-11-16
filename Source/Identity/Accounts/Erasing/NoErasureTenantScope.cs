@@ -9,6 +9,6 @@ namespace Cratis.Identity.Accounts.Erasing;
 internal class NoErasureTenantScope : IErasureTenantScope
 {
     /// <inheritdoc/>
-    // TODO(#51): decide whether one erasure covers every realm/namespace the person exists in or a single realm.
+    // TODO: decide whether one erasure covers every realm/namespace the person exists in or a single realm.
     public Task<IReadOnlyList<string>> NamespacesFor(AccountSubject account) => Task.FromResult<IReadOnlyList<string>>([]);
 }

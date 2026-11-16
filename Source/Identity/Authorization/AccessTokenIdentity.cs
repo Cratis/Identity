@@ -161,7 +161,7 @@ internal static class AccessTokenIdentity
         // TODO: idp is hard-wired to GitHub; it must come from the verified authentication once a second provider exists.
         // Only registered upstream-identity consumers get the upstream subject, GitHub claims and preferred_username; everything else fails closed.
         // Deviation from identity-contract-v1.md:148 (name MUST NOT appear in access tokens): resource proxies use it as the identity name;
-        // tracked for the v1.1 amendment (#111).
+        // tracked for the v1.1 amendment.
         identity
             .SetClaim(Claims.Subject, account.Id.Value)
             .SetClaim(Claims.Name, account.Name.Value)

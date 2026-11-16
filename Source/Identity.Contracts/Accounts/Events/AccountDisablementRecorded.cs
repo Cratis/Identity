@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>Internal source of AccountDisabled. See the #26 catalogue.</summary>
+/// <summary>Internal source of AccountDisabled.</summary>
 /// <param name="ReasonId">The reason reference.</param>
 /// <param name="AccountEpoch">The new epoch.</param>
 /// <param name="FenceId">The fence reference.</param>

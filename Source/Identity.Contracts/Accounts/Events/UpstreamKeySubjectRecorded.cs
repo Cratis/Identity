@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>The raw subject of a confirmed link was recorded (Internal). See the #26 identity-events-v1 catalogue.</summary>
+/// <summary>The raw subject of a confirmed link was recorded (Internal).</summary>
 /// <remarks>Appended atomically with UpstreamKeyLinked, inside the account erasure boundary.</remarks>
 /// <param name="LinkId">The confirmed link.</param>
 /// <param name="IdpIssuer">The exact authority.</param>

@@ -5,7 +5,7 @@ using Cratis.Identity.ConsentFlow;
 
 namespace Cratis.Identity.Revocation;
 
-/// <summary>Conservative adapter for future consent wiring, not a claim that #72 or the #42 restore gate is complete.</summary>
+/// <summary>Conservative adapter for future consent wiring, not a claim that the session claim or the restore gate is complete.</summary>
 /// <param name="store">The grant authority.</param>
 internal sealed class GrantBoundRevocationFence(IFenceStore store) : IRevocationFence
 {
@@ -31,8 +31,8 @@ internal sealed class GrantBoundRevocationFence(IFenceStore store) : IRevocation
         }
 
         // A clear grant alone cannot attest that an interactive session remains live. The existing slice has
-        // no authoritative session/recovery gate; #72 must supply that evidence before permitting activation.
-        // In particular, the co-located interim log here is not B1 and cannot attest restore safety (#42).
+        // no authoritative session/recovery gate; the real session claim must supply that evidence before permitting activation.
+        // In particular, the co-located interim log here is not B1 and cannot attest restore safety.
         return false;
     }
 }

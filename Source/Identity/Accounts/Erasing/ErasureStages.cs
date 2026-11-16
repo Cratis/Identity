@@ -5,7 +5,7 @@ using Cratis.Identity.Contracts.Accounts;
 
 namespace Cratis.Identity.Accounts.Erasing;
 
-/// <summary>The allowlisted erasure stage names and their mandatory order (identity-events-v1 §5).</summary>
+/// <summary>The allowlisted erasure stage names and their mandatory order (identity-events-v1).</summary>
 internal static class ErasureStages
 {
     /// <summary>Revokes grants, families, sessions and PATs first, through the revocation protocol.</summary>

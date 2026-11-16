@@ -24,6 +24,6 @@ internal enum ConsentRequestState
     /// <summary>Resolution confirmed no evidence, and permanently sealed further appends.</summary>
     Abandoned = 5,
 
-    /// <summary>Evidence exists but activation is forbidden; withdrawal is deferred to the #99 contract.</summary>
+    /// <summary>Evidence exists but activation is forbidden; withdrawal is deferred to the consent contract.</summary>
     EvidenceWithheld = 6
 }

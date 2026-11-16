@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>An account subject was allocated. See the #26 identity-events-v1 catalogue.</summary>
+/// <summary>An account subject was allocated.</summary>
 /// <param name="RegisteredAt">The registration time.</param>
 [EventType, Public]
 public record AccountRegistered(DateTimeOffset RegisteredAt);

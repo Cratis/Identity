@@ -9,7 +9,7 @@ namespace Cratis.Identity.Accounts.Erasing;
 internal class UnconfiguredErasureBoundaryPolicy : IErasureBoundaryPolicy
 {
     /// <inheritdoc/>
-    // TODO(#51): backups/restore retention, export retention, Ante's erasure/acknowledgement contract and the
+    // TODO: backups/restore retention, export retention, Ante's erasure/acknowledgement contract and the
     // consumer acknowledgement policy must be decided and configured explicitly before a boundary is approved.
     public BoundaryVersion? Approved => null;
 }

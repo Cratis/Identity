@@ -4,7 +4,7 @@
 namespace Cratis.Identity.Contracts;
 
 /// <summary>
-/// Holds the claim types Identity writes beyond the registered JWT claims. Provisional until the token contract (#24) is locked.
+/// Holds the claim types Identity writes beyond the registered JWT claims. Provisional until the token contract is locked.
 /// </summary>
 public static class IdentityClaims
 {

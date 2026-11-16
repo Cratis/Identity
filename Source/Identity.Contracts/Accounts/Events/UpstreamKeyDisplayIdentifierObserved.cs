@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>A key's mutable display identifier changed (Internal). See the #26 identity-events-v1 catalogue.</summary>
+/// <summary>A key's mutable display identifier changed (Internal).</summary>
 /// <remarks>Display and preferred_username only; never matching, linking, or authorization. Inside the erasure boundary.</remarks>
 /// <param name="LinkId">The confirmed link.</param>
 /// <param name="Login">The protected display identifier.</param>

@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>The account's profile name changed (Internal). See the #26 identity-events-v1 catalogue.</summary>
+/// <summary>The account's profile name changed (Internal).</summary>
 /// <param name="PersonalName">The protected profile name.</param>
 [EventType]
 public record AccountNameChanged(PersonalName PersonalName);

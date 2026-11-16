@@ -10,7 +10,7 @@ namespace Cratis.Identity.Accounts.Erasing;
 /// guarded by the state it read, or as a one-time append keyed on the erasure, so concurrent coordinators cannot
 /// both record completion or duplicate a request/failure.
 /// <see cref="ChronicleAccountErasureLog"/> provides that guard with kernel-keyed one-time appends.
-/// TODO(#51): nothing registers the log, the stages, the coordinator or an enabling policy in production; erasure stays fail-closed until the boundary is approved.
+/// TODO: nothing registers the log, the stages, the coordinator or an enabling policy in production; erasure stays fail-closed until the boundary is approved.
 /// </summary>
 internal interface IAccountErasureLog
 {

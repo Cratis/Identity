@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>Internal source of AccountTombstoned. See the #26 catalogue.</summary>
+/// <summary>Internal source of AccountTombstoned.</summary>
 /// <param name="TombstonedAt">The tombstone time.</param>
 /// <param name="FactId">The retry-stable fact identity; not present in the Public payload.</param>
 [EventType]

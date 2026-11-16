@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>Internal source of UpstreamKeyLinked. See the #26 catalogue.</summary>
+/// <summary>Internal source of UpstreamKeyLinked.</summary>
 /// <param name="LinkId">The link.</param>
 /// <param name="ConnectionId">The connection.</param>
 /// <param name="IdpIssuer">The exact authority.</param>

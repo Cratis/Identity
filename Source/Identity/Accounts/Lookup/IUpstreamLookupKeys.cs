@@ -3,7 +3,7 @@
 
 namespace Cratis.Identity.Accounts.Lookup;
 
-/// <summary>The single-revision lookup-key boundary; production secret storage belongs to #38.</summary>
+/// <summary>The single-revision lookup-key boundary; production secret storage is handled separately, not by this boundary.</summary>
 internal interface IUpstreamLookupKeys
 {
     /// <summary>Gets the current key.</summary>

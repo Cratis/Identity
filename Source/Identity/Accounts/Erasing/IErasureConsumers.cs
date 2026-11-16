@@ -3,7 +3,7 @@
 
 namespace Cratis.Identity.Accounts.Erasing;
 
-/// <summary>Lists the consumers erasure follow-up covers. Which consumers exist and their duty is an open policy decision (#51).</summary>
+/// <summary>Lists the consumers erasure follow-up covers. Which consumers exist and their duty is an open policy decision.</summary>
 internal interface IErasureConsumers
 {
     /// <summary>Gets the listed consumers.</summary>

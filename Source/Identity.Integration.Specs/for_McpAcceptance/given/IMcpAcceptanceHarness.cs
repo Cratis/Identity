@@ -4,7 +4,7 @@
 namespace Cratis.Identity.Integration.for_McpAcceptance.given;
 
 /// <summary>
-/// Supplies realm-specific transport and registration for the acceptance flow; Identity#126 can supply a deployed realm.
+/// Supplies realm-specific transport and registration for the acceptance flow; a deployed realm can be supplied the same way.
 /// </summary>
 public interface IMcpAcceptanceHarness
 {

@@ -5,7 +5,7 @@ using Cratis.Chronicle.Events;
 
 namespace Cratis.Identity.Contracts.Accounts.Events;
 
-/// <summary>The approved erasure workflow boundary is complete. See the #26 identity-events-v1 catalogue.</summary>
+/// <summary>The approved erasure workflow boundary is complete.</summary>
 /// <param name="ErasureId">The request reference.</param>
 /// <param name="CompletedAt">The completion time.</param>
 /// <param name="BoundaryVersion">The approved completion boundary version.</param>
