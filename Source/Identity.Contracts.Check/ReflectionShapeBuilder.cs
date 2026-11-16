@@ -28,7 +28,7 @@ internal static class ReflectionShapeBuilder
             type.Name,
             ResolveTypeId(type),
             generation,
-            current is not null ? "EventType" : previous is not null ? "EventTypeGenerationFor" : "Unmarked",
+            Registration(current, previous),
             type.IsDefined(typeof(PublicAttribute)) || type.GetEventStoreName() is not null ? "Public" : "Internal",
             complianceSubject,
             Members(type, new HashSet<Type>()).ToArray(),
@@ -66,6 +66,9 @@ internal static class ReflectionShapeBuilder
     internal static string PrimitiveName(Type type) => type == typeof(string) ? "string" : type == typeof(Guid) ? "Guid" :
         type == typeof(int) || type == typeof(long) || type == typeof(uint) || type == typeof(ulong) ? "integer" : type.FullName ?? type.Name;
 
+    static string Registration(EventTypeAttribute? current, EventTypeGenerationForAttribute? previous) =>
+        current is not null ? "EventType" : previous is not null ? "EventTypeGenerationFor" : "Unmarked";
+
     static string ExplicitTypeId(Type type) => type.GetCustomAttribute<EventTypeAttribute>()?.Id.Value ??
         type.GetCustomAttribute<EventTypeGenerationForAttribute>()?.EventTypeClrType.GetCustomAttribute<EventTypeAttribute>()?.Id.Value ?? string.Empty;
 
@@ -74,16 +77,12 @@ internal static class ReflectionShapeBuilder
         if (!ancestors.Add(type)) return [];
         var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(property => property.GetIndexParameters().Length == 0)
             .Select(property => Member(
-                property.Name,
-                property.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name ?? property.Name,
-                property.PropertyType,
+                new MemberIdentity(property.Name, property.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name ?? property.Name, property.PropertyType),
                 new PIIMetadataProvider().CanProvide(property),
                 new NullabilityInfoContext().Create(property).ReadState == NullabilityState.Nullable,
                 ancestors));
         var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance).Select(field => Member(
-            field.Name,
-            field.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name ?? field.Name,
-            field.FieldType,
+            new MemberIdentity(field.Name, field.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name ?? field.Name, field.FieldType),
             field.IsDefined(typeof(PIIAttribute)) || field.FieldType.IsDefined(typeof(PIIAttribute)) || type.IsDefined(typeof(PIIAttribute)),
             new NullabilityInfoContext().Create(field).ReadState == NullabilityState.Nullable,
             ancestors));
@@ -92,8 +91,9 @@ internal static class ReflectionShapeBuilder
         return result;
     }
 
-    static MemberShape Member(string name, string wireName, Type type, bool pii, bool nullable, HashSet<Type> ancestors)
+    static MemberShape Member(MemberIdentity identity, bool pii, bool nullable, HashSet<Type> ancestors)
     {
+        var type = identity.Type;
         var actual = Nullable.GetUnderlyingType(type) ?? type;
         var concept = UnwrapConcept(ref actual);
         var forbidden = Forbidden(actual);
@@ -107,8 +107,8 @@ internal static class ReflectionShapeBuilder
             children = children.Concat(Members(concept, ancestors).Where(member => member.ClrName != "Value")).ToArray();
         }
         return new(
-            name,
-            wireName,
+            identity.Name,
+            identity.WireName,
             type.FullName ?? type.Name,
             pii || actual.IsDefined(typeof(PIIAttribute)),
             forbidden,
@@ -141,7 +141,7 @@ internal static class ReflectionShapeBuilder
     static bool CanHaveChildren(Type type, bool forbidden, bool open) => !forbidden && !open && !Scalar(type);
 
     static MemberShape[] MemberChildren(Type type, Type? element, bool pii, HashSet<Type> ancestors) => element is not null
-        ? [Member("[]", "[]", element, pii, false, ancestors)]
+        ? [Member(new MemberIdentity("[]", "[]", element), pii, false, ancestors)]
         : Members(type, ancestors).ToArray();
 
     static bool Scalar(Type type) => type.IsPrimitive || type.IsEnum || ScalarValue(type) || TemporalValue(type);
@@ -191,4 +191,6 @@ internal static class ReflectionShapeBuilder
         }
         return false;
     }
+
+    sealed record MemberIdentity(string Name, string WireName, Type Type);
 }
