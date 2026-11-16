@@ -61,11 +61,7 @@ static class WindowsOwnerOnlyAccess
             throw new DevelopmentProfileRefused($"{what} has no access control list, which grants everyone access; remove it so it can be recreated.");
         }
 
-        var processOwner = WindowsIdentity.GetCurrent().Owner ?? user;
-        if (security.GetOwner(typeof(SecurityIdentifier)) is not SecurityIdentifier owner || (!owner.Equals(user) && !owner.Equals(processOwner)))
-        {
-            throw new DevelopmentProfileRefused($"{what} is not owned by the current user; remove it so it can be recreated.");
-        }
+        RequireCurrentOwner(security, user, what);
 
         foreach (FileSystemAccessRule rule in security.GetAccessRules(includeExplicit: true, includeInherited: true, typeof(SecurityIdentifier)))
         {
@@ -96,6 +92,18 @@ static class WindowsOwnerOnlyAccess
             throw new DevelopmentProfileRefused($"the access control of {ancestor} above the key directory cannot be read, so the store cannot be shown safe from replacement.");
         }
     }
+
+    static void RequireCurrentOwner(FileSystemSecurity security, SecurityIdentifier user, string what)
+    {
+        var processOwner = WindowsIdentity.GetCurrent().Owner ?? user;
+        if (security.GetOwner(typeof(SecurityIdentifier)) is not SecurityIdentifier owner || IsOtherOwner(owner, user, processOwner))
+        {
+            throw new DevelopmentProfileRefused($"{what} is not owned by the current user; remove it so it can be recreated.");
+        }
+    }
+
+    static bool IsOtherOwner(SecurityIdentifier owner, SecurityIdentifier user, SecurityIdentifier processOwner) =>
+        !owner.Equals(user) && !owner.Equals(processOwner);
 
     static SecurityIdentifier CurrentUser() => WindowsIdentity.GetCurrent().User!;
 }
