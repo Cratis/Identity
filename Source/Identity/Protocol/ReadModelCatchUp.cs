@@ -61,10 +61,7 @@ internal sealed class ReadModelCatchUp(IObserverProgress progress, IOptions<Iden
                 foreach (var (model, target) in targets)
                 {
                     var position = await progress.Position(model).WaitAsync(budget.Token);
-                    if (position.HasFailedPartitions || position.IsReplaying || position.RunningState != ObserverRunningState.Active)
-                    {
-                        throw new ReadModelsNotCaughtUp();
-                    }
+                    EnsureCanProgress(position);
 
                     ready &= target == EventSequenceNumber.Unavailable ||
                         (position.LastHandled != EventSequenceNumber.Unavailable && position.LastHandled.Value >= target.Value);
@@ -79,6 +76,14 @@ internal sealed class ReadModelCatchUp(IObserverProgress progress, IOptions<Iden
             }
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new ReadModelsNotCaughtUp();
+        }
+    }
+
+    static void EnsureCanProgress(ObserverPosition position)
+    {
+        if (position.HasFailedPartitions || position.IsReplaying || position.RunningState != ObserverRunningState.Active)
         {
             throw new ReadModelsNotCaughtUp();
         }
