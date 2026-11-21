@@ -24,18 +24,13 @@ namespace Cratis.Identity.Resources.RegisteringScope;
 [Authorize(Policy = IdentityPolicies.IssuerSecurityOwner)]
 internal sealed record RegisterResourceScope([property: Key] ResourceId ResourceId, string ScopeName, ResourceScopeDescription Description)
 {
-    /// <summary>Reads the server's configuration reservations.</summary>
-    /// <param name="reads">The configured catalogue read.</param>
-    /// <returns>The trusted decision context.</returns>
-    public ResourceRegistrationDecision Provide(ResourceRegistrationReads reads) => reads.Read();
-
     /// <summary>Appends an Internal scope source fact, without reviving an existing reservation.</summary>
     /// <param name="state">The guarded resource registration.</param>
-    /// <param name="decision">The trusted configured reservations.</param>
+    /// <param name="catalog">The trusted configured catalogue.</param>
     /// <returns>The source fact, or a closed refusal.</returns>
-    public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle([LookUpBy(nameof(ResourceId))] ResourceRegistration? state, ResourceRegistrationDecision decision)
+    public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle([LookUpBy(nameof(ResourceId))] ResourceRegistration? state, IResourceCatalog catalog)
     {
-        if (ResourceDecisions.RequireRegistered(ResourceId, state) is { } refusal)
+        if (ResourceRegistration.RequireRegistered(ResourceId, state) is { } refusal)
         {
             return refusal;
         }
@@ -45,7 +40,7 @@ internal sealed record RegisterResourceScope([property: Key] ResourceId Resource
             return ValidationResult.Error("invalid_resource_scope");
         }
 
-        if (decision.Conflicts(state.ResourceIndicator, state.Audience, state.ScopePrefix) || state.Scopes.Any(scope => scope.ScopeName == ScopeName))
+        if (RegisterResource.Conflicts(catalog.All, state.ResourceIndicator, state.Audience, state.ScopePrefix) || state.Scopes.Any(scope => scope.ScopeName == ScopeName))
         {
             return ValidationResult.Error("resource_scope_already_reserved");
         }

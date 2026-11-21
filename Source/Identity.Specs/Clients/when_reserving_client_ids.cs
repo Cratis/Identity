@@ -25,8 +25,8 @@ public class when_reserving_client_ids : given.client_commands
     {
         using var scenario = new EventScenario();
         var command = new RegisterClient(new("racing-client"), _configuration, Plaintext);
-        var first = command.Handle(_registrationDecision, _digester).AsT0.ToArray();
-        var second = command.Handle(_registrationDecision, _digester).AsT0.ToArray();
+        var first = command.Handle(_descriptors, _clock, _digester).AsT0.ToArray();
+        var second = command.Handle(_descriptors, _clock, _digester).AsT0.ToArray();
         var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var entered = 0;

@@ -60,7 +60,7 @@ public class when_bounding_secret_rotations : given.client_commands
     void should_require_at_least_sixteen_characters_on_registration_and_rotation(int length, bool refused)
     {
         var secret = new string('s', length);
-        new RegisterClient(new("strength-spec"), _configuration, secret).Handle(_registrationDecision, _digester).TryGetError(out _).ShouldEqual(refused);
+        new RegisterClient(new("strength-spec"), _configuration, secret).Handle(_descriptors, _clock, _digester).TryGetError(out _).ShouldEqual(refused);
         new RotateSecret(_id, secret, new(Now, Now)).Handle(_active, _digester, _clock, _secretOptions).TryGetError(out _).ShouldEqual(refused);
     }
 
@@ -68,7 +68,7 @@ public class when_bounding_secret_rotations : given.client_commands
     void should_refuse_whitespace_only_secrets_even_at_the_minimum_length()
     {
         var secret = new string(' ', 16);
-        new RegisterClient(new("strength-spec"), _configuration, secret).Handle(_registrationDecision, _digester).TryGetError(out _).ShouldBeTrue();
+        new RegisterClient(new("strength-spec"), _configuration, secret).Handle(_descriptors, _clock, _digester).TryGetError(out _).ShouldBeTrue();
         new RotateSecret(_id, secret, new(Now, Now)).Handle(_active, _digester, _clock, _secretOptions).TryGetError(out _).ShouldBeTrue();
     }
 }

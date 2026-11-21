@@ -28,7 +28,7 @@ public class when_registering_resources : given.resource_commands
     [InlineData("https:\\api.example")]
     [InlineData("https://\u200d.example")]
     public void should_refuse_hostile_indicators(string? indicator) =>
-        new RegisterResource(indicator, "api", "api", new("API")).Handle(_decision).IsT1.ShouldBeTrue();
+        new RegisterResource(indicator, "api", "api", new("API")).Handle(_catalog).IsT1.ShouldBeTrue();
 
     [Theory]
     [InlineData("", "api")]
@@ -41,7 +41,7 @@ public class when_registering_resources : given.resource_commands
     [InlineData("api", "api_other")]
     [InlineData("api", "")]
     public void should_refuse_invalid_audiences_and_prefixes(string audience, string prefix) =>
-        new RegisterResource("https://api.example", audience, prefix, new("API")).Handle(_decision).IsT1.ShouldBeTrue();
+        new RegisterResource("https://api.example", audience, prefix, new("API")).Handle(_catalog).IsT1.ShouldBeTrue();
 
     [Theory]
     [InlineData(null)]
@@ -49,16 +49,16 @@ public class when_registering_resources : given.resource_commands
     [InlineData(" ")]
     [InlineData("API\nLabel")]
     public void should_refuse_invalid_business_labels(string? label) =>
-        new RegisterResource("https://api.example", "api", "api", label is null ? null : new(label)).Handle(_decision).IsT1.ShouldBeTrue();
+        new RegisterResource("https://api.example", "api", "api", label is null ? null : new(label)).Handle(_catalog).IsT1.ShouldBeTrue();
 
     [Fact]
     void should_bound_all_registration_fields()
     {
-        new RegisterResource($"https://api.example/{new string('a', 2048)}", "api", "api", new("API")).Handle(_decision).IsT1.ShouldBeTrue();
-        new RegisterResource("https://api.example", new string('a', 65), "api", new("API")).Handle(_decision).IsT1.ShouldBeTrue();
-        new RegisterResource("https://api.example", "api", new string('a', 65), new("API")).Handle(_decision).IsT1.ShouldBeTrue();
-        new RegisterResource("https://api.example", "api", "api", new(new string('a', 257))).Handle(_decision).IsT1.ShouldBeTrue();
-        new RegisterResource("https://api.example", "api", "api", null!).Handle(_decision).IsT1.ShouldBeTrue();
+        new RegisterResource($"https://api.example/{new string('a', 2048)}", "api", "api", new("API")).Handle(_catalog).IsT1.ShouldBeTrue();
+        new RegisterResource("https://api.example", new string('a', 65), "api", new("API")).Handle(_catalog).IsT1.ShouldBeTrue();
+        new RegisterResource("https://api.example", "api", new string('a', 65), new("API")).Handle(_catalog).IsT1.ShouldBeTrue();
+        new RegisterResource("https://api.example", "api", "api", new(new string('a', 257))).Handle(_catalog).IsT1.ShouldBeTrue();
+        new RegisterResource("https://api.example", "api", "api", null!).Handle(_catalog).IsT1.ShouldBeTrue();
     }
 
     [Theory]
@@ -72,7 +72,7 @@ public class when_registering_resources : given.resource_commands
     public void should_emit_only_an_internal_fact_on_a_new_uuid_stream(string indicator, string expected)
     {
         var command = new RegisterResource(indicator, "api", "api", new("API"));
-        var events = command.Handle(_decision).AsT0.ToArray();
+        var events = command.Handle(_catalog).AsT0.ToArray();
         events.Length.ShouldEqual(1);
         events[0].Event.ShouldBeOfExactType<ResourceRegistrationRecorded>();
         var fact = (ResourceRegistrationRecorded)events[0].Event;
@@ -81,7 +81,7 @@ public class when_registering_resources : given.resource_commands
         fact.DisplayName.Value.ShouldEqual("API");
         fact.FactId.Value.ShouldNotEqual(Guid.Empty);
         Guid.Parse(events[0].EventSourceId).Version.ShouldEqual(4);
-        command.Handle(_decision).AsT0.Single().EventSourceId.ShouldNotEqual(events[0].EventSourceId);
+        command.Handle(_catalog).AsT0.Single().EventSourceId.ShouldNotEqual(events[0].EventSourceId);
     }
 
     [Theory]
@@ -92,7 +92,7 @@ public class when_registering_resources : given.resource_commands
     {
         var catalog = ConfiguredCatalog("https://api.example");
         var command = new RegisterResource(indicator, audience, prefix, new("Other"));
-        command.Handle(command.Provide(new(catalog))).IsT1.ShouldBeTrue();
+        command.Handle(catalog).IsT1.ShouldBeTrue();
     }
 
     [Theory]
@@ -106,18 +106,17 @@ public class when_registering_resources : given.resource_commands
     {
         var catalog = ConfiguredCatalog(configured);
         var command = new RegisterResource(proposed, "different", "different", new("Other"));
-        command.Handle(command.Provide(new(catalog))).IsT1.ShouldBeTrue();
+        command.Handle(catalog).IsT1.ShouldBeTrue();
     }
 
     [Fact]
-    void should_register_the_trusted_read_in_the_existing_resource_registration()
+    void should_register_the_resource_catalog_in_the_existing_resource_registration()
     {
         var services = new ServiceCollection();
         services.AddOptions<IdentityOptions>();
         services.AddResources();
         using var provider = services.BuildServiceProvider();
-        using var scope = provider.CreateScope();
-        scope.ServiceProvider.GetRequiredService<ResourceRegistrationReads>().Read().Resources.ShouldBeEmpty();
+        provider.GetRequiredService<IResourceCatalog>().All.ShouldBeEmpty();
     }
 
     static ResourceCatalog ConfiguredCatalog(string indicator) => new(Options.Create(new IdentityOptions

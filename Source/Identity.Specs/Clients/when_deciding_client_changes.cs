@@ -36,7 +36,7 @@ public class when_deciding_client_changes : given.client_commands
     {
         var state = _active with { Configuration = _configuration with { ClientType = ClientType.Public } };
         new RotateSecret(_id, Plaintext, new(Now, Now)).Handle(state, _digester, _clock, _secretOptions).TryGetError(out _).ShouldBeTrue();
-        new RegisterClient(new("spec-client"), _configuration).Handle(_registrationDecision, _digester).TryGetError(out _).ShouldBeTrue();
+        new RegisterClient(new("spec-client"), _configuration).Handle(_descriptors, _clock, _digester).TryGetError(out _).ShouldBeTrue();
         new RotateSecret(_id, " ", new(Now, Now)).Handle(_active, _digester, _clock, _secretOptions).TryGetError(out _).ShouldBeTrue();
     }
 
@@ -51,14 +51,14 @@ public class when_deciding_client_changes : given.client_commands
     void should_refuse_unsafe_web_redirects_on_registration_and_changes(string redirect)
     {
         var configuration = _configuration with { RedirectUris = [redirect] };
-        new RegisterClient(new("spec-client"), configuration, Plaintext).Handle(_registrationDecision, _digester).TryGetError(out _).ShouldBeTrue();
+        new RegisterClient(new("spec-client"), configuration, Plaintext).Handle(_descriptors, _clock, _digester).TryGetError(out _).ShouldBeTrue();
         new ChangeRedirectUris(_id, [redirect]).Handle(_active).TryGetError(out _).ShouldBeTrue();
     }
 
     [Fact]
     void should_refuse_null_redirects_as_validation_errors()
     {
-        new RegisterClient(new("spec-client"), _configuration with { RedirectUris = null! }, Plaintext).Handle(_registrationDecision, _digester).TryGetError(out _).ShouldBeTrue();
+        new RegisterClient(new("spec-client"), _configuration with { RedirectUris = null! }, Plaintext).Handle(_descriptors, _clock, _digester).TryGetError(out _).ShouldBeTrue();
         new ChangeRedirectUris(_id, null!).Handle(_active).TryGetError(out _).ShouldBeTrue();
     }
 
@@ -71,7 +71,7 @@ public class when_deciding_client_changes : given.client_commands
     void should_refuse_non_literal_or_non_http_native_redirects(string redirect)
     {
         var native = new ClientConfiguration { ApplicationType = ClientApplicationType.Native, RedirectUris = [redirect] };
-        new RegisterClient(new("native-spec"), native).Handle(_registrationDecision, _digester).TryGetError(out _).ShouldBeTrue();
+        new RegisterClient(new("native-spec"), native).Handle(_descriptors, _clock, _digester).TryGetError(out _).ShouldBeTrue();
         new ChangeRedirectUris(_id, [redirect]).Handle(_active with { Configuration = native, SecretHash = null }).TryGetError(out _).ShouldBeTrue();
     }
 
@@ -81,8 +81,8 @@ public class when_deciding_client_changes : given.client_commands
     void should_preserve_native_literal_loopback_and_pkce_rules(string redirect)
     {
         var native = new ClientConfiguration { ApplicationType = ClientApplicationType.Native, RedirectUris = [redirect] };
-        new RegisterClient(new("native-spec"), native).Handle(_registrationDecision, _digester).TryGetError(out _).ShouldBeFalse();
-        new RegisterClient(new("native-spec"), native with { RequirePkce = false }).Handle(_registrationDecision, _digester).TryGetError(out _).ShouldBeTrue();
+        new RegisterClient(new("native-spec"), native).Handle(_descriptors, _clock, _digester).TryGetError(out _).ShouldBeFalse();
+        new RegisterClient(new("native-spec"), native with { RequirePkce = false }).Handle(_descriptors, _clock, _digester).TryGetError(out _).ShouldBeTrue();
     }
 
     [Fact]
