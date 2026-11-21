@@ -40,9 +40,9 @@ public class when_requiring_the_hold : Specification
     }
 
     [Fact] void should_accept_when_now_and_proof_are_exactly_at_the_boundary() => _atBoundary.ShouldBeNull();
-    [Fact] void should_refuse_one_tick_before_the_boundary() => _nowBeforeBoundary!.Message.ShouldEqual("realm_configured_hold_not_elapsed");
-    [Fact] void should_refuse_proof_issued_one_tick_before_the_boundary() => _proofBeforeBoundary!.Message.ShouldEqual("fresh_post_hold_proof_required");
-    [Fact] void should_use_the_hold_not_before_when_it_is_later_than_the_minimum_hold() => _shorterThanNotBefore!.Message.ShouldEqual("realm_configured_hold_not_elapsed");
+    [Fact] void should_refuse_one_tick_before_the_boundary() => _nowBeforeBoundary.Message.ShouldEqual("realm_configured_hold_not_elapsed");
+    [Fact] void should_refuse_proof_issued_one_tick_before_the_boundary() => _proofBeforeBoundary.Message.ShouldEqual("fresh_post_hold_proof_required");
+    [Fact] void should_use_the_hold_not_before_when_it_is_later_than_the_minimum_hold() => _shorterThanNotBefore.Message.ShouldEqual("realm_configured_hold_not_elapsed");
     [Fact] void should_accept_at_the_hold_not_before_boundary() => _notBeforeBoundaryReached.ShouldBeNull();
 
     VerifiedAuthentication Proof(DateTimeOffset authTime) => new(_proposal.Connection, _proposal.Issuer, _proposal.Subject, authTime, FactId.New());

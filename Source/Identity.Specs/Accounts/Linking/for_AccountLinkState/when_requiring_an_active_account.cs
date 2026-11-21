@@ -24,9 +24,9 @@ public class when_requiring_an_active_account : Specification
         _active = AccountLinkState.RequireActive(new("a") { Registered = true });
     }
 
-    [Fact] void should_refuse_missing_state() => _missing!.Message.ShouldEqual(Refusal);
-    [Fact] void should_refuse_unregistered_account() => _unregistered!.Message.ShouldEqual(Refusal);
-    [Fact] void should_refuse_tombstoned_account() => _tombstoned!.Message.ShouldEqual(Refusal);
-    [Fact] void should_refuse_disabled_account() => _disabled!.Message.ShouldEqual(Refusal);
+    [Fact] void should_refuse_missing_state() => _missing.Message.ShouldEqual(Refusal);
+    [Fact] void should_refuse_unregistered_account() => _unregistered.Message.ShouldEqual(Refusal);
+    [Fact] void should_refuse_tombstoned_account() => _tombstoned.Message.ShouldEqual(Refusal);
+    [Fact] void should_refuse_disabled_account() => _disabled.Message.ShouldEqual(Refusal);
     [Fact] void should_accept_active_account() => _active.ShouldBeNull();
 }

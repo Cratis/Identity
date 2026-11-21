@@ -25,7 +25,7 @@ public class when_requiring_matching_proof : Specification
     }
 
     [Fact] void should_accept_the_exact_upstream_tuple() => _matching.ShouldBeNull();
-    [Fact] void should_refuse_a_different_subject() => _mismatching!.Message.ShouldEqual("upstream_proof_mismatch");
-    [Fact] void should_refuse_a_different_connection() => _other_connection!.Message.ShouldEqual("upstream_proof_mismatch");
-    [Fact] void should_refuse_a_different_issuer() => _other_issuer!.Message.ShouldEqual("upstream_proof_mismatch");
+    [Fact] void should_refuse_a_different_subject() => _mismatching.Message.ShouldEqual("upstream_proof_mismatch");
+    [Fact] void should_refuse_a_different_connection() => _other_connection.Message.ShouldEqual("upstream_proof_mismatch");
+    [Fact] void should_refuse_a_different_issuer() => _other_issuer.Message.ShouldEqual("upstream_proof_mismatch");
 }

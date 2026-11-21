@@ -29,10 +29,10 @@ public class when_requiring_proof : Specification
     }
 
     [Fact] void should_accept_proof_exactly_five_minutes_old() => _exactlyFiveMinutes.ShouldBeNull();
-    [Fact] void should_refuse_proof_one_tick_older_than_five_minutes() => _oneTickOverFiveMinutes!.Message.ShouldEqual(Refusal);
-    [Fact] void should_refuse_proof_from_the_future() => _future!.Message.ShouldEqual(Refusal);
-    [Fact] void should_refuse_proof_bound_to_another_session() => _otherSession!.Message.ShouldEqual(Refusal);
-    [Fact] void should_refuse_missing_proof() => _missing!.Message.ShouldEqual(Refusal);
+    [Fact] void should_refuse_proof_one_tick_older_than_five_minutes() => _oneTickOverFiveMinutes.Message.ShouldEqual(Refusal);
+    [Fact] void should_refuse_proof_from_the_future() => _future.Message.ShouldEqual(Refusal);
+    [Fact] void should_refuse_proof_bound_to_another_session() => _otherSession.Message.ShouldEqual(Refusal);
+    [Fact] void should_refuse_missing_proof() => _missing.Message.ShouldEqual(Refusal);
 
     static VerifiedAuthentication Proof(string session, DateTimeOffset authTime) =>
         new(new ConnectionId(Guid.NewGuid()), "https://github.com", "42", authTime, FactId.New()) { SessionId = session };
