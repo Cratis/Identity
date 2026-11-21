@@ -31,7 +31,7 @@ internal record RejectLink(LinkProposalId ProposalId)
     /// <returns>The guarded owner decision, or a refusal.</returns>
     public async Task<Result<Decision, ValidationResult>> Provide(ILinkCeremony ceremony, IDecisionReads decisions, AccountReader accounts, TimeProvider time)
     {
-        var session = LinkDecisions.RequireSession(ceremony.Session, time);
+        var session = AccountSession.Verify(ceremony.Session, time);
         if (session.TryGetError(out var refusal))
         {
             return refusal;
@@ -50,12 +50,12 @@ internal record RejectLink(LinkProposalId ProposalId)
     /// <returns>The rejection event, or a refusal without events.</returns>
     public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle(Decision decision)
     {
-        if (LinkDecisions.RequireActive(decision.State) is { } refusal)
+        if (AccountLinkState.RequireActive(decision.State) is { } refusal)
         {
             return refusal;
         }
 
-        var found = LinkDecisions.FindProposal(decision.State, ProposalId);
+        var found = AccountLinkState.FindProposal(decision.State, ProposalId);
         if (found.TryGetError(out refusal))
         {
             return refusal;

@@ -31,7 +31,7 @@ internal record UnlinkUpstreamKey(LinkId LinkId)
     /// <returns>The guarded owner decision and current time, or a refusal.</returns>
     public async Task<Result<Decision, ValidationResult>> Provide(ILinkCeremony ceremony, IDecisionReads decisions, AccountReader accounts, TimeProvider time)
     {
-        var session = LinkDecisions.RequireSession(ceremony.Session, time);
+        var session = AccountSession.Verify(ceremony.Session, time);
         if (session.TryGetError(out var refusal))
         {
             return refusal;
@@ -50,7 +50,7 @@ internal record UnlinkUpstreamKey(LinkId LinkId)
     /// <returns>The unlink event, or a refusal without events.</returns>
     public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle(Decision decision)
     {
-        if (LinkDecisions.RequireActive(decision.State) is { } refusal)
+        if (AccountLinkState.RequireActive(decision.State) is { } refusal)
         {
             return refusal;
         }

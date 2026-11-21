@@ -30,16 +30,16 @@ internal record ConfirmLink(LinkProposalId ProposalId)
     /// <param name="options">The realm hold policy.</param>
     /// <param name="time">The trusted clock.</param>
     /// <returns>The guarded decision or a refusal.</returns>
-    public async Task<Result<LinkConfirmationDecision, ValidationResult>> Provide(ILinkCeremony ceremony, IDecisionReads decisions, AccountReader accounts, UpstreamLookups lookups, UpstreamKeyDigester digester, IOptions<IdentityOptions> options, TimeProvider time)
+    public async Task<Result<LinkConfirmation.Decision, ValidationResult>> Provide(ILinkCeremony ceremony, IDecisionReads decisions, AccountReader accounts, UpstreamLookups lookups, UpstreamKeyDigester digester, IOptions<IdentityOptions> options, TimeProvider time)
     {
-        var session = LinkDecisions.RequireSession(ceremony.Session, time);
+        var session = AccountSession.Verify(ceremony.Session, time);
         if (session.TryGetError(out var refusal))
         {
             return refusal;
         }
 
         var existing = session.AsT0;
-        if (LinkDecisions.RequireProof(ceremony.Authentication, existing.SessionId, time.GetUtcNow()) is { } proofRefusal)
+        if (AccountSession.RequireProof(ceremony.Authentication, existing.SessionId, time.GetUtcNow()) is { } proofRefusal)
         {
             return proofRefusal;
         }
@@ -49,13 +49,13 @@ internal record ConfirmLink(LinkProposalId ProposalId)
         var authentication = ceremony.Authentication!;
         var digest = digester.Digest(authentication.IdpIssuer, authentication.Subject);
         var reserved = await lookups.Find(digest) is not null;
-        return new LinkConfirmationDecision(existing.Account, state, authentication, digest, reserved, options.Value.Accounts.LinkHoldMinimum, time.GetUtcNow());
+        return new LinkConfirmation.Decision(existing.Account, state, authentication, digest, reserved, options.Value.Accounts.LinkHoldMinimum, time.GetUtcNow());
     }
 
     /// <summary>Produces a guarded link batch or a quarantine batch for a reserved key.</summary>
     /// <param name="decision">The guarded inputs.</param>
     /// <returns>The events and post-commit outcome, or a refusal.</returns>
-    public Result<(IEnumerable<EventForEventSourceId>, LinkConfirmationOutcome), ValidationResult> Handle(LinkConfirmationDecision decision)
+    public Result<(IEnumerable<EventForEventSourceId>, LinkConfirmationOutcome), ValidationResult> Handle(LinkConfirmation.Decision decision)
     {
         var found = LinkConfirmation.RequireProposal(decision, ProposalId);
         if (found.TryGetError(out var refusal))

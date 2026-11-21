@@ -3,8 +3,11 @@
 
 using System.Globalization;
 using System.Security.Claims;
+using Cratis.Arc.Validation;
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Sessions;
+using Cratis.Identity.Upstream;
+using Cratis.Monads;
 
 namespace Cratis.Identity.Accounts.Linking;
 
@@ -29,5 +32,43 @@ internal record AccountSession(AccountSubject Account, SessionId SessionId)
         var now = time.GetUtcNow().ToUnixTimeSeconds();
         AccountOperationRefused.Require(seconds <= now && now - seconds <= 300, "fresh_existing_account_proof_required");
         return new(subject!, sid!);
+    }
+
+    /// <summary>
+    /// Requires a current authenticated account session.
+    /// </summary>
+    /// <param name="principal">The existing account principal.</param>
+    /// <param name="time">The trusted clock.</param>
+    /// <returns>The verified session, or its refusal.</returns>
+    internal static Result<AccountSession, ValidationResult> Verify(ClaimsPrincipal principal, TimeProvider time)
+    {
+        try
+        {
+            return Require(principal, time);
+        }
+        catch (AccountOperationRefused refusal)
+        {
+            return ValidationResult.Error(refusal.Message);
+        }
+    }
+
+    /// <summary>
+    /// Requires fresh upstream proof bound to the existing session.
+    /// </summary>
+    /// <param name="authentication">The adapter-verified upstream proof.</param>
+    /// <param name="sessionId">The existing session identifier.</param>
+    /// <param name="now">The trusted current time.</param>
+    /// <returns>A refusal, or null when the proof is fresh and session-bound.</returns>
+    internal static ValidationResult? RequireProof(VerifiedAuthentication? authentication, string sessionId, DateTimeOffset now)
+    {
+        if (authentication is null || authentication.SessionId != sessionId)
+        {
+            return ValidationResult.Error("fresh_session_bound_upstream_proof_required");
+        }
+
+        var age = now - authentication.AuthTime;
+        return age >= TimeSpan.Zero && age <= TimeSpan.FromMinutes(5)
+            ? null
+            : ValidationResult.Error("fresh_session_bound_upstream_proof_required");
     }
 }

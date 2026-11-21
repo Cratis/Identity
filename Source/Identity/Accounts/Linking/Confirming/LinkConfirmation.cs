@@ -5,6 +5,7 @@ using Cratis.Arc.Validation;
 using Cratis.Chronicle.EventSequences;
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Contracts.Accounts.Events;
+using Cratis.Identity.Upstream;
 using Cratis.Monads;
 
 namespace Cratis.Identity.Accounts.Linking.Confirming;
@@ -16,9 +17,9 @@ internal static class LinkConfirmation
     /// <param name="decision">The guarded inputs.</param>
     /// <param name="id">The owner's proposal identifier.</param>
     /// <returns>The matching proposal or its closed refusal.</returns>
-    internal static Result<LinkProposal, ValidationResult> RequireProposal(LinkConfirmationDecision decision, LinkProposalId id)
+    internal static Result<LinkProposal, ValidationResult> RequireProposal(Decision decision, LinkProposalId id)
     {
-        if (LinkDecisions.RequireActive(decision.State) is { } refusal)
+        if (AccountLinkState.RequireActive(decision.State) is { } refusal)
         {
             return refusal;
         }
@@ -40,9 +41,9 @@ internal static class LinkConfirmation
     /// <param name="decision">The guarded inputs.</param>
     /// <param name="proposal">The matching proposal.</param>
     /// <returns>A refusal, or null when the boundary is satisfied.</returns>
-    internal static ValidationResult? RequireHold(LinkConfirmationDecision decision, LinkProposal proposal)
+    internal static ValidationResult? RequireHold(Decision decision, LinkProposal proposal)
     {
-        return LinkDecisions.RequireHold(proposal, decision.Authentication, decision.Hold, decision.At);
+        return LinkProposal.RequireHold(proposal, decision.Authentication, decision.Hold, decision.At);
     }
 
     /// <summary>Builds an atomic clearance/link batch or a reservation quarantine batch.</summary>
@@ -50,7 +51,7 @@ internal static class LinkConfirmation
     /// <param name="proposal">The eligible proposal.</param>
     /// <param name="clearance">The optional resolver clearance fact.</param>
     /// <returns>The events and post-commit outcome.</returns>
-    internal static (IEnumerable<EventForEventSourceId>, LinkConfirmationOutcome) Commit(LinkConfirmationDecision decision, LinkProposal proposal, IEnumerable<object> clearance)
+    internal static (IEnumerable<EventForEventSourceId>, LinkConfirmationOutcome) Commit(Decision decision, LinkProposal proposal, IEnumerable<object> clearance)
     {
         if (decision.Reserved)
         {
@@ -65,6 +66,16 @@ internal static class LinkConfirmation
         return (ForAccount(decision, events), new(link));
     }
 
-    static EventForEventSourceId[] ForAccount(LinkConfirmationDecision decision, IEnumerable<object> events) =>
+    static EventForEventSourceId[] ForAccount(Decision decision, IEnumerable<object> events) =>
         events.Select(@event => new EventForEventSourceId(decision.Account.Value, @event) { Occurred = decision.At }).ToArray();
+
+    /// <summary>The guarded inputs for committing a confirmed or cleared proposal.</summary>
+    /// <param name="Account">The authenticated owner.</param>
+    /// <param name="State">The state read after enrolling the account guard.</param>
+    /// <param name="Authentication">The fresh owner-session-bound upstream proof.</param>
+    /// <param name="Digest">The exact upstream key digest.</param>
+    /// <param name="Reserved">Whether the permanent reservation is already held.</param>
+    /// <param name="Hold">The realm's minimum hold.</param>
+    /// <param name="At">The trusted decision time.</param>
+    internal record Decision(AccountSubject Account, AccountLinkState State, VerifiedAuthentication Authentication, UpstreamLookupDigest Digest, bool Reserved, TimeSpan Hold, DateTimeOffset At);
 }
