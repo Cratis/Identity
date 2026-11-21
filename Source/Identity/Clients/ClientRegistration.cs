@@ -10,19 +10,6 @@ namespace Cratis.Identity.Clients;
 /// <param name="Id">The opaque stream identity, unrelated to the protocol client id.</param>
 internal sealed record ClientRegistration(Guid Id)
 {
-    /// <summary>Requires an existing, non-retired registration.</summary>
-    /// <param name="state">The guarded state.</param>
-    /// <returns>A credential-free refusal, or null.</returns>
-    public static ValidationResult? RequireActive(ClientRegistration? state)
-    {
-        if (state?.ClientId is null)
-        {
-            return ValidationResult.Error("client_not_registered");
-        }
-
-        return state.Retired ? ValidationResult.Error("client_retired") : null;
-    }
-
     /// <summary>Gets the protocol identifier, if registered.</summary>
     public ClientId? ClientId { get; init; }
 
@@ -52,6 +39,19 @@ internal sealed record ClientRegistration(Guid Id)
 
     /// <summary>Gets the recorded retirement time.</summary>
     public DateTimeOffset? RetiredAt { get; init; }
+
+    /// <summary>Requires an existing, non-retired registration.</summary>
+    /// <param name="state">The guarded state.</param>
+    /// <returns>A credential-free refusal, or null.</returns>
+    public static ValidationResult? RequireActive(ClientRegistration? state)
+    {
+        if (state?.ClientId is null)
+        {
+            return ValidationResult.Error("client_not_registered");
+        }
+
+        return state.Retired ? ValidationResult.Error("client_retired") : null;
+    }
 
     /// <summary>Gets only digests valid at an explicit instant, never at reducer execution time.</summary>
     /// <param name="at">The verification instant.</param>
