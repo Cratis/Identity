@@ -82,7 +82,7 @@ name every scenario and explain the more specific contract. All rows are **kept*
 | [`for_Oidc/*`](../../Source/Identity.Integration.Specs/for_Oidc) | Security; pinned-version | Opt-in confidential-client OIDC profile, ID-token claims/signatures, userinfo and grant fencing. |
 | [`for_RefreshTokens/*`](../../Source/Identity.Integration.Specs/for_RefreshTokens) | Security; pinned-version | Single-use rotation and revocation ordering across refresh races. |
 | [`for_Revocation/*`](../../Source/Identity.Integration.Specs/for_Revocation) | Security; pinned-version | Revocation denial authority is independent of Chronicle/projection availability; source-fact replay also protects registration vs kernel version. |
-| [`for_Sessions/*`](../../Source/Identity.Integration.Specs/for_Sessions) | Security; pinned-version | Session identifiers, cookie protection, logout CSRF and unsupported `max_age` refusal. |
+| [`for_Sessions/*`](../../Source/Identity.Integration.Specs/for_Sessions) | Security; pinned-version | Session identifiers, cookie protection, logout CSRF and `max_age` enforcement. |
 | [`for_TenantsCallback/*`](../../Source/Identity.Integration.Specs/for_TenantsCallback) | Security; pinned-version | Tenant choices and refresh admission use the callback and fail closed during outages. |
 | [`for_TokenExchange/*`](../../Source/Identity.Integration.Specs/for_TokenExchange) | Security; pinned-version | External subject/tenant/resource binding, refusal validation and shared replay protection. |
 | [`for_TokenRateLimiting/*`](../../Source/Identity.Integration.Specs/for_TokenRateLimiting) | Security; pinned-version | Token-endpoint limiter precedes client authentication and recovers after the full window. |
@@ -227,7 +227,7 @@ HTTP status assertion. For parameterized methods it includes every data row.
 | `for_LookupRevisionGuard/when_two_instances_start_with_different_revisions` | All | Exactly one revision starts across instances. |
 | `for_Introspection/when_a_client_introspects_an_access_token` | All | Only authenticated confidential resource client can introspect; audience/presenter correct; unauthenticated/invalid clients get no credential ids or epoch. |
 | `for_Introspection/when_tracking_a_grant_through_introspection` | All | Stable canonical grant UUID and kind through refresh, matching advisory cid but not jti/client id; tenant/scope/epoch preserved; no invented confirmation; revoked/expired replies contain only inactive. |
-| `for_Sessions/when_a_stale_session_requests_authorization` | All | Unsupported `max_age` including zero is refused, even with `prompt=none`; no refreshed session cookie or unsolicited reauthentication. |
+| `for_Sessions/when_a_stale_session_requests_authorization` | All | Stale session with `max_age` answers `login_required` under `prompt=none` without a refreshed cookie; `max_age=0` is accepted and never reuses the stale session; malformed `max_age` is `invalid_request`. |
 | `for_Sessions/when_signing_out` | All | Cross-site logout refused; valid antiforgery logout requires new login; secure/HttpOnly and distinct SameSite cookie policies. |
 | `for_Sessions/when_starting_a_new_browser_session` | All | Session id/auth time survive cookie protection; existing session resumes; upstream sign-in rotates id. |
 | `for_TenantsCallback/when_consent_lists_the_callback_tenants` | All | Tenant ids/names from callback and consent-selected binding. |

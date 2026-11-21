@@ -18,7 +18,7 @@ public class when_max_age_is_requested : Specification
     async Task Because()
     {
         var endpoint = new AuthorizationEndpoint(null!, null!, null!, null!, null!, null!);
-        foreach (var context in MaxAgeRequests.All())
+        foreach (var context in MaxAgeRequests.Invalid())
         {
             context.Features.Set(new OpenIddictServerAspNetCoreFeature
             {
@@ -36,7 +36,7 @@ public class when_max_age_is_requested : Specification
         }
     }
 
-    [Fact] void should_refuse_without_looking_up_a_session_or_redirecting_to_login() => _results.TrueForAll(result => result is ForbidHttpResult).ShouldBeTrue();
+    [Fact] void should_refuse_malformed_values_without_looking_up_a_session_or_redirecting_to_login() => _results.TrueForAll(result => result is ForbidHttpResult).ShouldBeTrue();
     [Fact] void should_report_invalid_request() => _results.Cast<ForbidHttpResult>().All(result => result.Properties.Items[OpenIddictServerAspNetCoreConstants.Properties.Error] == "invalid_request").ShouldBeTrue();
-    [Fact] void should_explain_that_max_age_is_unsupported() => _results.Cast<ForbidHttpResult>().All(result => result.Properties.Items[OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] == "max_age is not supported").ShouldBeTrue();
+    [Fact] void should_explain_that_max_age_is_invalid() => _results.Cast<ForbidHttpResult>().All(result => result.Properties.Items[OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] == "max_age is invalid").ShouldBeTrue();
 }

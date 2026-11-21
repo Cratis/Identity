@@ -43,6 +43,7 @@ internal static class OidcProviderMetadata
         metadata["id_token_signing_alg_values_supported"] = new[] { "RS256" };
         metadata["token_endpoint_auth_methods_supported"] = new[] { ClientAuthenticationMethods.ClientSecretBasic, ClientAuthenticationMethods.ClientSecretPost };
         metadata["code_challenge_methods_supported"] = new[] { CodeChallengeMethods.Sha256 };
+        metadata["max_age_supported"] = true;
         metadata["claims_supported"] = new[] { Claims.Issuer, Claims.Subject, Claims.Audience, Claims.ExpiresAt, Claims.IssuedAt, Claims.AuthorizedParty, Claims.Nonce, Claims.AuthenticationTime, OidcIdentity.SessionIdClaim, Claims.AccessTokenHash, Claims.Name, Claims.PreferredUsername };
     }
 

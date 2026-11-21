@@ -39,9 +39,10 @@ internal static class SessionPrincipal
     /// Gets the upstream authentication time of a session principal.
     /// </summary>
     /// <param name="principal">The session <see cref="ClaimsPrincipal"/>.</param>
-    /// <returns>The authentication time, or <see langword="null"/> if the principal carries none (such a session must sign in again).</returns>
+    /// <returns>The authentication time, or <see langword="null"/> if it is missing, malformed or out of range (such a session must sign in again).</returns>
     public static DateTimeOffset? AuthTime(ClaimsPrincipal principal) =>
-        long.TryParse(principal.FindFirst(Claims.AuthenticationTime)?.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds) ? DateTimeOffset.FromUnixTimeSeconds(seconds) : null;
+        long.TryParse(principal.FindFirst(Claims.AuthenticationTime)?.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds)
+        && seconds <= DateTimeOffset.MaxValue.ToUnixTimeSeconds() ? DateTimeOffset.FromUnixTimeSeconds(seconds) : null;
 
     /// <summary>
     /// Gets the account identifier of a session principal.

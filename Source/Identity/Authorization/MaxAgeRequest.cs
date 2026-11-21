@@ -1,12 +1,15 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Globalization;
+using Microsoft.Extensions.Primitives;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Cratis.Identity.Authorization;
 
 /// <summary>
-/// Detects an explicit maximum-age parameter on an authorization request.
+/// Parses the explicit maximum-age parameter of an authorization request from the raw HTTP request.
+/// The lenient value bound by the OpenID Connect server is not trusted, so malformed input is refused.
 /// </summary>
 internal static class MaxAgeRequest
 {
@@ -14,16 +17,37 @@ internal static class MaxAgeRequest
     /// Checks the query and, when applicable, the posted form for the parameter.
     /// </summary>
     /// <param name="request">The current HTTP request, if available.</param>
-    /// <returns>Whether the request contains the maximum-age parameter.</returns>
-    internal static async ValueTask<bool> IsPresent(HttpRequest? request)
+    /// <returns>Whether the parameter is absent, valid or invalid.</returns>
+    internal static async ValueTask<MaxAgeState> Evaluate(HttpRequest? request)
     {
-        if (request is null) return false;
-        if (HasMaxAge(request.Query.Keys)) return true;
-        if (!HttpMethods.IsPost(request.Method) || !request.HasFormContentType) return false;
+        if (request is null) return MaxAgeState.Absent;
 
-        var form = await request.ReadFormAsync(request.HttpContext.RequestAborted);
-        return HasMaxAge(form.Keys);
+        var occurrences = Occurrences(request.Query);
+        if (HttpMethods.IsPost(request.Method) && request.HasFormContentType)
+        {
+            try
+            {
+                var form = await request.ReadFormAsync(request.HttpContext.RequestAborted);
+                occurrences = [.. occurrences, .. Occurrences(form)];
+            }
+            catch (InvalidDataException)
+            {
+                return MaxAgeState.Invalid;
+            }
+        }
+
+        if (occurrences.Count == 0) return MaxAgeState.Absent;
+        return occurrences.Count == 1 && IsValid(occurrences[0]) ? MaxAgeState.Valid : MaxAgeState.Invalid;
     }
 
-    static bool HasMaxAge(IEnumerable<string> keys) => keys.Any(key => string.Equals(key, Parameters.MaxAge, StringComparison.OrdinalIgnoreCase));
+    static List<KeyValuePair<string, string?>> Occurrences(IEnumerable<KeyValuePair<string, StringValues>> source) =>
+        [.. source
+            .Where(_ => string.Equals(_.Key, Parameters.MaxAge, StringComparison.OrdinalIgnoreCase))
+            .SelectMany(_ => _.Value.DefaultIfEmpty(string.Empty).Select(value => new KeyValuePair<string, string?>(_.Key, value)))];
+
+    static bool IsValid(KeyValuePair<string, string?> occurrence) =>
+        string.Equals(occurrence.Key, Parameters.MaxAge, StringComparison.Ordinal)
+        && !string.IsNullOrEmpty(occurrence.Value)
+        && occurrence.Value.All(char.IsAsciiDigit)
+        && long.TryParse(occurrence.Value, NumberStyles.None, CultureInfo.InvariantCulture, out _);
 }
