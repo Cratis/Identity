@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Arc.Validation;
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Upstream;
 
@@ -18,6 +19,36 @@ internal record LinkProposal(LinkProposalId Id, ConnectionId Connection, Upstrea
 {
     /// <summary>Gets whether the proposal can never progress.</summary>
     internal bool Terminal => State == "confirmed" || State == "rejected";
+
+    /// <summary>
+    /// Requires upstream proof matching the proposed key.
+    /// </summary>
+    /// <param name="proposal">The account's proposal.</param>
+    /// <param name="authentication">The adapter-verified upstream proof.</param>
+    /// <returns>A refusal, or null when the proof matches.</returns>
+    internal static ValidationResult? RequireMatchingProof(LinkProposal proposal, VerifiedAuthentication authentication) => proposal.Matches(authentication)
+        ? null
+        : ValidationResult.Error("upstream_proof_mismatch");
+
+    /// <summary>
+    /// Requires the configured hold to have elapsed and proof issued after its boundary.
+    /// </summary>
+    /// <param name="proposal">The account's proposal.</param>
+    /// <param name="authentication">The adapter-verified upstream proof.</param>
+    /// <param name="minimum">The realm's minimum hold duration.</param>
+    /// <param name="now">The trusted current time.</param>
+    /// <returns>A refusal, or null when the hold and post-hold proof are satisfied.</returns>
+    internal static ValidationResult? RequireHold(LinkProposal proposal, VerifiedAuthentication authentication, TimeSpan minimum, DateTimeOffset now)
+    {
+        var hold = proposal.ProposedAt + minimum;
+        var boundary = hold > proposal.HoldNotBefore ? hold : proposal.HoldNotBefore;
+        if (now < boundary)
+        {
+            return ValidationResult.Error("realm_configured_hold_not_elapsed");
+        }
+
+        return authentication.AuthTime >= boundary ? null : ValidationResult.Error("fresh_post_hold_proof_required");
+    }
 
     /// <summary>Checks the complete immutable upstream tuple.</summary>
     /// <param name="authentication">The adapter proof.</param>

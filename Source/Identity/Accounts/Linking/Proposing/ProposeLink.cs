@@ -42,7 +42,7 @@ internal record ProposeLink
             return ValidationResult.Error("email_is_not_identity_proof");
         }
 
-        var session = LinkDecisions.RequireSession(ceremony.Session, time);
+        var session = AccountSession.Verify(ceremony.Session, time);
         if (session.TryGetError(out var refusal))
         {
             return refusal;
@@ -54,7 +54,7 @@ internal record ProposeLink
         }
 
         var existing = session.AsT0;
-        if (LinkDecisions.RequireProof(ceremony.Authentication, existing.SessionId, time.GetUtcNow()) is { } proofRefusal)
+        if (AccountSession.RequireProof(ceremony.Authentication, existing.SessionId, time.GetUtcNow()) is { } proofRefusal)
         {
             return proofRefusal;
         }
@@ -73,7 +73,7 @@ internal record ProposeLink
     /// <returns>The events and proposal identifier, or a refusal without events.</returns>
     public Result<(IEnumerable<EventForEventSourceId>, LinkProposalId), ValidationResult> Handle(Decision decision)
     {
-        if (LinkDecisions.RequireActive(decision.State) is { } refusal)
+        if (AccountLinkState.RequireActive(decision.State) is { } refusal)
         {
             return refusal;
         }

@@ -16,7 +16,7 @@ public class a_confirmation_decision : a_link_decision
 {
     protected LinkProposalId _proposalId;
     private protected LinkProposal _proposal;
-    private protected LinkConfirmationDecision _decision;
+    private protected LinkConfirmation.Decision _decision;
 
     void Establish()
     {
@@ -28,7 +28,7 @@ public class a_confirmation_decision : a_link_decision
         _decision = new(_account, _state, proof, _digester.Digest(proof.IdpIssuer, proof.Subject), false, TimeSpan.Zero, _clock.Now);
     }
 
-    private protected Task<Result<LinkConfirmationDecision, ValidationResult>> Provide(bool clearing) => clearing
+    private protected Task<Result<LinkConfirmation.Decision, ValidationResult>> Provide(bool clearing) => clearing
         ? new ClearLinkQuarantine(_account, _proposalId).Provide(_ceremony, _decisions, new AccountReader(_readModels), _lookups, _digester, _options, _clock)
         : new ConfirmLink(_proposalId).Provide(_ceremony, _decisions, new AccountReader(_readModels), _lookups, _digester, _options, _clock);
 
