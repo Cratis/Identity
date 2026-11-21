@@ -35,7 +35,7 @@ internal record SignInWithUpstreamKey(FactId OperationId)
     /// <param name="catchUp">The filtered projection progress fence.</param>
     /// <param name="timeProvider">The clock.</param>
     /// <returns>The guarded decision, or a refusal.</returns>
-    public async Task<Result<SignInDecision, ValidationResult>> Provide(
+    public async Task<Result<Decision, ValidationResult>> Provide(
         IVerifiedUpstreamSignIn verified,
         VerifiedKeyGate gate,
         UpstreamLookups lookups,
@@ -74,7 +74,7 @@ internal record SignInWithUpstreamKey(FactId OperationId)
         // retaining its earlier boundary rather than weakening protection after catch-up.
         _ = await decisions.Get<AccountGuard>(subject.Value);
         var account = await accounts.Find(subject);
-        return new SignInDecision(subject, authentication, key.Digest, profile, reservation, account, timeProvider.GetUtcNow());
+        return new Decision(subject, authentication, key.Digest, profile, reservation, account, timeProvider.GetUtcNow());
     }
 
     /// <summary>
@@ -82,7 +82,7 @@ internal record SignInWithUpstreamKey(FactId OperationId)
     /// </summary>
     /// <param name="decision">The guarded, caught-up decision inputs.</param>
     /// <returns>The events and subject, or a refusal without events.</returns>
-    public Result<(IEnumerable<EventForEventSourceId>, AccountSubject), ValidationResult> Handle(SignInDecision decision)
+    public Result<(IEnumerable<EventForEventSourceId>, AccountSubject), ValidationResult> Handle(Decision decision)
     {
         if (decision.Reservation is null)
         {
@@ -128,7 +128,7 @@ internal record SignInWithUpstreamKey(FactId OperationId)
             : null;
     }
 
-    static IEnumerable<EventForEventSourceId> Register(SignInDecision decision)
+    static IEnumerable<EventForEventSourceId> Register(Decision decision)
     {
         var authentication = decision.Authentication;
         LinkId link = FactId.ForOperation(authentication.OperationId, nameof(UpstreamKeyLinkRecorded)).Value;
@@ -148,7 +148,7 @@ internal record SignInWithUpstreamKey(FactId OperationId)
         return events.Select(@event => new EventForEventSourceId(decision.Subject.Value, @event));
     }
 
-    static IEnumerable<EventForEventSourceId> ProfileChanges(SignInDecision decision, LinkedUpstreamKey link)
+    static IEnumerable<EventForEventSourceId> ProfileChanges(Decision decision, LinkedUpstreamKey link)
     {
         var events = new List<object>();
         if (link.Login != decision.Profile.Login)
@@ -168,4 +168,16 @@ internal record SignInWithUpstreamKey(FactId OperationId)
 
         return events.Select(@event => new EventForEventSourceId(decision.Subject.Value, @event));
     }
+
+    /// <summary>
+    /// The trusted observations and guarded, caught-up account state for one decision attempt.
+    /// </summary>
+    /// <param name="Subject">The account event source.</param>
+    /// <param name="Authentication">The verified authentication.</param>
+    /// <param name="Digest">The exact upstream key pseudonym.</param>
+    /// <param name="Profile">The observed profile.</param>
+    /// <param name="Reservation">The permanent key reservation.</param>
+    /// <param name="Account">The caught-up account.</param>
+    /// <param name="At">The decision time.</param>
+    internal record Decision(AccountSubject Subject, VerifiedAuthentication Authentication, UpstreamLookupDigest Digest, ObservedProfile Profile, UpstreamKeyMatch? Reservation, Account? Account, DateTimeOffset At);
 }

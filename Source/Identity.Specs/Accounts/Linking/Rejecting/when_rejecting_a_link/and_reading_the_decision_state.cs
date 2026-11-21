@@ -9,7 +9,7 @@ namespace Cratis.Identity.Accounts.Linking.Rejecting.when_rejecting_a_link;
 
 public class and_reading_the_decision_state : given.a_link_decision
 {
-    Result<LinkRejectionDecision, ValidationResult> _result;
+    Result<RejectLink.Decision, ValidationResult> _result;
 
     async Task Because() => _result = await new RejectLink(Guid.NewGuid()).Provide(_ceremony, _decisions, new AccountReader(_readModels), _clock);
 

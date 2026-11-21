@@ -15,7 +15,7 @@ public class and_the_profile_is_not_observed : Specification
     {
         var subject = AccountSubject.New();
         var authentication = new VerifiedAuthentication(GitHubConnection.FixedConnectionId, "https://github.com", "42", DateTimeOffset.UtcNow, FactId.New());
-        var decision = new SignInDecision(subject, authentication, new("v1.test-digest"), new(null, "Name", "login"), null, null, DateTimeOffset.UtcNow);
+        var decision = new SignInWithUpstreamKey.Decision(subject, authentication, new("v1.test-digest"), new(null, "Name", "login"), null, null, DateTimeOffset.UtcNow);
         _events = new SignInWithUpstreamKey(authentication.OperationId).Handle(decision).AsT0.Item1.Select(item => item.Event);
     }
 

@@ -9,7 +9,7 @@ namespace Cratis.Identity.Accounts.Linking.Proposing.when_proposing_a_link;
 
 public class and_reading_the_decision_state : given.a_link_decision
 {
-    Result<LinkProposalDecision, ValidationResult> _result;
+    Result<ProposeLink.Decision, ValidationResult> _result;
 
     async Task Because() => _result = await new ProposeLink().Provide(_ceremony, _decisions, new AccountReader(_readModels), _lookups, _digester, _options, _clock);
 

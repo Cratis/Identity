@@ -145,7 +145,7 @@ public class an_account_store : Specification
         var subject = reservation?.AccountSubject ?? allocatedSubject ?? AccountSubject.New();
         _subjects.Add(subject);
         var account = _profiles.InstanceForEventSourceId(subject.Value);
-        var decision = new SignInDecision(subject, authentication, _digester.Digest(authentication.IdpIssuer, authentication.Subject), new(email, name, login), reservation, account, _clock.GetUtcNow());
+        var decision = new SignInWithUpstreamKey.Decision(subject, authentication, _digester.Digest(authentication.IdpIssuer, authentication.Subject), new(email, name, login), reservation, account, _clock.GetUtcNow());
         var result = new SignInWithUpstreamKey(authentication.OperationId).Handle(decision);
         if (result.TryGetError(out var refusal))
         {
