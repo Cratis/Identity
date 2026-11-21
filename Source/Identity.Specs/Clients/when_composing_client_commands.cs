@@ -66,7 +66,7 @@ public class when_composing_client_commands : given.client_commands
         }).Build();
         await host.StartAsync(TestContext.Current.CancellationToken);
         var registration = new RegisterClient(new("keyless-spec-client"), _configuration, Plaintext);
-        var registrationError = Catch.Exception(() => _ = registration.Handle(_registrationDecision, host.Services.GetRequiredService<ClientSecretDigester>()));
+        var registrationError = Catch.Exception(() => _ = registration.Handle(_descriptors, _clock, host.Services.GetRequiredService<ClientSecretDigester>()));
         registrationError.ShouldBeOfExactType<InvalidOperationException>();
         registrationError.Message.ShouldEqual("invalid_client_secret_key_configuration");
         var rotation = new RotateSecret(_id, Plaintext, new(Now, Now));

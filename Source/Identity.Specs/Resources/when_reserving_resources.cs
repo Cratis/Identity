@@ -37,8 +37,8 @@ public class when_reserving_resources : given.resource_commands
     public async Task should_reserve_normalized_indicator_aliases_before_append(string original, string alias)
     {
         using var scenario = new EventScenario();
-        var first = new RegisterResource(original, "api", "api", new("API")).Handle(_decision).AsT0.Single();
-        var second = new RegisterResource(alias, "other", "other", new("Other")).Handle(_decision).AsT0.Single();
+        var first = new RegisterResource(original, "api", "api", new("API")).Handle(_catalog).AsT0.Single();
+        var second = new RegisterResource(alias, "other", "other", new("Other")).Handle(_catalog).AsT0.Single();
         ((ResourceRegistrationRecorded)first.Event).ResourceIndicator.ShouldEqual(((ResourceRegistrationRecorded)second.Event).ResourceIndicator);
         await scenario.Given.ForEventSource(first.EventSourceId).Events(first.Event);
         var duplicate = await scenario.When.ForEventSource(second.EventSourceId).Events(second.Event);
@@ -50,8 +50,8 @@ public class when_reserving_resources : given.resource_commands
     async Task should_allow_only_one_concurrent_resource_registration()
     {
         using var scenario = new EventScenario();
-        var first = new RegisterResource("https://api.example", "api", "api", new("API")).Handle(_decision).AsT0.Single();
-        var second = new RegisterResource("https://API.EXAMPLE:443/", "api", "api", new("API")).Handle(_decision).AsT0.Single();
+        var first = new RegisterResource("https://api.example", "api", "api", new("API")).Handle(_catalog).AsT0.Single();
+        var second = new RegisterResource("https://API.EXAMPLE:443/", "api", "api", new("API")).Handle(_catalog).AsT0.Single();
         var results = await Task.WhenAll(
             scenario.When.ForEventSource(first.EventSourceId).Events(first.Event),
             scenario.When.ForEventSource(second.EventSourceId).Events(second.Event));

@@ -3,9 +3,11 @@
 
 using Cratis.Chronicle.Events;
 using Cratis.Identity.Accounts.given;
+using Cratis.Identity.Configuration;
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Contracts.Resources;
 using Cratis.Identity.Contracts.Resources.Events;
+using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.Resources.given;
 
@@ -15,7 +17,7 @@ public class resource_commands : Specification
     protected ResourceId _id;
     protected AccountClock _clock;
     private protected ResourceRegistration _registered;
-    private protected ResourceRegistrationDecision _decision;
+    private protected IResourceCatalog _catalog;
     private protected ResourceRegistrationReducer _reducer;
     private protected EventContext _context;
 
@@ -23,7 +25,7 @@ public class resource_commands : Specification
     {
         _id = ResourceId.New();
         _clock = new() { Now = Now };
-        _decision = new([]);
+        _catalog = new ResourceCatalog(Options.Create(new IdentityOptions()));
         _reducer = new();
         _context = EventContext.EmptyWithEventSourceId(_id.Value);
         _registered = _reducer.On(Registered(), null, _context);

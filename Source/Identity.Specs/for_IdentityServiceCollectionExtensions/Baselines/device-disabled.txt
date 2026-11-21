@@ -50,7 +50,6 @@ descriptor|Cratis.Identity.Authorization.TokenExchange.ISubjectTokenValidator|Si
 descriptor|Cratis.Identity.Authorization.TokenExchange.TokenExchangeGrant|Scoped|Cratis.Identity.Authorization.TokenExchange.TokenExchangeGrant
 descriptor|Cratis.Identity.Clients.ClientDescriptors|Singleton|Cratis.Identity.Clients.ClientDescriptors
 descriptor|Cratis.Identity.Clients.ClientSecretDigester|Singleton|Cratis.Identity.Clients.ClientSecretDigester
-descriptor|Cratis.Identity.Clients.Registering.ClientRegistrationReads|Scoped|Cratis.Identity.Clients.Registering.ClientRegistrationReads
 descriptor|Cratis.Identity.ConsentFlow.ConsentActivation|Scoped|Cratis.Identity.ConsentFlow.ConsentActivation
 descriptor|Cratis.Identity.ConsentFlow.ConsentCaller|Scoped|Cratis.Identity.ConsentFlow.ConsentCaller
 descriptor|Cratis.Identity.ConsentFlow.ConsentInteraction|Scoped|Cratis.Identity.ConsentFlow.ConsentInteraction
@@ -68,7 +67,6 @@ descriptor|Cratis.Identity.Protocol.IProtocolCommands|Singleton|Cratis.Identity.
 descriptor|Cratis.Identity.Protocol.ReadModelCatchUp|Scoped|Cratis.Identity.Protocol.ReadModelCatchUp
 descriptor|Cratis.Identity.Protocol.Stores.IProtocolCatalog|Singleton|Cratis.Identity.Protocol.Stores.ConfigurationProtocolCatalog
 descriptor|Cratis.Identity.Resources.IResourceCatalog|Singleton|Cratis.Identity.Resources.ResourceCatalog
-descriptor|Cratis.Identity.Resources.ResourceRegistrationReads|Scoped|Cratis.Identity.Resources.ResourceRegistrationReads
 descriptor|Cratis.Identity.Revocation.ConfirmFenceLog|Scoped|Cratis.Identity.Revocation.ConfirmFenceLog
 descriptor|Cratis.Identity.Revocation.DispatchRevocationOutbox|Scoped|Cratis.Identity.Revocation.DispatchRevocationOutbox
 descriptor|Cratis.Identity.Revocation.FenceLogOptions|Singleton|instance

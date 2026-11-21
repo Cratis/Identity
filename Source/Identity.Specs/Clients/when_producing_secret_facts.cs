@@ -20,7 +20,7 @@ public class when_producing_secret_facts : given.client_commands
     async Task should_append_only_digest_facts_for_initial_and_rotated_secrets()
     {
         var command = new RegisterClient(new("spec-client"), _configuration, Plaintext);
-        var batch = command.Handle(_registrationDecision, _digester).AsT0.ToArray();
+        var batch = command.Handle(_descriptors, _clock, _digester).AsT0.ToArray();
         var id = batch[0].EventSourceId;
         batch.All(item => item.EventSourceId == id).ShouldBeTrue();
         Guid.TryParse(id.Value, out _).ShouldBeTrue();

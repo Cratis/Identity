@@ -33,7 +33,7 @@ internal sealed record RotateSecret([property: Key] ClientRegistrationId Registr
     /// <returns>The Internal fact, or a refusal.</returns>
     public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle([LookUpBy(nameof(RegistrationId))] ClientRegistration? state, ClientSecretDigester digester, TimeProvider time, IOptions<ClientSecretOptions> options)
     {
-        if (ClientDecisions.RequireActive(state) is { } refusal)
+        if (ClientRegistration.RequireActive(state) is { } refusal)
         {
             return refusal;
         }

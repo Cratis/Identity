@@ -27,7 +27,7 @@ internal sealed record ChangeRedirectUris([property: Key] ClientRegistrationId R
     /// <returns>The Internal fact, or a refusal.</returns>
     public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle([LookUpBy(nameof(RegistrationId))] ClientRegistration? state)
     {
-        if (ClientDecisions.RequireActive(state) is { } refusal)
+        if (ClientRegistration.RequireActive(state) is { } refusal)
         {
             return refusal;
         }

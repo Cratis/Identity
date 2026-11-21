@@ -29,7 +29,7 @@ internal sealed record RetireResourceScope([property: Key] ResourceId ResourceId
     /// <returns>The Internal source fact, or a closed refusal.</returns>
     public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle([LookUpBy(nameof(ResourceId))] ResourceRegistration? state, TimeProvider time)
     {
-        if (ResourceDecisions.RequireRegistered(ResourceId, state) is { } refusal)
+        if (ResourceRegistration.RequireRegistered(ResourceId, state) is { } refusal)
         {
             return refusal;
         }

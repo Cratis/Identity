@@ -23,15 +23,10 @@ namespace Cratis.Identity.Resources.Registering;
 [Authorize(Policy = IdentityPolicies.IssuerSecurityOwner)]
 internal sealed record RegisterResource(string ResourceIndicator, string Audience, string ScopePrefix, ResourceDisplayName DisplayName)
 {
-    /// <summary>Reads trusted configuration reservations.</summary>
-    /// <param name="reads">The configured catalogue read.</param>
-    /// <returns>The trusted decision context.</returns>
-    public ResourceRegistrationDecision Provide(ResourceRegistrationReads reads) => reads.Read();
-
     /// <summary>Returns an Internal source fact, never the Public publication contract.</summary>
-    /// <param name="decision">The configured reservations.</param>
+    /// <param name="catalog">The trusted configured catalogue.</param>
     /// <returns>The source fact on a new opaque resource stream, or a closed refusal.</returns>
-    public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle(ResourceRegistrationDecision decision)
+    public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle(IResourceCatalog catalog)
     {
         var indicator = ResourceRegistrationValidation.NormalizeIndicator(ResourceIndicator);
         if (!ResourceRegistrationValidation.IsRegistration(indicator, Audience, ScopePrefix, DisplayName?.Value))
@@ -39,7 +34,7 @@ internal sealed record RegisterResource(string ResourceIndicator, string Audienc
             return ValidationResult.Error("invalid_resource_registration");
         }
 
-        if (decision.Conflicts(indicator!, Audience, ScopePrefix))
+        if (Conflicts(catalog.All, indicator!, Audience, ScopePrefix))
         {
             return ValidationResult.Error("resource_already_reserved");
         }
@@ -49,4 +44,15 @@ internal sealed record RegisterResource(string ResourceIndicator, string Audienc
             new(ResourceId.New().Value, new ResourceRegistrationRecorded(indicator!, Audience, ScopePrefix, DisplayName!, FactId.New()))
         };
     }
+
+    /// <summary>Refuses configured indicators, audiences and scope namespaces, including normalized aliases.</summary>
+    /// <param name="configured">The configured resources.</param>
+    /// <param name="indicator">The normalized indicator.</param>
+    /// <param name="audience">The audience.</param>
+    /// <param name="prefix">The scope prefix.</param>
+    /// <returns>Whether configuration already owns any part of the registration.</returns>
+    internal static bool Conflicts(IEnumerable<ResourceServer> configured, string indicator, string audience, string prefix) => configured.Any(resource =>
+        resource.Audience == audience ||
+        resource.Indicators.Any(existing => ResourceRegistrationValidation.NormalizeIndicator(existing) == indicator) ||
+        resource.Scopes.Any(scope => scope.Name.StartsWith($"{prefix}:", StringComparison.Ordinal)));
 }
