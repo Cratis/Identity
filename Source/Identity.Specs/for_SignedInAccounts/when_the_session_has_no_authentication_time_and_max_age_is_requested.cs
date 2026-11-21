@@ -1,7 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Cratis.Identity.Accounts;
+using Cratis.Identity.Contracts.Accounts;
 using OpenIddict.Abstractions;
 
 namespace Cratis.Identity.for_SignedInAccounts;
