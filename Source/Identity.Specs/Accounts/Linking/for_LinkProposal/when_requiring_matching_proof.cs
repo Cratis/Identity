@@ -3,7 +3,6 @@
 
 using Cratis.Arc.Validation;
 using Cratis.Identity.Contracts.Accounts;
-using Cratis.Identity.Upstream;
 
 namespace Cratis.Identity.Accounts.Linking.for_LinkProposal;
 
