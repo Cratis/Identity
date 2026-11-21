@@ -7,6 +7,7 @@ using System.Text.Json;
 using Cratis.Identity.Accounts;
 using Cratis.Identity.Configuration;
 using Cratis.Identity.Resources;
+using Cratis.Identity.Upstream;
 
 namespace Cratis.Identity.Tenants;
 
@@ -30,6 +31,11 @@ internal class ProductTenantsCallback(IHttpClientFactory clients, ILogger<Produc
     internal async Task<TenantLookup> SelectableTenants(Account account, ResourceServer resource, TenantsCallbackOptions options, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (account.LinkFor(GitHubConnection.Issuer) is not { } gitHub)
+        {
+            return new TenantsListed([]);
+        }
+
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(options.Timeout);
         try
@@ -37,7 +43,7 @@ internal class ProductTenantsCallback(IHttpClientFactory clients, ILogger<Produc
             using var client = clients.CreateClient(TenantsCallbackHttpClient.Name);
             using var request = new HttpRequestMessage(HttpMethod.Post, options.Url)
             {
-                Content = JsonContent.Create(new TenantsCallbackRequest(resource.Audience, account.Id.Value, account.GitHubId.Value))
+                Content = JsonContent.Create(new TenantsCallbackRequest(resource.Audience, account.Id.Value, gitHub.IdpSub.Value))
             };
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             if (!string.IsNullOrEmpty(options.Secret))

@@ -11,6 +11,7 @@ using Cratis.Identity.given;
 using Cratis.Identity.Resources;
 using Cratis.Identity.Revocation;
 using Cratis.Identity.Tenants;
+using Cratis.Identity.Upstream;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -67,7 +68,7 @@ public class a_contended_refresh : for_RedeemRefreshTokenOnce.given.a_refresh_to
     /// <returns>The endpoint's <see cref="IResult"/>.</returns>
     protected async Task<IResult> ReachTokenEndpoint(string? authTime, IReadOnlyDictionary<string, bool> audiences)
     {
-        var account = new Account(new(FenceDoubles.Subject), "Member", null, "42", "member", AccountStatus.Active, [new LinkedUpstreamKey(AuthenticatingLinkId, new ConnectionId(Guid.NewGuid()), "https://login.example", "42", "member", DateTimeOffset.UnixEpoch)]);
+        var account = new Account(new(FenceDoubles.Subject), "Member", null, AccountStatus.Active, [new LinkedUpstreamKey(AuthenticatingLinkId, GitHubConnection.FixedConnectionId, GitHubConnection.Issuer, "42", "member", DateTimeOffset.UnixEpoch)]);
         var principal = _validation.Principal.Clone()
             .SetClaim(Claims.Subject, FenceDoubles.Subject)
             .SetClaim(IdentityClaims.TenantId, "tenant")

@@ -4,6 +4,7 @@
 using System.Text;
 using System.Text.Encodings.Web;
 using Cratis.Identity.Clients.MetadataDocuments;
+using Cratis.Identity.Upstream;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Cratis.Identity.Authorization;
@@ -35,7 +36,8 @@ internal static class ConsentPage
             .Append("<h1>Authorize ").Append(E(clientName)).Append("?</h1>");
 
         AppendClientIdentity(html, consent, clientName);
-        html.Append("<p>Signed in as <strong>").Append(E(consent.Account.GitHubLogin.Value)).Append("</strong> (GitHub).</p>")
+        var gitHub = consent.Account.LinkFor(GitHubConnection.Issuer);
+        html.Append("<p>Signed in as <strong>").Append(E(gitHub?.Login.Value ?? consent.Account.Name.Value)).Append(gitHub is null ? "</strong>.</p>" : "</strong> (GitHub).</p>")
             .Append("<p class=\"warn\">Only continue if you started this sign-in yourself. The client identifies itself as <code>")
             .Append(E(consent.ClientId)).Append("</code>; Identity cannot prove which program is asking.</p>")
             .Append("<dl><dt>Access will be sent to</dt><dd>").Append(E(DescribeRedirect(consent.RedirectUri))).Append("</dd>")

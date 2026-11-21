@@ -30,7 +30,7 @@ public class when_replaying_the_unlink_vector : given.a_refresh_admission
 
         _ = accountJson.GetProperty("unlinked_keys").EnumerateArray().Select(Key).ToList();
         var linked = accountJson.GetProperty("linked_keys").EnumerateArray().Select(Key).ToArray();
-        var account = new Account(new(accountJson.GetProperty("subject").GetString()), "Member", null, "42", "member", AccountStatus.Active, linked);
+        var account = new Account(new(accountJson.GetProperty("subject").GetString()), "Member", null, AccountStatus.Active, linked);
 
         _admitted = [];
         _expected = [];

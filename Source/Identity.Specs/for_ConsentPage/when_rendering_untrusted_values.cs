@@ -1,7 +1,6 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Cratis.Identity.Accounts;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.given;
 using Cratis.Identity.Resources;
@@ -24,7 +23,7 @@ public class when_rendering_untrusted_values : Specification
                 new Uri("http://127.0.0.1:53123/callback"),
                 new Grant(direct, ["direct:read"]),
                 [new SelectableTenant("cratis", Script)],
-                new Account(new("7d9d5c9e-0000-4000-8000-000000000001"), "Name", null, "1", Script, AccountStatus.Active, []),
+                GitHubAccounts.Create(new("7d9d5c9e-0000-4000-8000-000000000001"), "Name", null, "1", Script),
                 [new("state", "\"><script>alert(2)</script>")]),
             "token");
     }

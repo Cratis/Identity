@@ -27,8 +27,8 @@ public class an_owner_query : Specification
     void Establish()
     {
         _subject = AccountSubject.New();
-        _own = new(_subject, "Owner", null, "12345", "display", AccountStatus.Active, []);
-        _other = new(AccountSubject.New(), "Other", null, "54321", "other", AccountStatus.Active, []);
+        _own = new(_subject, "Owner", null, AccountStatus.Active, []);
+        _other = new(AccountSubject.New(), "Other", null, AccountStatus.Active, []);
         _scenario = new();
         var store = Substitute.For<IEventStore>();
         store.Namespace.Returns(EventStoreNamespaceName.Default);

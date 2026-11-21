@@ -20,7 +20,7 @@ public class when_stamping_and_reading_the_link : Specification
         AuthenticatingLink.Stamp(identity, _link);
         _stamped = new(identity);
         _unstamped = new(new ClaimsIdentity());
-        _session = SessionPrincipal.For(new Account(new("7d9d5c9e-0000-4000-8000-000000000001"), "Member", null, "42", "member", AccountStatus.Active, []), "test", DateTimeOffset.UnixEpoch, _link);
+        _session = SessionPrincipal.For(new Account(new("7d9d5c9e-0000-4000-8000-000000000001"), "Member", null, AccountStatus.Active, []), "test", DateTimeOffset.UnixEpoch, _link);
     }
 
     [Fact] void should_read_the_stamped_link() => AuthenticatingLink.Of(_stamped).ShouldEqual(_link);

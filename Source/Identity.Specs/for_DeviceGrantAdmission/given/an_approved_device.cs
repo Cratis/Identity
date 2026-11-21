@@ -51,7 +51,7 @@ public class an_approved_device : Specification
         _authorizations.HasStatusAsync(_authorization, Statuses.Valid, Arg.Any<CancellationToken>()).Returns(true);
         _authorizations.GetPropertiesAsync(_authorization, Arg.Any<CancellationToken>()).Returns(Stamp(7));
         _authorizations.GetSubjectAsync(_authorization, Arg.Any<CancellationToken>()).Returns(_principal.GetClaim(Claims.Subject));
-        _accounts.FindActive(Arg.Any<AccountSubject>(), Arg.Any<CancellationToken>()).Returns(new Account(new(_principal.GetClaim(Claims.Subject)), "Member", null, "42", "member", AccountStatus.Active, []));
+        _accounts.FindActive(Arg.Any<AccountSubject>(), Arg.Any<CancellationToken>()).Returns(Identity.given.GitHubAccounts.Create(new(_principal.GetClaim(Claims.Subject)), "Member", null, "42", "member"));
         _admission = new(_gate, _log, _tokens, _authorizations, _fences, _accounts);
         _baseline = await _admission.CanUse(_principal, true, CancellationToken.None);
     }

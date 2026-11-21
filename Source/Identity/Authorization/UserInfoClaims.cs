@@ -19,8 +19,12 @@ internal static class UserInfoClaims
         if (hasProfile)
         {
             claims[Claims.Name] = account.Name.Value;
-            claims[Claims.PreferredUsername] = account.GitHubLogin.Value;
+            if (account.DisplayLogin() is { } login)
+            {
+                claims[Claims.PreferredUsername] = login.Value;
+            }
         }
+
         return claims;
     }
 }

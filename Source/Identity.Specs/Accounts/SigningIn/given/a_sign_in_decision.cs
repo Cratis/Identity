@@ -51,7 +51,7 @@ public class a_sign_in_decision : Specification
         _gate = new(keys, digester);
         _digest = digester.Digest(authentication.IdpIssuer, authentication.Subject);
         _reservation = new(_subject, _link, true);
-        _account = new(_subject, "Person", "profile@example.test", "42", "old-login", AccountStatus.Active, [new(_link, authentication.ConnectionId, authentication.IdpIssuer, authentication.Subject, "old-login", _clock.Now)]);
+        _account = new(_subject, "Person", "profile@example.test", AccountStatus.Active, [new(_link, authentication.ConnectionId, authentication.IdpIssuer, authentication.Subject, "old-login", _clock.Now)]);
         _decisions = Substitute.For<IDecisionReads>();
         _decisions.Get<AccountGuard>(Arg.Any<ReadModelKey>()).Returns(_ =>
         {

@@ -24,7 +24,7 @@ public class when_renewing : given.an_account_and_a_grant
         _granted.SetAuthorizationId(AuthorizationId);
     }
 
-    void Because() => _identity = AccessTokenIdentity.Renew(_granted, _account with { GitHubLogin = "einari-renamed", GitHubId = "999" }, ClientId, true);
+    void Because() => _identity = AccessTokenIdentity.Renew(_granted, GitHubAccounts.Create(_account.Id, _account.Name, _account.Email, "999", "einari-renamed"), ClientId, true);
 
     [Fact] void should_derive_cid_from_the_authorization() => _identity.GetClaim("cid").ShouldEqual(OutboxEntry.Source(AuthorizationId).ToString("D"));
     [Fact] void should_send_cid_only_to_the_access_token() => _identity.FindFirst("cid").GetDestinations().ShouldContainOnly(Destinations.AccessToken);

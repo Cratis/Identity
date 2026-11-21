@@ -77,8 +77,8 @@ public class ReadModelsAfterErasure : IAsyncLifetime
         BeforeState.ShouldNotBeNull();
         BeforeAccount.Name.Value.ShouldEqual(ErasureHarness.RenamedPersonalName);
         BeforeAccount.Email.Value.ShouldEqual(EmailAddress);
-        BeforeAccount.GitHubId.Value.ShouldNotEqual(string.Empty);
-        BeforeAccount.GitHubLogin.Value.ShouldEqual("erasure-spec-login");
+        BeforeAccount.LinkedUpstreamKeys.Single().IdpSub.Value.ShouldNotEqual(string.Empty);
+        BeforeAccount.LinkedUpstreamKeys.Single().Login.Value.ShouldEqual("erasure-spec-login");
         BeforeAccount.LinkedUpstreamKeys.ShouldContainSingleItem();
         BeforeState.Name.Value.ShouldEqual(ErasureHarness.RenamedPersonalName);
         BeforeState.Email.Value.ShouldEqual(EmailAddress);
@@ -97,7 +97,7 @@ public class ReadModelsAfterErasure : IAsyncLifetime
         // Fail here if key destruction leaves the stored personal data readable.
         account.Name.Value.ShouldNotEqual(ErasureHarness.RenamedPersonalName);
         account.Email.Value.ShouldNotEqual(EmailAddress);
-        account.GitHubLogin.Value.ShouldNotEqual("erasure-spec-login");
+        account.LinkedUpstreamKeys.Single().Login.Value.ShouldNotEqual("erasure-spec-login");
         state.Name.Value.ShouldNotEqual(ErasureHarness.RenamedPersonalName);
         state.Email.Value.ShouldNotEqual(EmailAddress);
         state.Proposals.Values.Single().Subject.Value.ShouldNotEqual(ProposedSubject);
