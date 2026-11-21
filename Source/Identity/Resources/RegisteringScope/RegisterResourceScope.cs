@@ -11,6 +11,7 @@ using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Contracts.Resources;
 using Cratis.Identity.Contracts.Resources.Events;
 using Cratis.Identity.Hosting;
+using Cratis.Identity.Resources.Registering;
 using Cratis.Monads;
 using Microsoft.AspNetCore.Authorization;
 
