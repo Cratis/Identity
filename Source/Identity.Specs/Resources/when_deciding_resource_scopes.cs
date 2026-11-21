@@ -109,7 +109,7 @@ public class when_deciding_resource_scopes : given.resource_commands
     void should_detect_configuration_conflicts_by_audience_indicator_alias_and_scope_namespace(string indicator, string audience, string prefix, bool conflicts)
     {
         ResourceServer[] configured = [new("Configured", "Configured", ["https://api.example/"], [new("api:read", "Read")])];
-        RegisterResource.Conflicts(configured, ResourceRegistrationValidation.NormalizeIndicator(indicator)!, audience, prefix).ShouldEqual(conflicts);
+        RegisterResource.Conflicts(configured, ResourceRegistrationValidation.NormalizeIndicator(indicator), audience, prefix).ShouldEqual(conflicts);
     }
 
     [Fact]
