@@ -29,7 +29,7 @@ internal record RejectLink(LinkProposalId ProposalId)
     /// <param name="accounts">The passive account link-state reader.</param>
     /// <param name="time">The trusted clock.</param>
     /// <returns>The guarded owner decision, or a refusal.</returns>
-    public async Task<Result<LinkRejectionDecision, ValidationResult>> Provide(ILinkCeremony ceremony, IDecisionReads decisions, AccountReader accounts, TimeProvider time)
+    public async Task<Result<Decision, ValidationResult>> Provide(ILinkCeremony ceremony, IDecisionReads decisions, AccountReader accounts, TimeProvider time)
     {
         var session = LinkDecisions.RequireSession(ceremony.Session, time);
         if (session.TryGetError(out var refusal))
@@ -40,7 +40,7 @@ internal record RejectLink(LinkProposalId ProposalId)
         var account = session.AsT0.Account;
         await decisions.Get<AccountGuard>(new ReadModelKey(account.Value));
         var state = await accounts.FindLinkState(account) ?? new(account.Value);
-        return new LinkRejectionDecision(account, state);
+        return new Decision(account, state);
     }
 
     /// <summary>
@@ -48,7 +48,7 @@ internal record RejectLink(LinkProposalId ProposalId)
     /// </summary>
     /// <param name="decision">The guarded owning account state.</param>
     /// <returns>The rejection event, or a refusal without events.</returns>
-    public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle(LinkRejectionDecision decision)
+    public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle(Decision decision)
     {
         if (LinkDecisions.RequireActive(decision.State) is { } refusal)
         {
@@ -68,4 +68,11 @@ internal record RejectLink(LinkProposalId ProposalId)
 
         return new EventForEventSourceId[] { new(decision.Account.Value, new UpstreamKeyLinkRejected(ProposalId, "owner_rejected")) };
     }
+
+    /// <summary>
+    /// Guarded state for an owner rejection.
+    /// </summary>
+    /// <param name="Account">The authenticated owning account subject.</param>
+    /// <param name="State">The guarded account link state.</param>
+    internal record Decision(AccountSubject Account, AccountLinkState State);
 }

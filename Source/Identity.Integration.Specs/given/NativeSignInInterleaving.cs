@@ -33,7 +33,7 @@ public sealed class NativeSignInInterleaving
     /// </summary>
     /// <param name="decision">The caught-up, guarded decision.</param>
     /// <returns>The pause, if this async flow owns one.</returns>
-    internal Task Decided(SignInDecision decision) => _current.Value?.Decided(decision) ?? Task.CompletedTask;
+    internal Task Decided(SignInWithUpstreamKey.Decision decision) => _current.Value?.Decided(decision) ?? Task.CompletedTask;
 
     /// <summary>
     /// Records the unmodified result of a real protocol command.
@@ -72,7 +72,7 @@ public sealed class NativeSignInInterleaving
         int _decisions;
         int _retryWaits;
 
-        internal ConcurrentQueue<SignInDecision> Decisions { get; } = new();
+        internal ConcurrentQueue<SignInWithUpstreamKey.Decision> Decisions { get; } = new();
         public ConcurrentQueue<Attempt> Results { get; } = new();
         public int RetryWaits => Volatile.Read(ref _retryWaits);
 
@@ -94,7 +94,7 @@ public sealed class NativeSignInInterleaving
 
         internal void Retrying() => Interlocked.Increment(ref _retryWaits);
 
-        internal async Task Decided(SignInDecision decision)
+        internal async Task Decided(SignInWithUpstreamKey.Decision decision)
         {
             Decisions.Enqueue(decision);
             if (Interlocked.Increment(ref _decisions) <= pausedDecisions)
@@ -111,11 +111,11 @@ public sealed class NativeSignInInterleaving
     /// Holds a completed real decision before its events can reach the append pipeline.
     /// </summary>
     /// <param name="decision">The decision after its lookup and account rechecks.</param>
-    internal sealed class Pause(SignInDecision decision)
+    internal sealed class Pause(SignInWithUpstreamKey.Decision decision)
     {
         readonly TaskCompletionSource _released = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public SignInDecision Decision => decision;
+        public SignInWithUpstreamKey.Decision Decision => decision;
         internal Task Released => _released.Task;
 
         /// <summary>

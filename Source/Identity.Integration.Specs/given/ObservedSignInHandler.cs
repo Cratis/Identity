@@ -23,7 +23,7 @@ public sealed class ObservedSignInHandler(ICommandHandler inner, NativeCommandPr
     {
         probe.InvokingHandler();
         var result = await inner.Handle(commandContext);
-        await interleaving.Decided(commandContext.Dependencies.OfType<SignInDecision>().Single());
+        await interleaving.Decided(commandContext.Dependencies.OfType<SignInWithUpstreamKey.Decision>().Single());
         return result;
     }
 }

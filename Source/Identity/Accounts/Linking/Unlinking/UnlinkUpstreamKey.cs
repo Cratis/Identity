@@ -29,7 +29,7 @@ internal record UnlinkUpstreamKey(LinkId LinkId)
     /// <param name="accounts">The passive account link-state reader.</param>
     /// <param name="time">The trusted clock.</param>
     /// <returns>The guarded owner decision and current time, or a refusal.</returns>
-    public async Task<Result<UnlinkDecision, ValidationResult>> Provide(ILinkCeremony ceremony, IDecisionReads decisions, AccountReader accounts, TimeProvider time)
+    public async Task<Result<Decision, ValidationResult>> Provide(ILinkCeremony ceremony, IDecisionReads decisions, AccountReader accounts, TimeProvider time)
     {
         var session = LinkDecisions.RequireSession(ceremony.Session, time);
         if (session.TryGetError(out var refusal))
@@ -40,7 +40,7 @@ internal record UnlinkUpstreamKey(LinkId LinkId)
         var account = session.AsT0.Account;
         await decisions.Get<AccountGuard>(new ReadModelKey(account.Value));
         var state = await accounts.FindLinkState(account) ?? new(account.Value);
-        return new UnlinkDecision(account, state, time.GetUtcNow());
+        return new Decision(account, state, time.GetUtcNow());
     }
 
     /// <summary>
@@ -48,7 +48,7 @@ internal record UnlinkUpstreamKey(LinkId LinkId)
     /// </summary>
     /// <param name="decision">The guarded owning account state and trusted unlink time.</param>
     /// <returns>The unlink event, or a refusal without events.</returns>
-    public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle(UnlinkDecision decision)
+    public Result<IEnumerable<EventForEventSourceId>, ValidationResult> Handle(Decision decision)
     {
         if (LinkDecisions.RequireActive(decision.State) is { } refusal)
         {
@@ -63,4 +63,12 @@ internal record UnlinkUpstreamKey(LinkId LinkId)
         var fact = FactId.ForOperation(new(LinkId.Value), nameof(UpstreamKeyUnlinkRecorded));
         return new EventForEventSourceId[] { new(decision.Account.Value, new UpstreamKeyUnlinkRecorded(LinkId, link.KeyHash, "owner_unlinked", decision.At, fact)) { Occurred = decision.At } };
     }
+
+    /// <summary>
+    /// Guarded confirmed links and the trusted unlink time.
+    /// </summary>
+    /// <param name="Account">The authenticated owning account subject.</param>
+    /// <param name="State">The guarded account link state.</param>
+    /// <param name="At">The trusted unlink time.</param>
+    internal record Decision(AccountSubject Account, AccountLinkState State, DateTimeOffset At);
 }

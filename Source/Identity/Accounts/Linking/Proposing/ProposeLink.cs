@@ -12,6 +12,7 @@ using Cratis.Identity.Configuration;
 using Cratis.Identity.Contracts.Accounts;
 using Cratis.Identity.Contracts.Accounts.Events;
 using Cratis.Identity.Protocol;
+using Cratis.Identity.Upstream;
 using Cratis.Monads;
 using Microsoft.Extensions.Options;
 
@@ -34,7 +35,7 @@ internal record ProposeLink
     /// <param name="options">The realm hold policy.</param>
     /// <param name="time">The trusted clock.</param>
     /// <returns>The guarded decision inputs, or a refusal.</returns>
-    public async Task<Result<LinkProposalDecision, ValidationResult>> Provide(ILinkCeremony ceremony, IDecisionReads decisions, AccountReader accounts, UpstreamLookups lookups, UpstreamKeyDigester digester, IOptions<IdentityOptions> options, TimeProvider time)
+    public async Task<Result<Decision, ValidationResult>> Provide(ILinkCeremony ceremony, IDecisionReads decisions, AccountReader accounts, UpstreamLookups lookups, UpstreamKeyDigester digester, IOptions<IdentityOptions> options, TimeProvider time)
     {
         if (ceremony.Intent.EmailOnlyProof)
         {
@@ -62,7 +63,7 @@ internal record ProposeLink
         var reserved = await lookups.Find(digester.Digest(authentication.IdpIssuer, authentication.Subject)) is not null;
         await decisions.Get<AccountGuard>(new ReadModelKey(existing.Account.Value));
         var state = await accounts.FindLinkState(existing.Account) ?? new(existing.Account.Value);
-        return new LinkProposalDecision(existing.Account, state, authentication, ceremony.Intent, reserved, options.Value.Accounts.LinkHoldMinimum, time.GetUtcNow());
+        return new Decision(existing.Account, state, authentication, ceremony.Intent, reserved, options.Value.Accounts.LinkHoldMinimum, time.GetUtcNow());
     }
 
     /// <summary>
@@ -70,7 +71,7 @@ internal record ProposeLink
     /// </summary>
     /// <param name="decision">The guarded state and trusted ceremony observations.</param>
     /// <returns>The events and proposal identifier, or a refusal without events.</returns>
-    public Result<(IEnumerable<EventForEventSourceId>, LinkProposalId), ValidationResult> Handle(LinkProposalDecision decision)
+    public Result<(IEnumerable<EventForEventSourceId>, LinkProposalId), ValidationResult> Handle(Decision decision)
     {
         if (LinkDecisions.RequireActive(decision.State) is { } refusal)
         {
@@ -92,4 +93,16 @@ internal record ProposeLink
 
         return (events.Select(@event => new EventForEventSourceId(decision.Account.Value, @event) { Occurred = decision.At }).ToArray(), id);
     }
+
+    /// <summary>
+    /// Guarded account state and trusted observations for the proposal decision.
+    /// </summary>
+    /// <param name="Account">The authenticated account subject.</param>
+    /// <param name="State">The guarded account link state.</param>
+    /// <param name="Authentication">The fresh session-bound upstream proof.</param>
+    /// <param name="Intent">The explicit ceremony intent and trusted connection policy.</param>
+    /// <param name="Reserved">Whether the upstream key already has a permanent reservation.</param>
+    /// <param name="Hold">The realm's minimum link hold duration.</param>
+    /// <param name="At">The trusted decision time.</param>
+    internal record Decision(AccountSubject Account, AccountLinkState State, VerifiedAuthentication Authentication, LinkIntent Intent, bool Reserved, TimeSpan Hold, DateTimeOffset At);
 }
