@@ -68,6 +68,11 @@ internal class SignedInAccounts(IAccountReader accounts, IOptions<UpstreamLoginO
         return !RequiresReauthentication(request, authTime) && AccountSubject.TryParse(accountId, out subject);
     }
 
-    bool RequiresReauthentication(OpenIddictRequest request, DateTimeOffset authTime) =>
-        request.MaxAge is { } maximum && (maximum == 0 || ((time ?? TimeProvider.System).GetUtcNow() - authTime).TotalSeconds > maximum);
+    bool RequiresReauthentication(OpenIddictRequest request, DateTimeOffset authTime)
+    {
+        if (request.MaxAge is not { } maximum) return false;
+
+        var now = (time ?? TimeProvider.System).GetUtcNow();
+        return maximum == 0 || authTime > now || (now - authTime).TotalSeconds > maximum;
+    }
 }
