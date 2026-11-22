@@ -12,7 +12,7 @@ The **same image serves staging and production**. Run both with `ASPNETCORE_ENVI
 
 ## Image and process
 
-The working image name is `ghcr.io/cratis/id`, isolated to the image workflow so it can be renamed. The image workflow builds and smokes pull requests without signing in to a registry or pushing. Releases come from the `Publish` workflow: a merged pull request carrying one of `major`, `minor` or `patch` cuts a release, and `no-release` publishes nothing. Image publication is **off by default**: only a release with repository variable `CRATIS_ID_IMAGE_PUBLISH_ENABLED=true` enters the publishing job. Only that job requests `packages: write` and uses `GITHUB_TOKEN`. It publishes the release version, the commit SHA and, for non-prerelease versions, `latest`. Deployment should select an immutable digest; publishing an image does not deploy it.
+The working image name is `ghcr.io/cratis/id`, isolated to the image workflow so it can be renamed. The image workflow builds and smokes pull requests without signing in to a registry or pushing. Releases come from the `Publish` workflow: a merged pull request carrying one of `major`, `minor` or `patch` cuts a release, and `no-release` publishes nothing. Every release enters the publishing job. Only that job requests `packages: write` and uses `GITHUB_TOKEN`. It publishes the release version, the commit SHA and, for non-prerelease versions, `latest`. Deployment should select an immutable digest; publishing an image does not deploy it.
 
 Build the hosted image from the repository root:
 
@@ -63,6 +63,8 @@ Recommendation: in staging, the default is acceptable only while network policy 
 ### Indexed collections
 
 Configuration arrays are addressed by index, and environment variables merge into the shipped `appsettings.json` arrays **by index**. For `Identity:Resources` the shipped order is a contract: index `0` is `https://app.cratis.direct/v1` (audience `direct-v1`) and index `1` is `https://app.cratis.direct/mcp` (audience `direct-mcp`). Index `2` is Studio (audience `studio-mcp`). Infrastructure sets `Identity__Resources__<N>__TenantsCallback__Url` and `__Secret`, plus `Identity__Resources__2__Indicators__0` for Studio. Reordering or inserting a shipped entry silently re-targets those secrets, so any further entry must be appended (index `3` onward) and the automation must pair index and secret.
+
+**One instance per product.** By default the image serves the shipped Direct and Studio resources. An instance that serves one product, with its own issuer, keys and stores, sets `Identity__Hosting__EnabledAudiences__0` (and further indexes) to the audiences it serves. Every other resource, including the shipped ones, is left out of its catalog and needs no callback. A product that is not shipped adds its resource at the next free index (`Identity__Resources__3__Audience`, `__DisplayName`, `__ReceivesUpstreamIdentity`, `__Indicators__0`, `__Scopes__<n>__Name` and `__Description`, `__TenantsCallback__Url` and `__Secret`). An enabled audience that no resource defines refuses startup.
 
 `Identity__IntrospectionClients__<N>__ClientId` and `__ClientSecret` are both required for each entry, and client ids must be unique; the shipped list is empty. Use contiguous indexes starting at `0`. Validation enforces only that the secret is present; use a high-entropy value of at least 32 characters, as for callbacks.
 
@@ -206,11 +208,9 @@ Set `IDENTITY_CHRONICLE_IMAGE` to override the pinned Chronicle image. The smoke
 
 ### Publish checklist
 
-Publication stays off and the image name above is a working name. Before the first publication, a maintainer:
+The image is published by every release. Before relying on a release, a maintainer:
 
-1. Confirms the final public image name and updates the workflow tags.
-2. Confirms the `smoke` job is green on the main commit to publish.
-3. Sets the repository variable `CRATIS_ID_IMAGE_PUBLISH_ENABLED=true`.
-4. Merges a pull request labelled `patch`, `minor` or `major`, then records the published digest for deployment, which must pin it.
+1. Confirms the `smoke` job is green on the main commit to publish.
+2. Merges a pull request labelled `patch`, `minor` or `major`, then records the published digest for deployment, which must pin it.
 
 A container smoke is not a full protocol or D13 rehearsal. Browser sign-in, tenant selection, consent, refresh, product verifier behavior and restore/rotation exercises need their owning fixtures and operational procedures. Infrastructure manifests, rollout/rollback policy, per-app/self-hosted presets, bootstrap/upgrade tooling and host UI conformance are separate work.
