@@ -15,7 +15,7 @@ public class when_creating : given.an_account_and_a_grant
 {
     ClaimsIdentity _identity;
 
-    void Because() => _identity = AccessTokenIdentity.Create(_account, ClientId, _grant, new SelectableTenant("cratis", "Cratis"), AuthTime);
+    void Because() => _identity = AccessTokenIdentity.Create(_account, ClientId, _grant, new SelectableTenant("cratis", "Cratis"), AuthTime, _account.LinkedUpstreamKeys.Single().LinkId.Value);
 
     [Fact] void should_not_invent_cid_before_the_authorization_is_assigned() => _identity.GetClaim("cid").ShouldBeNull();
     [Fact] void should_carry_the_upstream_authentication_time() => _identity.GetClaim(Claims.AuthenticationTime).ShouldEqual("1700000000");

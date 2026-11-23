@@ -43,7 +43,7 @@ internal class ProductTenantsCallback(IHttpClientFactory clients, ILogger<Produc
             using var client = clients.CreateClient(TenantsCallbackHttpClient.Name);
             using var request = new HttpRequestMessage(HttpMethod.Post, options.Url)
             {
-                Content = JsonContent.Create(new TenantsCallbackRequest(resource.Audience, account.Id.Value, gitHub.IdpSub.Value))
+                Content = JsonContent.Create(new TenantsCallbackRequest(resource.Audience, account.Id.Value, gitHub.IdpSub.Value, gitHub.IdpIssuer.Value, gitHub.IdpSub.Value))
             };
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             if (!string.IsNullOrEmpty(options.Secret))

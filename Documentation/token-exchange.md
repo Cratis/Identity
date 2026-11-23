@@ -86,5 +86,17 @@ The access token follows the [access-token profile](specs/identity-access-token-
 - **Short life, no revocation grant.** The issued token cannot be revoked individually and has no refresh token. Its short lifetime is the bound. Membership is checked live when the token is issued; products must check it again on each request.
 - **Bearer, not DPoP.** There is no actor, so the delegation rule in [DPoP](specs/identity-dpop-v1.md) does not apply; the consumer validates the token like any Identity access token.
 - **Token-endpoint rate limits.** Before authentication, `/connect/token` has per-process fixed-window limits: 300 requests per source (IPv4 address or IPv6 /64), 120 per claimed client within a source and an additional 30 per exchange client within that source, per minute by default. A refusal is HTTP 429 with OAuth `temporarily_unavailable`, the generic description "Too many requests. Try again later.", `Cache-Control: no-store`, `Pragma: no-cache` and an integer `Retry-After` equal to the first refusing budget's remaining window rounded up (at least one second). Respect `Retry-After` before retrying. Limits use claimed client ids, not authenticated identity; they cannot drain another source's client budget. The source budget is charged first, rotating ids cannot bypass it, and source-refused requests do not charge client or exchange counters. See the [deployment settings](deployment/cratis-id-image-contract.md#token-endpoint-rate-limits) to tune or disable them. These counters reset on restart, are not shared across replicas and are not a distributed DoS defense: keep your edge limits. Issuer-key refresh remains limited to once a minute per issuer.
-- **Tenants callback.** Membership comes from the product tenants callback, which receives the GitHub identity of the account as it does for sign-in. A person who signed in through a non-GitHub issuer has the same upstream link and is looked up the same way; the callback body does not yet name the external issuer.
+- **Tenants callback.** Membership still comes from the existing GitHub-backed product callback. Its additive `idp` and `idp_sub` describe the same selected GitHub membership link as `github_id`, independently of the exchange token's external issuer. The original audience, canonical account subject and legacy membership key remain unchanged:
+
+  ```json
+  {
+    "audience": "https://resource.example",
+    "subject": "account-subject",
+    "github_id": "501",
+    "idp": "https://github.com",
+    "idp_sub": "501"
+  }
+  ```
+
+  Accounts with no GitHub link, including non-GitHub-only accounts, still get no selectable tenants and no callback request. Exchange requires a pre-existing active exact issuer/subject link and an active account; configuring an exchange issuer does not enroll or link anyone. Trusted non-GitHub sign-in and linking proof/ceremony are not implemented; their upstream contracts remain future work. A bearer exchange token is not dual proof for creating a link.
 - **Logs.** Refusals log the client, the configured issuer and a category. Replay-store outages use `ReplayGuardUnavailable` with detail `replay-guard-unavailable`; capacity refusals use `ReplayGuardFull` with detail `replay-guard-full`. Tokens and claim values are never logged.

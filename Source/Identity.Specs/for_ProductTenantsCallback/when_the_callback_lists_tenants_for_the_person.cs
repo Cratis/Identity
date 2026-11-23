@@ -18,5 +18,7 @@ public class when_the_callback_lists_tenants_for_the_person : given.a_tenants_ca
     [Fact] void should_send_the_audience() => JsonElement.Parse(handler.RequestBody).GetProperty("audience").GetString().ShouldEqual(resource.Audience);
     [Fact] void should_send_the_subject() => JsonElement.Parse(handler.RequestBody).GetProperty("subject").GetString().ShouldEqual(account.Id.Value);
     [Fact] void should_send_the_legacy_github_id() => JsonElement.Parse(handler.RequestBody).GetProperty("github_id").GetString().ShouldEqual("501");
+    [Fact] void should_send_the_exact_github_issuer() => JsonElement.Parse(handler.RequestBody).GetProperty("idp").GetString().ShouldEqual("https://github.com");
+    [Fact] void should_send_the_same_immutable_subject_as_the_legacy_key() => JsonElement.Parse(handler.RequestBody).GetProperty("idp_sub").GetString().ShouldEqual("501");
     [Fact] void should_not_put_the_subject_in_the_url() => handler.Requests.Single().RequestUri.AbsoluteUri.Contains(account.Id.Value, StringComparison.Ordinal).ShouldBeFalse();
 }

@@ -16,7 +16,7 @@ public class when_renewing_for_a_resource_that_no_longer_receives_upstream_ident
 
     void Because()
     {
-        var granted = new ClaimsPrincipal(AccessTokenIdentity.Create(_account, ClientId, _grant, new SelectableTenant("cratis", "Cratis"), AuthTime));
+        var granted = new ClaimsPrincipal(AccessTokenIdentity.Create(_account, ClientId, _grant, new SelectableTenant("cratis", "Cratis"), AuthTime, _account.LinkedUpstreamKeys.Single().LinkId.Value));
         _identity = AccessTokenIdentity.Renew(granted, _account, ClientId, false);
     }
 
