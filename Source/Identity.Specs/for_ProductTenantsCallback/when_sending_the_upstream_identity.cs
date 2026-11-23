@@ -22,8 +22,6 @@ public class when_sending_the_upstream_identity : given.a_tenants_callback
     [Fact] void should_keep_the_original_audience() => JsonElement.Parse(handler.RequestBody).GetProperty("audience").GetString().ShouldEqual(resource.Audience);
     [Fact] void should_keep_the_canonical_subject() => JsonElement.Parse(handler.RequestBody).GetProperty("subject").GetString().ShouldEqual(account.Id.Value);
     [Fact] void should_keep_the_selected_github_membership_key() => JsonElement.Parse(handler.RequestBody).GetProperty("github_id").GetString().ShouldEqual("501");
-    [Fact] void should_send_the_selected_github_issuer_as_a_string() => JsonElement.Parse(handler.RequestBody).GetProperty("idp").GetString().ShouldEqual("https://github.com");
-    [Fact] void should_send_the_same_selected_github_subject_as_a_string() => JsonElement.Parse(handler.RequestBody).GetProperty("idp_sub").GetString().ShouldEqual("501");
-    [Fact] void should_add_only_the_two_identity_fields() => JsonElement.Parse(handler.RequestBody).EnumerateObject().Select(_ => _.Name).ShouldContainOnly("audience", "subject", "github_id", "idp", "idp_sub");
+    [Fact] void should_send_only_the_three_consumer_fields() => JsonElement.Parse(handler.RequestBody).EnumerateObject().Select(_ => _.Name).ShouldContainOnly("audience", "subject", "github_id");
     [Fact] void should_keep_accepting_the_products_tenant_list() => ((TenantsListed)result).Tenants.Select(_ => _.Id).ShouldContainOnly("one", "two");
 }

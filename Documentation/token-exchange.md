@@ -86,15 +86,13 @@ The access token follows the [access-token profile](specs/identity-access-token-
 - **Short life, no revocation grant.** The issued token cannot be revoked individually and has no refresh token. Its short lifetime is the bound. Membership is checked live when the token is issued; products must check it again on each request.
 - **Bearer, not DPoP.** There is no actor, so the delegation rule in [DPoP](specs/identity-dpop-v1.md) does not apply; the consumer validates the token like any Identity access token.
 - **Token-endpoint rate limits.** Before authentication, `/connect/token` has per-process fixed-window limits: 300 requests per source (IPv4 address or IPv6 /64), 120 per claimed client within a source and an additional 30 per exchange client within that source, per minute by default. A refusal is HTTP 429 with OAuth `temporarily_unavailable`, the generic description "Too many requests. Try again later.", `Cache-Control: no-store`, `Pragma: no-cache` and an integer `Retry-After` equal to the first refusing budget's remaining window rounded up (at least one second). Respect `Retry-After` before retrying. Limits use claimed client ids, not authenticated identity; they cannot drain another source's client budget. The source budget is charged first, rotating ids cannot bypass it, and source-refused requests do not charge client or exchange counters. See the [deployment settings](deployment/cratis-id-image-contract.md#token-endpoint-rate-limits) to tune or disable them. These counters reset on restart, are not shared across replicas and are not a distributed DoS defense: keep your edge limits. Issuer-key refresh remains limited to once a minute per issuer.
-- **Tenants callback.** Membership still comes from the existing GitHub-backed product callback. Its additive `idp` and `idp_sub` describe the same selected GitHub membership link as `github_id`, independently of the exchange token's external issuer. The original audience, canonical account subject and legacy membership key remain unchanged:
+- **Tenants callback.** Membership still comes from the existing GitHub-backed product callback. The callback schema is unchanged and carries exactly the audience, the canonical account subject and the legacy membership key; it changes only after the consumer is upgraded first:
 
   ```json
   {
     "audience": "https://resource.example",
     "subject": "account-subject",
-    "github_id": "501",
-    "idp": "https://github.com",
-    "idp_sub": "501"
+    "github_id": "501"
   }
   ```
 
