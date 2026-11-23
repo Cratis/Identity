@@ -40,9 +40,9 @@
         "clean": "tsc -b --clean"
     },
     "devDependencies": {
-        "@cratis/arc": "22.155.0",
-        "@cratis/arc.react": "22.155.0",
-        "@cratis/fundamentals": "7.27.0",
+        "@cratis/arc": "22.186.2",
+        "@cratis/arc.react": "22.186.2",
+        "@cratis/fundamentals": "7.34.3",
         "@types/react": "19.3.0",
         "react": "19.3.1",
         "typescript": "6.0.3"

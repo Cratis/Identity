@@ -74,7 +74,7 @@ public sealed class CratisIdImageFixture : IAsyncDisposable
 
         var builder = new ContainerBuilder(CratisIdImage.Name)
             .WithNetwork(_network)
-            .WithResourceMapping(new DirectoryInfo(_secrets.Path), "/secrets")
+            .WithResourceMapping(DirectoryPath.Of(_secrets.Path), DirectoryPath.Of("/secrets"))
             .WithPortBinding(ImagePort, true)
             .WithCreateParameterModifier(parameters =>
             {

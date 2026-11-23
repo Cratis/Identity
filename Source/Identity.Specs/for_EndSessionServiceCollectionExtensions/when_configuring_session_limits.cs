@@ -21,7 +21,7 @@ public class when_configuring_session_limits : Specification
         var services = new ServiceCollection();
         services.AddEndSession(section);
         await using var provider = services.BuildServiceProvider();
-        await provider.GetRequiredService<IAsyncStartupValidator>().ValidateAsync(TestContext.Current.CancellationToken);
+        await ValidateStartup(provider);
         var limits = provider.GetRequiredService<IOptions<EndSessionOptions>>().Value;
         limits.EndSessionHintMaxAge.ShouldEqual(TimeSpan.FromSeconds(seconds));
         identity.Sessions.EndSessionHintMaxAge.ShouldEqual(limits.EndSessionHintMaxAge);
@@ -36,9 +36,19 @@ public class when_configuring_session_limits : Specification
         var services = new ServiceCollection();
         services.AddEndSession(Configuration(maximumAge).GetSection(IdentityOptions.SectionName));
         await using var provider = services.BuildServiceProvider();
-        var exception = await Catch.Exception(() => provider.GetRequiredService<IAsyncStartupValidator>().ValidateAsync(TestContext.Current.CancellationToken));
+        var exception = await Catch.Exception(() => ValidateStartup(provider));
         exception.ShouldBeOfExactType<OptionsValidationException>();
         exception.Message.ShouldContain("Identity:Sessions:EndSessionHintMaxAge must be positive.");
+    }
+
+    static Task ValidateStartup(IServiceProvider provider)
+    {
+#if NET11_0_OR_GREATER
+        return provider.GetRequiredService<IAsyncStartupValidator>().ValidateAsync(TestContext.Current.CancellationToken);
+#else
+        provider.GetRequiredService<IStartupValidator>().Validate();
+        return Task.CompletedTask;
+#endif
     }
 
     static IConfiguration Configuration(string? maximumAge)

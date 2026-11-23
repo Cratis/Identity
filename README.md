@@ -315,15 +315,20 @@ The CLI sends `client_id=cratis-cli`, `response_type=code`, `code_challenge_meth
 
 ## Development
 
+All nine .NET projects target .NET 10 and .NET 11. Use the .NET 11.0.100 SDK from `global.json` with both ASP.NET Core runtimes installed. CI runs unit and integration coverage for both targets; container publishing remains on .NET 11. The JavaScript workspaces use Corepack-managed Yarn 4.19.0 and Node.js 22.22.2 or newer within 22.x (or a newer supported Node.js major).
+
+Dependency updates retain Arc 22.186.2 because Arc 23 changes security and contract semantics. Chronicle stays on the coherent 19.181.5 family until its core 19.182.0 package is published. TypeScript remains at 6.0.3 within the `typescript-eslint` supported peer range; published npm peer ranges are unchanged. `System.Text.Json` and MVC testing packages follow each target's runtime major. StyleCop remains at 1.2.0-beta.556 because the newer analyzer adds diagnostics requiring unrelated source changes.
+
 ```shell
 dotnet build Identity.slnx -c Release
+./Source/Identity.Specs/bin/Release/net10.0/Cratis.Identity.Specs
 ./Source/Identity.Specs/bin/Release/net11.0/Cratis.Identity.Specs
 ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs   # needs Docker: starts MongoDB 8.0.14 and Chronicle 19.144.0-development
 dotnet pack Identity.slnx -c Release --no-build --output Artifacts/NuGet
 (cd Source/JavaScript && corepack enable && yarn install --immutable && yarn workspace @cratis/identity build && yarn workspace @cratis/identity.react compile && yarn workspace @cratis/identity.react test)
 ```
 
-The integration specs host the real pipeline (Arc, Chronicle, OpenIddict, MongoDB, consent, antiforgery, token endpoint). They replace GitHub's network login with a fake upstream that supplies verified observations to the same native command adapter. A test-local progress gate can hold projection acknowledgments without replacing the kernel, command pipeline or filtered target reader. The Chronicle development container defaults to the `cratis/chronicle:19.144.0-development` kernel image (override with `IDENTITY_CHRONICLE_IMAGE`). That tag is chosen independently of the Chronicle client package pin in `Directory.Packages.props` (currently `19.160.0`). The container exposes only a dynamically assigned loopback port.
+The integration specs host the real pipeline (Arc, Chronicle, OpenIddict, MongoDB, consent, antiforgery, token endpoint). They replace GitHub's network login with a fake upstream that supplies verified observations to the same native command adapter. A test-local progress gate can hold projection acknowledgments without replacing the kernel, command pipeline or filtered target reader. The Chronicle development container defaults to the `cratis/chronicle:19.144.0-development` kernel image (override with `IDENTITY_CHRONICLE_IMAGE`). That tag is chosen independently of the Chronicle client package pin in `Directory.Packages.props` (currently `19.181.5`). The container exposes only a dynamically assigned loopback port.
 
 Every change to the OpenIddict server or validation configuration (grant types, flows, event handlers, options, endpoint wiring) ships a host-startup unit spec in the same change: no containers, a service collection with `AddCratisIdentity` and the feature enabled, resolving the OpenIddict server options. Review reads code and does not run it, and the integration specs run only in CI, so only this spec catches a host that cannot start before the push.
 

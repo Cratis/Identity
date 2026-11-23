@@ -8,6 +8,7 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Cratis.Identity.for_TokenExchangeGrant;
 
+[PerFactSpecificationLifecycle]
 public class when_identity_side_checks_fail : given.a_token_exchange_request
 {
     [Fact]

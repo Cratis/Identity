@@ -55,7 +55,13 @@ public class when_characterizing_feature_registrations : given.registered_featur
         using var stream = typeof(when_characterizing_feature_registrations).Assembly.GetManifestResourceStream(
             $"Cratis.Identity.for_IdentityServiceCollectionExtensions.Baselines.device-{variant}.txt");
         using var reader = new StreamReader(stream);
+
+        // Keep the captured 7.8 baseline while expecting the selected OpenIddict 7.9 assembly versions.
         var baseline = given.FrameworkRegistrationSnapshot.IdentityRegistrations(reader.ReadToEnd()
+            .Replace("OpenIddict.Core, Version=7.8.0.0", "OpenIddict.Core, Version=7.9.0.0", StringComparison.Ordinal)
+            .Replace("OpenIddict.Server, Version=7.8.0.0", "OpenIddict.Server, Version=7.9.0.0", StringComparison.Ordinal)
+            .Replace("OpenIddict.Server.AspNetCore, Version=7.8.0.0", "OpenIddict.Server.AspNetCore, Version=7.9.0.0", StringComparison.Ordinal)
+            .Replace("OpenIddict.MongoDb.Models, Version=7.8.0.0", "OpenIddict.MongoDb.Models, Version=7.9.0.0", StringComparison.Ordinal)
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(line => !line.StartsWith("//", StringComparison.Ordinal))
             .ToArray());

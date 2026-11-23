@@ -61,7 +61,7 @@ jobs:
         run: node --test scripts/package-authorization-vectors.test.mjs scripts/check-vector-baseline-immutability.test.mjs scripts/package-contract-vectors.test.mjs
 
       - name: Build (Release, zero warnings)
-        run: dotnet build Identity.slnx --configuration Release -warnaserror -p:CratisProxiesOutputPath=
+        run: dotnet build Identity.slnx --configuration Release -warnaserror -p:CratisProxiesSkip=true -p:CratisProxiesOutputPath=
 
       - name: Format
         run: dotnet format Identity.slnx --verify-no-changes --no-restore
@@ -116,19 +116,28 @@ jobs:
             echo "::notice::Released schema gate bootstrap: the trusted base has no schema baseline yet; skipped."
             exit 0
           fi
+          dotnet Source/Identity.Contracts.Check/bin/Release/net10.0/Cratis.Identity.Contracts.Check.dll --released-ref "$base_commit" Identity.slnx
           dotnet Source/Identity.Contracts.Check/bin/Release/net11.0/Cratis.Identity.Contracts.Check.dll --released-ref "$base_commit" Identity.slnx
 
       - name: Unit specs
-        run: ./Source/Identity.Specs/bin/Release/net11.0/Cratis.Identity.Specs
+        run: |
+          ./Source/Identity.Specs/bin/Release/net10.0/Cratis.Identity.Specs
+          ./Source/Identity.Specs/bin/Release/net11.0/Cratis.Identity.Specs
 
       - name: Integration specs
-        run: ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs -notrait "Category=Conformance"
+        run: |
+          ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs -notrait "Category=Conformance"
+          ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs -notrait "Category=Conformance"
 
       - name: Release gate - Chronicle-down behaviour
-        run: ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs -class Cratis.Identity.Integration.for_Revocation.when_chronicle_is_unavailable
+        run: |
+          ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs -class Cratis.Identity.Integration.for_Revocation.when_chronicle_is_unavailable
+          ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs -class Cratis.Identity.Integration.for_Revocation.when_chronicle_is_unavailable
 
       - name: Protocol conformance (RFCs)
-        run: ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs -trait "Category=Conformance"
+        run: |
+          ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs -trait "Category=Conformance"
+          ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs -trait "Category=Conformance"
 
       # CI builds and packs the packages as artifacts only. There is no publish step until the W0 specs (#24, #26, #27) lock.
       - name: Pack NuGet
