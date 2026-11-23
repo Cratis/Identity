@@ -11,7 +11,7 @@ services:
       - identity-mongo:/data/db
 
   chronicle:
-    image: cratis/chronicle:19.144.0-development
+    image: cratis/chronicle:19.181.5-development
     volumes:
       - identity-chronicle:/data
 

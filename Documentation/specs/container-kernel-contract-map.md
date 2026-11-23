@@ -38,7 +38,7 @@ not weaken either contract and is not permission to remove the assertion.
   then a real Chronicle kernel. It hosts Identity in-process; upstream sign-in and
   tenant callbacks are stubs, not live providers.
 - [`ChronicleKernel`](../../Source/Identity.Integration.Specs/given/ChronicleKernel.cs)
-  selects `IDENTITY_CHRONICLE_IMAGE`, defaulting to `cratis/chronicle:19.144.0-development`.
+  selects `IDENTITY_CHRONICLE_IMAGE`, defaulting to `cratis/chronicle:19.181.5-development`.
   [`Directory.Packages.props`](../../Directory.Packages.props) pins the Chronicle
   client packages to `19.160.0`, Arc to `22.185.0` and OpenIddict to `7.8.0`.
   The kernel image tag is selected independently of the client package pin.

@@ -323,12 +323,12 @@ Dependency updates retain Arc 22.186.2 because Arc 23 changes security and contr
 dotnet build Identity.slnx -c Release
 ./Source/Identity.Specs/bin/Release/net10.0/Cratis.Identity.Specs
 ./Source/Identity.Specs/bin/Release/net11.0/Cratis.Identity.Specs
-./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs   # needs Docker: starts MongoDB 8.0.14 and Chronicle 19.144.0-development
+./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs   # CI only: starts MongoDB 8.0.14 and Chronicle 19.181.5-development
 dotnet pack Identity.slnx -c Release --no-build --output Artifacts/NuGet
 (cd Source/JavaScript && corepack enable && yarn install --immutable && yarn workspace @cratis/identity build && yarn workspace @cratis/identity.react compile && yarn workspace @cratis/identity.react test)
 ```
 
-The integration specs host the real pipeline (Arc, Chronicle, OpenIddict, MongoDB, consent, antiforgery, token endpoint). They replace GitHub's network login with a fake upstream that supplies verified observations to the same native command adapter. A test-local progress gate can hold projection acknowledgments without replacing the kernel, command pipeline or filtered target reader. The Chronicle development container defaults to the `cratis/chronicle:19.144.0-development` kernel image (override with `IDENTITY_CHRONICLE_IMAGE`). That tag is chosen independently of the Chronicle client package pin in `Directory.Packages.props` (currently `19.181.5`). The container exposes only a dynamically assigned loopback port.
+The integration specs host the real pipeline (Arc, Chronicle, OpenIddict, MongoDB, consent, antiforgery, token endpoint). They replace GitHub's network login with a fake upstream that supplies verified observations to the same native command adapter. A test-local progress gate can hold projection acknowledgments without replacing the kernel, command pipeline or filtered target reader. The Chronicle development container defaults to the `cratis/chronicle:19.181.5-development` kernel image (override with `IDENTITY_CHRONICLE_IMAGE`), aligned with the Chronicle client package pin in `Directory.Packages.props`. The container exposes only a dynamically assigned loopback port.
 
 Every change to the OpenIddict server or validation configuration (grant types, flows, event handlers, options, endpoint wiring) ships a host-startup unit spec in the same change: no containers, a service collection with `AddCratisIdentity` and the feature enabled, resolving the OpenIddict server options. Review reads code and does not run it, and the integration specs run only in CI, so only this spec catches a host that cannot start before the push.
 
