@@ -8,6 +8,8 @@ Specifications define contracts shared by Identity and its consumers. RFC 2119 k
 
 ## Index
 
+For the shared vocabulary behind the tenant model, see the [organization, workspace, and namespace explanation](https://cratis.io/concepts/organization-workspace-namespace/). It provides cross-product context, not a replacement for the versioned Identity contract or evidence that its behavior is deployed.
+
 | Spec id | Version | Status | Document |
 |---|---|---|---|
 | identity-contract | 1 | Signed off | [Person, account, resource, tenant and token contract](identity-contract-v1.md) |
