@@ -58,7 +58,7 @@ jobs:
           node scripts/package-contract-vectors.mjs check
 
       - name: Vector tooling tests
-        run: node --test scripts/package-authorization-vectors.test.mjs scripts/check-vector-baseline-immutability.test.mjs scripts/package-contract-vectors.test.mjs
+        run: node --test scripts/package-authorization-vectors.test.mjs scripts/check-vector-baseline-immutability.test.mjs scripts/package-contract-vectors.test.mjs scripts/run-integration-shard.test.mjs
 
       - name: Build (Release, zero warnings)
         run: dotnet build Identity.slnx --configuration Release -warnaserror -p:CratisProxiesSkip=true -p:CratisProxiesOutputPath=
@@ -170,9 +170,9 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
-  # Each target framework gets its own runner and the full 30 minute budget, so one cannot starve the other.
+  # Temporary two-shard containment pending phase profiling and the producer fix; each leg retains its 30 minute budget.
   integration:
-    name: Integration specs (${{ matrix.tfm }})
+    name: Integration specs (${{ matrix.tfm }}, shard ${{ matrix.shard }})
     needs: compile
     runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}
     timeout-minutes: 30
@@ -180,6 +180,7 @@ jobs:
       fail-fast: false
       matrix:
         tfm: [net10.0, net11.0]
+        shard: [0, 1]
     steps:
       # The checkout supplies the source content roots the host serves; the binaries come from the producer.
       - name: Checkout code
@@ -245,14 +246,17 @@ jobs:
         env:
           CRATIS_IDENTITY_LIFECYCLE_DIAGNOSTICS: "1"
           TFM: ${{ matrix.tfm }}
-        run: ./Source/Identity.Integration.Specs/bin/Release/"$TFM"/Cratis.Identity.Integration.Specs -notrait "Category=Conformance" -noAutoReporters -reporter identity-lifecycle
+          SHARD: ${{ matrix.shard }}
+        run: node scripts/run-integration-shard.mjs --tfm "$TFM" --shard "$SHARD"
 
       - name: Release gate - Chronicle-down behaviour
+        if: ${{ matrix.shard == 0 }}
         env:
           TFM: ${{ matrix.tfm }}
         run: ./Source/Identity.Integration.Specs/bin/Release/"$TFM"/Cratis.Identity.Integration.Specs -class Cratis.Identity.Integration.for_Revocation.when_chronicle_is_unavailable
 
       - name: Protocol conformance (RFCs)
+        if: ${{ matrix.shard == 0 }}
         env:
           TFM: ${{ matrix.tfm }}
         run: ./Source/Identity.Integration.Specs/bin/Release/"$TFM"/Cratis.Identity.Integration.Specs -trait "Category=Conformance"
