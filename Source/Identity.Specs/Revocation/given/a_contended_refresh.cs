@@ -76,6 +76,7 @@ public class a_contended_refresh : for_RedeemRefreshTokenOnce.given.a_refresh_to
             .SetClaim(Claims.Name, "Member")
             .SetClaim(Claims.PreferredUsername, "member")
             .SetClaim(IdentityClaims.GitHubId, "42")
+            .SetClaim(AuthenticatingLink.ClaimType, AuthenticatingLinkId.ToString("D"))
             .SetResources([.. audiences.Keys]);
         var accounts = Substitute.For<IAccountReader>();
         accounts.FindActive(Arg.Any<AccountSubject>(), Arg.Any<CancellationToken>()).Returns(account);

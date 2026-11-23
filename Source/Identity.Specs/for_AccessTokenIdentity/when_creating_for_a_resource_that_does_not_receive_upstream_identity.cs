@@ -19,7 +19,7 @@ public class when_creating_for_a_resource_that_does_not_receive_upstream_identit
     void Because()
     {
         var studio = new ResourceCatalog(Configurations.TwoResourceServers().AsOptions()).FindByAudience(Configurations.StudioAudience);
-        _identity = AccessTokenIdentity.Create(_account, ClientId, new Grant(studio, ["studio:read"]), new SelectableTenant("studio-tenant", "Studio"), AuthTime);
+        _identity = AccessTokenIdentity.Create(_account, ClientId, new Grant(studio, ["studio:read"]), new SelectableTenant("studio-tenant", "Studio"), AuthTime, _account.LinkedUpstreamKeys.Single().LinkId.Value);
     }
 
     [Fact] void should_not_flag_the_resource_by_default() => Configurations.TwoResourceServers().Resources[1].ReceivesUpstreamIdentity.ShouldBeFalse();

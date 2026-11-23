@@ -45,4 +45,21 @@ internal static class AuthenticatingLink
     /// <returns>Whether the link is known and current; a missing link is never current.</returns>
     public static bool IsCurrent(Account account, Guid? link) =>
         link is { } value && account.LinkedUpstreamKeys.Any(key => key.LinkId.Value == value);
+
+    /// <summary>Finds the unique current GitHub link selected by the credential's protected stamp.</summary>
+    /// <param name="identity">The stamped credential identity.</param>
+    /// <param name="account">The current active account.</param>
+    /// <returns>The supported GitHub link, or null for a missing, ambiguous or unsupported link.</returns>
+    internal static LinkedUpstreamKey? SupportedGitHubLink(ClaimsIdentity identity, Account account)
+    {
+        if (Of(new ClaimsPrincipal(identity)) is not { } linkId)
+        {
+            return null;
+        }
+
+        var links = account.LinkedUpstreamKeys.Where(_ => _.LinkId.Value == linkId).Take(2).ToArray();
+        return links is [var link] &&
+            link.ConnectionId == GitHubConnection.FixedConnectionId &&
+            link.IdpIssuer.Value == GitHubConnection.Issuer ? link : null;
+    }
 }

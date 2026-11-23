@@ -159,16 +159,16 @@ internal static class AccessTokenIdentity
 
     static void Apply(ClaimsIdentity identity, Account account, string clientId, bool receivesUpstreamIdentity)
     {
-        // TODO: idp is hard-wired to GitHub; it must come from the verified authentication once a second provider exists.
         // Only registered upstream-identity consumers get the upstream subject, GitHub claims and preferred_username; everything else fails closed.
         // Deviation from identity-contract-v1.md:148 (name MUST NOT appear in access tokens): resource proxies use it as the identity name;
         // tracked for the v1.1 amendment.
-        var gitHub = receivesUpstreamIdentity ? account.LinkFor(GitHubConnection.Issuer) : null;
+        var authenticatingLink = AuthenticatingLink.SupportedGitHubLink(identity, account);
+        var gitHub = receivesUpstreamIdentity ? authenticatingLink : null;
         identity
             .SetClaim(Claims.Subject, account.Id.Value)
             .SetClaim(Claims.Name, account.Name.Value)
-            .SetClaim(Claims.PreferredUsername, receivesUpstreamIdentity ? account.DisplayLogin()?.Value : null)
-            .SetClaim(IdentityClaims.Idp, GitHubConnection.Issuer)
+            .SetClaim(Claims.PreferredUsername, gitHub?.Login.Value)
+            .SetClaim(IdentityClaims.Idp, authenticatingLink?.IdpIssuer.Value)
             .SetClaim(IdentityClaims.IdpSub, gitHub?.IdpSub.Value)
             .SetClaim(IdentityClaims.GitHubId, gitHub?.IdpSub.Value)
             .SetClaim(IdentityClaims.GitHubLogin, gitHub?.Login.Value)

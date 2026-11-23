@@ -126,7 +126,7 @@ public class when_enforcing_resource_and_pkce : given.an_authorization_server
     {
         var grant = ((Grantable)Policy.Evaluate(new GrantRequest(["direct:read"], inferResource ? [] : [Resource]))).Grant;
         var account = Identity.given.GitHubAccounts.Create(new("7d9d5c9e-0000-4000-8000-000000000001"), "Synthetic Member", null, "42", "synthetic-member");
-        var identity = AccessTokenIdentity.Create(account, "cratis-cli", grant, new SelectableTenant("synthetic-tenant", "Synthetic Tenant"), DateTimeOffset.UtcNow);
+        var identity = AccessTokenIdentity.Create(account, "cratis-cli", grant, new SelectableTenant("synthetic-tenant", "Synthetic Tenant"), DateTimeOffset.UtcNow, account.LinkedUpstreamKeys.Single().LinkId.Value);
         var transaction = Transaction(new OpenIddictRequest { GrantType = GrantTypes.AuthorizationCode, ClientId = "cratis-cli" }, OpenIddictServerEndpointType.Token);
         var principal = new ClaimsPrincipal(identity);
         transaction.SetProperty(typeof(ProcessAuthenticationContext).FullName, new ProcessAuthenticationContext(transaction) { AuthorizationCodePrincipal = principal });
