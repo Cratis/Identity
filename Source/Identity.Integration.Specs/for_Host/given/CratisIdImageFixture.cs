@@ -159,14 +159,14 @@ public sealed class CratisIdImageFixture : IAsyncDisposable
 
     static string RandomSecret() => Convert.ToHexString(RandomNumberGenerator.GetBytes(24)).ToLowerInvariant();
 
-    static string InNetwork(MongoDbContainer container, string alias)
+    internal static string InNetwork(string connectionString, string alias)
     {
-        var builder = new MongoUrlBuilder(container.GetConnectionString())
+        var builder = new MongoUrlBuilder(connectionString)
         {
             Server = new MongoServerAddress(alias, MongoPort),
             DirectConnection = true
         };
-        return builder.ToMongoUrl().ToString();
+        return builder.ToMongoUrl().Url;
     }
 
     Dictionary<string, string> Settings()
@@ -178,9 +178,9 @@ public sealed class CratisIdImageFixture : IAsyncDisposable
             ["Identity__Issuer"] = "https://id.smoke.invalid/",
             ["Identity__SecretStore__Path"] = "/secrets",
             ["Identity__SecurityOwners__0"] = "smoke-owner",
-            ["Identity__MongoDB__ConnectionString"] = InNetwork(_operational, OperationalAlias),
+            ["Identity__MongoDB__ConnectionString"] = InNetwork(_operational.GetConnectionString(), OperationalAlias),
             ["Identity__MongoDB__Database"] = "identity-smoke",
-            ["Identity__FenceLog__ConnectionString"] = InNetwork(_fence, FenceAlias),
+            ["Identity__FenceLog__ConnectionString"] = InNetwork(_fence.GetConnectionString(), FenceAlias),
             ["Identity__FenceLog__Database"] = "fence",
             ["Identity__FenceLog__InstanceId"] = FenceInstance,
             ["Identity__FenceLog__MinimumSequence"] = "0",
