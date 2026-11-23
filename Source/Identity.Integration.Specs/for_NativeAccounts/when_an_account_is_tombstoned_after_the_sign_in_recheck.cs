@@ -14,14 +14,14 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Cratis.Identity.Integration.for_NativeAccounts;
 
 [Collection(IdentityCollection.Name)]
-public class when_an_account_is_tombstoned_after_the_sign_in_recheck(IdentityHost host) : IAsyncLifetime
+public class when_an_account_is_tombstoned_after_the_sign_in_recheck(IdentityHost host) : Specification
 {
     NativeSignInInterleaving.Run _run = null!;
     SignInOutcome _outcome = null!;
     int _newEvents;
     object[] _events = [];
 
-    public async ValueTask InitializeAsync()
+    async Task Because()
     {
         await using var scope = host.Services.CreateAsyncScope();
         var provider = scope.ServiceProvider;
@@ -51,11 +51,7 @@ public class when_an_account_is_tombstoned_after_the_sign_in_recheck(IdentityHos
         _newEvents = _events.Length - before;
     }
 
-    public ValueTask DisposeAsync()
-    {
-        _run?.Dispose();
-        return ValueTask.CompletedTask;
-    }
+    void Destroy() => _run?.Dispose();
 
     [Fact] void should_reject_the_pre_tombstone_decision_with_real_optimistic_concurrency() => _run.Results.First().Result.ValidationResults.Any(validation => validation.Reason == ValidationResultReason.ConcurrencyViolation).ShouldBeTrue();
     [Fact] void should_execute_only_one_fresh_retry() => _run.Results.Count.ShouldEqual(2);
