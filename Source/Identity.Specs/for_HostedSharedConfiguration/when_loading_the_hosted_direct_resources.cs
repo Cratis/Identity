@@ -15,6 +15,7 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Cratis.Identity.for_HostedSharedConfiguration;
 
+[PerFactSpecificationLifecycle]
 public class when_loading_the_hosted_direct_resources : Specification
 {
     IdentityOptions _options;

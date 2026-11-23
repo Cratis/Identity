@@ -70,13 +70,12 @@ jobs:
           version: ${{ github.event.inputs.version }}
           release-notes: ${{ github.event.inputs.release-notes }}
 
-  # Publication stays opt-in: set the repository variable CRATIS_ID_IMAGE_PUBLISH_ENABLED=true once the final
-  # image name is confirmed (see Documentation/deployment/cratis-id-image-contract.md). The image carries no
-  # hostname or secret; deployment pins the published digest.
+  # Every release publishes the hosted-shared image (see Documentation/deployment/cratis-id-image-contract.md).
+  # The image carries no hostname or secret; deployment pins the published digest.
   publish-image:
     name: Publish hosted-shared image
     needs: release
-    if: github.ref == 'refs/heads/main' && needs.release.outputs.publish == 'true' && vars.CRATIS_ID_IMAGE_PUBLISH_ENABLED == 'true'
+    if: github.ref == 'refs/heads/main' && needs.release.outputs.publish == 'true'
     runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}
     timeout-minutes: 30
     permissions:

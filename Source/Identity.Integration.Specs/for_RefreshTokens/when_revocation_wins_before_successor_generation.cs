@@ -4,12 +4,12 @@
 namespace Cratis.Identity.Integration.for_RefreshTokens;
 
 [Collection(IdentityCollection.Name)]
-public class when_revocation_wins_before_successor_generation(IdentityHost host) : IAsyncLifetime
+public class when_revocation_wins_before_successor_generation(IdentityHost host) : Specification
 {
     readonly List<HttpStatusCode> _revocations = [];
     readonly List<(HttpStatusCode Status, JsonElement Body)> _refreshes = [];
 
-    public async ValueTask InitializeAsync()
+    async Task Because()
     {
         for (var iteration = 0; iteration < 50; iteration++)
         {
@@ -37,7 +37,6 @@ public class when_revocation_wins_before_successor_generation(IdentityHost host)
         }
     }
 
-    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     [Fact] void should_acknowledge_all_fifty_restrictions() => _revocations.Count(status => status == HttpStatusCode.OK).ShouldEqual(50);
     [Fact] void should_reject_every_refresh_ordered_after_the_fence() => _refreshes.TrueForAll(response => response.Status == HttpStatusCode.BadRequest && response.Body.GetProperty("error").GetString() == "invalid_grant").ShouldBeTrue();
     [Fact] void should_not_release_a_successor() => _refreshes.Exists(response => response.Body.TryGetProperty("refresh_token", out _)).ShouldBeFalse();

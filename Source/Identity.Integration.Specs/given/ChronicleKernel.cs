@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Globalization;
 using System.Net.Sockets;
 using Docker.DotNet;
 using DotNet.Testcontainers.Builders;
@@ -22,10 +23,13 @@ public sealed class ChronicleKernel : IAsyncDisposable
     {
         // A fixed host port keeps the endpoint stable across the outage specs' stop/start; a Docker-assigned port changes on restart.
         var hostPort = FreeLoopbackPort();
-        _container = new ContainerBuilder(Environment.GetEnvironmentVariable("IDENTITY_CHRONICLE_IMAGE") ?? "cratis/chronicle:19.144.0-development")
+        _container = new ContainerBuilder(Environment.GetEnvironmentVariable("IDENTITY_CHRONICLE_IMAGE") ?? "cratis/chronicle:19.181.5-development")
             .WithPortBinding(hostPort, ClientPort)
             .WithCreateParameterModifier(parameters =>
             {
+                // Reserve the kernel listener port from outbound ephemeral allocation before Kestrel binds.
+                parameters.HostConfig.Sysctls ??= new Dictionary<string, string>(StringComparer.Ordinal);
+                parameters.HostConfig.Sysctls["net.ipv4.ip_local_reserved_ports"] = ClientPort.ToString(CultureInfo.InvariantCulture);
                 foreach (var binding in parameters.HostConfig.PortBindings[$"{ClientPort}/tcp"])
                 {
                     binding.HostIP = "127.0.0.1";

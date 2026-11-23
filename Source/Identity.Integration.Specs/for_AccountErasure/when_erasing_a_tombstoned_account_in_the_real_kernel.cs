@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Cratis.Identity.Integration.for_AccountErasure;
 
 [Collection(IdentityCollection.Name)]
-public class when_erasing_a_tombstoned_account_in_the_real_kernel(IdentityHost host) : IAsyncLifetime
+public class when_erasing_a_tombstoned_account_in_the_real_kernel(IdentityHost host) : Specification
 {
     ErasureRunResult _first = null!;
     ErasureRunResult _second = null!;
@@ -21,7 +21,7 @@ public class when_erasing_a_tombstoned_account_in_the_real_kernel(IdentityHost h
     object[] _events = [];
     ErasureState _state = null!;
 
-    public async ValueTask InitializeAsync()
+    async Task Because()
     {
         await using var scope = host.Services.CreateAsyncScope();
         var harness = new ErasureHarness(scope.ServiceProvider);
@@ -36,8 +36,6 @@ public class when_erasing_a_tombstoned_account_in_the_real_kernel(IdentityHost h
         _events = (await harness.Store.EventLog.GetFromSequenceNumber(EventSequenceNumber.First, new EventSourceId(account.Value))).Select(@event => @event.Content).ToArray();
         _state = await harness.Log.Read(account);
     }
-
-    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact] void should_accept_the_request_once() => _firstRequestAppended.ShouldBeTrue();
     [Fact] void should_treat_the_repeat_as_idempotent() => _repeatRequestAppended.ShouldBeFalse();

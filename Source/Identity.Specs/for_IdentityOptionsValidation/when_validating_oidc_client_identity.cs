@@ -5,6 +5,7 @@ using Cratis.Identity.Configuration;
 
 namespace Cratis.Identity.for_IdentityOptionsValidation;
 
+[PerFactSpecificationLifecycle]
 public class when_validating_oidc_client_identity : given.an_oidc_configuration
 {
     [Theory]

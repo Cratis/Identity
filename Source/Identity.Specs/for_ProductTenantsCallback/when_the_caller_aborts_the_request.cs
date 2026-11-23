@@ -3,6 +3,7 @@
 
 namespace Cratis.Identity.for_ProductTenantsCallback;
 
+[PerFactSpecificationLifecycle]
 public class when_the_caller_aborts_the_request : given.a_tenants_callback
 {
     [Fact]

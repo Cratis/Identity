@@ -34,8 +34,10 @@ internal sealed class HostedSharedConfiguration(IConfiguration configuration, IH
             return ValidateOptionsResult.Skip;
         }
 
+        var unknown = EnabledAudiences().Where(audience => options.Resources.All(resource => resource.Audience != audience)).ToList();
         options = Without(options, DisabledAudiences(options));
-        var failures = ValidateIssuer(options).Concat(ValidateRequiredSettings()).Concat(ValidateCustody())
+        var failures = unknown.Select(audience => $"Identity:Hosting:EnabledAudiences names \"{audience}\", which no resource defines.")
+            .Concat(ValidateIssuer(options)).Concat(ValidateRequiredSettings()).Concat(ValidateCustody())
             .Concat(ValidateHostOptions(options)).Concat(ValidateResources(options)).ToList();
         var accountValidation = new IdentityOptionsValidation(environment).Validate(name, new IdentityOptions { Accounts = options.Accounts });
         if (accountValidation.Failed)
@@ -72,11 +74,28 @@ internal sealed class HostedSharedConfiguration(IConfiguration configuration, IH
     /// </summary>
     /// <param name="options">The bound options.</param>
     /// <returns>The audiences to disable; empty outside hosted-shared.</returns>
-    internal IReadOnlyList<string> DisabledAudiences(IdentityOptions options) => !IsHostedShared()
-        ? []
-        : [.. options.Resources
-            .Where(resource => OptionalAudiences.Contains(resource.Audience) && IsUnconfigured(resource) && options.Resources.Count(_ => _.Audience == resource.Audience) == 1)
-            .Select(_ => _.Audience)];
+    internal IReadOnlyList<string> DisabledAudiences(IdentityOptions options)
+    {
+        if (!IsHostedShared())
+        {
+            return [];
+        }
+
+        // An instance that serves one product names the audiences it serves; every other resource, including the ones shipped
+        // for the other Cratis products, is left out of its catalog.
+        var enabled = EnabledAudiences();
+        if (enabled.Count > 0)
+        {
+            return [.. options.Resources.Select(_ => _.Audience).Where(audience => !enabled.Contains(audience)).Distinct()];
+        }
+
+        return
+        [
+            .. options.Resources
+                .Where(resource => OptionalAudiences.Contains(resource.Audience) && IsUnconfigured(resource) && options.Resources.Count(_ => _.Audience == resource.Audience) == 1)
+                .Select(_ => _.Audience)
+        ];
+    }
 
     static IdentityOptions Without(IdentityOptions options, IReadOnlyList<string> disabled) => disabled.Count == 0
         ? options
@@ -188,6 +207,9 @@ internal sealed class HostedSharedConfiguration(IConfiguration configuration, IH
         IsHttpsWithoutUserInfo(url) && string.IsNullOrEmpty(url.Fragment);
 
     static bool IsHttpsWithoutUserInfo(Uri value) => value.Scheme == "https" && string.IsNullOrEmpty(value.UserInfo);
+
+    IReadOnlyList<string> EnabledAudiences() =>
+        [.. (configuration.GetSection("Identity:Hosting:EnabledAudiences").Get<string[]>() ?? []).Where(audience => !string.IsNullOrWhiteSpace(audience))];
 
     bool IsHostedShared() => !environment.IsDevelopment() && configuration["Identity:Hosting:Preset"] == "hosted-shared";
 

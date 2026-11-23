@@ -12,6 +12,7 @@ using OpenIddict.Server.AspNetCore;
 
 namespace Cratis.Identity.for_DeviceVerificationEndpoint;
 
+[PerFactSpecificationLifecycle]
 public class when_a_verification_cannot_continue : given.a_verification_request
 {
     [Theory]

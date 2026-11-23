@@ -8,7 +8,7 @@ export default defineConfig({
     plugins: [dts({ include: ['src'], exclude: ['src/**/for_*/**'] })],
     build: {
         lib: { entry: 'src/index.ts', formats: ['es'], fileName: 'index' },
-        rollupOptions: { external: [/^react(?:\/|$)/, /^@cratis\//] }
+        rolldownOptions: { external: [/^react(?:\/|$)/, /^@cratis\//] }
     },
     test: { environment: 'jsdom', include: ['src/**/for_*/**/*.spec.tsx'] }
 });
