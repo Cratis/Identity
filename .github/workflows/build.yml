@@ -126,7 +126,7 @@ jobs:
 
       - name: Integration specs
         run: |
-          ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs -notrait "Category=Conformance"
+          ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs -notrait "Category=Conformance" -longRunning 60 -reporter verbose
           ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs -notrait "Category=Conformance"
 
       - name: Release gate - Chronicle-down behaviour
