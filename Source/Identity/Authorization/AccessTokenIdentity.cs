@@ -162,7 +162,7 @@ internal static class AccessTokenIdentity
         // Only registered upstream-identity consumers get the upstream subject, GitHub claims and preferred_username; everything else fails closed.
         // Deviation from identity-contract-v1.md:148 (name MUST NOT appear in access tokens): resource proxies use it as the identity name;
         // tracked for the v1.1 amendment.
-        var authenticatingLink = ResolveAuthenticatingLink(identity, account);
+        var authenticatingLink = AuthenticatingLink.SupportedGitHubLink(identity, account);
         var gitHub = receivesUpstreamIdentity ? authenticatingLink : null;
         identity
             .SetClaim(Claims.Subject, account.Id.Value)
@@ -177,18 +177,5 @@ internal static class AccessTokenIdentity
             .SetClaim(CredentialId.ClaimType, CredentialId.For(identity.GetAuthorizationId()));
 
         identity.SetDestinations(claim => AccessTokenClaimTypes.Contains(claim.Type, StringComparer.Ordinal) ? [Destinations.AccessToken] : []);
-    }
-
-    static LinkedUpstreamKey? ResolveAuthenticatingLink(ClaimsIdentity identity, Account account)
-    {
-        if (AuthenticatingLink.Of(new ClaimsPrincipal(identity)) is not { } linkId)
-        {
-            return null;
-        }
-
-        var links = account.LinkedUpstreamKeys.Where(_ => _.LinkId.Value == linkId).Take(2).ToArray();
-        return links is [var link] &&
-            link.ConnectionId == GitHubConnection.FixedConnectionId &&
-            link.IdpIssuer.Value == GitHubConnection.Issuer ? link : null;
     }
 }
