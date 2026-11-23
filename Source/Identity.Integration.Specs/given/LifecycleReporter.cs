@@ -5,7 +5,7 @@ using System.Globalization;
 using Xunit.Runner.Common;
 using Xunit.Sdk;
 
-[assembly: RegisterRunnerReporter(typeof(Cratis.Identity.Integration.given.LifecycleReporter))]
+[assembly: RegisterRunnerReporter(typeof(LifecycleReporter))]
 
 namespace Cratis.Identity.Integration.given;
 
