@@ -124,10 +124,14 @@ jobs:
           ./Source/Identity.Specs/bin/Release/net10.0/Cratis.Identity.Specs
           ./Source/Identity.Specs/bin/Release/net11.0/Cratis.Identity.Specs
 
+      # Temporary diagnostic for Cratis/Identity#228: static lifecycle markers only. Remove the env, the reporter flags,
+      # LifecycleReporter and the IdentityHost markers together once the blocked operation is fixed and validated.
       - name: Integration specs
+        env:
+          CRATIS_IDENTITY_LIFECYCLE_DIAGNOSTICS: "1"
         run: |
-          ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs -notrait "Category=Conformance"
-          ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs -notrait "Category=Conformance"
+          ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs -notrait "Category=Conformance" -noAutoReporters -reporter identity-lifecycle
+          ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs -notrait "Category=Conformance" -noAutoReporters -reporter identity-lifecycle
 
       - name: Release gate - Chronicle-down behaviour
         run: |

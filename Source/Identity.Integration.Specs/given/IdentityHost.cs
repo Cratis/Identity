@@ -59,6 +59,9 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     readonly string _fenceInstance = Guid.NewGuid().ToString("N");
     readonly ChronicleKernel _chronicle = new();
 
+    /// <summary>Temporary diagnostic for Cratis/Identity#228: remove together with LifecycleReporter and the workflow switch.</summary>
+    static readonly bool _lifecycleDiagnostics = Environment.GetEnvironmentVariable("CRATIS_IDENTITY_LIFECYCLE_DIAGNOSTICS") == "1";
+
     /// <summary>
     /// Gets the host's MongoDB database, for specs that must change what is stored behind Identity's back.
     /// </summary>
@@ -88,48 +91,100 @@ public class IdentityHost : WebApplicationFactory<Program>, IAsyncLifetime
     /// <inheritdoc/>
     public async ValueTask InitializeAsync()
     {
+        Mark("initialize", "started");
+        Mark("mongo-start", "started");
         await _mongo.StartAsync();
+        Mark("mongo-start", "completed");
+        Mark("fence-mongo-start", "started");
         await _fenceMongo.StartAsync();
+        Mark("fence-mongo-start", "completed");
         using var fenceClient = new MongoClient(_fenceMongo.GetConnectionString());
+        Mark("fence-metadata-insert", "started");
         await fenceClient.GetDatabase(_fenceDatabase).GetCollection<BsonDocument>("fence-custody").InsertOneAsync(new BsonDocument
         {
             { "_id", "metadata" }, { "instanceId", _fenceInstance }, { "allocated", 0L }, { "epoch", 0L }
         });
+        Mark("fence-metadata-insert", "completed");
+        Mark("chronicle-start", "started");
         await _chronicle.Start();
+        Mark("chronicle-start", "completed");
 
         // Start the native client and reconcile all artifacts before any spec runs.
+        Mark("server-creation", "started");
         _ = Server;
-        await using var scope = Services.CreateAsyncScope();
-        var store = scope.ServiceProvider.GetRequiredService<IEventStore>();
-        var registration = await store.WaitForRegistration(TimeSpan.FromSeconds(30));
-        registration.IsSuccess.ShouldBeTrue();
-        registration.Artifacts.ShouldNotBeEmpty();
-        await store.Reactors.WaitTillSubscribed<AccountPublications>(TimeSpan.FromSeconds(30));
+        Mark("server-creation", "completed");
+        {
+            await using var scope = Services.CreateAsyncScope();
+            var store = scope.ServiceProvider.GetRequiredService<IEventStore>();
+            Mark("registration-wait", "started");
+            var registration = await store.WaitForRegistration(TimeSpan.FromSeconds(30));
+            Mark("registration-wait", "completed");
+            registration.IsSuccess.ShouldBeTrue();
+            registration.Artifacts.ShouldNotBeEmpty();
+            Mark("reactor-subscription-wait", "started");
+            await store.Reactors.WaitTillSubscribed<AccountPublications>(TimeSpan.FromSeconds(30));
+            Mark("reactor-subscription-wait", "completed");
 
-        // The gate starts closed and issuance is refused until restriction recovery finishes; no spec may start before that.
-        await WaitForRecovery(Services);
+            // The gate starts closed and issuance is refused until restriction recovery finishes; no spec may start before that.
+            Mark("recovery-wait", "started");
+            await WaitForRecovery(Services);
+            Mark("recovery-wait", "completed");
 
-        // AccountLinkStateReducer is [Passive] (folded on demand), so it never subscribes; waiting for it would always time out.
+            // AccountLinkStateReducer is [Passive] (folded on demand), so it never subscribes; waiting for it would always time out.
+            Mark("initialization-scope-disposal", "started");
+        }
+
+        Mark("initialization-scope-disposal", "completed");
+        Mark("initialize", "completed");
     }
 
     /// <inheritdoc/>
     public override async ValueTask DisposeAsync()
     {
+        Mark("async-dispose", "started");
+        Mark("async-base-dispose", "started");
         await base.DisposeAsync();
+        Mark("async-base-dispose", "completed");
+        Mark("async-chronicle-dispose", "started");
         await _chronicle.DisposeAsync();
+        Mark("async-chronicle-dispose", "completed");
+        Mark("async-mongo-dispose", "started");
         await _mongo.DisposeAsync();
+        Mark("async-mongo-dispose", "completed");
+        Mark("async-fence-mongo-dispose", "started");
         await _fenceMongo.DisposeAsync();
+        Mark("async-fence-mongo-dispose", "completed");
+        Mark("async-dispose", "completed");
     }
 
     /// <inheritdoc/>
     protected override void Dispose(bool disposing)
     {
+        Mark("sync-dispose", "started");
+        Mark("sync-base-dispose", "started");
         base.Dispose(disposing);
+        Mark("sync-base-dispose", "completed");
         if (disposing)
         {
+            Mark("sync-chronicle-dispose", "started");
             _chronicle.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            Mark("sync-chronicle-dispose", "completed");
+            Mark("sync-mongo-dispose", "started");
             _mongo.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            Mark("sync-mongo-dispose", "completed");
+            Mark("sync-fence-mongo-dispose", "started");
             _fenceMongo.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            Mark("sync-fence-mongo-dispose", "completed");
+        }
+
+        Mark("sync-dispose", "completed");
+    }
+
+    void Mark(string operation, string phase)
+    {
+        if (_lifecycleDiagnostics)
+        {
+            Console.Error.WriteLine($"[identity-lifecycle] {DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture)} {GetType().FullName} {operation} {phase}");
         }
     }
 
