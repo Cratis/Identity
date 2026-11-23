@@ -16,8 +16,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build and specs
+  compile:
+    name: Compile and unit specs
     runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}
     timeout-minutes: 30
     steps:
@@ -124,24 +124,26 @@ jobs:
           ./Source/Identity.Specs/bin/Release/net10.0/Cratis.Identity.Specs
           ./Source/Identity.Specs/bin/Release/net11.0/Cratis.Identity.Specs
 
-      # Temporary diagnostic for Cratis/Identity#228: static lifecycle markers only. Remove the env, the reporter flags,
-      # LifecycleReporter and the IdentityHost markers together once the blocked operation is fixed and validated.
-      - name: Integration specs
-        env:
-          CRATIS_IDENTITY_LIFECYCLE_DIAGNOSTICS: "1"
+      # Integration specs run in the isolated `integration` matrix below from this exact build output, never a rebuild.
+      # The bundle holds the complete runtime output of both target frameworks plus the producer workspace path, which the
+      # consumers use to rebase the absolute content roots in MvcTestingAppManifest.json. It stays outside Artifacts/ so
+      # the packages artifact is unchanged.
+      - name: Bundle integration spec output
+        shell: bash
         run: |
-          ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs -notrait "Category=Conformance" -noAutoReporters -reporter identity-lifecycle
-          ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs -notrait "Category=Conformance" -noAutoReporters -reporter identity-lifecycle
+          set -euo pipefail
+          stage="$RUNNER_TEMP/integration-bundle"
+          mkdir -p "$stage"
+          printf '%s' "$GITHUB_WORKSPACE" > "$stage/producer-workspace.txt"
+          tar -cf "$RUNNER_TEMP/integration-bin.tar" -C "$stage" producer-workspace.txt -C "$GITHUB_WORKSPACE/Source/Identity.Integration.Specs/bin/Release" net10.0 net11.0
 
-      - name: Release gate - Chronicle-down behaviour
-        run: |
-          ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs -class Cratis.Identity.Integration.for_Revocation.when_chronicle_is_unavailable
-          ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs -class Cratis.Identity.Integration.for_Revocation.when_chronicle_is_unavailable
-
-      - name: Protocol conformance (RFCs)
-        run: |
-          ./Source/Identity.Integration.Specs/bin/Release/net10.0/Cratis.Identity.Integration.Specs -trait "Category=Conformance"
-          ./Source/Identity.Integration.Specs/bin/Release/net11.0/Cratis.Identity.Integration.Specs -trait "Category=Conformance"
+      - name: Upload integration spec output
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: integration-bin
+          path: ${{ runner.temp }}/integration-bin.tar
+          retention-days: 1
+          if-no-files-found: error
 
       # CI builds and packs the packages as artifacts only. There is no publish step until the W0 specs (#24, #26, #27) lock.
       - name: Pack NuGet
@@ -167,3 +169,110 @@ jobs:
           path: Artifacts/
           retention-days: 7
           if-no-files-found: error
+
+  # Each target framework gets its own runner and the full 30 minute budget, so one cannot starve the other.
+  integration:
+    name: Integration specs (${{ matrix.tfm }})
+    needs: compile
+    runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        tfm: [net10.0, net11.0]
+    steps:
+      # The checkout supplies the source content roots the host serves; the binaries come from the producer.
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Keep NuGet packages on the scratch volume
+        shell: bash
+        run: echo "NUGET_PACKAGES=$(dirname "$GITHUB_WORKSPACE")/.nuget-packages" >> "$GITHUB_ENV"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
+        with:
+          global-json-file: global.json
+          dotnet-version: |
+            10.0.x
+            11.0.x
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.x
+
+      - name: Download integration spec output
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: integration-bin
+          path: ${{ runner.temp }}/integration-download
+
+      # Extract the producer's output unchanged, then point the manifest's content roots at this workspace.
+      - name: Restore integration spec output
+        shell: bash
+        env:
+          TFM: ${{ matrix.tfm }}
+        run: |
+          set -euo pipefail
+          out="Source/Identity.Integration.Specs/bin/Release"
+          extract="$RUNNER_TEMP/integration-extract"
+          mkdir -p "$out" "$extract"
+          tar -xf "$RUNNER_TEMP/integration-download/integration-bin.tar" -C "$extract"
+          mv "$extract/$TFM" "$out/$TFM"
+          PRODUCER_WORKSPACE="$(cat "$extract/producer-workspace.txt")" MANIFEST="$out/$TFM/MvcTestingAppManifest.json" node --input-type=module - <<'REBASE'
+          import fs from 'node:fs';
+          const { PRODUCER_WORKSPACE: from, GITHUB_WORKSPACE: to, MANIFEST: file } = process.env;
+          const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+          const rebased = {};
+          for (const [assembly, root] of Object.entries(manifest)) {
+            if (root !== from && !root.startsWith(from + '/')) {
+              throw new Error(`Content root for ${assembly} is outside the producer workspace: ${root}`);
+            }
+            rebased[assembly] = to + root.slice(from.length);
+          }
+          fs.writeFileSync(file, JSON.stringify(rebased, null, 2));
+          console.log(`Rebased ${Object.keys(rebased).length} content roots.`);
+          REBASE
+
+      # Temporary diagnostic for Cratis/Identity#228: static lifecycle markers only. Remove the env, the reporter flags,
+      # LifecycleReporter and the IdentityHost markers together once the blocked operation is fixed and validated.
+      - name: Integration specs
+        env:
+          CRATIS_IDENTITY_LIFECYCLE_DIAGNOSTICS: "1"
+          TFM: ${{ matrix.tfm }}
+        run: ./Source/Identity.Integration.Specs/bin/Release/"$TFM"/Cratis.Identity.Integration.Specs -notrait "Category=Conformance" -noAutoReporters -reporter identity-lifecycle
+
+      - name: Release gate - Chronicle-down behaviour
+        env:
+          TFM: ${{ matrix.tfm }}
+        run: ./Source/Identity.Integration.Specs/bin/Release/"$TFM"/Cratis.Identity.Integration.Specs -class Cratis.Identity.Integration.for_Revocation.when_chronicle_is_unavailable
+
+      - name: Protocol conformance (RFCs)
+        env:
+          TFM: ${{ matrix.tfm }}
+        run: ./Source/Identity.Integration.Specs/bin/Release/"$TFM"/Cratis.Identity.Integration.Specs -trait "Category=Conformance"
+
+  # Stable required check: the caller's gate watches this job id and name, so it fails closed unless every part succeeded.
+  build:
+    name: Build and specs
+    if: ${{ always() }}
+    needs: [compile, integration]
+    runs-on: ${{ vars.RUNNER_GATE || 'cratis-arc-small' }}
+    timeout-minutes: 5
+    steps:
+      - name: Compile and every integration target succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key)\t\(.value.result)"'
+          bad=$(echo "$NEEDS" | jq -r 'to_entries[] | select(.value.result != "success") | .key')
+          if [ -n "${bad// /}" ]; then
+            echo "::error title=build::Not successful: $bad"
+            exit 1
+          fi
