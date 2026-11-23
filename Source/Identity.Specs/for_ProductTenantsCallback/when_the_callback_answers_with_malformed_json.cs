@@ -5,6 +5,7 @@ using Cratis.Identity.Tenants;
 
 namespace Cratis.Identity.for_ProductTenantsCallback;
 
+[PerFactSpecificationLifecycle]
 public class when_the_callback_answers_with_malformed_json : given.a_tenants_callback
 {
     [Theory]

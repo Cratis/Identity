@@ -1,7 +1,7 @@
 {
   "name": "@cratis/identity-workspace",
   "private": true,
-  "packageManager": "yarn@4.9.2",
+  "packageManager": "yarn@4.19.0",
   "workspaces": [
     "Identity",
     "Identity.React"

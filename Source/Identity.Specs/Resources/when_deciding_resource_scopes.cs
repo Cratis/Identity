@@ -11,6 +11,7 @@ using Microsoft.Extensions.Options;
 
 namespace Cratis.Identity.Resources;
 
+[PerFactSpecificationLifecycle]
 public class when_deciding_resource_scopes : given.resource_commands
 {
     [Fact]

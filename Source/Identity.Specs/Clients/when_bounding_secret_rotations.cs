@@ -6,6 +6,7 @@ using Cratis.Identity.Clients.RotatingSecret;
 
 namespace Cratis.Identity.Clients;
 
+[PerFactSpecificationLifecycle]
 public class when_bounding_secret_rotations : given.client_commands
 {
     [Theory]

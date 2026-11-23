@@ -7,6 +7,7 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Cratis.Identity.for_TokenExchangeGrant;
 
+[PerFactSpecificationLifecycle]
 public class when_dependencies_are_unavailable : given.a_token_exchange_request
 {
     [Fact]

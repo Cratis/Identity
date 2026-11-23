@@ -39,7 +39,7 @@ public sealed class CratisIdImageFixture : IAsyncDisposable
     {
         _operational = new MongoDbBuilder(MongoImage).WithReplicaSet().WithNetwork(_network).WithNetworkAliases(OperationalAlias).Build();
         _fence = new MongoDbBuilder(MongoImage).WithReplicaSet().WithNetwork(_network).WithNetworkAliases(FenceAlias).Build();
-        _chronicle = new ContainerBuilder(Environment.GetEnvironmentVariable("IDENTITY_CHRONICLE_IMAGE") ?? "cratis/chronicle:19.144.0-development")
+        _chronicle = new ContainerBuilder(Environment.GetEnvironmentVariable("IDENTITY_CHRONICLE_IMAGE") ?? "cratis/chronicle:19.181.5-development")
             .WithNetwork(_network)
             .WithNetworkAliases(ChronicleAlias)
             .WithWaitStrategy(Wait.ForUnixContainer().UntilInternalTcpPortIsAvailable(ChroniclePort, wait => wait.WithTimeout(TimeSpan.FromMinutes(2))))
@@ -74,7 +74,7 @@ public sealed class CratisIdImageFixture : IAsyncDisposable
 
         var builder = new ContainerBuilder(CratisIdImage.Name)
             .WithNetwork(_network)
-            .WithResourceMapping(new DirectoryInfo(_secrets.Path), "/secrets")
+            .WithResourceMapping(DirectoryPath.Of(_secrets.Path), DirectoryPath.Of("/secrets"))
             .WithPortBinding(ImagePort, true)
             .WithCreateParameterModifier(parameters =>
             {
@@ -159,14 +159,14 @@ public sealed class CratisIdImageFixture : IAsyncDisposable
 
     static string RandomSecret() => Convert.ToHexString(RandomNumberGenerator.GetBytes(24)).ToLowerInvariant();
 
-    static string InNetwork(MongoDbContainer container, string alias)
+    internal static string InNetwork(string connectionString, string alias)
     {
-        var builder = new MongoUrlBuilder(container.GetConnectionString())
+        var builder = new MongoUrlBuilder(connectionString)
         {
             Server = new MongoServerAddress(alias, MongoPort),
             DirectConnection = true
         };
-        return builder.ToMongoUrl().ToString();
+        return builder.ToMongoUrl().Url;
     }
 
     Dictionary<string, string> Settings()
@@ -178,9 +178,9 @@ public sealed class CratisIdImageFixture : IAsyncDisposable
             ["Identity__Issuer"] = "https://id.smoke.invalid/",
             ["Identity__SecretStore__Path"] = "/secrets",
             ["Identity__SecurityOwners__0"] = "smoke-owner",
-            ["Identity__MongoDB__ConnectionString"] = InNetwork(_operational, OperationalAlias),
+            ["Identity__MongoDB__ConnectionString"] = InNetwork(_operational.GetConnectionString(), OperationalAlias),
             ["Identity__MongoDB__Database"] = "identity-smoke",
-            ["Identity__FenceLog__ConnectionString"] = InNetwork(_fence, FenceAlias),
+            ["Identity__FenceLog__ConnectionString"] = InNetwork(_fence.GetConnectionString(), FenceAlias),
             ["Identity__FenceLog__Database"] = "fence",
             ["Identity__FenceLog__InstanceId"] = FenceInstance,
             ["Identity__FenceLog__MinimumSequence"] = "0",
