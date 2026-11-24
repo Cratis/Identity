@@ -34,6 +34,12 @@ internal partial class AccountPublications(IEventStore eventStore, ILogger<Accou
     /// <returns>The publication.</returns>
     public Task Publish(AccountEnablementRecorded @event, EventContext context) => Publish(new AccountEnabled(@event.AccountEpoch, @event.EnabledAt), context, @event.FactId);
 
+    /// <summary>Publishes an accepted sign-in.</summary>
+    /// <param name="event">The source fact.</param>
+    /// <param name="context">The source identity.</param>
+    /// <returns>The publication.</returns>
+    public Task Publish(AccountSignInRecorded @event, EventContext context) => Publish(new AccountSignedIn(@event.SignedInAt, @event.ConnectionId, @event.IdpIssuer), context, @event.FactId);
+
     /// <summary>Publishes tombstoning.</summary>
     /// <param name="event">The source fact.</param>
     /// <param name="context">The source identity.</param>

@@ -95,6 +95,7 @@ Source facts are named `<Public contract subject><noun>Recorded` and listed here
 | AccountErased | AccountErasureRecorded | 213861f1-a227-4f67-acae-a0619f4eb946 |
 | UpstreamKeyLinked | UpstreamKeyLinkRecorded | 0948769e-d249-472e-abb3-93e8743379da |
 | UpstreamKeyUnlinked | UpstreamKeyUnlinkRecorded | de708442-c9b3-4d8b-b677-01450ef9248e |
+| AccountSignedIn | AccountSignInRecorded | bd64cd38-6a80-4f93-a5ef-f25a2f3b469c |
 | ConsentWithdrawn | ConsentWithdrawalRecorded | assigned at implementation |
 | AuthorizationGranted | AuthorizationGrantRecorded | assigned at implementation |
 | AuthorizationRevoked | AuthorizationRevocationRecorded | assigned at implementation |
@@ -199,6 +200,7 @@ All names, fields, writer assignments and Public/Internal choices are decided in
 | UpstreamKeyDisplayIdentifierObserved | ecb91993-88b6-42a1-bdbc-ee644bd50fca | Accounts | Internal | Account | LinkId, Login†, ObservedAt | Identity | Per key; mutable upstream login for display and `preferred_username` only. Never used for matching, linking or authorization. Inside the erasure boundary. |
 | UpstreamKeyLinkRejected | 81cf15b3-1e52-441d-b55c-0b89853f8861 | Accounts | Internal | Account | LinkProposalId, ReasonId | Identity | Terminal proposal; retry needs a new proposal/proofs. |
 | UpstreamKeyUnlinked | f84b03e3-e0c1-4593-962e-917c56e50bcc | Accounts | Public | Account | LinkId, KeyHash‡, ReasonId, UnlinkedAt | Identity | New fact, never a rewrite/transfer of the original link. Reports, asynchronously, the unlink fence that revokes every grant, refresh family and session authenticated through that key (identity-revocation-v1 §7 Unlink); the event is not the fence itself. The unlinked key stays reserved to its old account; relinking it to any account needs an explicit reviewed operation (its own catalogue extension), never automatic linking. |
+| AccountSignedIn | e46bd692-b769-42ec-876f-db031d4c2a7c | Accounts | Public | Account | SignedInAt, ConnectionId, IdpIssuer | Identity | Published for every accepted sign-in so a product can keep a login history. A refused sign-in is not an event. Carries no address, device, token or personal value. |
 | PasskeyRegistered | assigned at implementation | Accounts | Internal | Account | PasskeyId, KeyThumbprint, RegisteredAt | Identity | Credential-store reference/thumbprint only; no attestation or key blob. |
 | PasskeyRemoved | assigned at implementation | Accounts | Internal | Account | PasskeyId, RemovedAt | Identity | No authenticator secret or recovery code. |
 | ConsentGranted | assigned at implementation | Authorization | Internal | Account | ConsentId, ClientRegistrationId, ResourceId, InstallationId, TenantId, EnvironmentId, Scopes, GrantedAt, ExpiresAt | Identity | Accepted bounded consent, not browser form/proof state. |

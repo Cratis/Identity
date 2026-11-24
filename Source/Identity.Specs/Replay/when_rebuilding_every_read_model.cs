@@ -33,5 +33,5 @@ public class when_rebuilding_every_read_model : given.a_replayed_activation
     [Fact] void should_not_restore_a_revoked_grant() => _revocation.Redemption.ShouldEqual(RedeemOutcome.Fenced);
     [Fact] void should_not_activate_an_abandoned_or_never_active_consent_grant() => after.State.ShouldEqual(ConsentRequestState.Abandoned);
     [Fact] void should_leave_preparation_untouched() => counting.Prepares.ShouldEqual(_prepares);
-    [Fact] void should_only_publish_the_six_keyed_contracts() => _publications.ShouldEqual(6);
+    [Fact] void should_only_publish_the_seven_keyed_contracts() => _publications.ShouldEqual(7);
 }
