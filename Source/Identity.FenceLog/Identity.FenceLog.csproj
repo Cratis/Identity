@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Cratis.Identity" />
+    <InternalsVisibleTo Include="Cratis.Identity.FenceLog.Mongo" />
     <InternalsVisibleTo Include="Cratis.Identity.Specs" />
     <InternalsVisibleTo Include="Cratis.Identity.Integration.Specs" />
   </ItemGroup>
