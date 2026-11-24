@@ -1,0 +1,1 @@
+{"clientId":"https://client.example/metadata.json","registrationKind":1,"registeredAt":"2026-01-01T00:00:00+00:00","clientType":0,"applicationType":0,"requirePkce":true,"consentType":1,"endpoints":[0,1],"grantTypes":[0,1],"responseTypes":[0],"resourceIndicators":["https://resource.example"],"scopes":["example:read"]}

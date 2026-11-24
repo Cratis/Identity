@@ -12,6 +12,7 @@ using Cratis.Identity.Accounts.Linking;
 using Cratis.Identity.Accounts.Lookup;
 using Cratis.Identity.Authorization;
 using Cratis.Identity.Clients;
+using Cratis.Identity.Clients.Publishing;
 using Cratis.Identity.ConsentFlow;
 using Cratis.Identity.Resources;
 using Cratis.Identity.Revocation;
@@ -23,12 +24,12 @@ public class when_inspecting_observers : Specification
 {
     /// <summary>
     /// Pure: AccountProjection, AccountGuardProjection, UpstreamKeyLookupProjection, AccountLinkStateReducer, ClientRegistrationReducer, ResourceRegistrationReducer.
-    /// Outbox publisher: AccountPublications, keyed by FactId:eventTypeId (never sequence number).
+    /// Outbox publishers: AccountPublications and ClientPublications, keyed by FactId:eventTypeId (never sequence number).
     /// </summary>
     internal static readonly Type[] Classified =
     [
         typeof(AccountProjection), typeof(AccountGuardProjection), typeof(UpstreamKeyLookupProjection),
-        typeof(AccountLinkStateReducer), typeof(ClientRegistrationReducer), typeof(ResourceRegistrationReducer), typeof(AccountPublications)
+        typeof(AccountLinkStateReducer), typeof(ClientRegistrationReducer), typeof(ResourceRegistrationReducer), typeof(AccountPublications), typeof(ClientPublications)
     ];
 
     internal static Type[] Observers => typeof(Account).Assembly.GetTypes().Where(IsObserver).ToArray();
@@ -55,8 +56,9 @@ public class when_inspecting_observers : Specification
         (@interface.GetGenericTypeDefinition() == typeof(IProjectionFor<>) || @interface.GetGenericTypeDefinition() == typeof(IReducerFor<>))));
 
     [Fact] void should_classify_every_observer() => Observers.OrderBy(type => type.FullName).ShouldEqual(Classified.OrderBy(type => type.FullName));
-    [Fact] void should_keep_pure_observers_dependency_free() => Classified.Where(type => type != typeof(AccountPublications)).SelectMany(Dependencies).ShouldBeEmpty();
+    [Fact] void should_keep_pure_observers_dependency_free() => Classified.Where(type => type != typeof(AccountPublications) && type != typeof(ClientPublications)).SelectMany(Dependencies).ShouldBeEmpty();
     [Fact] void should_limit_the_publisher_to_the_event_store_and_logger() => typeof(AccountPublications).GetConstructors().Single().GetParameters().Select(parameter => parameter.ParameterType).ShouldEqual([typeof(IEventStore), typeof(ILogger<AccountPublications>)]);
+    [Fact] void should_limit_the_client_publisher_to_the_event_store_and_logger() => typeof(ClientPublications).GetConstructors().Single().GetParameters().Select(parameter => parameter.ParameterType).ShouldEqual([typeof(IEventStore), typeof(ILogger<ClientPublications>)]);
     [Fact] void should_have_no_token_grant_clock_or_mail_capability() => Observers.SelectMany(Dependencies).Where(IsForbidden).ShouldBeEmpty();
     [Fact] void should_reject_an_unclassified_side_effecting_observer() => IsClassified(typeof(UnclassifiedObserver)).ShouldBeFalse();
     [Fact] void should_detect_a_mail_dependency() => IsForbidden(typeof(SmtpClient)).ShouldBeTrue();
