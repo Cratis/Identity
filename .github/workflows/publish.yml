@@ -127,6 +127,37 @@ jobs:
           DIGEST: ${{ steps.push.outputs.digest }}
         run: echo "Published ghcr.io/cratis/id@${DIGEST}" >> "$GITHUB_STEP_SUMMARY"
 
+  # Cratis.Identity.Contracts via NuGet.org trusted publishing (OIDC): no long-lived API key to hold or rotate. The
+  # trusted-publishing policy on nuget.org is bound to this workflow file (publish.yml) by name, so the job must
+  # live here. Consumers such as Cratis Direct subscribe to the published contracts with this package.
+  publish-nuget:
+    name: Pack and push Cratis.Identity.Contracts
+    needs: release
+    if: github.ref == 'refs/heads/main' && needs.release.outputs.publish == 'true'
+    runs-on: ${{ vars.RUNNER_FORCE || 'cratis-arc' }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      # Required for NuGet trusted publishing using OIDC tokens.
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Pack Identity.Contracts
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+        run: dotnet pack Source/Identity.Contracts --configuration Release -p:Version="${VERSION}" -o ./Artifacts/NuGet
+      # Get a short-lived NuGet API key.
+      - name: NuGet login (OIDC to temporary API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+      - name: Push NuGet package
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: dotnet nuget push --skip-duplicate './Artifacts/NuGet/*.nupkg' --timeout 900 --api-key "${NUGET_API_KEY}" --source https://api.nuget.org/v3/index.json
+
   verify-published:
     # A merge that publishes nothing is the failure mode that silently costs a release: the release job
     # succeeds, every publish job is skipped for want of should-publish, and the run reports green. Fail for the
