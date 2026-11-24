@@ -14,10 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The contracts only use the event-type attributes, and every consumer already references the Chronicle client, so the
-         package does not declare it as a dependency: a consumer pinned below the version Cratis Identity runs on can still
-         reference this package, where a declared dependency would force it up (NU1605). -->
-    <PackageReference Include="Cratis.Chronicle" PrivateAssets="all" />
+    <PackageReference Include="Cratis.Chronicle" />
   </ItemGroup>
 
   <ItemGroup>
