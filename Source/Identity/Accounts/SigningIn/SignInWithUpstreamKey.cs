@@ -145,6 +145,7 @@ internal record SignInWithUpstreamKey(FactId OperationId)
             events = events.Append(new AccountEmailChanged(email));
         }
 
+        events = events.Append(SignedIn(decision));
         return events.Select(@event => new EventForEventSourceId(decision.Subject.Value, @event));
     }
 
@@ -166,8 +167,18 @@ internal record SignInWithUpstreamKey(FactId OperationId)
             events.Add(new AccountNameChanged(decision.Profile.Name));
         }
 
+        events.Add(SignedIn(decision));
         return events.Select(@event => new EventForEventSourceId(decision.Subject.Value, @event));
     }
+
+    /// <summary>Records an accepted sign-in as a fact, so a product can keep a login history; the operation id makes it stable across retries.</summary>
+    /// <param name="decision">The accepted decision.</param>
+    /// <returns>The source fact.</returns>
+    static AccountSignInRecorded SignedIn(Decision decision) => new(
+        decision.At,
+        decision.Authentication.ConnectionId,
+        decision.Authentication.IdpIssuer,
+        FactId.ForOperation(decision.Authentication.OperationId, nameof(AccountSignInRecorded)));
 
     /// <summary>
     /// The trusted observations and guarded, caught-up account state for one decision attempt.

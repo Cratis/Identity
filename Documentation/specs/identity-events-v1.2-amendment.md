@@ -49,6 +49,8 @@ The v1 §8 and §4.1 tables, and the vectors written before this amendment, list
 | AccountNameChanged | 2eba996c-8d19-4d5c-9648-3dca02daf879 |
 | AccountRegistered | fd1cb0b5-17c1-4f34-b625-c318dc928d97 |
 | AccountRegistrationRecorded | c2c8ac1b-6110-433f-93d6-1e9222852baa |
+| AccountSignedIn | e46bd692-b769-42ec-876f-db031d4c2a7c |
+| AccountSignInRecorded | bd64cd38-6a80-4f93-a5ef-f25a2f3b469c |
 | AccountTombstoneRecorded | f67aa184-1052-4a3e-863a-13059de335e0 |
 | AccountTombstoned | 6d6b4f99-5ac3-4493-b892-13a5e44c6518 |
 | UpstreamKeyDisplayIdentifierObserved | ecb91993-88b6-42a1-bdbc-ee644bd50fca |

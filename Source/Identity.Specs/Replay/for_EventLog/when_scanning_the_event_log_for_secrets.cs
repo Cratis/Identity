@@ -61,7 +61,7 @@ public class when_scanning_the_event_log_for_secrets : Accounts.SigningIn.given.
     [Fact] void should_scan_a_nonempty_source_log() => _sourceCount.ShouldBeGreaterThan(_registered.Count(type => !Attribute.IsDefined(type, typeof(PublicAttribute))));
     [Fact] void should_exercise_the_real_sign_in_decision() => _refusal.ShouldBeNull();
     [Fact] void should_append_the_real_sign_in_decision() => _events.ShouldNotBeEmpty();
-    [Fact] void should_scan_every_published_contract() => _outboxCount.ShouldEqual(6);
+    [Fact] void should_scan_every_published_contract() => _outboxCount.ShouldEqual(7);
     [Fact] void should_find_no_secrets_in_content_or_envelopes() => given.EventLogScanner.Findings(_serialized, given.Secrets.All).ShouldBeEmpty();
     void Destroy() => _replay.Dispose();
 }

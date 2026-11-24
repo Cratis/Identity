@@ -29,6 +29,6 @@ public class when_failed_publication_is_retried : Specification
 
     [Fact] void should_hold_the_partition_by_rethrowing_the_failure() => _failure.ShouldEqual(_unavailable);
     [Fact] void should_append_nothing_on_failure() => _before.ShouldEqual(0);
-    [Fact] void should_publish_exactly_once_when_retried() => _after.ShouldEqual(6);
+    [Fact] void should_publish_exactly_once_when_retried() => _after.ShouldEqual(7);
     void Destroy() => _replay.Dispose();
 }

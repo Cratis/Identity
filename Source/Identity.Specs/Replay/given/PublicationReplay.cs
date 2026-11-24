@@ -19,7 +19,7 @@ internal sealed class PublicationReplay : IDisposable
     internal readonly object[] Facts = new[]
     {
         typeof(AccountRegistrationRecorded), typeof(UpstreamKeyLinkRecorded), typeof(AccountDisablementRecorded),
-        typeof(AccountEnablementRecorded), typeof(UpstreamKeyUnlinkRecorded), typeof(AccountTombstoneRecorded)
+        typeof(AccountEnablementRecorded), typeof(UpstreamKeyUnlinkRecorded), typeof(AccountTombstoneRecorded), typeof(AccountSignInRecorded)
     }.Select(EventSeeder.Seed).ToArray();
 
     internal async Task Replay(ulong firstSequence, IEventStore? store = null)
