@@ -45,7 +45,7 @@ public class when_publishing_a_client_lifecycle : Specification
         foreach (var fact in new object[] { _registered, _redirects, _rotated, _retired })
         {
             var context = EventContext.EmptyWithEventSourceId(_client) with { SequenceNumber = firstSequence++, Occurred = DateTimeOffset.UnixEpoch };
-            await (Task)typeof(ClientPublications).GetMethod(nameof(ClientPublications.Publish), [fact.GetType(), typeof(EventContext)])!.Invoke(publisher, [fact, context])!;
+            await (Task)typeof(ClientPublications).GetMethod(nameof(ClientPublications.Publish), [fact.GetType(), typeof(EventContext)]).Invoke(publisher, [fact, context]);
         }
     }
 
