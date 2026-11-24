@@ -46,7 +46,7 @@ public sealed class IndependentFenceLogConnection : IDisposable
     {
         var operational = await Deployment(_operational, cancellationToken);
         var independent = await Deployment(Database, cancellationToken);
-        if (operational == independent)
+        if (FenceLogBoundary.Refuses(operational, independent, _options))
         {
             throw new RevocationPending();
         }

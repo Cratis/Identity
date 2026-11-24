@@ -29,7 +29,8 @@ public class when_binding_fence_log_settings : Specification
             ["Identity:FenceLog:ConnectionString"] = "mongodb://independent.example",
             ["Identity:FenceLog:Database"] = "synthetic-fences",
             ["Identity:FenceLog:InstanceId"] = "synthetic-independent-custody",
-            ["Identity:FenceLog:MinimumSequence"] = "73"
+            ["Identity:FenceLog:MinimumSequence"] = "73",
+            ["Identity:FenceLog:AllowSharedDeployment"] = "true"
         });
         builder.Services.AddSingleton(Substitute.For<IChronicleClient>());
         builder.AddCratisIdentity();
@@ -39,5 +40,9 @@ public class when_binding_fence_log_settings : Specification
         options.Database.ShouldEqual("synthetic-fences");
         options.InstanceId.ShouldEqual("synthetic-independent-custody");
         options.MinimumSequence.ShouldEqual(73L);
+        options.AllowSharedDeployment.ShouldBeTrue();
     }
+
+    [Fact]
+    void should_refuse_a_shared_deployment_unless_the_operator_allows_it() => new FenceLogOptions().AllowSharedDeployment.ShouldBeFalse();
 }
