@@ -23,7 +23,8 @@ internal sealed partial class RegisteredClients(IServiceProvider services, Clien
     public async Task Refresh(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var readModels = services.GetRequiredService<IReadModels>();
+        await using var scope = services.CreateAsyncScope();
+        var readModels = scope.ServiceProvider.GetRequiredService<IReadModels>();
         var registrations = await readModels.GetInstances<ClientRegistration>();
         _applications = Serve(registrations, descriptors.All().Select(descriptor => descriptor.ClientId).ToHashSet(StringComparer.Ordinal), logger);
     }
