@@ -13,7 +13,7 @@ using Cratis.Identity.Contracts.Clients.Events;
 namespace Cratis.Identity.Clients.Publishing;
 
 /// <summary>
-/// Publishes the Public client contracts to the outbox in source order, on the client's own stream (its <see cref="Cratis.Identity.Contracts.Clients.ClientRegistrationId"/>).
+/// Publishes the Public client contracts to the outbox in source order, on the client's own stream (its <see cref="Contracts.Clients.ClientRegistrationId"/>).
 /// A client is added once and its secret rotates separately; the secret digest stays in the Internal fact and never reaches a contract.
 /// Failure holds the reactor partition rather than skipping a fact.
 /// </summary>
