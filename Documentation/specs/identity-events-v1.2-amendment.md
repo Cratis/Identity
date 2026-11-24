@@ -61,10 +61,14 @@ The v1 §8 and §4.1 tables, and the vectors written before this amendment, list
 | UpstreamKeySubjectRecorded | b0f49e52-c457-484b-adf8-8a2207a36869 |
 | UpstreamKeyUnlinkRecorded | de708442-c9b3-4d8b-b677-01450ef9248e |
 | UpstreamKeyUnlinked | f84b03e3-e0c1-4593-962e-917c56e50bcc |
+| ClientAdded | f381fb17-b22e-4393-9cee-e9b7ea8150c6 |
+| ClientPermanentlyRetired | 6eb83139-5fbe-43a4-813e-19b0f4e70d3c |
 | ClientRedirectUrisChanged | 1dfa8ff9-2538-44c2-8628-00dc084fcabe |
 | ClientRegistered | 0e4bb9ea-86c7-4000-bbfd-308a2dbf4989 |
 | ClientRetired | 8fa4f300-a66f-442d-ad15-37dc3bdd692f |
 | ClientSecretRotated | 4a913d36-056b-4e71-81ca-c90b207393b3 |
+| RedirectUrisChangedForClient | 9aba05c4-2560-4ea5-aba4-5037b41b017f |
+| SecretRotatedForClient | 851b6888-97b1-4954-8855-11395793cfce |
 | ResourceRegistered | e57de89b-215d-43ab-a235-83a5e517934a |
 | ResourceRegistrationRecorded | 9737db97-da6b-484e-afe6-760188549102 |
 | ResourceScopeRegistered | 24b65e88-8dbb-4e02-8f37-9d591eb29d20 |
