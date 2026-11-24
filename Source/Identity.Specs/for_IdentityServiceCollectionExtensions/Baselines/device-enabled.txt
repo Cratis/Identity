@@ -89,7 +89,9 @@ descriptor|Cratis.Identity.Operational.ILegacyAccountStoreProbe|Singleton|Cratis
 descriptor|Cratis.Identity.Protocol.IObserverProgress|Scoped|Cratis.Identity.Protocol.ObserverProgress
 descriptor|Cratis.Identity.Protocol.IProtocolCommands|Singleton|Cratis.Identity.Protocol.ProtocolCommands
 descriptor|Cratis.Identity.Protocol.ReadModelCatchUp|Scoped|Cratis.Identity.Protocol.ReadModelCatchUp
-descriptor|Cratis.Identity.Protocol.Stores.IProtocolCatalog|Singleton|Cratis.Identity.Protocol.Stores.ConfigurationProtocolCatalog
+descriptor|Cratis.Identity.Clients.Serving.IRegisteredClients|Singleton|Cratis.Identity.Clients.Serving.RegisteredClients
+descriptor|Cratis.Identity.Protocol.Stores.ConfigurationProtocolCatalog|Singleton|Cratis.Identity.Protocol.Stores.ConfigurationProtocolCatalog
+descriptor|Cratis.Identity.Protocol.Stores.IProtocolCatalog|Singleton|factory
 descriptor|Cratis.Identity.Resources.IResourceCatalog|Singleton|Cratis.Identity.Resources.ResourceCatalog
 descriptor|Cratis.Identity.Revocation.ConfirmFenceLog|Scoped|Cratis.Identity.Revocation.ConfirmFenceLog
 descriptor|Cratis.Identity.Revocation.DispatchRevocationOutbox|Scoped|Cratis.Identity.Revocation.DispatchRevocationOutbox
@@ -166,6 +168,7 @@ descriptor|Microsoft.Extensions.Diagnostics.Metrics.MetricsSubscriptionManager|S
 descriptor|Microsoft.Extensions.Hosting.IHostEnvironment|Singleton|instance
 descriptor|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Arc.Chronicle.ReadModels.DecisionReadAdmissionStartup
 descriptor|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Arc.Chronicle.ReadModels.ProtectedReadModelKeyStartup
+descriptor|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Clients.Serving.RegisteredClientsRefresher
 descriptor|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.ConsentFlow.ConsentReconciler
 descriptor|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Hosting.StorageIndexInitialization
 descriptor|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Operational.LegacyAccountStoreGuard
@@ -221,6 +224,7 @@ descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.Extension
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.Extensions.Options.StartupValidatorOptions, Microsoft.Extensions.Options, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Transient|factory
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.Extensions.Options.StartupValidatorOptions, Microsoft.Extensions.Options, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Transient|factory
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.Extensions.Options.StartupValidatorOptions, Microsoft.Extensions.Options, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Transient|factory
+descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Core.OpenIddictCoreOptions, OpenIddict.Core, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreOptions, OpenIddict.Server.AspNetCore, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreOptions, OpenIddict.Server.AspNetCore, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
 descriptor|Microsoft.Extensions.Options.IConfigureOptions`1[[OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreOptions, OpenIddict.Server.AspNetCore, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Singleton|instance
@@ -324,7 +328,7 @@ descriptor|OpenIddict.Abstractions.IOpenIddictScopeStore`1[[Cratis.Identity.Prot
 descriptor|OpenIddict.Abstractions.IOpenIddictTokenCache`1|Scoped|OpenIddict.Core.OpenIddictTokenCache`1
 descriptor|OpenIddict.Abstractions.IOpenIddictTokenManager|Scoped|factory
 descriptor|OpenIddict.Abstractions.IOpenIddictTokenStore`1[[OpenIddict.MongoDb.Models.OpenIddictMongoDbToken, OpenIddict.MongoDb.Models, Version=7.8.0.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]]|Scoped|Cratis.Identity.Authorization.FencedTokenStore
-descriptor|OpenIddict.Core.OpenIddictApplicationManager`1|Scoped|OpenIddict.Core.OpenIddictApplicationManager`1
+descriptor|OpenIddict.Core.OpenIddictApplicationManager`1|Scoped|Cratis.Identity.Protocol.Stores.ClientApplicationManager`1
 descriptor|OpenIddict.Core.OpenIddictAuthorizationManager`1|Scoped|OpenIddict.Core.OpenIddictAuthorizationManager`1
 descriptor|OpenIddict.Core.OpenIddictScopeManager`1|Scoped|OpenIddict.Core.OpenIddictScopeManager`1
 descriptor|OpenIddict.Core.OpenIddictTokenManager`1|Scoped|OpenIddict.Core.OpenIddictTokenManager`1
@@ -820,6 +824,7 @@ repeated|Microsoft.Extensions.Hosting.IHostedService|Singleton|Microsoft.Extensi
 repeated|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Revocation.RevocationOutboxWorker
 repeated|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Operational.LookupRevisionGuard
 repeated|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.ConsentFlow.ConsentReconciler
+repeated|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Clients.Serving.RegisteredClientsRefresher
 repeated|Microsoft.Extensions.Http.IHttpMessageHandlerBuilderFilter|Singleton|Microsoft.Extensions.Http.LoggingHttpMessageHandlerBuilderFilter
 repeated|Microsoft.Extensions.Http.IHttpMessageHandlerBuilderFilter|Singleton|Microsoft.Extensions.Http.MetricsFactoryHttpMessageHandlerFilter
 repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.AspNetCore.Antiforgery.AntiforgeryOptions, Microsoft.AspNetCore.Antiforgery, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Transient|Microsoft.AspNetCore.Antiforgery.AntiforgeryOptionsSetup
@@ -926,4 +931,5 @@ hosted|Microsoft.Extensions.Hosting.IHostedService|Singleton|Microsoft.Extension
 hosted|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Revocation.RevocationOutboxWorker
 hosted|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Operational.LookupRevisionGuard
 hosted|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.ConsentFlow.ConsentReconciler
+hosted|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Clients.Serving.RegisteredClientsRefresher
 health|identity-restriction-recovery

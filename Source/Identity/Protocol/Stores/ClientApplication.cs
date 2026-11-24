@@ -23,6 +23,19 @@ internal sealed class ClientApplication
         Id = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(ClientId)).AsSpan(0, 12));
     }
 
+    /// <summary>Initializes a client that was registered while Cratis Identity runs.</summary>
+    /// <param name="descriptor">The client's descriptor, which carries no secret.</param>
+    /// <param name="registration">The client's registration, which holds the digests its secret is verified against.</param>
+    internal ClientApplication(OpenIddictApplicationDescriptor descriptor, Clients.ClientRegistration registration)
+    {
+        Descriptor = descriptor;
+        Registration = registration;
+        ClientId = descriptor.ClientId!;
+
+        // The opaque registration id is what the client is known by everywhere else, so it also names the application.
+        Id = Convert.ToHexStringLower(SHA256.HashData(registration.Id.ToByteArray()).AsSpan(0, 12));
+    }
+
     /// <summary>Gets the stable identifier used by operational token and authorization entries.</summary>
     public string Id { get; }
 
@@ -31,4 +44,7 @@ internal sealed class ClientApplication
 
     /// <summary>Gets the private descriptor snapshot containing only an obfuscated secret.</summary>
     internal OpenIddictApplicationDescriptor Descriptor { get; }
+
+    /// <summary>Gets the registration the client was registered with, or nothing for a client the configuration declares.</summary>
+    internal Clients.ClientRegistration? Registration { get; }
 }
