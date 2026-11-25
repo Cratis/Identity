@@ -23,7 +23,7 @@ namespace Cratis.Identity.Clients.Requests;
 /// change the answer. Redelivery is harmless because a registration is refused once its client id exists.
 /// </remarks>
 /// <param name="configuration">The configuration holding the source store name.</param>
-/// <param name="eventStore">Cratis Identity's own event store.</param>
+/// <param name="chronicleClient">The Chronicle client, from which Cratis Identity's own event store is resolved once at startup.</param>
 /// <param name="services">Resolves what reads the registrations when a request is handled.</param>
 /// <param name="options">The Cratis Identity options holding the security owners.</param>
 /// <param name="descriptors">The configured clients, whose ids cannot be registered at runtime.</param>
@@ -31,7 +31,7 @@ namespace Cratis.Identity.Clients.Requests;
 /// <param name="logger">The logger.</param>
 internal sealed partial class ProductClientRequests(
     IConfiguration configuration,
-    IEventStore eventStore,
+    IChronicleClient chronicleClient,
     IServiceProvider services,
     IOptions<IdentityOptions> options,
     ClientDescriptors descriptors,
@@ -41,14 +41,20 @@ internal sealed partial class ProductClientRequests(
     /// <summary>The configuration key naming the product's event store.</summary>
     public const string SourceStoreKey = "Identity:ClientRequests:SourceStore";
 
+    IEventStore? _eventStore;
+
     /// <inheritdoc/>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         var source = configuration[SourceStoreKey];
-        if (string.IsNullOrWhiteSpace(source))
+        var own = configuration["Cratis:Chronicle:EventStore"];
+        if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(own))
         {
             return;
         }
+
+        // The ambient event store is scoped to a request, which a hosted service never has, so the store is addressed by name.
+        var eventStore = _eventStore = await chronicleClient.GetEventStore(own, EventStoreNamespaceName.Default);
 
         await eventStore.Subscriptions.Subscribe(
             $"identity-client-requests-{source}",
@@ -102,7 +108,7 @@ internal sealed partial class ProductClientRequests(
             return;
         }
 
-        var result = await eventStore.GetEventSequence(EventSequenceId.Log).AppendMany(outcome.Events);
+        var result = await _eventStore!.GetEventSequence(EventSequenceId.Log).AppendMany(outcome.Events);
         if (!result.IsSuccess)
         {
             // A client id that already exists is the expected redelivery; anything else is retried by Chronicle.
