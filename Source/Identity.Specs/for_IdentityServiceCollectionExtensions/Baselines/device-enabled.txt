@@ -169,6 +169,7 @@ descriptor|Microsoft.Extensions.Hosting.IHostEnvironment|Singleton|instance
 descriptor|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Arc.Chronicle.ReadModels.DecisionReadAdmissionStartup
 descriptor|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Arc.Chronicle.ReadModels.ProtectedReadModelKeyStartup
 descriptor|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Clients.Serving.RegisteredClientsRefresher
+descriptor|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Clients.Requests.ProductClientRequests
 descriptor|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.ConsentFlow.ConsentReconciler
 descriptor|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Hosting.StorageIndexInitialization
 descriptor|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Operational.LegacyAccountStoreGuard
@@ -825,6 +826,7 @@ repeated|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.R
 repeated|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Operational.LookupRevisionGuard
 repeated|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.ConsentFlow.ConsentReconciler
 repeated|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Clients.Serving.RegisteredClientsRefresher
+repeated|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Clients.Requests.ProductClientRequests
 repeated|Microsoft.Extensions.Http.IHttpMessageHandlerBuilderFilter|Singleton|Microsoft.Extensions.Http.LoggingHttpMessageHandlerBuilderFilter
 repeated|Microsoft.Extensions.Http.IHttpMessageHandlerBuilderFilter|Singleton|Microsoft.Extensions.Http.MetricsFactoryHttpMessageHandlerFilter
 repeated|Microsoft.Extensions.Options.IConfigureOptions`1[[Microsoft.AspNetCore.Antiforgery.AntiforgeryOptions, Microsoft.AspNetCore.Antiforgery, Version=10.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]|Transient|Microsoft.AspNetCore.Antiforgery.AntiforgeryOptionsSetup
@@ -932,4 +934,5 @@ hosted|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Rev
 hosted|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Operational.LookupRevisionGuard
 hosted|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.ConsentFlow.ConsentReconciler
 hosted|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Clients.Serving.RegisteredClientsRefresher
+hosted|Microsoft.Extensions.Hosting.IHostedService|Singleton|Cratis.Identity.Clients.Requests.ProductClientRequests
 health|identity-restriction-recovery
