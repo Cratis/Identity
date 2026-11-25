@@ -127,8 +127,7 @@ jobs:
           DIGEST: ${{ steps.push.outputs.digest }}
         run: echo "Published ghcr.io/cratis/id@${DIGEST}" >> "$GITHUB_STEP_SUMMARY"
 
-  # Cratis.Identity.Contracts, pushed with the organization's NuGet API key. Trusted publishing would avoid the key, but
-  # needs a policy on nuget.org bound to this workflow; switch to it by restoring the NuGet/login step once that exists.
+  # Cratis.Identity.Contracts, pushed with a short-lived key from nuget.org trusted publishing (a policy bound to this workflow).
   # Consumers such as Cratis Direct subscribe to the published contracts with this package.
   publish-nuget:
     name: Pack and push Cratis.Identity.Contracts
@@ -138,6 +137,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -145,9 +145,14 @@ jobs:
         env:
           VERSION: ${{ needs.release.outputs.version }}
         run: dotnet pack Source/Identity.Contracts --configuration Release -p:Version="${VERSION}" -o ./Artifacts/NuGet
+      - name: NuGet login (OIDC to a temporary API key)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
       - name: Push NuGet package
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
         run: dotnet nuget push --skip-duplicate './Artifacts/NuGet/*.nupkg' --timeout 900 --api-key "${NUGET_API_KEY}" --source https://api.nuget.org/v3/index.json
 
   verify-published:
