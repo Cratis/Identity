@@ -65,6 +65,8 @@ The v1 §8 and §4.1 tables, and the vectors written before this amendment, list
 | UpstreamKeyUnlinked | f84b03e3-e0c1-4593-962e-917c56e50bcc |
 | ClientAdded | f381fb17-b22e-4393-9cee-e9b7ea8150c6 |
 | ClientPermanentlyRetired | 6eb83139-5fbe-43a4-813e-19b0f4e70d3c |
+| ClientRegistrationRequested | ef5bd79e-adde-48b8-b83e-36c5f842b5bf |
+| ClientRetirementRequested | 4f2a66b7-143b-4288-962b-cc6fcf9b7b38 |
 | ClientRedirectUrisChanged | 1dfa8ff9-2538-44c2-8628-00dc084fcabe |
 | ClientRegistered | 0e4bb9ea-86c7-4000-bbfd-308a2dbf4989 |
 | ClientRetired | 8fa4f300-a66f-442d-ad15-37dc3bdd692f |

@@ -65,7 +65,7 @@ internal sealed record RegisterClient(ClientId ClientId, ClientConfiguration Con
     /// <summary>D3 protocol identifier admission: 1..128 RFC 6749 VSCHAR characters, excluding colon and edge whitespace, without normalization or case folding.</summary>
     /// <param name="id">The proposed exact identifier.</param>
     /// <returns>Whether the identifier is admitted.</returns>
-    static bool IsValidClientId(ClientId? id)
+    internal static bool IsValidClientId(ClientId? id)
     {
         var value = id?.Value;
         if (value is not { Length: > 0 and <= 128 })

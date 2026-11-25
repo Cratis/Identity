@@ -23,6 +23,7 @@ internal static class ConfigurationStoreExtensions
             services.GetRequiredService<ConfigurationProtocolCatalog>(),
             services.GetRequiredService<IRegisteredClients>()));
         builder.Services.AddHostedService<RegisteredClientsRefresher>();
+        builder.Services.AddHostedService<Clients.Requests.ProductClientRequests>();
 
         // OpenIddict caches both misses and positive applications indefinitely. CIMD freshness and repair
         // must be decided by the bounded metadata cache on every manager lookup, not by that entity cache.

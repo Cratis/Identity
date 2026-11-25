@@ -36,6 +36,8 @@
     { "name": "RedirectUrisChangedForClient", "typeId": "RedirectUrisChangedForClient", "area": "Clients", "visibility": "Public", "subject": "Client", "fields": "RedirectUris" },
     { "name": "SecretRotatedForClient", "typeId": "SecretRotatedForClient", "area": "Clients", "visibility": "Public", "subject": "Client", "fields": "ClientSecretId, ActivatedAt, PreviousValidUntil" },
     { "name": "ClientPermanentlyRetired", "typeId": "ClientPermanentlyRetired", "area": "Clients", "visibility": "Public", "subject": "Client", "fields": "ReasonId, RetiredAt" },
+    { "name": "ClientRegistrationRequested", "typeId": "ClientRegistrationRequested", "area": "Clients", "visibility": "Public", "subject": "Client", "fields": "ClientId, RedirectUris, Scopes, RequestedBy" },
+    { "name": "ClientRetirementRequested", "typeId": "ClientRetirementRequested", "area": "Clients", "visibility": "Public", "subject": "Client", "fields": "RegistrationId, RequestedBy" },
     { "name": "SigningKeyActivated", "typeId": null, "area": "Signing", "visibility": "Public", "subject": "Signing key", "fields": "KeyThumbprint, Algorithm, ActiveFrom" },
     { "name": "SigningKeyRetired", "typeId": null, "area": "Signing", "visibility": "Public", "subject": "Signing key", "fields": "KeyThumbprint, RetiredAt" },
     { "name": "ResourceRegistered", "typeId": "ResourceRegistered", "area": "Resources", "visibility": "Public", "subject": "Resource", "fields": "ResourceIndicator, Audience, ScopePrefix" },
