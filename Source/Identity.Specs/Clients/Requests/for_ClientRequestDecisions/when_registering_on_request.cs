@@ -1,5 +1,6 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+using Cratis.Identity.Contracts.Clients;
 using Cratis.Identity.Contracts.Clients.Events;
 
 namespace Cratis.Identity.Clients.Requests.for_ClientRequestDecisions;
@@ -30,7 +31,7 @@ public class when_registering_on_request : given.client_commands
     [Fact] void should_accept_a_security_owners_request() => _accepted.Accepted.ShouldBeTrue();
     [Fact] void should_register_the_client_and_its_redirects() => _accepted.Events.Select(_ => _.Event.GetType()).ShouldContainOnly(typeof(ClientRegistered), typeof(ClientRedirectUrisChanged));
     [Fact] void should_keep_both_facts_on_one_stream() => _accepted.Events.Select(_ => _.EventSourceId.Value).Distinct().Count().ShouldEqual(1);
-    [Fact] void should_register_a_public_client() => ((ClientRegistered)_accepted.Events[0].Event).ClientType.ShouldEqual(Cratis.Identity.Contracts.Clients.ClientType.Public);
+    [Fact] void should_register_a_public_client() => ((ClientRegistered)_accepted.Events[0].Event).ClientType.ShouldEqual(ClientType.Public);
     [Fact] void should_refuse_anyone_who_is_not_a_security_owner() => _notOwner.Refusal.ShouldEqual("requester_not_security_owner");
     [Fact] void should_append_nothing_for_a_refusal() => _notOwner.Events.ShouldBeEmpty();
     [Fact] void should_refuse_an_id_the_configuration_declares() => _reservedId.Refusal.ShouldEqual("client_id_already_reserved");
