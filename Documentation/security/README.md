@@ -1,3 +1,7 @@
+---
+description: "Security documentation for Cratis Identity: compromise matrix, recovery runbooks, resource token validation, client secret digests and outage behaviour."
+---
+
 # Security
 
 - [Compromise matrix and recovery runbooks v1](compromise-matrix-v1.md) — draft containment boundaries, decision dependencies and per-case recovery.

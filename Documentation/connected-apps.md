@@ -1,6 +1,6 @@
 ---
 title: Manage connected apps
-description: List and revoke an account's connected apps and add the optional React UI.
+description: List and revoke the connected apps an account has authorized, and add the optional React UI that lets users review and remove those grants.
 ---
 
 Cratis Identity exposes account-owned connected-app listing and revocation through Arc:

@@ -1,3 +1,7 @@
+---
+description: "Cratis Identity documentation: connected apps, client metadata, conformance, deployment, security runbooks and the versioned identity specifications."
+---
+
 # Identity documentation
 
 - [Connected apps](connected-apps.md): account-owned grant listing/revocation and the optional React UI.

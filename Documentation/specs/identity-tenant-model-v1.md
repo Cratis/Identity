@@ -1,3 +1,7 @@
+---
+description: "Identity tenant model specification, version 1: the names it adds for organisations, workspaces and namespaces on top of identity-contract-v1."
+---
+
 # Tenant model: organisation, workspace and namespace
 
 ```text
