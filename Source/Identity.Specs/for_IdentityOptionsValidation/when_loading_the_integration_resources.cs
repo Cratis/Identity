@@ -41,8 +41,8 @@ public class when_loading_the_integration_resources : Specification
     [Fact] void should_only_grant_the_introspection_endpoint() => _introspection.Permissions.Single().ShouldEqual(OpenIddictConstants.Permissions.Endpoints.Introspection);
     [Fact] void should_keep_the_api_indicator() => Resource("direct-v1").Indicators.Single().ShouldEqual("https://cratis.direct/v1");
     [Fact] void should_keep_the_mcp_indicator() => Resource("direct-mcp").Indicators.Single().ShouldEqual("https://cratis.direct/mcp");
-    [Fact] void should_keep_the_api_scopes() => Resource("direct-v1").Scopes.Select(scope => scope.Name).SequenceEqual(["direct:read", "direct:content.write", "direct:work"]).ShouldBeTrue();
-    [Fact] void should_keep_the_mcp_scopes() => Resource("direct-mcp").Scopes.Select(scope => scope.Name).SequenceEqual(["direct:mcp:read", "direct:mcp:content.write", "direct:mcp:work"]).ShouldBeTrue();
+    [Fact] void should_keep_the_api_scopes() => Resource("direct-v1").Scopes.Select(scope => scope.Name).SequenceEqual(["direct:read", "direct:content.write", "direct:work", "capture:write"]).ShouldBeTrue();
+    [Fact] void should_keep_the_mcp_scopes() => Resource("direct-mcp").Scopes.Select(scope => scope.Name).SequenceEqual(["direct:mcp:read", "direct:mcp:content.write", "direct:mcp:work", "direct:mcp:capture.write"]).ShouldBeTrue();
     [Fact] void should_configure_both_api_tenants() => Resource("direct-v1").Tenants.Select(tenant => tenant.Id).SequenceEqual(["cratis", "second"]).ShouldBeTrue();
     [Fact] void should_configure_both_mcp_tenants() => Resource("direct-mcp").Tenants.Select(tenant => tenant.Id).SequenceEqual(["cratis", "second"]).ShouldBeTrue();
     [Fact] void should_keep_the_member_in_both_direct_resources() => _options.Resources.Take(2).SelectMany(resource => resource.Tenants).All(tenant => tenant.Members.SequenceEqual(["134365"])).ShouldBeTrue();

@@ -135,8 +135,8 @@ The shipped catalog has two Direct entries and the Studio entry:
 
 | Resource indicator | Audience | Scope names |
 | --- | --- | --- |
-| `https://app.cratis.direct/v1` | `direct-v1` | `direct:read`, `direct:content.write`, `direct:work` |
-| `https://app.cratis.direct/mcp` | `direct-mcp` | `direct:mcp:read`, `direct:mcp:content.write`, `direct:mcp:work` |
+| `https://app.cratis.direct/v1` | `direct-v1` | `direct:read`, `direct:content.write`, `direct:work`, `capture:write` |
+| `https://app.cratis.direct/mcp` | `direct-mcp` | `direct:mcp:read`, `direct:mcp:content.write`, `direct:mcp:work`, `direct:mcp:capture.write` |
 | Supplied by the environment (see below) | `studio-mcp` | `studio:mcp:read`, `studio:mcp:write` |
 
 Resources have no fixed tenants. **Direct must expose a tenants callback with a shared secret of at least 32 characters, and so must Studio when it is enabled**; authentication to the callback does not replace the product's live membership checks. Direct must configure a callback for both resource entries, even when both use the same product endpoint. Product owners supply callback URLs and secrets. The image does not implement product callbacks.
