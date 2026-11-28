@@ -80,8 +80,8 @@ public class when_loading_the_hosted_direct_resources : Specification
         var first = new ConfigurationProtocolCatalog(new ClientDescriptors(_catalog, Options.Create(_options)), _catalog);
         var second = new ConfigurationProtocolCatalog(new ClientDescriptors(_catalog, Options.Create(_options)), _catalog);
         first.Applications.Select(application => application.Id).SequenceEqual(second.Applications.Select(application => application.Id)).ShouldBeTrue();
-        first.Scopes.Count.ShouldEqual(8);
-        second.Scopes.Count.ShouldEqual(8);
+        first.Scopes.Count.ShouldEqual(10);
+        second.Scopes.Count.ShouldEqual(10);
     }
 
     [Theory]
